@@ -845,12 +845,7 @@ let state=null, activeTab='전체', activePanel='dash';
 let overview=null, ovMarkers=[], formMapObj=null, formMarker=null, tempLatLng=null, tempChecks=null;
 
 /* ---- load with migration ---- */
-async function load(){
-  let raw=null;
-  try{ const v=localStorage.getItem('sweetyhome'); if(v) raw=JSON.parse(v); }catch(e){}
-  if(!raw){
-    try{ const v=localStorage.getItem('homemap'); if(v){ const old=JSON.parse(v); raw={properties:old.properties||[],prep:old.prep,steps:old.steps}; } }catch(e){}
-  }
+function applyGuards(raw){
   state=Object.assign(structuredClone(DEFAULT), raw||{});
   state.assets=Object.assign(structuredClone(DEFAULT.assets), state.assets||{});
   if(!Array.isArray(state.assets.items)){
@@ -869,13 +864,37 @@ async function load(){
   state.prep=state.prep||structuredClone(DEFAULT.prep);
   state.steps=state.steps||structuredClone(DEFAULT.steps);
   state.properties.forEach(p=>{ if(!p.checks)p.checks={}; });
+}
+async function load(){
+  let raw=null;
+  try{
+    const res=await fetch('/api/state');
+    const j=await res.json();
+    if(j.ok && j.state) raw=j.state;
+  }catch(e){}
+  if(!raw){
+    try{ const v=localStorage.getItem('sweetyhome'); if(v) raw=JSON.parse(v); }catch(e){}
+  }
+  if(!raw){
+    try{ const v=localStorage.getItem('homemap'); if(v){ const old=JSON.parse(v); raw={properties:old.properties||[],prep:old.prep,steps:old.steps}; } }catch(e){}
+  }
+  applyGuards(raw);
   renderAll();
 }
-let st;
+let st, syncTimer;
 async function save(){
-  const n=document.getElementById('savedNote'); n.textContent='저장됨 ✓'; n.style.color='var(--s-final)';
-  clearTimeout(st); st=setTimeout(()=>{n.textContent='변경사항은 자동 저장됩니다';n.style.color='';},1400);
+  const n=document.getElementById('savedNote'); n.textContent='저장 중…'; n.style.color='var(--ink-soft)';
   try{ localStorage.setItem('sweetyhome',JSON.stringify(state)); }catch(e){}
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(async()=>{
+    try{
+      const res=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state})});
+      const j=await res.json();
+      if(j.ok){ n.textContent='동기화 완료 ✓'; n.style.color='var(--s-final)'; }
+      else { n.textContent='로컬 저장됨 (서버 연결 안 됨)'; n.style.color='var(--s-visit)'; }
+    }catch(e){ n.textContent='로컬 저장됨 (오프라인)'; n.style.color='var(--s-visit)'; }
+    clearTimeout(st); st=setTimeout(()=>{n.textContent='변경사항은 자동 저장됩니다';n.style.color='';},2000);
+  },800);
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function naverUrl(p){return 'https://map.naver.com/p/search/'+encodeURIComponent((p.name||'')+' '+(p.loc||''));}
