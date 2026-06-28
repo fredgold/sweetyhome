@@ -304,6 +304,13 @@
   .step[data-done="1"] .stx{color:var(--ink-faint);}
   .step .stx small{display:block;font-weight:500;color:var(--ink-faint);}
   .saved{font-size:10.5px;color:var(--ink-faint);text-align:center;margin-top:18px;font-weight:600;}
+  /* ===== API 상태 배너 ===== */
+  .api-banner{display:none;padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:600;line-height:1.5;margin-bottom:14px;gap:8px;align-items:center;}
+  .api-banner.warn{display:flex;background:#FFF3E0;border:1px solid #FFB74D;color:#E65100;}
+  .api-banner.ok{display:flex;background:var(--money-wash);border:1px solid var(--money);color:var(--money-deep);}
+  .api-banner .dismiss{margin-left:auto;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px;cursor:pointer;opacity:.7;}
+  .api-banner .dismiss:hover{opacity:1;background:rgba(0,0,0,.06);}
+
   /* ===== v3: 액션 전체 ===== */
   .actfull .actrow{padding:11px 0;}
   .actfull .actrow .atx{font-size:14px;}
@@ -507,6 +514,8 @@
     <button class="atab" data-panel="regnews">📰 규제·뉴스</button>
     <button class="atab" data-panel="actions">✅ 액션</button>
   </nav>
+
+  <div class="api-banner" id="apiBanner"></div>
 
   <!-- ===================== 대시보드 ===================== -->
   <section class="panel on" id="panel-dash">
@@ -1801,4 +1810,16 @@ function renderAll(){
   if(activePanel==='props'){ initOverview(); }
 }
 load();
+
+(async()=>{
+  try{
+    const res=await fetch('/api/health');
+    const j=await res.json();
+    const b=document.getElementById('apiBanner');
+    if(!j.ok){
+      b.className='api-banner warn';
+      b.innerHTML=`<span>⚠️ AI 기능 제한: ${j.msg}</span><span class="dismiss" onclick="this.parentElement.style.display='none'">✕</span>`;
+    }
+  }catch(e){}
+})();
 </script>
