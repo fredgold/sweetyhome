@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const key = process.env.ANTHROPIC_API_KEY;
+  const key = process.env.ANTHROPIC_API_KEY || process.env.sweetyhome;
   if (!key) {
     res.status(500).json({ error: "서버에 ANTHROPIC_API_KEY가 설정되지 않았습니다." });
     return;
