@@ -1,4 +1,7 @@
 <!-- 스위티홈 — Vercel 배포용 (저장=localStorage, AI=/api/messages 서버리스 프록시) -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -301,6 +304,18 @@
   .step[data-done="1"] .stx{color:var(--ink-faint);}
   .step .stx small{display:block;font-weight:500;color:var(--ink-faint);}
   .saved{font-size:10.5px;color:var(--ink-faint);text-align:center;margin-top:18px;font-weight:600;}
+  /* ===== v3: 액션 전체 ===== */
+  .actfull .actrow{padding:11px 0;}
+  .actfull .actrow .atx{font-size:14px;}
+  .actfull .done-section{margin-top:20px;border-top:2px solid var(--hairline);padding-top:14px;}
+  .actfull .done-section .done-head{font-size:12px;font-weight:700;color:var(--ink-faint);margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .actfull .done-section .done-head .arw{transition:transform .15s;}
+  .actfull .done-section.collapsed .done-body{display:none;}
+  .actfull .done-section.collapsed .done-head .arw{transform:rotate(-90deg);}
+  .act-suggest-card{background:var(--line9-wash);border:1px solid var(--line9);border-radius:12px;padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+  .act-suggest-card .stx{flex:1;font-size:13px;font-weight:600;line-height:1.4;}
+  .act-suggest-card .btn-adopt{font-size:12px;font-weight:700;color:#fff;background:var(--line9-deep);border-radius:8px;padding:6px 12px;white-space:nowrap;}
+
   /* ===== v3: 규제·뉴스 ===== */
   .rn-list{display:flex;flex-direction:column;gap:12px;margin-top:14px;}
   .rn-card{background:var(--surface);border:1px solid var(--hairline);border-radius:13px;padding:14px 15px;box-shadow:var(--shadow);cursor:pointer;transition:transform .12s;}
@@ -368,15 +383,104 @@
   .chatempty{text-align:center;color:var(--ink-faint);font-size:13px;padding:30px 16px;line-height:1.6;}
 
   @media (max-width:760px){
-    .grid{grid-template-columns:1fr;}
-    .gatelist{grid-template-columns:1fr 1fr;}
-    .form .row{grid-template-columns:1fr;}
-    .dcards{grid-template-columns:1fr;}
-    .journey{grid-template-columns:1fr 1fr;gap:16px 8px;}
+    .wrap{padding:14px 12px 60px;}
+    header{gap:10px;margin-bottom:10px;}
+    .brand h1{font-size:20px;}
+    .brand .sub{font-size:10.5px;}
+    .brand .mark{width:34px;height:34px;font-size:15px;border-radius:9px;}
+    .topacts{gap:4px;}
+    .btn-mini{font-size:11px;padding:6px 9px;}
+    .apptabs{gap:4px;padding-bottom:10px;margin-bottom:14px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    .apptabs::-webkit-scrollbar{display:none;}
+    .atab{font-size:12.5px;padding:8px 11px;white-space:nowrap;flex-shrink:0;border-radius:9px;}
+    .hero{padding:14px 14px 16px;}
+    .hero .hh{font-size:10.5px;margin-bottom:10px;}
+    .journey{grid-template-columns:1fr 1fr;gap:14px 6px;}
     .journey::before{display:none;}
+    .jstop .dot{width:24px;height:24px;font-size:11px;}
+    .jstop .jt{font-size:11px;}
+    .jstop .jd{font-size:10px;}
+    .jstop .jdday{font-size:10px;}
+    .dcards{grid-template-columns:1fr;}
+    .dcard{padding:13px;}
+    .bignum{font-size:24px;}
+    .bignum small{font-size:12px;}
+    .subnum{font-size:11.5px;}
+    .top3{padding:13px;}
+    .actrow .atx{font-size:12.5px;}
+    .addact input{padding:8px 10px;font-size:13px;}
+    .addact button{font-size:12px;padding:0 12px;}
+    .regline{padding:10px 12px;font-size:11.5px;gap:8px;flex-wrap:wrap;}
+    .asec{padding:14px;border-radius:14px;}
+    .asec .ah h2{font-size:14px;}
+    .asec .adesc{font-size:11px;}
+    .btn-ai{font-size:11px;padding:6px 10px;}
+    .asum{grid-template-columns:1fr;}
+    .asum .sbig .val{font-size:22px;}
+    .reghead{display:none;}
+    .regrow{grid-template-columns:1fr 1fr;gap:7px 8px;padding:12px;border-top:8px solid var(--bg);position:relative;}
+    .regrow>*{min-width:0;}
+    .regrow .rc-name,.regrow .rc-memo{grid-column:1 / -1;}
+    .regrow .del{position:absolute;top:8px;right:8px;}
+    .regcardlab{display:block;font-size:9.5px;font-weight:800;color:var(--ink-faint);margin-bottom:3px;}
+    .rcell{display:flex;flex-direction:column;}
     .arow .av input{width:96px;}
+    .grid{grid-template-columns:1fr;}
+    .gates{padding:11px 12px;}
+    .gatelist{grid-template-columns:1fr 1fr;gap:8px;}
+    .gate .gt{font-size:12px;}
+    .gate .gd{font-size:10px;}
+    .mapcard .mh{padding:9px 12px;flex-wrap:wrap;gap:6px;}
+    .mapcard .mh h3{font-size:12px;}
+    .searchbar{padding:10px 11px;}
+    .searchbar .sb-row{gap:6px;}
+    .searchbar input{min-width:120px;padding:8px 10px;}
+    .site{font-size:11px;padding:7px 9px;}
+    .wcard{padding:12px 13px;}
+    .wcard .wh h3{font-size:12px;}
     .wgrid{grid-template-columns:1fr;}
-    .msg{max-width:92%;}
+    .panel-head{flex-wrap:wrap;gap:8px;}
+    .panel-head h2{font-size:14px;}
+    .addbtn{font-size:12px;padding:7px 12px;}
+    .tabs{gap:4px;margin:10px 0 12px;}
+    .tab{font-size:11.5px;padding:5px 9px;}
+    .form{padding:13px;}
+    .form .row{grid-template-columns:1fr;}
+    .card{padding:12px 13px;}
+    .c-name{font-size:14px;}
+    .c-loc{font-size:11px;}
+    .c-meta{gap:6px;margin-top:9px;}
+    .chip{font-size:11px;padding:4px 7px;}
+    .c-actions{gap:3px;}
+    .c-actions button,.c-actions a{font-size:10.5px;padding:3px 6px;}
+    .rail{padding-left:24px;}
+    .card::before{left:-20px;top:18px;width:11px;height:11px;}
+    .scard{padding:12px;}
+    .scard h3{font-size:12px;}
+    .chatwrap{min-height:55vh;}
+    .chathead{padding:11px 13px;}
+    .chathead h2{font-size:14px;}
+    .msgs{padding:12px;}
+    .msg{max-width:92%;font-size:12.5px;padding:9px 11px;}
+    .chatbar{padding:10px 12px;gap:6px;}
+    .chatbar input{padding:9px 10px;font-size:13px;}
+    .chatbar button{padding:0 14px;font-size:12px;}
+    .chatchips{padding:0 12px 10px;gap:4px;}
+    .chatchips button{font-size:10.5px;padding:6px 9px;}
+    .rn-card{padding:12px 13px;}
+    .rn-card .rn-title{font-size:13px;}
+    .rn-card .rn-summary{font-size:11.5px;}
+    .modal .box{padding:16px;border-radius:14px;}
+    .modal h3{font-size:14px;}
+    .modal textarea{min-height:120px;font-size:11px;}
+    .btn-save{font-size:12px;padding:7px 13px;}
+    .btn-ghost{font-size:12px;}
+    .privacy{font-size:10px;padding:8px 10px;}
+    .saved{font-size:9.5px;}
+    .side{gap:12px;}
+    .ph-actions{display:flex;gap:6px;flex-wrap:wrap;}
+    .sortbtn{font-size:11px;padding:6px 9px;}
+    .btn-eval{font-size:11px;padding:7px 11px;}
   }
 </style>
 
@@ -401,7 +505,7 @@
     <button class="atab" data-panel="props">🏘️ 매물</button>
     <button class="atab" data-panel="chat">💬 AI 상담</button>
     <button class="atab" data-panel="regnews">📰 규제·뉴스</button>
-    <span class="atab soon">✅ 액션 <em>v3</em></span>
+    <button class="atab" data-panel="actions">✅ 액션</button>
   </nav>
 
   <!-- ===================== 대시보드 ===================== -->
@@ -613,6 +717,23 @@
     </div>
   </section>
 
+  <!-- ===================== 액션 ===================== -->
+  <section class="panel" id="panel-actions">
+    <div class="asec">
+      <div class="ah">
+        <h2>✅ 액션</h2>
+        <button class="btn-ai" id="act_suggestBtn">✨ 새 액션 제안</button>
+      </div>
+      <div class="adesc">해야 할 일을 관리하세요. ★을 누르면 맨 위로, 체크하면 완료. AI가 우리 상황에 맞는 다음 액션을 제안해줘요.</div>
+      <div id="act_list"></div>
+      <div class="addact">
+        <input id="act_input" placeholder="할 일을 적고 Enter (예: HUG 보증보험 조건 확인)">
+        <button id="act_addBtn">＋ 추가</button>
+      </div>
+      <div id="act_suggestions" style="margin-top:14px"></div>
+    </div>
+  </section>
+
   <!-- ===================== 규제·뉴스 ===================== -->
   <section class="panel" id="panel-regnews">
     <div class="asec">
@@ -777,6 +898,7 @@ function switchPanel(name){
   if(name==='props'){ initOverview(); setTimeout(()=>overview&&overview.invalidateSize(),80); }
   if(name==='chat') renderChat();
   if(name==='regnews') renderRegNews();
+  if(name==='actions') renderActions();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelectorAll('.atab[data-panel]').forEach(b=>b.onclick=()=>switchPanel(b.dataset.panel));
@@ -870,6 +992,98 @@ function addAction(){
 }
 document.getElementById('d_actAdd').onclick=addAction;
 document.getElementById('d_actInput').addEventListener('keydown',e=>{if(e.key==='Enter')addAction();});
+
+/* ============ 액션 (전체) ============ */
+function renderActions(){
+  const sorted=[...state.actions].sort((a,b)=>(a.done-b.done)||(a.priority-b.priority));
+  const live=sorted.filter(a=>!a.done);
+  const done=sorted.filter(a=>a.done);
+  const el=document.getElementById('act_list');
+  if(!state.actions.length){
+    el.innerHTML='<div class="empty"><div class="big">아직 액션이 없어요</div>아래에 할 일을 적어보세요.</div>';
+    return;
+  }
+  let html='<div class="actfull">';
+  if(live.length){
+    html+=live.map((a,i)=>`
+      <div class="actrow" data-done="0" data-id="${a.id}">
+        <span class="rank tnum">${i+1}</span>
+        <span class="box" data-actf-done="${a.id}">${CHECK}</span>
+        <span class="atx">${esc(a.text)}</span>
+        <button class="star ${a.priority<=Math.min(...live.map(x=>x.priority))?'on':''}" data-actf-top="${a.id}" title="맨 위로">★</button>
+        <button class="xx" data-actf-del="${a.id}">✕</button>
+      </div>`).join('');
+  } else {
+    html+='<div class="empty"><div class="big">모든 액션 완료!</div>새 할 일을 추가하거나 AI 제안을 받아보세요.</div>';
+  }
+  if(done.length){
+    html+=`<div class="done-section"><div class="done-head" id="act_doneToggle"><span class="arw">▾</span> 완료 ${done.length}개</div><div class="done-body">`;
+    html+=done.map(a=>`
+      <div class="actrow" data-done="1" data-id="${a.id}">
+        <span class="rank tnum"></span>
+        <span class="box" data-actf-done="${a.id}">${CHECK}</span>
+        <span class="atx">${esc(a.text)}</span>
+        <button class="xx" data-actf-del="${a.id}">✕</button>
+      </div>`).join('');
+    html+='</div></div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+  el.querySelectorAll('[data-actf-done]').forEach(b=>b.onclick=()=>{
+    const a=state.actions.find(x=>x.id===b.dataset.actfDone);
+    if(a){a.done=!a.done;save();renderActions();renderTop3();}
+  });
+  el.querySelectorAll('[data-actf-top]').forEach(b=>b.onclick=()=>{
+    const a=state.actions.find(x=>x.id===b.dataset.actfTop);
+    if(a){const min=Math.min(...state.actions.map(x=>x.priority));a.priority=min-1;a.done=false;save();renderActions();renderTop3();}
+  });
+  el.querySelectorAll('[data-actf-del]').forEach(b=>b.onclick=()=>{
+    if(!confirm('이 액션을 삭제할까요?'))return;
+    state.actions=state.actions.filter(x=>x.id!==b.dataset.actfDel);save();renderActions();renderTop3();
+  });
+  const dt=document.getElementById('act_doneToggle');
+  if(dt) dt.onclick=()=>dt.parentElement.classList.toggle('collapsed');
+}
+function addActionFull(){
+  const inp=document.getElementById('act_input'); const t=inp.value.trim(); if(!t){inp.focus();return;}
+  const max=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;
+  state.actions.push({id:'a'+Date.now(),text:t,priority:max+1,done:false});
+  inp.value=''; save(); renderActions(); renderTop3();
+}
+document.getElementById('act_addBtn').onclick=addActionFull;
+document.getElementById('act_input').addEventListener('keydown',e=>{if(e.key==='Enter')addActionFull();});
+
+document.getElementById('act_suggestBtn').onclick=async()=>{
+  const btn=document.getElementById('act_suggestBtn');
+  const box=document.getElementById('act_suggestions');
+  btn.disabled=true; const old=btn.textContent; btn.textContent='생각 중…';
+  box.innerHTML='';
+  try{
+    const out=await claudeAPI([{role:'user',content:
+      `우리 현재 상황을 보고, 지금 해야 할 다음 액션 2~3개를 제안해줘. 설명·마크다운 금지, JSON 배열만.\n`+
+      `형식: [{"text":"액션 내용(구체적으로, 20자 이내)"}]\n`+
+      `이미 있는 액션과 겹치지 않게. 실용적이고 바로 실행 가능한 것 위주.\n\n`+
+      `[현재 데이터]\n${stateSnapshot()}`}],
+      [{type:'web_search_20250305',name:'web_search'}],
+      `당신은 1995년생 예비부부(2027.2 결혼, 서울 전세 후 2028 매수)의 내집마련 코치. 한국어. 최신 정보는 web_search로 확인.`);
+    const arr=parseJSON(out);
+    if(Array.isArray(arr)&&arr.length){
+      box.innerHTML=arr.map(s=>`
+        <div class="act-suggest-card">
+          <span class="stx">💡 ${esc(s.text)}</span>
+          <button class="btn-adopt" data-suggest="${esc(s.text)}">＋ 채택</button>
+        </div>`).join('');
+      box.querySelectorAll('[data-suggest]').forEach(b=>b.onclick=()=>{
+        const max=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;
+        state.actions.push({id:'a'+Date.now(),text:b.dataset.suggest,priority:max+1,done:false});
+        b.closest('.act-suggest-card').remove();
+        save(); renderActions(); renderTop3();
+      });
+      btn.textContent='✓ 제안 완료';
+    } else { btn.textContent='제안을 파싱하지 못했어요'; }
+  }catch(e){ btn.textContent='AI 응답 실패'; }
+  setTimeout(()=>{btn.disabled=false;btn.textContent=old;},2000);
+};
 
 /* ============ 규제·뉴스 ============ */
 function renderRegNews(){
@@ -1563,6 +1777,7 @@ function renderAll(){
   renderDash();
   renderAssets();
   renderProps();
+  renderActions();
   renderRegNews();
   if(activePanel==='props'){ initOverview(); }
 }
