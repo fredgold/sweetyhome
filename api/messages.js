@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
 
     const payload = {
-      model: body.model || process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+      model: body.model || process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
       max_tokens: Math.min(Number(body.max_tokens) || 1024, 2048),
       messages: Array.isArray(body.messages) ? body.messages : [],
     };

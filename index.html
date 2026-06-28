@@ -1399,7 +1399,7 @@ function setFormPin(lat,lng,recenter){
 function clearFormPin(){ if(formMarker&&formMapObj){formMapObj.removeLayer(formMarker);} formMarker=null; tempLatLng=null; }
 
 async function claudeAPI(messages,tools,system){
-  const body={model:"claude-sonnet-4-6",max_tokens:1000,messages};
+  const body={model:"claude-haiku-4-5-20251001",max_tokens:1000,messages};
   if(tools) body.tools=tools;
   if(system) body.system=system;
   const res=await fetch("/api/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
