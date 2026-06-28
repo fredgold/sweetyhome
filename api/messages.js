@@ -1,0 +1,56 @@
+// 스위티홈 — Anthropic Messages API 프록시 (Vercel Serverless Function)
+//
+// 프런트엔드(claudeAPI)는 키 없이 이 엔드포인트(/api/messages)로 호출하고,
+// 이 함수가 서버에 보관된 ANTHROPIC_API_KEY로 실제 Anthropic API에 전달합니다.
+//
+// 필요한 환경변수 (Vercel > Settings > Environment Variables):
+//   ANTHROPIC_API_KEY  (필수)  — https://console.anthropic.com 에서 발급
+//   ANTHROPIC_MODEL    (선택)  — 기본값 "claude-sonnet-4-6"
+//   APP_SHARED_SECRET  (선택)  — 설정 시, 요청 헤더 x-app-secret 와 일치해야 통과(무단 사용 방지)
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "POST only" });
+    return;
+  }
+
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) {
+    res.status(500).json({ error: "서버에 ANTHROPIC_API_KEY가 설정되지 않았습니다." });
+    return;
+  }
+
+  // (선택) 간단한 공유 비밀번호로 무단 호출 차단
+  const secret = process.env.APP_SHARED_SECRET;
+  if (secret && req.headers["x-app-secret"] !== secret) {
+    res.status(401).json({ error: "unauthorized" });
+    return;
+  }
+
+  try {
+    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+
+    const payload = {
+      model: body.model || process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+      max_tokens: Math.min(Number(body.max_tokens) || 1024, 2048),
+      messages: Array.isArray(body.messages) ? body.messages : [],
+    };
+    if (body.system) payload.system = body.system;
+    if (body.tools) payload.tools = body.tools; // web_search 등 그대로 전달
+
+    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  } catch (e) {
+    res.status(500).json({ error: String((e && e.message) || e) });
+  }
+}

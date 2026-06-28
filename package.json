@@ -1,0 +1,9 @@
+{
+  "name": "sweetyhome",
+  "version": "1.0.0",
+  "private": true,
+  "description": "스위티홈 — 결혼·내집마련 준비 보드 (Vercel 배포용)",
+  "engines": {
+    "node": ">=18"
+  }
+}

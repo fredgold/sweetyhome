@@ -1,0 +1,1570 @@
+<!-- 스위티홈 — Vercel 배포용 (저장=localStorage, AI=/api/messages 서버리스 프록시) -->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+    --bg:#EDEBE4; --surface:#FFFFFF; --ink:#1E2522; --ink-soft:#5C645F; --ink-faint:#9AA09B;
+    --line9:#C7A14A; --line9-deep:#9A7B2E; --line9-wash:#F4ECD8;
+    --money:#4F7A63; --money-deep:#356049; --money-wash:#E7F0EA;
+    --hairline:#E2E3DD; --hairline-soft:#ECEDE7;
+    --s-interest:#6B7C93; --s-visit:#C7853A; --s-review:#B89233; --s-final:#4F8A5B; --s-hold:#8A8F8A; --s-drop:#B16A63;
+    --shadow:0 1px 2px rgba(30,37,34,.04), 0 6px 20px rgba(30,37,34,.05);
+    font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum";}
+  .wrap{max-width:980px;margin:0 auto;padding:24px 20px 64px;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);}
+  .tnum{font-variant-numeric:tabular-nums;}
+
+  /* ---- app header ---- */
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .brand .mark{font-size:17px;width:38px;height:38px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--line9),#D8B968);box-shadow:0 4px 12px rgba(199,161,74,.35);}
+  .brand h1{font-size:23px;font-weight:800;letter-spacing:-.03em;}
+  .brand .sub{display:block;font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-top:1px;}
+  .topacts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+  .btn-mini{font-size:12px;font-weight:700;color:var(--ink-soft);padding:7px 11px;border-radius:9px;border:1px solid var(--hairline);background:var(--surface);transition:.12s;}
+  .btn-mini:hover{background:var(--hairline-soft);color:var(--ink);}
+
+  /* ---- app tabs ---- */
+  .apptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid var(--hairline);padding-bottom:14px;}
+  .atab{font-size:14px;font-weight:700;color:var(--ink-soft);padding:9px 15px;border-radius:11px;border:1px solid transparent;transition:.12s;display:inline-flex;align-items:center;gap:6px;}
+  .atab:hover{background:var(--hairline-soft);}
+  .atab[data-on="1"]{background:var(--ink);color:#fff;}
+  .atab.soon{color:var(--ink-faint);font-weight:600;font-size:12.5px;cursor:default;border:1px dashed var(--hairline);}
+  .atab.soon:hover{background:none;}
+  .atab.soon em{font-style:normal;font-size:9.5px;font-weight:800;background:var(--line9-wash);color:var(--line9-deep);border-radius:5px;padding:1px 5px;margin-left:2px;}
+
+  .panel{display:none;animation:fade .22s ease;}
+  .panel.on{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* ================= DASHBOARD ================= */
+  .hero{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;padding:18px 18px 20px;margin-bottom:16px;box-shadow:var(--shadow);}
+  .hero .hh{font-size:11.5px;font-weight:800;color:var(--line9-deep);letter-spacing:.07em;margin-bottom:14px;}
+  .journey{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;}
+  .journey::before{content:"";position:absolute;left:6%;right:6%;top:13px;height:3px;background:linear-gradient(90deg,var(--line9),var(--line9-wash));border-radius:3px;z-index:0;}
+  .jstop{position:relative;z-index:1;text-align:center;}
+  .jstop .dot{width:28px;height:28px;border-radius:50%;background:var(--surface);border:3px solid var(--line9);margin:0 auto 9px;display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .jstop.now .dot{background:var(--line9);border-color:var(--line9);box-shadow:0 0 0 4px var(--line9-wash);}
+  .jstop .jt{font-size:12px;font-weight:800;letter-spacing:-.02em;}
+  .jstop .jd{font-size:11px;color:var(--ink-soft);font-weight:600;margin-top:1px;}
+  .jstop .jdday{font-size:11px;font-weight:800;color:var(--line9-deep);margin-top:3px;}
+
+  .dcards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+  .dcard{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;box-shadow:var(--shadow);}
+  .dcard .dt{font-size:12px;font-weight:800;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+  .dcard .dt a{font-size:11.5px;font-weight:700;color:var(--line9-deep);text-decoration:none;}
+  .bignum{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1;}
+  .bignum small{font-size:14px;font-weight:700;color:var(--ink-soft);margin-left:3px;}
+  .subnum{font-size:12.5px;color:var(--ink-soft);font-weight:600;margin-top:8px;}
+  .meter{height:8px;background:var(--hairline-soft);border-radius:5px;overflow:hidden;margin:11px 0 6px;}
+  .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--money),#6FA587);border-radius:5px;transition:width .4s;}
+  .statline{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  .statpill{font-size:12px;font-weight:700;background:var(--hairline-soft);border-radius:8px;padding:6px 10px;}
+  .statpill b{color:var(--line9-deep);}
+
+  .top3{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px;}
+  .top3 .dt{font-size:12px;font-weight:800;color:var(--ink-soft);margin-bottom:4px;}
+  .top3 .ddesc{font-size:11.5px;color:var(--ink-faint);font-weight:500;margin-bottom:12px;}
+  .actrow{display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--hairline-soft);}
+  .actrow:first-of-type{border-top:none;}
+  .actrow .box{flex:none;width:20px;height:20px;border-radius:6px;border:2px solid var(--hairline);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.12s;}
+  .actrow[data-done="1"] .box{background:var(--s-final);border-color:var(--s-final);}
+  .actrow[data-done="1"] .box svg{opacity:1;} .actrow .box svg{opacity:0;}
+  .actrow .rank{flex:none;width:20px;text-align:center;font-size:12px;font-weight:800;color:var(--line9-deep);font-variant-numeric:tabular-nums;}
+  .actrow .atx{flex:1;font-size:13.5px;font-weight:600;line-height:1.35;}
+  .actrow[data-done="1"] .atx{color:var(--ink-faint);text-decoration:line-through;}
+  .actrow .star{flex:none;font-size:13px;color:var(--ink-faint);padding:2px 4px;border-radius:6px;}
+  .actrow .star.on{color:var(--line9);}
+  .actrow .star:hover,.actrow .xx:hover{background:var(--hairline-soft);}
+  .actrow .xx{flex:none;font-size:12px;color:var(--ink-faint);padding:2px 6px;border-radius:6px;font-weight:700;}
+  .addact{display:flex;gap:8px;margin-top:13px;}
+  .addact input{flex:1;border:1px solid var(--hairline);border-radius:10px;padding:9px 11px;background:#fff;}
+  .addact input:focus{outline:none;border-color:var(--line9);}
+  .addact button{background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:0 16px;border-radius:10px;white-space:nowrap;}
+  .actmore{font-size:11.5px;color:var(--ink-faint);font-weight:600;margin-top:10px;text-align:center;}
+
+  .regline{background:var(--line9-wash);border:1px solid var(--line9);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--line9-deep);font-weight:600;}
+  .regline .ic{font-size:15px;}
+  .regline em{font-style:normal;font-size:9.5px;font-weight:800;background:var(--line9-deep);color:#fff;border-radius:5px;padding:2px 6px;margin-left:auto;white-space:nowrap;}
+
+  /* ================= ASSETS ================= */
+  .asec{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px;}
+  .asec .ah{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;flex-wrap:wrap;}
+  .asec .ah h2{font-size:16px;font-weight:800;letter-spacing:-.02em;}
+  .asec .adesc{font-size:12px;color:var(--ink-soft);font-weight:500;margin-bottom:16px;}
+  .btn-ai{font-size:12px;font-weight:700;color:var(--money-deep);border:1px solid var(--money);border-radius:9px;padding:7px 12px;display:inline-flex;gap:5px;align-items:center;background:var(--money-wash);}
+  .btn-ai em{font-style:normal;font-size:9.5px;font-weight:800;background:var(--money);color:#fff;border-radius:4px;padding:1px 5px;}
+  .arow{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--hairline-soft);}
+  .arow:first-of-type{border-top:none;}
+  .arow .ai{flex:none;font-size:17px;width:26px;text-align:center;}
+  .arow .al{flex:1;}
+  .arow .al .aname{font-size:13.5px;font-weight:700;}
+  .arow .al .ahint{font-size:11px;color:var(--ink-faint);font-weight:500;}
+  .arow .av{flex:none;display:flex;align-items:center;gap:5px;}
+  .arow .av input{width:120px;text-align:right;border:1px solid var(--hairline);border-radius:9px;padding:8px 10px;background:#fff;font-weight:700;font-variant-numeric:tabular-nums;}
+  .arow .av input:focus{outline:none;border-color:var(--money);}
+  .arow .av .unit{font-size:12px;color:var(--ink-soft);font-weight:700;}
+  .atotal{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:14px 16px;background:var(--money-wash);border-radius:12px;}
+  .atotal .tl{font-size:13px;font-weight:800;color:var(--money-deep);}
+  .atotal .tv{font-size:22px;font-weight:800;color:var(--money-deep);letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+  .atotal .tv small{font-size:13px;font-weight:700;margin-left:3px;}
+  .atarget{margin-top:14px;}
+  .atarget .trow{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:8px;flex-wrap:wrap;}
+  .atarget .trow input{width:70px;text-align:right;border:1px solid var(--hairline);border-radius:8px;padding:6px 9px;background:#fff;font-weight:700;}
+  .atarget .trow input:focus{outline:none;border-color:var(--money);}
+  .anote{margin-top:16px;}
+  .anote label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;}
+  .anote textarea{width:100%;border:1px solid var(--hairline);border-radius:10px;padding:10px;min-height:60px;resize:vertical;background:#fff;}
+  .anote textarea:focus{outline:none;border-color:var(--money);}
+  .privacy{font-size:11px;color:var(--ink-faint);font-weight:500;margin-top:12px;line-height:1.5;background:var(--hairline-soft);border-radius:9px;padding:9px 11px;}
+
+  /* asset register (v2.1) */
+  .asum{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:16px;}
+  .asum .sbig{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;box-shadow:var(--shadow);}
+  .asum .sbig .lab{font-size:12px;font-weight:800;color:var(--ink-soft);margin-bottom:8px;}
+  .asum .sbig .val{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--money-deep);}
+  .asum .sbig .won{font-size:11.5px;color:var(--ink-faint);font-weight:600;margin-top:5px;font-variant-numeric:tabular-nums;}
+  .asum .sbig.hl{background:linear-gradient(135deg,#FDF6E3,#FBEFC9);border-color:var(--line9);}
+  .asum .sbig.hl .lab,.asum .sbig.hl .val{color:var(--line9-deep);}
+  .asum .sbig .note{font-size:10.5px;color:var(--ink-faint);font-weight:600;margin-top:6px;}
+  .ownerline{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;}
+  .ownerpill{font-size:11.5px;font-weight:700;background:var(--hairline-soft);border-radius:8px;padding:5px 9px;}
+  .ownerpill b{color:var(--money-deep);font-variant-numeric:tabular-nums;}
+  .immed{font-size:12px;font-weight:700;color:var(--ink-soft);margin-top:10px;}
+  .immed b{color:var(--money-deep);font-variant-numeric:tabular-nums;}
+
+  .reg{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px;}
+  .reghead{display:grid;grid-template-columns:58px 1.4fr 1fr 78px 84px 1fr 1.3fr 28px;gap:8px;padding:10px 12px;background:var(--hairline-soft);font-size:10.5px;font-weight:800;color:var(--ink-soft);}
+  .regrow{display:grid;grid-template-columns:58px 1.4fr 1fr 78px 84px 1fr 1.3fr 28px;gap:8px;padding:8px 12px;border-top:1px solid var(--hairline-soft);align-items:center;}
+  .regrow input,.regrow select{border:1px solid var(--hairline);border-radius:7px;padding:6px 7px;background:#fff;font-size:12px;width:100%;}
+  .regrow input:focus,.regrow select:focus{outline:none;border-color:var(--money);}
+  .regrow input.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;}
+  .regrow .del{color:var(--ink-faint);font-size:13px;font-weight:700;padding:4px;border-radius:6px;text-align:center;}
+  .regrow .del:hover{background:#FBEDE5;color:var(--s-drop);}
+  .regrow.imm{background:transparent;} .regrow.lng{background:#FAFAFB;}
+  .regadd{display:flex;gap:8px;padding:11px 12px;border-top:1px solid var(--hairline-soft);flex-wrap:wrap;}
+  .regadd button{font-size:12.5px;font-weight:700;border-radius:9px;padding:8px 13px;}
+  .btn-addrow{background:var(--ink);color:#fff;}
+  .btn-paste{background:var(--money-wash);color:var(--money-deep);border:1px solid var(--money);}
+  .regempty{padding:26px 16px;text-align:center;color:var(--ink-faint);font-size:13px;line-height:1.6;}
+  .regcardlab{display:none;}
+
+  @media (max-width:760px){
+    .asum{grid-template-columns:1fr;}
+    .reghead{display:none;}
+    .regrow{grid-template-columns:1fr 1fr;gap:7px 8px;padding:12px;border-top:8px solid var(--bg);position:relative;}
+    .regrow>*{min-width:0;}
+    .regrow .rc-name,.regrow .rc-memo{grid-column:1 / -1;}
+    .regrow .del{position:absolute;top:8px;right:8px;}
+    .regcardlab{display:block;font-size:9.5px;font-weight:800;color:var(--ink-faint);margin-bottom:3px;}
+    .rcell{display:flex;flex-direction:column;}
+  }
+
+  /* ================= PROPERTIES (흡수) ================= */
+  .gates{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:13px 15px;margin-bottom:18px;box-shadow:var(--shadow);}
+  .gates .gh{font-size:11px;font-weight:700;color:var(--line9-deep);letter-spacing:.06em;margin-bottom:9px;}
+  .gatelist{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .gate{display:flex;gap:9px;align-items:flex-start;}
+  .gate .ic{font-size:15px;}
+  .gate .gt{font-size:13px;font-weight:700;letter-spacing:-.01em;}
+  .gate .gt em{font-style:normal;font-size:10px;font-weight:800;color:#fff;background:var(--s-drop);border-radius:5px;padding:1px 5px;margin-left:4px;vertical-align:middle;}
+  .gate .gt em.pref{background:var(--s-interest);}
+  .gate .gd{font-size:11px;color:var(--ink-soft);}
+
+  .mapcard{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow);}
+  .mapcard .mh{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;}
+  .mapcard .mh h3{font-size:13px;font-weight:800;}
+  .mapcard .mh .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:10.5px;color:var(--ink-soft);font-weight:600;align-items:center;}
+  .mapcard .mh .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:3px;vertical-align:middle;}
+  .toggle{font-size:11.5px;font-weight:700;color:var(--ink-soft);padding:4px 9px;border-radius:8px;border:1px solid var(--hairline);}
+  #overviewMap{height:240px;width:100%;background:#dfe3df;}
+  .mapcard.collapsed #overviewMap{display:none;}
+
+  .grid{display:grid;grid-template-columns:1fr 296px;gap:22px;align-items:start;}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .panel-head h2{font-size:15px;font-weight:800;letter-spacing:-.02em;}
+  .stats{font-size:12px;color:var(--ink-soft);font-weight:600;}
+  .stats b{color:var(--line9-deep);}
+  .addbtn{background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:8px 14px;border-radius:10px;transition:transform .12s,opacity .12s;}
+  .addbtn:hover{transform:translateY(-1px);} .addbtn:active{opacity:.9;}
+
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 16px;}
+  .tab{font-size:12.5px;font-weight:600;color:var(--ink-soft);padding:6px 11px;border-radius:999px;border:1px solid var(--hairline);background:var(--surface);}
+  .tab[data-on="1"]{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .tab .ct{opacity:.6;margin-left:3px;font-weight:700;}
+
+  .form{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin-bottom:18px;box-shadow:var(--shadow);display:none;}
+  .form.open{display:block;animation:drop .18s ease;}
+  @keyframes drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .paste{background:var(--line9-wash);border:1px dashed var(--line9);border-radius:10px;padding:11px;margin-bottom:14px;}
+  .paste label{font-size:11.5px;font-weight:700;color:var(--line9-deep);display:block;margin-bottom:6px;}
+  .paste .steps3{font-size:11px;color:var(--ink-soft);font-weight:600;margin-bottom:8px;line-height:1.5;}
+  .paste textarea{width:100%;border:1px solid var(--hairline);border-radius:8px;padding:8px;min-height:46px;resize:vertical;background:#fff;}
+  .paste .pa{display:flex;justify-content:flex-end;margin-top:7px;}
+  .btn-fill{background:var(--line9-deep);color:#fff;font-size:12px;font-weight:700;padding:7px 13px;border-radius:8px;display:inline-flex;align-items:center;gap:5px;}
+  .btn-fill:disabled{opacity:.55;cursor:default;}
+  .form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .field label{display:block;font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--hairline);border-radius:9px;padding:9px 10px;background:#fff;}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--line9);}
+  .field textarea{resize:vertical;min-height:44px;}
+  .fmaprow{margin:4px 0 12px;}
+  .fmaprow .fm-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .fmaprow label{font-size:11px;font-weight:700;color:var(--ink-soft);}
+  .btn-find{font-size:11.5px;font-weight:700;color:var(--line9-deep);border:1px solid var(--line9);border-radius:8px;padding:5px 10px;display:inline-flex;gap:4px;align-items:center;}
+  .btn-find:disabled{opacity:.55;cursor:default;}
+  #formMap{height:170px;width:100%;border-radius:10px;border:1px solid var(--hairline);background:#dfe3df;}
+  .fm-hint{font-size:10.5px;color:var(--ink-faint);margin-top:5px;}
+  .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;}
+  .btn-ghost{font-size:13px;font-weight:600;color:var(--ink-soft);padding:8px 13px;border-radius:9px;}
+  .btn-ghost:hover{background:var(--hairline-soft);}
+  .btn-save{background:var(--line9);color:#fff;font-size:13px;font-weight:700;padding:8px 16px;border-radius:9px;}
+  .btn-save:hover{background:var(--line9-deep);}
+
+  .rail{position:relative;padding-left:30px;}
+  .rail::before{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:3px;background:linear-gradient(var(--line9),var(--line9-wash));border-radius:3px;}
+  .card{position:relative;background:var(--surface);border:1px solid var(--hairline);border-radius:13px;padding:14px 15px;margin-bottom:12px;box-shadow:var(--shadow);transition:transform .12s;}
+  .card:hover{transform:translateX(2px);}
+  .card::before{content:"";position:absolute;left:-25px;top:20px;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--line9);box-shadow:0 0 0 3px var(--bg);}
+  .card[data-st="후보확정"]::before{border-color:var(--s-final);}
+  .card[data-st="탈락"]::before{border-color:var(--s-drop);opacity:.6;}
+  .card[data-st="보류"]::before{border-color:var(--s-hold);}
+  .card.dim{opacity:.62;}
+  .c-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .c-name{font-size:15.5px;font-weight:800;letter-spacing:-.02em;}
+  .c-loc{font-size:12px;color:var(--ink-soft);font-weight:600;margin-top:1px;}
+  .pill{font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;color:#fff;white-space:nowrap;cursor:pointer;}
+  .c-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px;}
+  .chip{font-size:12px;font-weight:700;background:var(--hairline-soft);border-radius:8px;padding:5px 9px;letter-spacing:-.01em;}
+  .chip.ok{background:#E8F1EA;color:#3C7A4C;}
+  .chip.warn{background:#FBEDE5;color:#B5602F;}
+  .chip.deposit{background:var(--line9-wash);color:var(--line9-deep);}
+  .chip.geo{background:#EAEEF3;color:#566B86;}
+  .c-memo{font-size:12.5px;color:var(--ink-soft);margin-top:10px;white-space:pre-wrap;border-top:1px dashed var(--hairline);padding-top:9px;}
+  .c-actions{display:flex;gap:4px;margin-top:11px;flex-wrap:wrap;}
+  .c-actions button,.c-actions a{font-size:11.5px;font-weight:600;color:var(--ink-faint);padding:4px 8px;border-radius:7px;text-decoration:none;}
+  .c-actions a.naver{color:#06be34;}
+  .c-actions button:hover,.c-actions a:hover{background:var(--hairline-soft);color:var(--ink);}
+  .c-actions a.hogang{color:#ff8a3d;} .c-actions a.rt{color:#3b73c4;}
+  .searchbar{background:var(--surface);border:1px solid var(--hairline);border-radius:13px;padding:11px 13px;margin-bottom:18px;box-shadow:var(--shadow);}
+  .searchbar .sh{font-size:11px;font-weight:700;color:var(--line9-deep);margin-bottom:8px;letter-spacing:.02em;}
+  .searchbar .sb-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .searchbar input{flex:1;min-width:160px;border:1px solid var(--hairline);border-radius:9px;padding:9px 11px;background:#fff;}
+  .searchbar input:focus{outline:none;border-color:var(--line9);}
+  .site{font-size:12px;font-weight:700;padding:8px 11px;border-radius:9px;border:1px solid var(--hairline);background:var(--surface);color:var(--ink-soft);transition:.12s;white-space:nowrap;}
+  .site:hover{background:var(--hairline-soft);color:var(--ink);}
+  .searchbar .tip{font-size:11px;color:var(--ink-faint);margin-top:8px;}
+  .ck{margin-top:11px;border-top:1px dashed var(--hairline);padding-top:9px;}
+  .ck-toggle{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer;width:100%;text-align:left;}
+  .ck-toggle .bar{flex:1;height:5px;background:var(--hairline-soft);border-radius:3px;overflow:hidden;}
+  .ck-toggle .bar i{display:block;height:100%;background:var(--line9);border-radius:3px;transition:width .2s;}
+  .ck-toggle .cnt{color:var(--line9-deep);font-variant-numeric:tabular-nums;}
+  .ck-toggle .arw{transition:transform .15s;color:var(--ink-faint);}
+  .ck.open .ck-toggle .arw{transform:rotate(180deg);}
+  .ck-body{display:none;margin-top:9px;}
+  .ck.open .ck-body{display:block;}
+  .ck-item{display:flex;gap:8px;align-items:center;padding:5px 0;cursor:pointer;}
+  .ck-item .cb{flex:none;width:17px;height:17px;border-radius:5px;border:2px solid var(--hairline);margin-top:1px;display:flex;align-items:center;justify-content:center;transition:.12s;}
+  .ck-item[data-on="1"] .cb{background:var(--s-final);border-color:var(--s-final);}
+  .ck-item[data-on="1"] .cb svg{opacity:1;} .ck-item .cb svg{opacity:0;}
+  .ck-item .ct{font-size:12.5px;font-weight:600;line-height:1.35;flex:1;}
+  .ck-item[data-on="1"] .ct{color:var(--ink-faint);}
+  .ck-item .ct small{display:block;font-weight:500;color:var(--ink-faint);}
+  .ck-verify{flex:none;font-size:11px;font-weight:700;color:var(--line9-deep);border:1px solid var(--line9);border-radius:7px;padding:3px 8px;text-decoration:none;white-space:nowrap;transition:.12s;}
+  .ck-verify:hover{background:var(--line9-wash);}
+  .empty{text-align:center;padding:40px 16px;color:var(--ink-faint);}
+  .empty .big{font-size:14px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;}
+
+  .side{display:flex;flex-direction:column;gap:16px;}
+  .scard{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:15px;box-shadow:var(--shadow);}
+  .scard h3{font-size:13px;font-weight:800;margin-bottom:3px;}
+  .scard .desc{font-size:11px;color:var(--ink-faint);font-weight:500;margin-bottom:12px;}
+  .task{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--hairline-soft);}
+  .task:first-of-type{border-top:none;}
+  .task .box{flex:none;width:18px;height:18px;border-radius:6px;border:2px solid var(--hairline);margin-top:1px;display:flex;align-items:center;justify-content:center;}
+  .task[data-done="1"] .box{background:var(--s-final);border-color:var(--s-final);}
+  .task[data-done="1"] .box svg{opacity:1;} .task .box svg{opacity:0;}
+  .task .tx{font-size:12.5px;font-weight:600;line-height:1.4;}
+  .task[data-done="1"] .tx{color:var(--ink-faint);text-decoration:line-through;}
+  .task .tx small{display:block;font-weight:500;color:var(--ink-faint);text-decoration:none;}
+  .step{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--hairline-soft);align-items:flex-start;}
+  .step:first-of-type{border-top:none;}
+  .step .num{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--hairline);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;color:var(--ink-faint);}
+  .step[data-done="1"] .num{background:var(--line9);border-color:var(--line9);color:#fff;}
+  .step .stx{font-size:12.5px;font-weight:700;line-height:1.35;}
+  .step[data-done="1"] .stx{color:var(--ink-faint);}
+  .step .stx small{display:block;font-weight:500;color:var(--ink-faint);}
+  .saved{font-size:10.5px;color:var(--ink-faint);text-align:center;margin-top:18px;font-weight:600;}
+  /* ===== v3: 규제·뉴스 ===== */
+  .rn-list{display:flex;flex-direction:column;gap:12px;margin-top:14px;}
+  .rn-card{background:var(--surface);border:1px solid var(--hairline);border-radius:13px;padding:14px 15px;box-shadow:var(--shadow);cursor:pointer;transition:transform .12s;}
+  .rn-card:hover{transform:translateX(2px);}
+  .rn-card .rn-title{font-size:14px;font-weight:800;letter-spacing:-.02em;line-height:1.4;}
+  .rn-card .rn-summary{font-size:12.5px;color:var(--ink-soft);font-weight:500;margin-top:6px;line-height:1.5;}
+  .rn-card .rn-meta{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:11px;color:var(--ink-faint);font-weight:600;}
+  .rn-card .rn-date{background:var(--line9-wash);color:var(--line9-deep);border-radius:6px;padding:2px 7px;font-weight:700;}
+  .rn-card .rn-src{color:var(--ink-faint);}
+  .rn-empty{text-align:center;padding:30px 16px;color:var(--ink-faint);font-size:13px;line-height:1.6;}
+
+  .leaflet-popup-content{font-family:"Pretendard",sans-serif;font-size:12.5px;}
+  .leaflet-popup-content b{font-size:13.5px;}
+  .leaflet-popup-content a{color:#06be34;font-weight:700;text-decoration:none;}
+
+  .modal{position:fixed;inset:0;background:rgba(30,37,34,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000;}
+  .modal.open{display:flex;}
+  .modal .box{background:var(--surface);border-radius:16px;max-width:520px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:88vh;overflow:auto;}
+  .modal h3{font-size:16px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px;}
+  .modal .mdesc{font-size:12.5px;color:var(--ink-soft);margin-bottom:13px;line-height:1.5;}
+  .modal textarea{width:100%;min-height:150px;border:1px solid var(--hairline);border-radius:10px;padding:11px;font-size:12px;font-family:ui-monospace,Menlo,monospace;background:#FAFAF8;resize:vertical;line-height:1.5;}
+  .modal .macts{display:flex;gap:8px;justify-content:flex-end;margin-top:13px;}
+  .modal .hint{font-size:11.5px;color:var(--line9-deep);background:var(--line9-wash);border-radius:9px;padding:9px 11px;margin-bottom:12px;line-height:1.5;}
+  .modal .ok{font-size:12px;color:var(--s-final);font-weight:700;text-align:center;margin-top:9px;min-height:16px;}
+
+  /* ===== v2: AI ===== */
+  .chip.score{background:#EDE7F4;color:#6B4FA0;}
+  .airep{margin-top:10px;border-top:1px dashed var(--hairline);padding-top:9px;font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+  .airep .arh{font-size:11px;font-weight:800;color:#6B4FA0;margin-bottom:4px;letter-spacing:.02em;}
+  .airep .risk{margin-top:6px;color:#B5602F;font-weight:600;}
+  .airep .cmt{color:var(--ink);font-weight:600;margin-top:5px;}
+  .aiload{font-size:12px;color:#6B4FA0;font-weight:700;margin-top:9px;}
+
+  .wcard{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:14px 15px;margin-bottom:16px;box-shadow:var(--shadow);}
+  .wcard .wh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
+  .wcard .wh h3{font-size:13px;font-weight:800;}
+  .wcard .wdesc{font-size:11px;color:var(--ink-faint);font-weight:500;margin-bottom:12px;}
+  .wgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;}
+  .wrow{display:flex;align-items:center;gap:10px;}
+  .wrow label{flex:none;width:62px;font-size:12px;font-weight:700;color:var(--ink-soft);}
+  .wrow input[type=range]{flex:1;accent-color:#6B4FA0;}
+  .wrow .wv{flex:none;width:18px;text-align:right;font-size:12px;font-weight:800;color:#6B4FA0;font-variant-numeric:tabular-nums;}
+  .btn-eval{background:#6B4FA0;color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:10px;white-space:nowrap;}
+  .btn-eval:disabled{opacity:.6;cursor:default;}
+  .sortbtn{font-size:12px;font-weight:700;color:var(--ink-soft);padding:7px 11px;border-radius:9px;border:1px solid var(--hairline);background:var(--surface);}
+  .sortbtn[data-on="1"]{background:#EDE7F4;color:#6B4FA0;border-color:#D6C8EC;}
+
+  .chatwrap{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:62vh;}
+  .chathead{padding:14px 16px;border-bottom:1px solid var(--hairline);}
+  .chathead h2{font-size:15px;font-weight:800;}
+  .chathead p{font-size:11.5px;color:var(--ink-soft);font-weight:500;margin-top:2px;}
+  .msgs{flex:1;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:12px;}
+  .msg{max-width:84%;font-size:13.5px;line-height:1.55;padding:11px 13px;border-radius:13px;white-space:pre-wrap;word-break:break-word;}
+  .msg.user{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:4px;}
+  .msg.ai{align-self:flex-start;background:var(--hairline-soft);color:var(--ink);border-bottom-left-radius:4px;}
+  .msg.ai.think{color:var(--ink-faint);font-style:italic;}
+  .chatchips{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 12px;}
+  .chatchips button{font-size:11.5px;font-weight:700;color:var(--ink-soft);padding:7px 11px;border-radius:999px;border:1px solid var(--hairline);background:var(--surface);}
+  .chatchips button:hover{background:var(--hairline-soft);}
+  .chatbar{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--hairline);}
+  .chatbar input{flex:1;border:1px solid var(--hairline);border-radius:11px;padding:10px 12px;background:#fff;}
+  .chatbar input:focus{outline:none;border-color:#6B4FA0;}
+  .chatbar button{background:#6B4FA0;color:#fff;font-size:13px;font-weight:700;padding:0 18px;border-radius:11px;}
+  .chatbar button:disabled{opacity:.6;}
+  .chatempty{text-align:center;color:var(--ink-faint);font-size:13px;padding:30px 16px;line-height:1.6;}
+
+  @media (max-width:760px){
+    .grid{grid-template-columns:1fr;}
+    .gatelist{grid-template-columns:1fr 1fr;}
+    .form .row{grid-template-columns:1fr;}
+    .dcards{grid-template-columns:1fr;}
+    .journey{grid-template-columns:1fr 1fr;gap:16px 8px;}
+    .journey::before{display:none;}
+    .arow .av input{width:96px;}
+    .wgrid{grid-template-columns:1fr;}
+    .msg{max-width:92%;}
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="mark">🏡</span>
+      <div>
+        <h1>스위티홈</h1>
+        <span class="sub">테디 ♥ 연정 · 결혼 & 내집마련 준비 보드</span>
+      </div>
+    </div>
+    <div class="topacts">
+      <button class="btn-mini" id="exportBtn">⬆ 내보내기</button>
+      <button class="btn-mini" id="importBtn">⬇ 가져오기</button>
+    </div>
+  </header>
+
+  <nav class="apptabs" id="apptabs">
+    <button class="atab" data-panel="dash" data-on="1">🏠 대시보드</button>
+    <button class="atab" data-panel="assets">💰 자산</button>
+    <button class="atab" data-panel="props">🏘️ 매물</button>
+    <button class="atab" data-panel="chat">💬 AI 상담</button>
+    <button class="atab" data-panel="regnews">📰 규제·뉴스</button>
+    <span class="atab soon">✅ 액션 <em>v3</em></span>
+  </nav>
+
+  <!-- ===================== 대시보드 ===================== -->
+  <section class="panel on" id="panel-dash">
+    <div class="hero">
+      <div class="hh">◆ 우리의 여정</div>
+      <div class="journey" id="journey"></div>
+    </div>
+
+    <div class="dcards">
+      <div class="dcard">
+        <div class="dt">💰 예상 실탄 <a data-goto="assets">자산 관리 →</a></div>
+        <div id="d_assetSummary"></div>
+      </div>
+      <div class="dcard">
+        <div class="dt">🏘️ 매물 현황 <a data-goto="props">매물 보기 →</a></div>
+        <div id="d_propSummary"></div>
+      </div>
+    </div>
+
+    <div class="top3">
+      <div class="dt">✅ 지금 우선순위 액션 Top 3</div>
+      <div class="ddesc">제일 먼저 할 일을 직접 적어두세요. 나중에 AI 상담이 여기에 새 액션을 제안해줘요.</div>
+      <div id="d_top3"></div>
+      <div class="addact">
+        <input id="d_actInput" placeholder="할 일을 적고 Enter (예: 버팀목 자가진단)">
+        <button id="d_actAdd">＋ 추가</button>
+      </div>
+      <div class="actmore" id="d_actMore"></div>
+    </div>
+
+    <div class="regline" id="d_regline">
+      <span class="ic">📰</span>
+      <span>규제·뉴스 탭에서 <b>최신 규제 확인</b>을 눌러보세요.</span>
+      <em data-goto="regnews" style="cursor:pointer">바로가기</em>
+    </div>
+  </section>
+
+  <!-- ===================== 자산 ===================== -->
+  <section class="panel" id="panel-assets">
+    <div class="asec">
+      <div class="ah">
+        <h2>💰 우리 자산</h2>
+        <button class="btn-ai" id="a_aiBtn">✨ AI / 시트 붙여넣기</button>
+      </div>
+      <div class="adesc">스프레드시트처럼 <b>소유자·항목·금액·형태·유동성·동원 가능액</b>으로 관리해요. 단위는 <b>원</b>. 시트에서 행을 복사해 붙여넣으면 한 번에 들어옵니다.</div>
+
+      <div class="asum">
+        <div class="sbig hl">
+          <div class="lab">즉시 동원 가능액 <span style="font-weight:600">· 지금 집 자금 투입 가능</span></div>
+          <div class="val tnum" id="s_imm">0원</div>
+          <div class="won tnum" id="s_imm_won">₩0</div>
+          <div class="immed" id="s_imm_reserve">&nbsp;</div>
+        </div>
+        <div class="sbig">
+          <div class="lab">총 자산 합계</div>
+          <div class="val tnum" id="s_total" style="color:var(--ink)">0원</div>
+          <div class="won tnum" id="s_total_won">₩0</div>
+          <div class="immed">전체 동원 가능액(만기 포함) <b class="tnum" id="s_mob">0</b></div>
+          <div class="ownerline" id="s_owners"></div>
+        </div>
+      </div>
+
+      <div class="reg">
+        <div class="reghead">
+          <span>소유자</span><span>자산 항목</span><span>현재 금액</span><span>형태</span><span>유동성</span><span>동원 가능액</span><span>메모</span><span></span>
+        </div>
+        <div id="a_rows"></div>
+        <div class="regadd">
+          <button class="btn-addrow" id="addAssetRow">＋ 항목 추가</button>
+          <button class="btn-paste" id="pasteAssetBtn">📋 시트 붙여넣기</button>
+        </div>
+      </div>
+
+      <div class="atarget">
+        <div class="trow">
+          🎯 전세 보증금 목표
+          <input type="number" id="a_target" step="0.1" placeholder="4.5"> 억
+          <span id="a_targetMsg"></span>
+        </div>
+        <div class="trow">
+          🪙 예비비(결혼·이사 등)
+          <input type="number" id="a_reserve" step="100" placeholder="1000"> 만원
+          <span id="a_reserveMsg"></span>
+        </div>
+      </div>
+
+      <div class="anote">
+        <label>메모 (부모님 지원 조건, 증여 공제, 계획 등)</label>
+        <textarea id="a_notes" placeholder="예: 양가 각각 본인 계좌로 입금 (증여공제 활용) / 8월 이자지원 확인 후 한도 재계산"></textarea>
+      </div>
+
+      <div class="privacy">🔒 입력값은 외부 서버로 전송되지 않고 이 브라우저(localStorage)에만 보관돼요. 더 안심하고 싶으면 정확한 금액 대신 <b>대략값</b>으로 적고, 실제 숫자는 따로 메모해두세요.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 매물 (흡수) ===================== -->
+  <section class="panel" id="panel-props">
+    <div class="gates">
+      <div class="gh">◆ 우리가 매물 볼 때 보는 기준</div>
+      <div class="gatelist">
+        <div class="gate"><span class="ic">📍</span><div><div class="gt">서울시 內 <em>필수</em></div><div class="gd">이자지원 자격</div></div></div>
+        <div class="gate"><span class="ic">📐</span><div><div class="gt">전용 85㎡ 이하 <em>필수</em></div><div class="gd">청약 자격 보존</div></div></div>
+        <div class="gate"><span class="ic">💰</span><div><div class="gt">전세 4~5억 <em>필수</em></div><div class="gd">보증금 예산</div></div></div>
+        <div class="gate"><span class="ic">🚇</span><div><div class="gt">교통·단지 조건 <em class="pref">선호</em></div><div class="gd">9호선 우선 + 좋은 단지면 OK</div></div></div>
+      </div>
+    </div>
+
+    <div class="mapcard" id="mapcard">
+      <div class="mh">
+        <h3>📍 매물 한눈에 보기</h3>
+        <div class="legend">
+          <span><i style="background:#4F8A5B"></i>후보</span>
+          <span><i style="background:#B89233"></i>검토</span>
+          <span><i style="background:#C7853A"></i>방문</span>
+          <span><i style="background:#6B7C93"></i>관심</span>
+          <button class="toggle" id="mapToggle">접기</button>
+        </div>
+      </div>
+      <div id="overviewMap"></div>
+    </div>
+
+    <div class="searchbar">
+      <div class="sh">🔍 동·단지·역 바로 검색</div>
+      <div class="sb-row">
+        <input id="siteSearch" placeholder="예: 노량진동 전세 / 상도두산위브 / 신길역">
+        <button class="site" data-site="land">네이버 부동산</button>
+        <button class="site" data-site="naver">네이버 지도</button>
+        <button class="site" data-site="hogang">호갱노노</button>
+        <button class="site" data-site="rt">실거래가</button>
+      </div>
+      <div class="tip">💡 팁 — <b>세대수 + 금액</b>만 먼저 필터 걸면 볼 곳이 확 줄어요. 마음에 들면 ＋매물추가의 ‘붙여넣기 자동 채우기’로 담으세요.</div>
+    </div>
+
+    <div class="wcard">
+      <div class="wh">
+        <h3>🎚️ AI 자동 평가 가중치</h3>
+        <button class="btn-eval" id="evalBtn">⚡ 전체 자동 평가</button>
+      </div>
+      <div class="wdesc">우리가 중요하게 보는 정도(1~5)를 정하면, AI가 매물마다 0~100점을 매기고 점수순으로 정렬해줘요.</div>
+      <div class="wgrid" id="weights"></div>
+    </div>
+
+    <div class="grid">
+      <section>
+        <div class="panel-head">
+          <div><h2>매물 트래커</h2><div class="stats" id="stats"></div></div>
+          <div class="ph-actions">
+            <button class="sortbtn" id="sortBtn" data-on="0">정렬: 상태순</button>
+            <button class="addbtn" id="toggleForm">＋ 매물 추가</button>
+          </div>
+        </div>
+
+        <div class="form" id="form">
+          <input type="hidden" id="editId">
+          <div class="paste">
+            <label>⚡ 붙여넣기만 하면 자동으로 채워져요</label>
+            <div class="steps3">① 네이버 부동산에서 매물 열기 → ② 설명 글 전체 복사 → ③ 아래 칸에 붙여넣고 버튼</div>
+            <textarea id="pasteBox" placeholder="여기에 네이버 매물 글을 그대로 붙여넣으세요 (Ctrl+V / Cmd+V).&#10;단지명·보증금·면적·세대수·난방·주차까지 알아서 읽어드려요."></textarea>
+            <div class="pa"><button class="btn-fill" id="fillBtn">✨ 정보 자동 채우기</button></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>단지명 / 주소</label><input id="f_name" placeholder="예: 상도두산위브트레지움"></div>
+            <div class="field"><label>가까운 역 / 위치</label><input id="f_loc" placeholder="예: 노량진역 도보 7분"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>전세 보증금 (억)</label><input id="f_deposit" type="number" step="0.1" placeholder="예: 4.5"></div>
+            <div class="field"><label>전용면적 (㎡)</label><input id="f_area" type="number" step="0.1" placeholder="예: 59.9"></div>
+          </div>
+          <div class="fmaprow">
+            <div class="fm-head">
+              <label>위치 (지도)</label>
+              <button class="btn-find" id="findBtn">📍 위치 자동 찾기</button>
+            </div>
+            <div id="formMap"></div>
+            <div class="fm-hint">단지명 넣고 ‘위치 자동 찾기’를 누르거나, 지도를 직접 탭해서 핀을 놓으세요.</div>
+          </div>
+          <div class="field" style="margin-bottom:10px"><label>메모</label><textarea id="f_memo" placeholder="채광, 곰팡이, 보증보험 가능 여부, 집주인 융자 등"></textarea></div>
+          <div class="form-actions">
+            <button class="btn-ghost" id="cancelBtn">취소</button>
+            <button class="btn-save" id="saveBtn">저장</button>
+          </div>
+        </div>
+
+        <div class="tabs" id="tabs"></div>
+        <div class="rail" id="list"></div>
+      </section>
+
+      <aside class="side">
+        <div class="scard"><h3>먼저 준비할 것</h3><div class="desc">매물 찾기 전에 깔아둘 것들</div><div id="prep"></div></div>
+        <div class="scard"><h3>계약 진행 순서</h3><div class="desc">후보 확정 후 이 순서대로</div><div id="steps"></div></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===================== AI 상담 ===================== -->
+  <section class="panel" id="panel-chat">
+    <div class="chatwrap">
+      <div class="chathead">
+        <h2>💬 AI 상담</h2>
+        <p>우리 자산·매물·액션을 모두 보고 있어요. 편하게 물어보세요. (서버에 API 키가 설정되면 답해요)</p>
+      </div>
+      <div class="msgs" id="msgs"></div>
+      <div class="chatchips" id="chatchips"></div>
+      <div class="chatbar">
+        <input id="chatInput" placeholder="예: 지금 뭐부터 해야 할까? / 우리 실탄으로 전세 가능?">
+        <button id="chatSend">보내기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 규제·뉴스 ===================== -->
+  <section class="panel" id="panel-regnews">
+    <div class="asec">
+      <div class="ah">
+        <h2>📰 규제·뉴스</h2>
+        <button class="btn-ai" id="rn_fetchBtn">🔍 최신 규제 확인</button>
+      </div>
+      <div class="adesc">우리 프로필(서울·신혼·맞벌이·전세)에 맞는 최신 규제·정책·금리 뉴스를 AI가 웹에서 찾아 정리해요.</div>
+      <div id="rn_cards"></div>
+    </div>
+  </section>
+
+  <!-- 백업 모달 -->
+  <div class="modal" id="exportModal">
+    <div class="box">
+      <h3>⬆ 전체 내보내기 (백업)</h3>
+      <div class="mdesc">아래 백업 코드를 복사해서 <b>메모장·카톡 나에게·구글 문서</b> 등에 보관하세요. 대화가 사라져도 이 코드만 있으면 <b>자산·매물·액션</b> 전부 그대로 복원됩니다.</div>
+      <textarea id="exportText" readonly></textarea>
+      <div class="macts">
+        <button class="btn-ghost" data-close="exportModal">닫기</button>
+        <button class="btn-save" id="copyExport">📋 복사하기</button>
+      </div>
+      <div class="ok" id="exportOk"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="importModal">
+    <div class="box">
+      <h3>⬇ 전체 가져오기 (복원)</h3>
+      <div class="hint">⚠ 가져오면 <b>지금 보드 내용이 백업 코드로 교체</b>됩니다. 새 보드에 복원할 때 쓰세요.</div>
+      <div class="mdesc">보관해둔 <b>백업 코드</b>를 아래에 붙여넣고 가져오기를 누르세요. (예전 ‘집구하기맵’ 백업도 매물만 불러올 수 있어요.)</div>
+      <textarea id="importText" placeholder="여기에 백업 코드를 붙여넣으세요…"></textarea>
+      <div class="macts">
+        <button class="btn-ghost" data-close="importModal">닫기</button>
+        <button class="btn-save" id="doImport">복원하기</button>
+      </div>
+      <div class="ok" id="importOk"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="assetAiModal">
+    <div class="box">
+      <h3>✨ 자산 채우기 — AI 또는 시트 붙여넣기</h3>
+      <div class="mdesc"><b>① 시트 붙여넣기:</b> 구글시트/엑셀에서 행을 복사해 그대로 붙여넣으면(소유자·항목·금액·형태·유동성·동원가능액·메모 순) 자동 인식돼요.<br><b>② 자유 입력:</b> "규범 국민은행 1485만 현금 즉시, 연정 청약통장 280만…"처럼 적어도 AI가 정리해줍니다.</div>
+      <textarea id="assetAiText" placeholder="여기에 시트 행을 붙여넣거나 자유롭게 적으세요…"></textarea>
+      <div class="macts">
+        <button class="btn-ghost" data-close="assetAiModal">닫기</button>
+        <button class="btn-save" id="assetAiRun">정리해서 채우기</button>
+      </div>
+      <div class="ok" id="assetAiOk"></div>
+    </div>
+  </div>
+
+  <div class="saved" id="savedNote">변경사항은 자동 저장됩니다</div>
+</div>
+
+<script>
+const CHECK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const SC={관심:'--s-interest',방문예정:'--s-visit',검토중:'--s-review',후보확정:'--s-final',보류:'--s-hold',탈락:'--s-drop'};
+const HEX={관심:'#6B7C93',방문예정:'#C7853A',검토중:'#B89233',후보확정:'#4F8A5B',보류:'#8A8F8A',탈락:'#B16A63'};
+const ORDER={후보확정:0,검토중:1,방문예정:2,관심:3,보류:4,탈락:5};
+const CENTER=[37.512,126.942];
+function gUrl(q){return 'https://www.google.com/search?q='+encodeURIComponent(q);}
+function nmapUrl(q){return 'https://map.naver.com/p/search/'+encodeURIComponent(q);}
+function landUrl(q){return 'https://m.land.naver.com/search/result/'+encodeURIComponent(q);}
+const CHECKLIST=[
+  {id:'k1',t:'동·층 / 일조',s:'로얄동·층 vs 저층, 햇빛',vl:'호갱노노',vu:n=>gUrl(n+' 호갱노노 일조량')},
+  {id:'k2',t:'학군·초품아',s:'배정 초등학교, 통학거리',vl:'지도',vu:n=>nmapUrl(n+' 초등학교')},
+  {id:'k3',t:'생활 인프라',s:'마트·병원 + 지하철역 거리',vl:'주변보기',vu:n=>nmapUrl(n)},
+  {id:'k4',t:'세대수(대단지)',s:'500세대+면 관리·보증 유리',vl:'단지정보',vu:n=>landUrl(n)},
+  {id:'k5',t:'복도식 / 계단식',s:'채광·보안 차이',vl:'단지정보',vu:n=>landUrl(n)},
+  {id:'k6',t:'관리비 · 난방',s:'실제 월 관리비 수준',vl:'관리비조회',vu:n=>gUrl(n+' 공동주택관리정보 관리비')},
+  {id:'k7',t:'재건축·정비 리스크',s:'전세 이주 위험! 꼭 확인',vl:'정비사업',vu:n=>gUrl(n+' 재건축 정비구역 지정')},
+  {id:'k8',t:'세대당 주차',s:'세대당 몇 대인지',vl:'단지정보',vu:n=>landUrl(n)},
+  {id:'k9',t:'입주민 후기',s:'하자·집주인·실거주 평판',vl:'호갱노노',vu:n=>gUrl(n+' 호갱노노 이야기')},
+];
+
+const OWNERS=['규범','연정','공동'];
+const ATYPES=['현금','적금','예금','주식','펀드','청약통장','기타'];
+const LIQUIDITY=['즉시','만기·장기'];
+
+const DEFAULT={
+  assets:{items:[],notes:'',reserve:1000},
+  settings:{targetDeposit:4.5,weights:{commute:3,budget:3,area:3,complex:3,risk:3}},
+  chatHistory:[],
+  actions:[
+    {id:'a1',text:'버팀목 전세대출 자가진단 (연정)',priority:1,done:false},
+    {id:'a2',text:'서울시 신혼부부 이자지원 오픈 모니터링 (~8월)',priority:2,done:false},
+    {id:'a3',text:'협약은행 대출상담 예약 (KB·하나·신한)',priority:3,done:false},
+  ],
+  properties:[],
+  regNews:[],
+  prep:[
+    {id:'p1',tx:'연정 — 기금e든든 버팀목 사전 자가진단',sub:'전세대출 자격 먼저 확인',done:false},
+    {id:'p2',tx:'서울시 신혼부부 이자지원 오픈 모니터링',sub:'8월경 예비신혼부부 접수 시작',done:false},
+    {id:'p3',tx:'협약은행 대출상담 예약 (KB·하나·신한)',sub:'한도·금리 사전 확인',done:false},
+    {id:'p4',tx:'부모님 지원금 입금 계획 정리',sub:'각자 본인 계좌로 (증여공제)',done:false},
+  ],
+  steps:[
+    {id:'s1',tx:'매물 확정',sub:'조건 통과 + 가계약 전 점검',done:false},
+    {id:'s2',tx:'서울시 융자추천 온라인 신청',sub:'',done:false},
+    {id:'s3',tx:'협약은행 전세대출 신청',sub:'',done:false},
+    {id:'s4',tx:'전세보증보험 가입',sub:'HUG / HF',done:false},
+    {id:'s5',tx:'잔금 · 전입신고',sub:'→ 세대분리 자동 완료',done:false},
+  ],
+};
+
+let state=null, activeTab='전체', activePanel='dash';
+let overview=null, ovMarkers=[], formMapObj=null, formMarker=null, tempLatLng=null, tempChecks=null;
+
+/* ---- load with migration ---- */
+async function load(){
+  let raw=null;
+  try{ const v=localStorage.getItem('sweetyhome'); if(v) raw=JSON.parse(v); }catch(e){}
+  if(!raw){
+    try{ const v=localStorage.getItem('homemap'); if(v){ const old=JSON.parse(v); raw={properties:old.properties||[],prep:old.prep,steps:old.steps}; } }catch(e){}
+  }
+  state=Object.assign(structuredClone(DEFAULT), raw||{});
+  state.assets=Object.assign(structuredClone(DEFAULT.assets), state.assets||{});
+  if(!Array.isArray(state.assets.items)){
+    const old=state.assets, mig=[];
+    [['현금·입출금','cash','현금','즉시'],['예금·적금','savings','적금','즉시'],['청약통장','subscription','청약통장','만기·장기'],['부모님 지원 예정','parentGift','기타','만기·장기'],['기타·투자','other','주식','만기·장기']]
+      .forEach(([nm,key,ty,lq])=>{ const v=(+old[key]||0)*10000; if(v>0) mig.push({id:'as'+Math.random().toString(36).slice(2,8),owner:'규범',name:nm,amount:v,type:ty,liquidity:lq,mobilizable:v,memo:''}); });
+    state.assets.items=mig;
+  }
+  if(state.assets.reserve==null) state.assets.reserve=1000;
+  state.settings=Object.assign(structuredClone(DEFAULT.settings), state.settings||{});
+  state.settings.weights=Object.assign(structuredClone(DEFAULT.settings.weights), state.settings.weights||{});
+  state.chatHistory=state.chatHistory||[];
+  state.actions=state.actions||structuredClone(DEFAULT.actions);
+  state.properties=state.properties||[];
+  state.regNews=state.regNews||[];
+  state.prep=state.prep||structuredClone(DEFAULT.prep);
+  state.steps=state.steps||structuredClone(DEFAULT.steps);
+  state.properties.forEach(p=>{ if(!p.checks)p.checks={}; });
+  renderAll();
+}
+let st;
+async function save(){
+  const n=document.getElementById('savedNote'); n.textContent='저장됨 ✓'; n.style.color='var(--s-final)';
+  clearTimeout(st); st=setTimeout(()=>{n.textContent='변경사항은 자동 저장됩니다';n.style.color='';},1400);
+  try{ localStorage.setItem('sweetyhome',JSON.stringify(state)); }catch(e){}
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function naverUrl(p){return 'https://map.naver.com/p/search/'+encodeURIComponent((p.name||'')+' '+(p.loc||''));}
+function siteUrl(site,q){
+  q=(q||'').trim();
+  if(site==='naver') return 'https://map.naver.com/p/search/'+encodeURIComponent(q);
+  if(site==='land')  return 'https://m.land.naver.com/search/result/'+encodeURIComponent(q);
+  if(site==='hogang')return 'https://hogangnono.com/search/'+encodeURIComponent(q);
+  if(site==='rt')    return 'https://rt.molit.go.kr/';
+  return 'https://map.naver.com/p/search/'+encodeURIComponent(q);
+}
+
+/* ============ tab switching ============ */
+function switchPanel(name){
+  activePanel=name;
+  document.querySelectorAll('.atab[data-panel]').forEach(b=>b.dataset.on=b.dataset.panel===name?'1':'0');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+name));
+  if(name==='dash') renderDash();
+  if(name==='assets') renderAssets();
+  if(name==='props'){ initOverview(); setTimeout(()=>overview&&overview.invalidateSize(),80); }
+  if(name==='chat') renderChat();
+  if(name==='regnews') renderRegNews();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.atab[data-panel]').forEach(b=>b.onclick=()=>switchPanel(b.dataset.panel));
+document.querySelectorAll('[data-goto]').forEach(a=>a.onclick=()=>switchPanel(a.dataset.goto));
+
+/* ============ DASHBOARD ============ */
+function dday(t){const n=new Date();n.setHours(0,0,0,0);const d=Math.ceil((new Date(t)-n)/86400000);return d>=0?'D-'+d:'D+'+(-d);}
+function won(w){ // w in 원 → 억/만 표시
+  w=Math.round(w||0); const neg=w<0?'-':''; w=Math.abs(w);
+  const eok=Math.floor(w/100000000), man=Math.floor((w%100000000)/10000);
+  if(eok&&man) return neg+eok+'억 '+man.toLocaleString()+'만';
+  if(eok) return neg+eok+'억';
+  if(man) return neg+man.toLocaleString()+'만';
+  return neg+w.toLocaleString();
+}
+function comma(n){return Math.round(n||0).toLocaleString();}
+function assetItems(){return (state.assets&&state.assets.items)||[];}
+function sumAmount(){return assetItems().reduce((s,it)=>s+(+it.amount||0),0);}
+function sumMob(){return assetItems().reduce((s,it)=>s+(+it.mobilizable||0),0);}
+function sumMobImmediate(){return assetItems().filter(it=>it.liquidity==='즉시').reduce((s,it)=>s+(+it.mobilizable||0),0);}
+function sumByOwner(o){return assetItems().filter(it=>it.owner===o).reduce((s,it)=>s+(+it.amount||0),0);}
+function assetTotal(){return sumMobImmediate();} // 실제 동원 가능(즉시) 기준
+
+function renderJourney(){
+  const steps=[
+    {t:'오늘',     d:'2026.6',  now:true},
+    {t:'이자지원 오픈', d:'~2026.8', date:'2026-08-01'},
+    {t:'결혼',     d:'2027.2',  date:'2027-02-01'},
+    {t:'매수 목표', d:'2028',    date:'2028-01-01'},
+  ];
+  document.getElementById('journey').innerHTML=steps.map(s=>`
+    <div class="jstop ${s.now?'now':''}">
+      <div class="dot">${s.now?'📍':'◆'}</div>
+      <div class="jt">${s.t}</div>
+      <div class="jd">${s.d}</div>
+      ${s.date?`<div class="jdday tnum">${dday(s.date)}</div>`:''}
+    </div>`).join('');
+}
+function renderDashSummaries(){
+  const total=sumMobImmediate();
+  const tgt=(+state.settings.targetDeposit||0)*100000000;
+  const pct=tgt>0?Math.min(100,Math.round(total/tgt*100)):0;
+  document.getElementById('d_assetSummary').innerHTML=`
+    <div class="bignum tnum">${won(total)}<small>원</small></div>
+    <div class="meter"><i style="width:${pct}%"></i></div>
+    <div class="subnum">즉시 동원 기준 · 전세 보증금 목표 <b>${state.settings.targetDeposit||0}억</b> 대비 <b>${pct}%</b> · 만기 포함 전체 <b>${won(sumMob())}</b></div>`;
+  const p=state.properties;
+  const fin=p.filter(x=>x.status==='후보확정').length, vis=p.filter(x=>x.status==='방문예정').length;
+  document.getElementById('d_propSummary').innerHTML=`
+    <div class="bignum tnum">${p.length}<small>곳</small></div>
+    <div class="statline">
+      <span class="statpill">후보확정 <b>${fin}</b></span>
+      <span class="statpill">방문예정 <b>${vis}</b></span>
+    </div>
+    <div class="subnum">${p.length?'매물 탭에서 실사 체크와 지도를 확인하세요.':'아직 등록된 매물이 없어요. 매물 탭에서 첫 후보를 담아보세요.'}</div>`;
+}
+function renderTop3(){
+  const sorted=[...state.actions].sort((a,b)=>(a.done-b.done)||(a.priority-b.priority));
+  const live=sorted.filter(a=>!a.done);
+  const show=live.slice(0,3);
+  const el=document.getElementById('d_top3');
+  if(!state.actions.length){ el.innerHTML=`<div class="empty"><div class="big">아직 액션이 없어요</div>아래에 할 일을 적어보세요.</div>`; document.getElementById('d_actMore').textContent=''; return; }
+  el.innerHTML=show.map((a,i)=>`
+    <div class="actrow" data-done="${a.done?1:0}" data-id="${a.id}">
+      <span class="rank tnum">${i+1}</span>
+      <span class="box" data-act-done="${a.id}">${CHECK}</span>
+      <span class="atx">${esc(a.text)}</span>
+      <button class="star ${a.priority<=1?'on':''}" data-act-top="${a.id}" title="맨 위로">★</button>
+      <button class="xx" data-act-del="${a.id}">✕</button>
+    </div>`).join('') || `<div class="empty"><div class="big">🎉 우선순위 액션 완료!</div>새 할 일을 추가하거나 다른 탭을 채워보세요.</div>`;
+  const doneCnt=state.actions.filter(a=>a.done).length;
+  const moreLive=Math.max(0,live.length-3);
+  document.getElementById('d_actMore').textContent=
+    (moreLive?`+ 대기 중 액션 ${moreLive}개 더 · `:'')+`완료 ${doneCnt}개`;
+}
+function renderDash(){ renderJourney(); renderDashSummaries(); renderTop3(); updateDashRegline(); }
+
+document.getElementById('d_top3').addEventListener('click',e=>{
+  const done=e.target.closest('[data-act-done]');
+  const top=e.target.closest('[data-act-top]');
+  const del=e.target.closest('[data-act-del]');
+  if(done){const a=state.actions.find(x=>x.id===done.dataset.actDone);if(a){a.done=!a.done;save();renderTop3();}return;}
+  if(top){const a=state.actions.find(x=>x.id===top.dataset.actTop);if(a){const min=Math.min(...state.actions.map(x=>x.priority));a.priority=min-1;a.done=false;save();renderTop3();}return;}
+  if(del){if(!confirm('이 액션을 삭제할까요?'))return;state.actions=state.actions.filter(x=>x.id!==del.dataset.actDel);save();renderTop3();return;}
+});
+function addAction(){
+  const inp=document.getElementById('d_actInput'); const t=inp.value.trim(); if(!t){inp.focus();return;}
+  const max=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;
+  state.actions.push({id:'a'+Date.now(),text:t,priority:max+1,done:false});
+  inp.value=''; save(); renderTop3();
+}
+document.getElementById('d_actAdd').onclick=addAction;
+document.getElementById('d_actInput').addEventListener('keydown',e=>{if(e.key==='Enter')addAction();});
+
+/* ============ 규제·뉴스 ============ */
+function renderRegNews(){
+  const cards=document.getElementById('rn_cards');
+  if(!state.regNews.length){
+    cards.innerHTML='<div class="rn-empty">아직 수집된 뉴스가 없어요.<br><b>🔍 최신 규제 확인</b> 버튼을 눌러보세요.</div>';
+    return;
+  }
+  cards.innerHTML='<div class="rn-list">'+state.regNews.map(n=>`
+    <div class="rn-card" data-rnid="${esc(n.id)}">
+      <div class="rn-title">${esc(n.title||'')}</div>
+      <div class="rn-summary">${esc(n.summary||'')}</div>
+      <div class="rn-meta">
+        ${n.date?`<span class="rn-date">${esc(n.date)}</span>`:''}
+        ${n.source?`<span class="rn-src">🔗 출처 보기</span>`:''}
+      </div>
+    </div>`).join('')+'</div>';
+  cards.querySelectorAll('.rn-card[data-rnid]').forEach(el=>{
+    const n=state.regNews.find(x=>x.id===el.dataset.rnid);
+    if(n&&n.source) el.onclick=()=>window.open(n.source,'_blank');
+  });
+}
+function updateDashRegline(){
+  const el=document.getElementById('d_regline');
+  if(!el)return;
+  const latest=state.regNews[0];
+  if(latest){
+    el.innerHTML=`<span class="ic">📰</span><span><b>${esc(latest.title||'')}</b> — ${esc((latest.summary||'').slice(0,60))}${(latest.summary||'').length>60?'…':''}</span><em data-goto="regnews" style="cursor:pointer">더보기</em>`;
+    el.querySelector('[data-goto]').onclick=()=>switchPanel('regnews');
+  }
+}
+document.getElementById('rn_fetchBtn').onclick=async()=>{
+  const btn=document.getElementById('rn_fetchBtn');
+  btn.disabled=true; const old=btn.textContent; btn.textContent='검색 중…';
+  try{
+    const queries=[
+      '서울 신혼부부 전세자금대출 버팀목 금리 변경 2026',
+      '서울시 신혼부부 특별공급 자격기준 2026',
+      '신혼부부 전세보증금 이자지원 2026',
+      '전세사기 보증보험 HUG 변경사항 2026'
+    ];
+    const out=await claudeAPI([{role:'user',content:
+      `우리는 1995년생 서울 거주 예비부부(맞벌이, 2027.2 결혼, 전세 4~5억 목표)야.\n`+
+      `다음 키워드로 최신 규제·정책·금리 뉴스를 웹에서 찾아 JSON 배열로 정리해. 설명·마크다운 금지, JSON 배열만 출력.\n`+
+      `키워드: ${queries.join(' / ')}\n`+
+      `형식: [{"title":"제목","summary":"1~2문장 요약","date":"YYYY-MM-DD 또는 YYYY-MM","source":"출처URL"}]\n`+
+      `최신순 정렬, 최대 6건. 날짜를 모르면 빈 문자열. 출처URL을 모르면 빈 문자열.`}],
+      [{type:'web_search_20250305',name:'web_search'}]);
+    const arr=parseJSON(out);
+    if(Array.isArray(arr)&&arr.length){
+      state.regNews=arr.map(n=>({id:'rn'+Date.now()+Math.random().toString(36).slice(2,6),title:n.title||'',summary:n.summary||'',date:n.date||'',source:n.source||''}));
+      save(); renderRegNews(); updateDashRegline();
+      btn.textContent='✓ 업데이트 완료';
+    } else {
+      btn.textContent='결과를 파싱하지 못했어요';
+    }
+  }catch(e){
+    btn.textContent='AI 응답 실패 — API 키를 확인하세요';
+  }
+  setTimeout(()=>{btn.disabled=false;btn.textContent=old;},2000);
+};
+
+/* ============ ASSETS ============ */
+function ownerSel(v){return OWNERS.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
+function typeSel(v){return ATYPES.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
+function liqSel(v){return LIQUIDITY.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
+function renderAssets(){
+  const items=assetItems();
+  const box=document.getElementById('a_rows');
+  if(!items.length){
+    box.innerHTML=`<div class="regempty">아직 자산 항목이 없어요.<br><b>＋ 항목 추가</b>로 한 줄씩 넣거나, <b>📋 시트 붙여넣기</b>로 한 번에 가져오세요.</div>`;
+  } else {
+    box.innerHTML=items.map(it=>`
+      <div class="regrow ${it.liquidity==='즉시'?'imm':'lng'}" data-id="${it.id}">
+        <div class="rcell"><span class="regcardlab">소유자</span><select data-f="owner">${ownerSel(it.owner)}</select></div>
+        <div class="rcell rc-name"><span class="regcardlab">자산 항목</span><input data-f="name" value="${esc(it.name||'')}" placeholder="예: 국민은행 월급통장"></div>
+        <div class="rcell"><span class="regcardlab">현재 금액(원)</span><input class="num" data-f="amount" inputmode="numeric" value="${it.amount?comma(it.amount):''}" placeholder="0"></div>
+        <div class="rcell"><span class="regcardlab">형태</span><select data-f="type">${typeSel(it.type)}</select></div>
+        <div class="rcell"><span class="regcardlab">유동성</span><select data-f="liquidity">${liqSel(it.liquidity)}</select></div>
+        <div class="rcell"><span class="regcardlab">동원 가능액(원)</span><input class="num" data-f="mobilizable" inputmode="numeric" value="${it.mobilizable?comma(it.mobilizable):''}" placeholder="0"></div>
+        <div class="rcell rc-memo"><span class="regcardlab">메모</span><input data-f="memo" value="${esc(it.memo||'')}" placeholder="메모"></div>
+        <div class="del" data-del-asset="${it.id}" title="삭제">✕</div>
+      </div>`).join('');
+  }
+  bindAssetRows();
+  renderAssetSummary();
+  document.getElementById('a_target').value=state.settings.targetDeposit||'';
+  document.getElementById('a_reserve').value=state.assets.reserve||'';
+  document.getElementById('a_notes').value=state.assets.notes||'';
+  updateTargetMsg();
+}
+function bindAssetRows(){
+  document.querySelectorAll('#a_rows .regrow').forEach(row=>{
+    const it=assetItems().find(x=>x.id===row.dataset.id); if(!it)return;
+    row.querySelectorAll('[data-f]').forEach(el=>{
+      const f=el.dataset.f;
+      const handler=()=>{
+        if(f==='amount'||f==='mobilizable'){
+          const n=parseInt((el.value||'').replace(/[^\d-]/g,''),10)||0;
+          const prevAmt=it.amount;
+          it[f]=n;
+          if(f==='amount' && (it.mobilizable==null || it.mobilizable===prevAmt || !it.mobilizable)){ it.mobilizable=n; }
+        } else { it[f]=el.value; if(f==='liquidity') row.className='regrow '+(el.value==='즉시'?'imm':'lng'); }
+        renderAssetSummary(); updateTargetMsg(); save();
+      };
+      el.addEventListener(el.tagName==='SELECT'?'change':'input',handler);
+      if((f==='amount'||f==='mobilizable')) el.addEventListener('blur',()=>{ el.value=it[f]?comma(it[f]):''; });
+    });
+  });
+  document.querySelectorAll('#a_rows [data-del-asset]').forEach(b=>b.onclick=()=>{
+    state.assets.items=assetItems().filter(x=>x.id!==b.dataset.delAsset); save(); renderAssets();
+  });
+}
+function renderAssetSummary(){
+  const mob=sumMob(), total=sumAmount(), imm=sumMobImmediate();
+  const reserve=(+state.assets.reserve||0)*10000;
+  document.getElementById('s_imm').textContent=won(imm)+'원';
+  document.getElementById('s_imm_won').textContent='₩'+comma(imm);
+  const left=imm-reserve;
+  document.getElementById('s_imm_reserve').innerHTML=reserve>0?`예비비 빼면 실투입 <b class="tnum">${won(left)}</b>`:'&nbsp;';
+  document.getElementById('s_total').textContent=won(total)+'원';
+  document.getElementById('s_total_won').textContent='₩'+comma(total);
+  document.getElementById('s_mob').textContent=won(mob);
+  document.getElementById('s_owners').innerHTML=OWNERS.map(o=>{const v=sumByOwner(o);return v>0?`<span class="ownerpill">${o} <b>${won(v)}</b></span>`:'';}).join('')||'<span class="ownerpill" style="color:var(--ink-faint)">소유자별 합계가 여기 표시돼요</span>';
+}
+function addAssetRow(prefill){
+  state.assets.items=assetItems();
+  state.assets.items.push(Object.assign({id:'as'+Date.now()+Math.random().toString(36).slice(2,5),owner:'규범',name:'',amount:0,type:'현금',liquidity:'즉시',mobilizable:0,memo:''},prefill||{}));
+  save(); renderAssets();
+}
+document.getElementById('addAssetRow').onclick=()=>{ addAssetRow(); const rows=document.querySelectorAll('#a_rows .regrow'); const last=rows[rows.length-1]; if(last){const nm=last.querySelector('[data-f="name"]'); if(nm)nm.focus();} };
+
+function updateTargetMsg(){
+  const total=sumMobImmediate(), tgt=(+state.settings.targetDeposit||0)*100000000;
+  const msg=document.getElementById('a_targetMsg');
+  if(msg){
+    if(tgt<=0) msg.textContent='';
+    else { const pct=Math.round(total/tgt*100); msg.innerHTML=`→ 즉시 동원액으로 보증금의 <b style="color:var(--money-deep)">${pct}%</b> 충당`; }
+  }
+  const rmsg=document.getElementById('a_reserveMsg');
+  if(rmsg){
+    const reserve=(+state.assets.reserve||0)*10000;
+    const left=sumMobImmediate()-reserve;
+    rmsg.innerHTML=reserve>0?`→ 예비비 빼면 즉시 실투입 <b style="color:var(--line9-deep)">${won(left)}</b>`:'';
+  }
+}
+document.getElementById('a_target').addEventListener('input',e=>{state.settings.targetDeposit=+e.target.value||0;updateTargetMsg();renderDashSummaries();save();});
+document.getElementById('a_reserve').addEventListener('input',e=>{state.assets.reserve=+e.target.value||0;updateTargetMsg();save();});
+document.getElementById('a_notes').addEventListener('input',e=>{state.assets.notes=e.target.value;save();});
+
+/* 시트 붙여넣기 파서 — 탭(Tab) 구분 우선, 콤마는 천단위라 분리 금지 */
+function parseAssetPaste(text){
+  const lines=text.split(/\r?\n/).map(l=>l.replace(/\s+$/,'')).filter(l=>l.trim()!=='');
+  const toNum=s=>{ const n=(s||'').replace(/[^\d-]/g,''); return n?parseInt(n,10):0; };
+  const out=[];
+  for(const line of lines){
+    if(/소유자|자산\s*항목|현재\s*금액|가능액|합계|요약|동원/.test(line)) continue; // 헤더·요약행 건너뜀
+    let cells = line.includes('\t') ? line.split('\t') : line.split(/\s{2,}/);
+    cells = cells.map(c=>c.trim());
+    while(cells.length && cells[0]==='') cells.shift();
+    while(cells.length && cells[cells.length-1]==='') cells.pop();
+    if(cells.length<2) continue;
+
+    let owner='규범',name='',amount=0,type='현금',liquidity='즉시',mob=null,memo='';
+
+    if(cells.length>=5){ // 위치 기반 매핑 (시트 열 순서: 소유자·항목·금액·형태·유동성·동원가능액·메모)
+      let k=0;
+      if(OWNERS.includes(cells[0])){ owner=cells[0]; k=1; }
+      name=cells[k]||'';
+      amount=toNum(cells[k+1]);
+      const t=cells[k+2]; if(ATYPES.includes(t)) type=t;
+      const lq=cells[k+3]; if(lq) liquidity=/만기|장기/.test(lq)?'만기·장기':'즉시';
+      mob=toNum(cells[k+4]);
+      memo=cells.slice(k+5).join(' ').trim();
+    } else { // 느슨한 분류 (열이 적게 들어온 경우)
+      cells.forEach(c=>{
+        if(OWNERS.includes(c)) owner=c;
+        else if(ATYPES.includes(c)) type=c;
+        else if(/만기|장기|즉시/.test(c)) liquidity=/만기|장기/.test(c)?'만기·장기':'즉시';
+        else if(/\d{3,}/.test(c.replace(/[,\s₩원]/g,''))){ const n=toNum(c); if(!amount)amount=n; else if(mob==null)mob=n; }
+        else if(!name) name=c; else memo=(memo?memo+' ':'')+c;
+      });
+    }
+    if(mob==null || !mob) mob=amount;
+    if(!name && !amount) continue;
+    out.push({id:'as'+Date.now()+Math.random().toString(36).slice(2,6),owner,name:name||'(이름)',amount,type,liquidity,mobilizable:mob,memo});
+  }
+  return out;
+}
+document.getElementById('a_aiBtn').onclick=()=>{ document.getElementById('assetAiText').value=''; document.getElementById('assetAiOk').textContent=''; openModal('assetAiModal'); };
+document.getElementById('pasteAssetBtn').onclick=()=>{ document.getElementById('assetAiText').value=''; document.getElementById('assetAiOk').textContent=''; openModal('assetAiModal'); document.getElementById('assetAiText').focus(); };
+document.getElementById('assetAiRun').onclick=async()=>{
+  const txt=document.getElementById('assetAiText').value.trim();
+  const ok=document.getElementById('assetAiOk'); const btn=document.getElementById('assetAiRun');
+  if(!txt){document.getElementById('assetAiText').focus();return;}
+  const looksTabular=/\t/.test(txt) || txt.split(/\r?\n/).filter(l=>/\d{3,}/.test(l)).length>=2;
+  if(looksTabular){
+    const rows=parseAssetPaste(txt);
+    if(rows.length){
+      const replace=assetItems().length ? confirm(`${rows.length}개 항목을 인식했어요.\n확인=기존 목록 교체 / 취소=뒤에 추가`) : true;
+      state.assets.items = replace ? rows : assetItems().concat(rows);
+      save(); renderAssets();
+      ok.style.color='var(--s-final)'; ok.textContent=`✓ ${rows.length}개 항목을 ${replace?'불러왔어요':'추가했어요'}.`;
+      setTimeout(()=>closeModal('assetAiModal'),1100); return;
+    }
+    ok.style.color='var(--s-drop)'; ok.textContent='행을 인식하지 못했어요. AI로 정리해볼게요…';
+  }
+  btn.disabled=true; const old=btn.textContent; btn.textContent='정리 중…'; ok.style.color='';
+  try{
+    const out=await claudeAPI([{role:"user",content:txt}],null,
+      `사용자가 적은 자산 정보를 JSON 배열로 정리해. 설명·마크다운 금지, JSON 배열만 출력.\n`+
+      `각 원소:{"owner":"규범|연정|공동","name":"항목명","amount":원숫자,"type":"현금|적금|예금|주식|펀드|청약통장|기타","liquidity":"즉시|만기·장기","mobilizable":원숫자,"memo":"한줄"}\n`+
+      `금액은 원 단위 숫자(콤마 없이). 예:'1485만'→14850000, '5억'→500000000. mobilizable 모르면 amount와 동일. 소유자 모르면 "규범".`);
+    const arr=parseJSON(out);
+    if(Array.isArray(arr)&&arr.length){
+      const rows=arr.map(o=>({id:'as'+Date.now()+Math.random().toString(36).slice(2,6),owner:OWNERS.includes(o.owner)?o.owner:'규범',name:o.name||'(이름)',amount:+o.amount||0,type:ATYPES.includes(o.type)?o.type:'기타',liquidity:o.liquidity==='만기·장기'?'만기·장기':'즉시',mobilizable:o.mobilizable!=null?+o.mobilizable:(+o.amount||0),memo:o.memo||''}));
+      const replace=assetItems().length ? confirm(`${rows.length}개 항목으로 정리했어요.\n확인=교체 / 취소=추가`) : true;
+      state.assets.items = replace ? rows : assetItems().concat(rows);
+      save(); renderAssets();
+      ok.style.color='var(--s-final)'; ok.textContent=`✓ ${rows.length}개 항목 ${replace?'반영':'추가'} 완료.`;
+      setTimeout(()=>closeModal('assetAiModal'),1100);
+    } else { ok.style.color='var(--s-drop)'; ok.textContent='정리하지 못했어요. 시트 행을 그대로 붙여넣어 보세요.'; }
+  }catch(e){ ok.style.color='var(--s-drop)'; ok.textContent='AI 응답을 받지 못했어요. 서버의 ANTHROPIC_API_KEY 설정을 확인해주세요. (시트 붙여넣기는 앱 없이도 동작해요)'; }
+  btn.disabled=false; btn.textContent=old;
+};
+
+/* ============ PROPERTIES (흡수) ============ */
+function checklistHTML(p){
+  const ch=p.checks||{};
+  const done=CHECKLIST.filter(c=>ch[c.id]).length;
+  const pct=Math.round(done/CHECKLIST.length*100);
+  return `<div class="ck" data-pid="${p.id}">
+    <button class="ck-toggle" data-cktoggle="${p.id}">
+      <span>✔ 실사 체크</span>
+      <span class="bar"><i style="width:${pct}%"></i></span>
+      <span class="cnt">${done}/${CHECKLIST.length}</span>
+      <span class="arw">▾</span>
+    </button>
+    <div class="ck-body">
+      ${CHECKLIST.map(c=>`<div class="ck-item" data-ck="${p.id}|${c.id}" data-on="${ch[c.id]?1:0}">
+        <span class="cb">${CHECK}</span>
+        <span class="ct">${c.t}<small>${c.s}</small></span>
+        <a class="ck-verify" href="${c.vu(((p.name||'')+' '+(p.loc||'')).trim())}" target="_blank">🔎 ${c.vl}</a>
+      </div>`).join('')}
+    </div></div>`;
+}
+
+function waitLeaflet(cb){ if(typeof L!=='undefined'){cb();} else {setTimeout(()=>waitLeaflet(cb),120);} }
+function initOverview(){
+  waitLeaflet(()=>{
+    if(overview){refreshOverview();return;}
+    overview=L.map('overviewMap',{scrollWheelZoom:false}).setView(CENTER,13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(overview);
+    refreshOverview();
+  });
+}
+function refreshOverview(){
+  if(!overview) return;
+  ovMarkers.forEach(m=>overview.removeLayer(m)); ovMarkers=[];
+  const pts=[];
+  state.properties.filter(p=>p.lat&&p.lng).forEach(p=>{
+    const m=L.circleMarker([p.lat,p.lng],{radius:8,color:'#fff',weight:2,fillColor:HEX[p.status]||'#6B7C93',fillOpacity:1});
+    m.bindPopup(`<b>${esc(p.name||'')}</b><br>${esc(p.status)}${p.deposit?' · '+p.deposit+'억':''}${p.area?' · '+p.area+'㎡':''}<br><a href="${naverUrl(p)}" target="_blank">네이버에서 열기 →</a>`);
+    m.addTo(overview); ovMarkers.push(m); pts.push([p.lat,p.lng]);
+  });
+  if(pts.length===1) overview.setView(pts[0],15);
+  else if(pts.length>1) overview.fitBounds(pts,{padding:[40,40],maxZoom:15});
+  setTimeout(()=>overview.invalidateSize(),60);
+}
+document.getElementById('mapToggle').onclick=()=>{
+  const c=document.getElementById('mapcard'); c.classList.toggle('collapsed');
+  document.getElementById('mapToggle').textContent=c.classList.contains('collapsed')?'펼치기':'접기';
+  if(!c.classList.contains('collapsed')) setTimeout(()=>overview&&overview.invalidateSize(),80);
+};
+
+function initFormMap(){
+  waitLeaflet(()=>{
+    if(formMapObj){setTimeout(()=>formMapObj.invalidateSize(),60);return;}
+    formMapObj=L.map('formMap').setView(CENTER,13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'}).addTo(formMapObj);
+    formMapObj.on('click',e=>setFormPin(e.latlng.lat,e.latlng.lng,true));
+    setTimeout(()=>formMapObj.invalidateSize(),60);
+  });
+}
+function setFormPin(lat,lng,recenter){
+  tempLatLng={lat,lng};
+  waitLeaflet(()=>{
+    if(!formMapObj) return;
+    if(formMarker) formMarker.setLatLng([lat,lng]);
+    else formMarker=L.marker([lat,lng],{draggable:true}).addTo(formMapObj).on('dragend',ev=>{const p=ev.target.getLatLng();tempLatLng={lat:p.lat,lng:p.lng};});
+    if(recenter) formMapObj.setView([lat,lng],16);
+  });
+}
+function clearFormPin(){ if(formMarker&&formMapObj){formMapObj.removeLayer(formMarker);} formMarker=null; tempLatLng=null; }
+
+async function claudeAPI(messages,tools,system){
+  const body={model:"claude-sonnet-4-6",max_tokens:1000,messages};
+  if(tools) body.tools=tools;
+  if(system) body.system=system;
+  const res=await fetch("/api/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const data=await res.json();
+  return (data.content||[]).filter(i=>i.type==="text").map(i=>i.text).join("\n");
+}
+function parseJSON(t){try{return JSON.parse((t||'').replace(/```json|```/g,'').trim());}catch(e){return null;}}
+
+function parseNaver(t){
+  const r={};
+  const firstLine=(t.trim().split('\n')[0]||'').trim();
+  if(firstLine && firstLine.length<=40) r.name=firstLine;
+  let d=t.match(/전세가[\s\S]{0,15}?(\d+)\s*억\s*([\d,]+)\s*만/)||t.match(/전세가[\s\S]{0,15}?(\d+)\s*억/)||t.match(/(\d+)\s*억\s*([\d,]+)\s*만/)||t.match(/(\d+)\s*억/);
+  if(d){const e=parseInt(d[1]||'0',10);const m=d[2]?parseInt(d[2].replace(/,/g,''),10):0;r.deposit=+(e+m/10000).toFixed(2);}
+  else{const m=t.match(/([\d,]+)\s*만\s*원/);if(m)r.deposit=+(parseInt(m[1].replace(/,/g,''),10)/10000).toFixed(2);}
+  const a=t.match(/전용면적[^\d]*([\d.]+)\s*㎡/)||t.match(/전용\s*([\d.]+)/);
+  if(a)r.area=parseFloat(a[1]);
+  const loc=t.match(/서울[특별시]*\s*([가-힣]+구)\s*([가-힣]+동)/);
+  if(loc)r.loc=loc[1]+' '+loc[2];
+  const bits=[];
+  const sed=t.match(/([\d,]+)\s*세대/); const sedN=sed?parseInt(sed[1].replace(/,/g,''),10):null; if(sed)bits.push(sedN+'세대');
+  const hy=t.match(/(복도식|계단식|복도혼합|타워형)/); if(hy)bits.push(hy[1]);
+  const nan=t.match(/(중앙난방|지역난방|개별난방)/); if(nan)bits.push(nan[1]);
+  const pk=t.match(/세대당\s*([\d.]+)\s*대/); if(pk)bits.push('주차 '+pk[1]+'대/세대');
+  const yr=t.match(/\((\d+)년차\)/); if(yr)bits.push(yr[1]+'년차');
+  const mg=t.match(/관리비[\s\S]{0,6}?([\d,]+)\s*만원/); if(mg)bits.push('관리비 '+mg[1]+'만');
+  const mv=t.match(/입주가능일[\s\S]{0,15}?(\d{4}년\s*\d{1,2}월\s*\d{1,2}일)/); if(mv)bits.push('입주 '+mv[1].replace(/\s+/g,''));
+  const ln=t.match(/융자금[\s\S]{0,6}?(없음|있음)/); if(ln)bits.push('융자 '+ln[1]);
+  if(bits.length)r.memo=bits.join(' · ');
+  r._auto={};
+  if(sedN!=null&&sedN>=500) r._auto.k4=true;
+  if(hy) r._auto.k5=true;
+  if(nan) r._auto.k6=true;
+  if(pk) r._auto.k8=true;
+  return r;
+}
+function applyFill(j){
+  if(j.name) document.getElementById('f_name').value=j.name;
+  if(j.loc) document.getElementById('f_loc').value=j.loc;
+  if(j.deposit!=null&&j.deposit!=='') document.getElementById('f_deposit').value=j.deposit;
+  if(j.area!=null&&j.area!=='') document.getElementById('f_area').value=j.area;
+  if(j.memo) document.getElementById('f_memo').value=j.memo;
+  if(j._auto) tempChecks=Object.assign(tempChecks||{},j._auto);
+}
+document.getElementById('fillBtn').onclick=async()=>{
+  const txt=document.getElementById('pasteBox').value.trim();
+  if(!txt){document.getElementById('pasteBox').focus();return;}
+  const btn=document.getElementById('fillBtn'); const old=btn.textContent;
+  const j=parseNaver(txt);
+  const got=(j.name||j.deposit!=null||j.area!=null);
+  if(got){
+    applyFill(j);
+    const auto=Object.keys(j._auto||{}).length;
+    btn.textContent='✓ 채웠어요'+(auto?` (체크 ${auto}개 자동확인)`:'');
+    setTimeout(()=>{btn.textContent=old;},2000);
+    return;
+  }
+  btn.disabled=true; btn.textContent='읽는 중…';
+  try{
+    const out=await claudeAPI([{role:"user",content:
+      `다음 한국 부동산(전세) 매물 글에서 핵심만 JSON으로. 설명·마크다운 금지.\n`+
+      `형식:{"name":"단지명","loc":"구·동/역","deposit":보증금억숫자,"area":전용면적㎡숫자,"memo":"한줄"}\n`+
+      `보증금 '2억7천'→2.7. 모르면 null.\n\n${txt}`}]);
+    const aj=parseJSON(out);
+    if(aj){ applyFill(aj); btn.textContent='✓ 채웠어요'; }
+    else { btn.textContent='못 읽었어요 — 직접 입력'; }
+  }catch(e){ btn.textContent='못 읽었어요 — 직접 입력'; }
+  setTimeout(()=>{btn.disabled=false;btn.textContent=old;},2000);
+};
+
+document.getElementById('findBtn').onclick=async()=>{
+  const q=(document.getElementById('f_name').value+' '+document.getElementById('f_loc').value).trim();
+  if(!q){document.getElementById('f_name').focus();return;}
+  const btn=document.getElementById('findBtn'); btn.disabled=true; const old=btn.textContent; btn.textContent='찾는 중…';
+  try{
+    const out=await claudeAPI([{role:"user",content:
+      `대한민국 서울에 있는 '${q}'의 정확한 위도·경도를 웹에서 찾아 JSON만 출력해. 설명·마크다운 금지.\n`+
+      `형식: {"lat":위도숫자,"lng":경도숫자,"found":true}. 못 찾으면 {"found":false}.`}],
+      [{type:"web_search_20250305",name:"web_search"}]);
+    const j=parseJSON(out);
+    if(j&&j.found&&j.lat&&j.lng){ setFormPin(j.lat,j.lng,true); btn.textContent='✓ 찾았어요'; }
+    else { btn.textContent='못 찾음 — 지도 탭'; }
+  }catch(e){ alert('위치 자동 찾기는 서버 API가 설정돼야 동작해요. 지도를 직접 탭해 주세요.'); btn.textContent=old; }
+  setTimeout(()=>{btn.disabled=false;btn.textContent=old;},1600);
+};
+
+function renderStats(){const p=state.properties;document.getElementById('stats').innerHTML=
+  `총 <b>${p.length}</b>곳 · 후보확정 <b>${p.filter(x=>x.status==='후보확정').length}</b> · 방문예정 <b>${p.filter(x=>x.status==='방문예정').length}</b>`;}
+function renderTabs(){
+  const tabs=['전체','관심','방문예정','검토중','후보확정','보류','탈락'];
+  const cnt={전체:state.properties.length}; tabs.slice(1).forEach(s=>cnt[s]=state.properties.filter(p=>p.status===s).length);
+  document.getElementById('tabs').innerHTML=tabs.map(t=>`<button class="tab" data-on="${activeTab===t?1:0}" data-tab="${t}">${t}<span class="ct tnum">${cnt[t]}</span></button>`).join('');
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;renderList();renderTabs();});
+}
+function areaChip(a){if(a==null||a==='')return'';const n=parseFloat(a);if(isNaN(n))return'';return n<=85?`<span class="chip ok tnum">전용 ${n}㎡ · 청약 OK</span>`:`<span class="chip warn tnum">전용 ${n}㎡ · 청약 영향 ⚠</span>`;}
+function depositChip(d){if(d==null||d==='')return'';const n=parseFloat(d);if(isNaN(n))return'';return `<span class="chip deposit tnum">보증금 ${n}억${n>5?' · 예산↑?':''}</span>`;}
+function renderList(){
+  let items=[...state.properties];
+  if(activeTab!=='전체') items=items.filter(p=>p.status===activeTab);
+  if(sortMode==='score') items.sort((a,b)=>((b.aiScore??-1)-(a.aiScore??-1))||(ORDER[a.status]-ORDER[b.status]));
+  else items.sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||(b.created-a.created));
+  const el=document.getElementById('list');
+  if(!items.length){el.innerHTML=`<div class="empty"><div class="big">${activeTab==='전체'?'아직 등록된 매물이 없어요':'이 상태의 매물이 없어요'}</div>${activeTab==='전체'?'＋ 매물 추가로 첫 후보를 올려보세요.':'다른 탭을 눌러보세요.'}</div>`;return;}
+  el.innerHTML=items.map(p=>`<div class="card ${(p.status==='탈락'||p.status==='보류')?'dim':''}" data-st="${p.status}">
+    <div class="c-top"><div><div class="c-name">${esc(p.name||'(이름 없음)')}</div>${p.loc?`<div class="c-loc">🚇 ${esc(p.loc)}</div>`:''}</div>
+    <span class="pill" style="background:var(${SC[p.status]})">${p.status}</span></div>
+    <div class="c-meta">${depositChip(p.deposit)}${areaChip(p.area)}${p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}${p.lat?'<span class="chip geo">📍 위치 저장됨</span>':''}</div>
+    ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
+    <div class="c-actions">
+      ${p.lat?`<button data-locate="${p.id}">🗺️ 지도에서 보기</button>`:''}
+      <a class="naver" href="${naverUrl(p)}" target="_blank">📍 네이버지도</a>
+      <a class="hogang" href="${siteUrl('hogang',p.name)}" target="_blank">🏠 호갱노노</a>
+      <a class="rt" href="${siteUrl('rt',p.name)}" target="_blank">📊 실거래가</a>
+      <button data-ai="${p.id}">✨ AI 분석</button>
+      <button data-edit="${p.id}">수정</button><button data-del="${p.id}">삭제</button>
+    </div>
+    ${aiBlock(p)}${checklistHTML(p)}</div>`).join('');
+  el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEdit(b.dataset.edit));
+  el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delProp(b.dataset.del));
+  el.querySelectorAll('[data-locate]').forEach(b=>b.onclick=()=>locate(b.dataset.locate));
+  el.querySelectorAll('[data-ai]').forEach(b=>b.onclick=()=>aiAnalyze(b.dataset.ai));
+}
+function aiBlock(p){
+  if(p._aiLoading) return `<div class="aiload">✨ AI가 분석 중…</div>`;
+  if(!p.aiReport && !p.aiComment) return '';
+  let h='<div class="airep"><div class="arh">✨ AI 분석</div>';
+  if(p.aiReport){ h+=`<div>${esc(p.aiReport.summary||'')}</div>`; if(p.aiReport.risk) h+=`<div class="risk">⚠ ${esc(p.aiReport.risk)}</div>`; }
+  if(p.aiComment) h+=`<div class="cmt">“${esc(p.aiComment)}”</div>`;
+  return h+'</div>';
+}
+async function aiAnalyze(id){
+  const p=state.properties.find(x=>x.id===id); if(!p)return;
+  p._aiLoading=true; renderList();
+  try{
+    const out=await claudeAPI([{role:"user",content:
+      `우리 부부 전세 매물을 분석해줘. 설명·마크다운 금지, JSON만.\n`+
+      `형식:{"score":0~100정수,"summary":"우리 조건 대비 장단점·적합도 3~4문장","risk":"재건축·이주 등 핵심 리스크 한 줄(없으면 빈 문자열)"}\n`+
+      `[우리 조건] 서울시 內 필수, 전용 85㎡ 이하 필수, 보증금 목표 ${state.settings.targetDeposit}억, 9호선 선호. 2028 매수 전 브릿지 전세.\n`+
+      `[매물] 이름:${p.name||'?'} / 위치:${p.loc||'?'} / 보증금:${p.deposit||'?'}억 / 전용:${p.area||'?'}㎡ / 메모:${p.memo||'없음'}\n`+
+      `시세·평판·재건축 단계는 web_search로 확인.`}],
+      [{type:"web_search_20250305",name:"web_search"}]);
+    const j=parseJSON(out);
+    if(j){ p.aiReport={summary:j.summary||'',risk:j.risk||''}; if(j.score!=null) p.aiScore=Math.max(0,Math.min(100,Math.round(j.score))); }
+    else { p.aiReport={summary:'분석 결과를 읽지 못했어요. 다시 시도해 주세요.',risk:''}; }
+  }catch(e){ p.aiReport={summary:'AI 응답을 받지 못했어요. 서버의 ANTHROPIC_API_KEY 설정을 확인해주세요.',risk:''}; }
+  p._aiLoading=false; save(); renderList();
+}
+function locate(id){
+  const p=state.properties.find(x=>x.id===id); if(!p||!p.lat)return;
+  document.getElementById('mapcard').classList.remove('collapsed');
+  document.getElementById('mapToggle').textContent='접기';
+  waitLeaflet(()=>{overview.setView([p.lat,p.lng],16);overview.invalidateSize();
+    const m=ovMarkers.find(mk=>{const ll=mk.getLatLng();return ll.lat===p.lat&&ll.lng===p.lng;}); if(m)m.openPopup();});
+  document.getElementById('mapcard').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+const form=document.getElementById('form');
+function clearForm(){['editId','f_name','f_loc','f_deposit','f_area','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');tempChecks=null;clearFormPin();}
+function openForm(){form.classList.add('open');initFormMap();document.getElementById('f_name').focus();}
+function closeForm(){form.classList.remove('open');clearForm();}
+document.getElementById('toggleForm').onclick=()=>{ if(form.classList.contains('open'))closeForm(); else {clearForm();openForm();} };
+document.getElementById('cancelBtn').onclick=closeForm;
+
+function openEdit(id){
+  const p=state.properties.find(x=>x.id===id); if(!p)return;
+  document.getElementById('editId').value=p.id;
+  document.getElementById('f_name').value=p.name||'';
+  document.getElementById('f_loc').value=p.loc||'';
+  document.getElementById('f_deposit').value=p.deposit??'';
+  document.getElementById('f_area').value=p.area??'';
+  document.getElementById('f_memo').value=p.memo||'';
+  openForm();
+  if(p.lat&&p.lng) setFormPin(p.lat,p.lng,true); else clearFormPin();
+  document.getElementById('panel-props').scrollIntoView({behavior:'smooth',block:'start'});
+}
+document.getElementById('saveBtn').onclick=()=>{
+  const name=document.getElementById('f_name').value.trim();
+  if(!name){const f=document.getElementById('f_name');f.focus();f.style.borderColor='var(--s-drop)';return;}
+  const cur=document.getElementById('editId').value;
+  const existing=cur?state.properties.find(x=>x.id===cur):null;
+  const data={
+    name, loc:document.getElementById('f_loc').value.trim(),
+    deposit:document.getElementById('f_deposit').value, area:document.getElementById('f_area').value,
+    memo:document.getElementById('f_memo').value.trim(),
+    status:existing?existing.status:'관심',
+    lat:tempLatLng?tempLatLng.lat:(existing?existing.lat:null),
+    lng:tempLatLng?tempLatLng.lng:(existing?existing.lng:null),
+    checks:Object.assign({}, existing?existing.checks:{}, tempChecks||{}),
+  };
+  if(existing) Object.assign(existing,data);
+  else state.properties.push({id:'m'+Date.now(),created:Date.now(),...data});
+  closeForm(); save(); renderProps(); refreshOverview();
+};
+function delProp(id){if(!confirm('이 매물을 삭제할까요?'))return;state.properties=state.properties.filter(x=>x.id!==id);save();renderProps();refreshOverview();}
+
+document.getElementById('list').addEventListener('click',e=>{
+  const tog=e.target.closest('[data-cktoggle]');
+  if(tog){ tog.closest('.ck').classList.toggle('open'); return; }
+  const item=e.target.closest('.ck-item');
+  if(item){
+    if(e.target.closest('a')) return;
+    const [pid,cid]=item.dataset.ck.split('|');
+    const p=state.properties.find(x=>x.id===pid); if(!p)return;
+    p.checks=p.checks||{}; p.checks[cid]=!p.checks[cid];
+    item.dataset.on=p.checks[cid]?'1':'0';
+    const ck=item.closest('.ck');
+    const done=CHECKLIST.filter(c=>p.checks[c.id]).length;
+    ck.querySelector('.cnt').textContent=done+'/'+CHECKLIST.length;
+    ck.querySelector('.bar i').style.width=Math.round(done/CHECKLIST.length*100)+'%';
+    save(); return;
+  }
+  const pill=e.target.closest('.pill'); if(!pill)return;
+  const card=pill.closest('.card');
+  const p=state.properties.find(x=>x.id===card.querySelector('[data-edit]').dataset.edit); if(!p)return;
+  const opts=['관심','방문예정','검토중','후보확정','보류','탈락'];
+  p.status=opts[(opts.indexOf(p.status)+1)%opts.length];
+  save(); renderProps(); refreshOverview();
+});
+
+function runSiteSearch(site){
+  const q=document.getElementById('siteSearch').value.trim();
+  if(!q){document.getElementById('siteSearch').focus();return;}
+  window.open(siteUrl(site,q),'_blank');
+}
+document.querySelectorAll('.searchbar .site').forEach(b=>b.onclick=()=>runSiteSearch(b.dataset.site));
+document.getElementById('siteSearch').addEventListener('keydown',e=>{ if(e.key==='Enter') runSiteSearch('land'); });
+
+function renderPrep(){
+  document.getElementById('prep').innerHTML=state.prep.map(t=>`<div class="task" data-done="${t.done?1:0}" data-id="${t.id}"><div class="box">${CHECK}</div><div class="tx">${esc(t.tx)}${t.sub?`<small>${esc(t.sub)}</small>`:''}</div></div>`).join('');
+  document.querySelectorAll('#prep .task').forEach(el=>el.onclick=()=>{const t=state.prep.find(x=>x.id===el.dataset.id);t.done=!t.done;save();renderPrep();});
+}
+function renderSteps(){
+  document.getElementById('steps').innerHTML=state.steps.map((s,i)=>`<div class="step" data-done="${s.done?1:0}" data-id="${s.id}"><div class="num tnum">${s.done?'✓':i+1}</div><div class="stx">${esc(s.tx)}${s.sub?`<small>${esc(s.sub)}</small>`:''}</div></div>`).join('');
+  document.querySelectorAll('#steps .step').forEach(el=>el.onclick=()=>{const s=state.steps.find(x=>x.id===el.dataset.id);s.done=!s.done;save();renderSteps();});
+}
+function renderProps(){renderStats();renderTabs();renderList();renderPrep();renderSteps();renderWeights();}
+
+/* ============ v2: 가중치 · 자동 평가 · 정렬 ============ */
+const WEIGHTS=[['commute','통근'],['budget','예산'],['area','면적'],['complex','단지조건'],['risk','리스크']];
+let sortMode='status';
+function renderWeights(){
+  const w=state.settings.weights||{};
+  const el=document.getElementById('weights'); if(!el)return;
+  el.innerHTML=WEIGHTS.map(([k,ko])=>`<div class="wrow"><label>${ko}</label><input type="range" min="1" max="5" step="1" data-w="${k}" value="${w[k]||3}"><span class="wv tnum">${w[k]||3}</span></div>`).join('');
+  el.querySelectorAll('input[data-w]').forEach(inp=>{
+    inp.oninput=()=>{ state.settings.weights[inp.dataset.w]=+inp.value; inp.nextElementSibling.textContent=inp.value; save(); };
+  });
+}
+function weightLine(){const w=state.settings.weights||{};return WEIGHTS.map(([k,ko])=>`${ko} ${w[k]||3}`).join(', ');}
+document.getElementById('evalBtn').onclick=async()=>{
+  const list=state.properties.filter(p=>p.status!=='탈락');
+  if(!list.length){alert('평가할 매물이 없어요. 먼저 매물을 추가하세요.');return;}
+  const btn=document.getElementById('evalBtn'); btn.disabled=true; const old=btn.textContent;
+  let done=0;
+  for(const p of list){
+    btn.textContent=`평가 중 ${++done}/${list.length}…`;
+    try{
+      const out=await claudeAPI([{role:"user",content:
+        `우리 부부 전세 매물을 0~100점으로 채점하고 한 줄 코멘트. 설명·마크다운 금지, JSON만.\n`+
+        `형식:{"score":정수,"comment":"한 줄"}\n`+
+        `[우리 조건] 서울시 內 필수, 전용 85㎡ 이하 필수, 보증금 목표 ${state.settings.targetDeposit}억, 9호선 선호.\n`+
+        `[가중치 1~5] ${weightLine()}.\n`+
+        `[매물] 이름:${p.name||'?'} / 위치:${p.loc||'?'} / 보증금:${p.deposit||'?'}억 / 전용:${p.area||'?'}㎡ / 메모:${p.memo||'없음'}\n`+
+        `재건축 이주 리스크가 크면 감점.`}],
+        [{type:"web_search_20250305",name:"web_search"}]);
+      const j=parseJSON(out);
+      if(j&&j.score!=null){ p.aiScore=Math.max(0,Math.min(100,Math.round(j.score))); p.aiComment=j.comment||''; save(); renderList(); }
+    }catch(e){ btn.textContent='AI 연결 실패 — 앱에서 열어주세요'; setTimeout(()=>{btn.disabled=false;btn.textContent=old;},1800); return; }
+  }
+  sortMode='score';
+  const sb=document.getElementById('sortBtn'); sb.dataset.on='1'; sb.textContent='정렬: AI점수순';
+  save(); renderList();
+  btn.disabled=false; btn.textContent=old;
+};
+document.getElementById('sortBtn').onclick=()=>{
+  sortMode=sortMode==='score'?'status':'score';
+  const sb=document.getElementById('sortBtn'); sb.dataset.on=sortMode==='score'?'1':'0';
+  sb.textContent=sortMode==='score'?'정렬: AI점수순':'정렬: 상태순';
+  renderList();
+};
+
+/* ============ 내보내기 / 가져오기 ============ */
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+function makeBackup(){
+  const payload={v:3, savedAt:new Date().toISOString(), state};
+  return '스위티홈::'+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+}
+function readBackup(code){
+  try{
+    let c=code.trim();
+    if(c.startsWith('스위티홈::')) c=c.slice('스위티홈::'.length);
+    else if(c.startsWith('집구하기맵::')) c=c.slice('집구하기맵::'.length);
+    const json=decodeURIComponent(escape(atob(c.trim())));
+    const o=JSON.parse(json);
+    if(o&&o.state) return {kind:'full',state:o.state};
+    if(o&&Array.isArray(o.properties)) return {kind:'legacy',properties:o.properties,prep:o.prep,steps:o.steps};
+    return null;
+  }catch(e){return null;}
+}
+
+document.getElementById('exportBtn').onclick=()=>{
+  document.getElementById('exportText').value=makeBackup();
+  document.getElementById('exportOk').textContent='';
+  openModal('exportModal');
+};
+document.getElementById('copyExport').onclick=async()=>{
+  const ta=document.getElementById('exportText'); const ok=document.getElementById('exportOk');
+  try{ await navigator.clipboard.writeText(ta.value); ok.textContent='✓ 복사됐어요. 안전한 곳에 붙여넣어 보관하세요.'; }
+  catch(e){
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); ok.textContent='✓ 복사됐어요. 안전한 곳에 붙여넣어 보관하세요.'; }
+    catch(e2){ ok.textContent='위 칸을 전체 선택(Ctrl/Cmd+A) 후 복사(Ctrl/Cmd+C) 해주세요.'; }
+  }
+};
+document.getElementById('importBtn').onclick=()=>{
+  document.getElementById('importText').value='';
+  document.getElementById('importOk').textContent='';
+  openModal('importModal');
+};
+document.getElementById('doImport').onclick=()=>{
+  const code=document.getElementById('importText').value;
+  const ok=document.getElementById('importOk');
+  const o=readBackup(code);
+  if(!o){ ok.style.color='var(--s-drop)'; ok.textContent='백업 코드를 읽을 수 없어요. 코드 전체를 정확히 붙여넣었는지 확인해주세요.'; return; }
+  if(o.kind==='full'){
+    if(!confirm('지금 보드 내용을 백업본으로 전부 교체할까요?')) return;
+    state=Object.assign(structuredClone(DEFAULT), o.state);
+    state.assets=Object.assign(structuredClone(DEFAULT.assets), state.assets||{});
+    state.settings=Object.assign(structuredClone(DEFAULT.settings), state.settings||{});
+    state.actions=state.actions||structuredClone(DEFAULT.actions);
+    state.properties=(state.properties||[]).map(p=>(p.checks=p.checks||{},p));
+    save(); renderAll();
+    ok.style.color='var(--s-final)'; ok.textContent=`✓ 전체 보드를 복원했어요. (매물 ${state.properties.length}곳)`;
+  } else {
+    if(state.properties.length && !confirm(`현재 매물 ${state.properties.length}곳을 백업본(매물 ${o.properties.length}곳)으로 교체할까요?`)) return;
+    state.properties=o.properties||[];
+    state.properties.forEach(p=>{if(!p.checks)p.checks={};});
+    if(o.prep)state.prep=o.prep; if(o.steps)state.steps=o.steps;
+    save(); renderAll();
+    ok.style.color='var(--s-final)'; ok.textContent=`✓ 매물 ${state.properties.length}곳을 복원했어요.`;
+  }
+  setTimeout(()=>closeModal('importModal'),1300);
+};
+
+/* ============ v2: AI 상담 ============ */
+const CHAT_CHIPS=['지금 뭐부터 해야 해?','우리 실탄으로 전세 가능?','후보 매물 비교해줘','8월 이자지원 준비 체크'];
+function stateSnapshot(){
+  const items=assetItems();
+  const aLine=items.length?items.map(it=>`  · ${it.owner} ${it.name} ${comma(it.amount)}원 (${it.type}/${it.liquidity})`).join('\n'):'  (없음)';
+  const props=state.properties.map(p=>`- ${p.name||'무명'} | ${p.status} | 보증금 ${p.deposit||'?'}억 | 전용 ${p.area||'?'}㎡ | ${p.loc||''}${p.aiScore!=null?` | AI ${p.aiScore}점`:''}`).join('\n')||'(없음)';
+  const acts=state.actions.filter(x=>!x.done).map(x=>`- ${x.text}`).join('\n')||'(없음)';
+  return `[자산] 즉시 동원 가능액 ${won(sumMobImmediate())}(=지금 집 자금 실투입 가능), 총 자산 ${won(sumAmount())}, 만기 포함 전체 동원 ${won(sumMob())}. 소유자별 규범 ${won(sumByOwner('규범'))}/연정 ${won(sumByOwner('연정'))}/공동 ${won(sumByOwner('공동'))}. 예비비 ${state.assets.reserve||0}만원.\n${aLine}\n메모:${state.assets.notes||'없음'}\n[매물]\n${props}\n[미완료 액션]\n${acts}`;
+}
+function chatSystem(){
+  return `당신은 1995년생 예비부부(2027.2 결혼, 서울 전세 후 2028 매수)의 내집마련 코치입니다. 한국어로 간결하고 실용적으로, 우선순위 액션 위주로 답하세요. 조건: 서울시 內 필수, 전용 85㎡ 이하 필수, 전세 보증금 목표 ${state.settings.targetDeposit}억, 9호선 선호. 최신 규제·금리·시세는 web_search로 확인. 답변은 핵심 위주로 너무 길지 않게.\n[현재 데이터]\n${stateSnapshot()}`;
+}
+function renderChat(){
+  const m=document.getElementById('msgs');
+  const chips=document.getElementById('chatchips');
+  chips.innerHTML=CHAT_CHIPS.map(c=>`<button>${c}</button>`).join('');
+  chips.querySelectorAll('button').forEach(b=>b.onclick=()=>{document.getElementById('chatInput').value=b.textContent;sendChat();});
+  const h=state.chatHistory||[];
+  if(!h.length){ m.innerHTML=`<div class="chatempty">안녕하세요 👋 우리 자산·매물·액션을 보고 있어요.<br>아래 버튼을 누르거나 직접 물어보세요.</div>`; return; }
+  m.innerHTML=h.map(x=>`<div class="msg ${x.role==='user'?'user':'ai'}${x.think?' think':''}">${esc(x.text)}</div>`).join('');
+  m.scrollTop=m.scrollHeight;
+}
+async function sendChat(){
+  const inp=document.getElementById('chatInput'); const t=inp.value.trim(); if(!t)return;
+  inp.value='';
+  state.chatHistory.push({role:'user',text:t});
+  state.chatHistory.push({role:'assistant',text:'생각 중…',think:true});
+  renderChat();
+  const btn=document.getElementById('chatSend'); btn.disabled=true;
+  try{
+    const msgs=state.chatHistory.filter(x=>!x.think).map(x=>({role:x.role,content:x.text}));
+    const out=await claudeAPI(msgs,[{type:"web_search_20250305",name:"web_search"}],chatSystem());
+    state.chatHistory=state.chatHistory.filter(x=>!x.think);
+    state.chatHistory.push({role:'assistant',text:out||'(응답이 비었어요)'});
+  }catch(e){
+    state.chatHistory=state.chatHistory.filter(x=>!x.think);
+    state.chatHistory.push({role:'assistant',text:'AI 응답을 받지 못했어요. 서버에 API 키가 설정되면 상담이 동작해요.'});
+  }
+  btn.disabled=false; save(); renderChat();
+}
+document.getElementById('chatSend').onclick=sendChat;
+document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
+
+/* ============ boot ============ */
+function renderAll(){
+  renderDash();
+  renderAssets();
+  renderProps();
+  renderRegNews();
+  if(activePanel==='props'){ initOverview(); }
+}
+load();
+</script>
