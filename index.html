@@ -186,7 +186,8 @@
   .mapcard .mh .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:10.5px;color:var(--ink-soft);font-weight:600;align-items:center;}
   .mapcard .mh .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:3px;vertical-align:middle;}
   .toggle{font-size:11.5px;font-weight:700;color:var(--ink-soft);padding:4px 9px;border-radius:8px;border:1px solid var(--hairline);}
-  #overviewMap{height:240px;width:100%;background:#dfe3df;}
+  #overviewMap{height:240px;width:100%;background:#dfe3df;transition:height .25s ease;}
+  .mapcard.expanded #overviewMap{height:70vh;}
   .mapcard.collapsed #overviewMap{display:none;}
 
   .grid{display:grid;grid-template-columns:1fr 296px;gap:22px;align-items:start;}
@@ -656,6 +657,7 @@
           <span><i style="background:#B89233"></i>검토</span>
           <span><i style="background:#C7853A"></i>방문</span>
           <span><i style="background:#6B7C93"></i>관심</span>
+          <button class="toggle" id="mapExpand">크게 보기</button>
           <button class="toggle" id="mapToggle">접기</button>
         </div>
       </div>
@@ -977,7 +979,7 @@ function switchPanel(name){
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+name));
   if(name==='dash') renderDash();
   if(name==='assets') renderAssets();
-  if(name==='props'){ initOverview(); setTimeout(()=>overview&&overview.invalidateSize(),80); }
+  if(name==='props'){ initOverview(); setTimeout(()=>{overview&&overview.invalidateSize();autoGeocode();},80); }
   if(name==='chat') renderChat();
   if(name==='regnews') renderRegNews();
   if(name==='actions') renderActions();
@@ -1534,7 +1536,7 @@ function waitLeaflet(cb){ if(typeof L!=='undefined'){cb();} else {setTimeout(()=
 function initOverview(){
   waitLeaflet(()=>{
     if(overview){refreshOverview();return;}
-    overview=L.map('overviewMap',{scrollWheelZoom:false}).setView(CENTER,13);
+    overview=L.map('overviewMap',{scrollWheelZoom:true}).setView(CENTER,13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(overview);
     refreshOverview();
   });
@@ -1557,6 +1559,28 @@ document.getElementById('mapToggle').onclick=()=>{
   document.getElementById('mapToggle').textContent=c.classList.contains('collapsed')?'펼치기':'접기';
   if(!c.classList.contains('collapsed')) setTimeout(()=>overview&&overview.invalidateSize(),80);
 };
+document.getElementById('mapExpand').onclick=()=>{
+  const c=document.getElementById('mapcard');
+  c.classList.toggle('expanded');
+  document.getElementById('mapExpand').textContent=c.classList.contains('expanded')?'작게 보기':'크게 보기';
+  setTimeout(()=>overview&&overview.invalidateSize(),300);
+};
+
+async function autoGeocode(){
+  const noCoord=state.properties.filter(p=>!p.lat&&(p.name||p.loc));
+  if(!noCoord.length) return;
+  for(const p of noCoord){
+    const q=((p.name||'')+' '+(p.loc||'')).trim();
+    try{
+      const out=await claudeAPI([{role:'user',content:
+        `대한민국 서울에 있는 '${q}'의 정확한 위도·경도를 JSON만 출력. 설명 금지.\n형식:{"lat":숫자,"lng":숫자,"found":true}. 못 찾으면 {"found":false}.`}],
+        [{type:'web_search_20250305',name:'web_search'}]);
+      const j=parseJSON(out);
+      if(j&&j.found&&j.lat&&j.lng){ p.lat=j.lat; p.lng=j.lng; }
+    }catch(e){ break; }
+  }
+  if(noCoord.some(p=>p.lat)) { save(); refreshOverview(); }
+}
 
 function initFormMap(){
   waitLeaflet(()=>{
