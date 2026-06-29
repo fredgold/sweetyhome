@@ -1,14 +1,38 @@
-// 스위티홈 — Anthropic Messages API 프록시 (Vercel Serverless Function)
-//
-// 프런트엔드(claudeAPI)는 키 없이 이 엔드포인트(/api/messages)로 호출하고,
-// 이 함수가 서버에 보관된 ANTHROPIC_API_KEY로 실제 Anthropic API에 전달합니다.
-//
-// 필요한 환경변수 (Vercel > Settings > Environment Variables):
-//   ANTHROPIC_API_KEY  (필수)  — https://console.anthropic.com 에서 발급
-//   ANTHROPIC_MODEL    (선택)  — 기본값 "claude-sonnet-4-6"
-//   APP_SHARED_SECRET  (선택)  — 설정 시, 요청 헤더 x-app-secret 와 일치해야 통과(무단 사용 방지)
-
 import { verifySession, cors, rateLimit } from './_auth.js';
+
+function convertContent(content) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content.map(item => {
+    if (item.type === 'text') return { type: 'input_text', text: item.text };
+    if (item.type === 'image' && item.source?.type === 'base64') {
+      return { type: 'input_image', image_url: `data:${item.source.media_type};base64,${item.source.data}` };
+    }
+    return null;
+  }).filter(Boolean);
+}
+
+function toOpenAIInput(messages, system) {
+  const input = [];
+  if (system) {
+    input.push({ role: 'system', content: system });
+  }
+  for (const msg of messages) {
+    const converted = convertContent(msg.content);
+    input.push({ role: msg.role, content: converted });
+  }
+  return input;
+}
+
+function toAnthropicResponse(data) {
+  const outputMsg = (data.output || []).find(o => o.type === 'message');
+  if (!outputMsg) return { content: [{ type: 'text', text: '' }] };
+  const texts = (outputMsg.content || [])
+    .filter(c => c.type === 'output_text')
+    .map(c => c.text)
+    .join('\n');
+  return { content: [{ type: 'text', text: texts }] };
+}
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -20,42 +44,48 @@ export default async function handler(req, res) {
   if (!await verifySession(req, res)) return;
   if (!await rateLimit(req, res, { prefix: 'ai', max: 30, windowSeconds: 3600 })) return;
 
-  const key = process.env.ANTHROPIC_API_KEY || process.env.sweetyhome;
+  const key = process.env.OPENAI_API_KEY;
   if (!key) {
-    res.status(500).json({ error: "서버에 ANTHROPIC_API_KEY가 설정되지 않았습니다." });
-    return;
-  }
-
-  // (선택) 간단한 공유 비밀번호로 무단 호출 차단
-  const secret = process.env.APP_SHARED_SECRET;
-  if (secret && req.headers["x-app-secret"] !== secret) {
-    res.status(401).json({ error: "unauthorized" });
+    res.status(500).json({ error: "서버에 OPENAI_API_KEY가 설정되지 않았습니다." });
     return;
   }
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+    const messages = Array.isArray(body.messages) ? body.messages : [];
 
     const payload = {
-      model: body.model || process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
-      max_tokens: Math.min(Number(body.max_tokens) || 1024, 2048),
-      messages: Array.isArray(body.messages) ? body.messages : [],
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+      input: toOpenAIInput(messages, body.system),
+      max_output_tokens: Math.min(Number(body.max_tokens) || 1024, 2048),
     };
-    if (body.system) payload.system = body.system;
-    if (body.tools) payload.tools = body.tools; // web_search 등 그대로 전달
 
-    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+    if (body.tools && body.tools.length) {
+      payload.tools = [{ type: "web_search_preview" }];
+    }
+
+    const upstream = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
+        "authorization": "Bearer " + key,
       },
       body: JSON.stringify(payload),
     });
 
     const data = await upstream.json();
-    res.status(upstream.status).json(data);
+
+    if (data.error) {
+      const msg = data.error.message || '';
+      if (msg.includes('insufficient_quota') || msg.includes('billing')) {
+        res.status(upstream.status || 402).json({ error: { message: 'credit balance is zero' } });
+        return;
+      }
+      res.status(upstream.status || 500).json({ error: { message: msg || 'OpenAI API 오류' } });
+      return;
+    }
+
+    res.status(200).json(toAnthropicResponse(data));
   } catch (e) {
     res.status(500).json({ error: String((e && e.message) || e) });
   }
