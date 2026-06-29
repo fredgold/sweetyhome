@@ -305,6 +305,27 @@
   .step[data-done="1"] .stx{color:var(--ink-faint);}
   .step .stx small{display:block;font-weight:500;color:var(--ink-faint);}
   .saved{font-size:10.5px;color:var(--ink-faint);text-align:center;margin-top:18px;font-weight:600;}
+  /* ===== 로그인 ===== */
+  .login-overlay{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-overlay.hidden{display:none;}
+  .login-box{background:var(--surface);border:1px solid var(--hairline);border-radius:20px;padding:36px 32px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.12);text-align:center;}
+  .login-box .login-mark{font-size:40px;margin-bottom:12px;}
+  .login-box h1{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:4px;}
+  .login-box .login-sub{font-size:13px;color:var(--ink-soft);font-weight:500;margin-bottom:24px;}
+  .login-box .login-q{font-size:14px;font-weight:700;color:var(--line9-deep);margin-bottom:12px;}
+  .login-box input{width:100%;border:2px solid var(--hairline);border-radius:12px;padding:13px 16px;font-size:16px;font-weight:700;text-align:center;background:#fff;letter-spacing:.05em;}
+  .login-box input:focus{outline:none;border-color:var(--line9);}
+  .login-box input::placeholder{font-weight:500;color:var(--ink-faint);letter-spacing:0;}
+  .login-box .login-hint{font-size:11px;color:var(--ink-faint);margin-top:8px;}
+  .login-box .login-err{font-size:12px;color:var(--s-drop);font-weight:700;margin-top:8px;min-height:18px;}
+  .login-box .login-btn{width:100%;background:var(--ink);color:#fff;font-size:14px;font-weight:700;padding:13px;border-radius:12px;margin-top:14px;}
+  .login-box .login-guest{font-size:12px;color:var(--ink-faint);font-weight:600;margin-top:16px;cursor:pointer;text-decoration:underline;}
+  .login-box .login-guest:hover{color:var(--ink-soft);}
+
+  .guest-badge{display:none;font-size:10.5px;font-weight:700;background:#FFF3E0;color:#E65100;border-radius:7px;padding:4px 9px;margin-left:8px;}
+  body.guest .guest-badge{display:inline-block;}
+  body.guest .privacy-wall{filter:blur(6px);pointer-events:none;user-select:none;}
+
   /* ===== AI 상태 ===== */
   .ai-status{margin-top:8px;padding:9px 12px;border-radius:9px;font-size:12px;font-weight:600;line-height:1.5;}
   .ai-status.warn{background:#FFF3E0;border:1px solid #FFB74D;color:#E65100;}
@@ -518,12 +539,26 @@
   }
 </style>
 
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-mark">🏡</div>
+    <h1>스위티홈</h1>
+    <div class="login-sub">테디 ♥ 연정 · 결혼 & 내집마련 준비 보드</div>
+    <div class="login-q">우리 결혼날짜가 언제인가요?</div>
+    <input type="text" id="loginInput" placeholder="예: 2027.2.1" autocomplete="off">
+    <div class="login-hint">숫자만 입력해도 돼요</div>
+    <div class="login-err" id="loginErr"></div>
+    <button class="login-btn" id="loginBtn">입장하기</button>
+    <div class="login-guest" id="loginGuest">게스트로 구경하기</div>
+  </div>
+</div>
+
 <div class="wrap">
   <header>
     <div class="brand">
       <span class="mark">🏡</span>
       <div>
-        <h1>스위티홈</h1>
+        <h1>스위티홈 <span class="guest-badge" id="guestBadge">게스트</span></h1>
         <span class="sub">테디 ♥ 연정 · 결혼 & 내집마련 준비 보드</span>
       </div>
     </div>
@@ -553,7 +588,7 @@
     <div class="dcards">
       <div class="dcard">
         <div class="dt">💰 예상 실탄 <a data-goto="assets">자산 관리 →</a></div>
-        <div id="d_assetSummary"></div>
+        <div id="d_assetSummary" class="privacy-wall"></div>
       </div>
       <div class="dcard">
         <div class="dt">🏘️ 매물 현황 <a data-goto="props">매물 보기 →</a></div>
@@ -580,7 +615,7 @@
   </section>
 
   <!-- ===================== 자산 ===================== -->
-  <section class="panel" id="panel-assets">
+  <section class="panel privacy-wall" id="panel-assets">
     <div class="asec">
       <div class="ah">
         <h2>💰 우리 자산</h2>
@@ -854,6 +889,33 @@
 </div>
 
 <script>
+/* ============ 로그인 ============ */
+const WEDDING='20270201';
+function checkLogin(input){
+  const digits=(input||'').replace(/[^\d]/g,'');
+  return digits===WEDDING || digits==='2027021' || digits==='202721' || digits==='20272';
+}
+function unlockApp(isGuest){
+  document.getElementById('loginOverlay').classList.add('hidden');
+  if(isGuest){ document.body.classList.add('guest'); }
+  else { sessionStorage.setItem('sh_auth','1'); }
+}
+(function(){
+  if(sessionStorage.getItem('sh_auth')==='1'){
+    document.getElementById('loginOverlay').classList.add('hidden');
+    return;
+  }
+  document.getElementById('loginBtn').onclick=()=>{
+    const v=document.getElementById('loginInput').value.trim();
+    if(checkLogin(v)){ unlockApp(false); }
+    else { document.getElementById('loginErr').textContent='날짜가 맞지 않아요. 다시 확인해주세요!'; }
+  };
+  document.getElementById('loginInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter') document.getElementById('loginBtn').click();
+  });
+  document.getElementById('loginGuest').onclick=()=>unlockApp(true);
+})();
+
 const CHECK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 const SC={관심:'--s-interest',방문예정:'--s-visit',검토중:'--s-review',후보확정:'--s-final',보류:'--s-hold',탈락:'--s-drop'};
 const HEX={관심:'#6B7C93',방문예정:'#C7853A',검토중:'#B89233',후보확정:'#4F8A5B',보류:'#8A8F8A',탈락:'#B16A63'};
