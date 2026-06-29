@@ -304,12 +304,10 @@
   .step[data-done="1"] .stx{color:var(--ink-faint);}
   .step .stx small{display:block;font-weight:500;color:var(--ink-faint);}
   .saved{font-size:10.5px;color:var(--ink-faint);text-align:center;margin-top:18px;font-weight:600;}
-  /* ===== API 상태 배너 ===== */
-  .api-banner{display:none;padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:600;line-height:1.5;margin-bottom:14px;gap:8px;align-items:center;}
-  .api-banner.warn{display:flex;background:#FFF3E0;border:1px solid #FFB74D;color:#E65100;}
-  .api-banner.ok{display:flex;background:var(--money-wash);border:1px solid var(--money);color:var(--money-deep);}
-  .api-banner .dismiss{margin-left:auto;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px;cursor:pointer;opacity:.7;}
-  .api-banner .dismiss:hover{opacity:1;background:rgba(0,0,0,.06);}
+  /* ===== AI 상태 ===== */
+  .ai-status{margin-top:8px;padding:9px 12px;border-radius:9px;font-size:12px;font-weight:600;line-height:1.5;}
+  .ai-status.warn{background:#FFF3E0;border:1px solid #FFB74D;color:#E65100;}
+  .ai-status.ok{background:var(--money-wash);color:var(--money-deep);}
 
   /* ===== v3: 액션 전체 ===== */
   .actfull .actrow{padding:11px 0;}
@@ -515,8 +513,6 @@
     <button class="atab" data-panel="actions">✅ 액션</button>
   </nav>
 
-  <div class="api-banner" id="apiBanner"></div>
-
   <!-- ===================== 대시보드 ===================== -->
   <section class="panel on" id="panel-dash">
     <div class="hero">
@@ -715,7 +711,8 @@
     <div class="chatwrap">
       <div class="chathead">
         <h2>💬 AI 상담</h2>
-        <p>우리 자산·매물·액션을 모두 보고 있어요. 편하게 물어보세요. (서버에 API 키가 설정되면 답해요)</p>
+        <p>우리 자산·매물·액션을 모두 보고 있어요. 편하게 물어보세요.</p>
+        <div id="chatApiStatus"></div>
       </div>
       <div class="msgs" id="msgs"></div>
       <div class="chatchips" id="chatchips"></div>
@@ -1811,14 +1808,20 @@ function renderAll(){
 }
 load();
 
+let aiAvailable=null;
 (async()=>{
   try{
     const res=await fetch('/api/health');
     const j=await res.json();
-    const b=document.getElementById('apiBanner');
+    aiAvailable=j.ok;
+    const el=document.getElementById('chatApiStatus');
     if(!j.ok){
-      b.className='api-banner warn';
-      b.innerHTML=`<span>⚠️ AI 기능 제한: ${j.msg}</span><span class="dismiss" onclick="this.parentElement.style.display='none'">✕</span>`;
+      el.className='ai-status warn';
+      el.textContent='⚠️ AI 상담은 크레딧 충전이 필요한 기능이에요. → console.anthropic.com';
+    } else {
+      el.className='ai-status ok';
+      el.textContent='✓ AI 연결됨';
+      setTimeout(()=>el.style.display='none',3000);
     }
   }catch(e){}
 })();
