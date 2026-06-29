@@ -542,10 +542,10 @@
   <div class="login-box">
     <div class="login-mark">🏡</div>
     <h1>스위티홈</h1>
-    <div class="login-sub">테디 ♥ 연정 · 결혼 & 내집마련 준비 보드</div>
-    <div class="login-q">우리 결혼날짜가 언제인가요?</div>
-    <input type="text" id="loginInput" placeholder="예: 2027.2.1" autocomplete="off">
-    <div class="login-hint">숫자만 입력해도 돼요</div>
+    <div class="login-sub">결혼 & 내집마련 준비 보드</div>
+    <div class="login-q" id="loginQ">비밀번호를 입력해주세요</div>
+    <input type="password" id="loginInput" placeholder="숫자 4자리" autocomplete="off" inputmode="numeric" maxlength="10">
+    <div class="login-hint" id="loginHintText"></div>
     <div class="login-err" id="loginErr"></div>
     <button class="login-btn" id="loginBtn">입장하기</button>
     <div class="login-guest" id="loginGuest">게스트로 구경하기</div>
@@ -889,9 +889,10 @@
 
 <script>
 /* ============ 로그인 ============ */
+const PIN='0331';
 function checkLogin(input){
   const digits=(input||'').replace(/[^\d]/g,'');
-  return digits==='20272027' || digits==='20270227' || digits==='2027227' || digits==='202722';
+  return digits===PIN;
 }
 let isGuestMode=false;
 function unlockApp(isGuest){
@@ -913,7 +914,7 @@ function unlockApp(isGuest){
   document.getElementById('loginBtn').onclick=()=>{
     const v=document.getElementById('loginInput').value.trim();
     if(checkLogin(v)){ unlockApp(false); }
-    else { document.getElementById('loginErr').textContent='날짜가 맞지 않아요. 다시 확인해주세요!'; }
+    else { document.getElementById('loginErr').textContent='비밀번호가 맞지 않아요.'; }
   };
   document.getElementById('loginInput').addEventListener('keydown',e=>{
     if(e.key==='Enter') document.getElementById('loginBtn').click();
