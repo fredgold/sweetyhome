@@ -1,9 +1,4 @@
-import { Redis } from '@upstash/redis';
-
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL,
-  token: process.env.KV_REST_API_TOKEN,
-});
+import { redis, createSession } from './_auth.js';
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 300;
@@ -48,7 +43,8 @@ export default async function handler(req, res) {
 
     if (input === pin) {
       await redis.del(key);
-      return res.status(200).json({ ok: true });
+      const token = await createSession();
+      return res.status(200).json({ ok: true, token });
     }
 
     const newAttempts = attempts + 1;

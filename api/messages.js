@@ -8,11 +8,15 @@
 //   ANTHROPIC_MODEL    (선택)  — 기본값 "claude-sonnet-4-6"
 //   APP_SHARED_SECRET  (선택)  — 설정 시, 요청 헤더 x-app-secret 와 일치해야 통과(무단 사용 방지)
 
+import { verifySession } from './_auth.js';
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "POST only" });
     return;
   }
+
+  if (!await verifySession(req, res)) return;
 
   const key = process.env.ANTHROPIC_API_KEY || process.env.sweetyhome;
   if (!key) {

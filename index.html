@@ -891,6 +891,12 @@
 <script>
 /* ============ 로그인 ============ */
 let isGuestMode=false;
+function getToken(){ return sessionStorage.getItem('sh_token'); }
+function authHeaders(extra){
+  const h=Object.assign({'Content-Type':'application/json'},extra||{});
+  const t=getToken(); if(t) h['Authorization']='Bearer '+t;
+  return h;
+}
 function unlockApp(isGuest){
   document.getElementById('loginOverlay').classList.add('hidden');
   if(isGuest){
@@ -900,7 +906,11 @@ function unlockApp(isGuest){
     document.querySelector('.brand h1').innerHTML='스위티홈 <span class="guest-badge">데모</span>';
     document.querySelector('.brand .sub').textContent='예비부부 · 결혼 & 내집마련 준비 보드 (체험판)';
     load();
-  } else { sessionStorage.setItem('sh_auth','1'); }
+  }
+}
+function forceLogin(){
+  sessionStorage.removeItem('sh_token');
+  document.getElementById('loginOverlay').classList.remove('hidden');
 }
 async function tryLogin(){
   const btn=document.getElementById('loginBtn');
@@ -916,7 +926,7 @@ async function tryLogin(){
       body:JSON.stringify({pin:v})
     });
     const d=await r.json();
-    if(d.ok){ unlockApp(false); return; }
+    if(d.ok&&d.token){ sessionStorage.setItem('sh_token',d.token); unlockApp(false); return; }
     errEl.textContent=d.error||'비밀번호가 틀렸어요.';
     if(d.locked){
       input.disabled=true; btn.disabled=true;
@@ -927,10 +937,14 @@ async function tryLogin(){
   }catch(e){ errEl.textContent='서버 연결 실패'; }
   finally{ if(!btn.textContent.includes('잠금')){ btn.disabled=false; btn.textContent='입장하기'; } }
 }
-(function(){
-  if(sessionStorage.getItem('sh_auth')==='1'){
-    document.getElementById('loginOverlay').classList.add('hidden');
-    return;
+(async function(){
+  const token=getToken();
+  if(token){
+    try{
+      const r=await fetch('/api/state',{headers:{'Authorization':'Bearer '+token}});
+      if(r.ok){ document.getElementById('loginOverlay').classList.add('hidden'); return; }
+    }catch(e){}
+    sessionStorage.removeItem('sh_token');
   }
   document.getElementById('loginBtn').onclick=tryLogin;
   document.getElementById('loginInput').addEventListener('keydown',e=>{
@@ -940,7 +954,7 @@ async function tryLogin(){
 })();
 document.getElementById('goHome').onclick=()=>switchPanel('dash');
 document.getElementById('logoutBtn').onclick=()=>{
-  sessionStorage.removeItem('sh_auth');
+  sessionStorage.removeItem('sh_token');
   location.reload();
 };
 
@@ -1062,9 +1076,10 @@ async function load(){
   }
   let raw=null;
   try{
-    const res=await fetch('/api/state');
+    const res=await fetch('/api/state',{headers:authHeaders()});
     const j=await res.json();
     if(j.ok && j.state) raw=j.state;
+    else if(res.status===401){ forceLogin(); return; }
   }catch(e){}
   if(!raw){
     try{ const v=localStorage.getItem('sweetyhome'); if(v) raw=JSON.parse(v); }catch(e){}
@@ -1083,7 +1098,7 @@ async function save(){
   clearTimeout(syncTimer);
   syncTimer=setTimeout(async()=>{
     try{
-      const res=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state})});
+      const res=await fetch('/api/state',{method:'POST',headers:authHeaders(),body:JSON.stringify({state})});
       const j=await res.json();
       if(j.ok){ n.textContent='동기화 완료 ✓'; n.style.color='var(--s-final)'; }
       else { n.textContent='로컬 저장됨 (서버 연결 안 됨)'; n.style.color='var(--s-visit)'; }
@@ -1698,7 +1713,7 @@ document.getElementById('mapExpand').onclick=()=>{
 
 async function geocode(q){
   try{
-    const res=await fetch('/api/geocode?'+new URLSearchParams({q}));
+    const res=await fetch('/api/geocode?'+new URLSearchParams({q}),{headers:authHeaders()});
     const j=await res.json();
     if(j.ok) return {lat:j.lat,lng:j.lng,found:true};
   }catch(e){}
@@ -1748,7 +1763,7 @@ async function claudeAPI(messages,tools,system){
   const body={model:"claude-haiku-4-5-20251001",max_tokens:1000,messages};
   if(tools) body.tools=tools;
   if(system) body.system=system;
-  const res=await fetch("/api/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const res=await fetch("/api/messages",{method:"POST",headers:authHeaders(),body:JSON.stringify(body)});
   const data=await res.json();
   if(data.error){
     if(data.error.message && data.error.message.includes('credit balance')){

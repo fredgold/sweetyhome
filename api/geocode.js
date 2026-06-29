@@ -1,8 +1,12 @@
+import { verifySession } from './_auth.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'GET only' });
     return;
   }
+
+  if (!await verifySession(req, res)) return;
 
   const key = process.env.KAKAO_REST_KEY;
   if (!key) {
