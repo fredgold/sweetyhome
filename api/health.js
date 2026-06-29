@@ -1,4 +1,9 @@
+import { verifySession, cors } from './_auth.js';
+
 export default async function handler(req, res) {
+  if (cors(req, res)) return;
+  if (!await verifySession(req, res)) return;
+
   const key = process.env.ANTHROPIC_API_KEY || process.env.sweetyhome;
   if (!key) {
     res.status(200).json({ ok: false, reason: 'no_key', msg: 'API 키가 설정되지 않았어요.' });

@@ -2177,7 +2177,7 @@ load();
 
 (async()=>{
   try{
-    const res=await fetch('/api/health');
+    const res=await fetch('/api/health',{headers:authHeaders()});
     const j=await res.json();
     aiAvailable=j.ok;
     updateAiButtons();

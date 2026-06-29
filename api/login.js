@@ -1,4 +1,4 @@
-import { redis, createSession } from './_auth.js';
+import { redis, createSession, cors } from './_auth.js';
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 300;
@@ -13,6 +13,7 @@ function getClientIP(req) {
 }
 
 export default async function handler(req, res) {
+  if (cors(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'POST만 지원' });
   }
