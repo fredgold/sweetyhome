@@ -889,10 +889,9 @@
 
 <script>
 /* ============ 로그인 ============ */
-const WEDDING='20272027';
 function checkLogin(input){
   const digits=(input||'').replace(/[^\d]/g,'');
-  return digits===WEDDING;
+  return digits==='20272027' || digits==='20270227' || digits==='2027227' || digits==='202722';
 }
 let isGuestMode=false;
 function unlockApp(isGuest){
