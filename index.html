@@ -1674,9 +1674,16 @@ document.getElementById('mapExpand').onclick=()=>{
 };
 
 async function geocode(q){
-  const res=await fetch('https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q:q+' 서울',format:'json',limit:'1',countrycodes:'kr'}),{headers:{'Accept-Language':'ko'}});
-  const arr=await res.json();
-  if(arr.length) return {lat:parseFloat(arr[0].lat),lng:parseFloat(arr[0].lon),found:true};
+  try{
+    const res=await fetch('/api/geocode?'+new URLSearchParams({q}));
+    const j=await res.json();
+    if(j.ok) return {lat:j.lat,lng:j.lng,found:true};
+  }catch(e){}
+  try{
+    const res=await fetch('https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q:q+' 서울',format:'json',limit:'1',countrycodes:'kr'}),{headers:{'Accept-Language':'ko'}});
+    const arr=await res.json();
+    if(arr.length) return {lat:parseFloat(arr[0].lat),lng:parseFloat(arr[0].lon),found:true};
+  }catch(e){}
   return {found:false};
 }
 async function autoGeocode(){
