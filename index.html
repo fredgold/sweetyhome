@@ -402,6 +402,12 @@
   .ms-row input{flex:1;border:1.5px solid var(--hairline);border-radius:8px;padding:7px 9px;font-size:12px;font-weight:600;}
   .ms-row input:focus{outline:none;border-color:var(--line9);}
   .ms-row .ms-del{background:none;border:none;font-size:14px;cursor:pointer;color:var(--s-drop);padding:4px;}
+  .og-card{display:flex;gap:10px;background:#FAFAF8;border:1px solid var(--hairline);border-radius:10px;padding:10px;margin-top:8px;}
+  .og-card img{width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0;}
+  .og-card .og-info{flex:1;min-width:0;}
+  .og-card .og-title{font-size:12px;font-weight:700;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .og-card .og-desc{font-size:11px;color:var(--ink-soft);line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .og-card .og-loading{font-size:11px;color:var(--ink-faint);font-weight:600;}
 
   /* ===== v2: AI ===== */
   .chip.score{background:#EDE7F4;color:#6B4FA0;}
@@ -819,7 +825,8 @@
       <div class="adesc">인스타·블로그·뉴스에서 본 청약·매물 정보를 캡션 붙여넣기 또는 스크린샷 업로드로 스크랩하세요. AI가 핵심 정보를 추출해요.</div>
 
       <div class="scrap-input">
-        <textarea id="sc_text" placeholder="캡션·텍스트를 여기 붙여넣으세요&#10;예: [동작구 신축] 전용 59㎡ 전세 4.2억 / 입주 2027.3 / 세대수 820 / 역세권…"></textarea>
+        <textarea id="sc_text" placeholder="인스타 링크 또는 캡션·텍스트를 붙여넣으세요&#10;예: https://www.instagram.com/p/... 또는 텍스트 직접 입력"></textarea>
+        <div id="sc_ogPreview" style="display:none;"></div>
         <div class="scrap-or">또는</div>
         <label class="scrap-upload" for="sc_file">
           <span id="sc_uploadLabel">📷 스크린샷 업로드</span>
@@ -1372,7 +1379,26 @@ document.getElementById('act_suggestBtn').onclick=async()=>{
 };
 
 /* ============ 스크랩 ============ */
-let scrapImgData=null;
+let scrapImgData=null, scrapOgData=null;
+document.getElementById('sc_text').addEventListener('input',async e=>{
+  const v=e.target.value.trim();
+  const preview=document.getElementById('sc_ogPreview');
+  const igMatch=v.match(/https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel)\/[\w-]+/);
+  if(!igMatch){ preview.style.display='none'; scrapOgData=null; return; }
+  preview.style.display='block';
+  preview.innerHTML='<div class="og-card"><span class="og-loading">🔗 인스타 정보 가져오는 중…</span></div>';
+  try{
+    const r=await fetch('/api/oembed?'+new URLSearchParams({url:igMatch[0]}),{headers:authHeaders()});
+    const d=await r.json();
+    if(d.ok){
+      scrapOgData=d;
+      preview.innerHTML=`<div class="og-card">${d.image?`<img src="${d.image}" alt="">`:''}<div class="og-info"><div class="og-title">${esc(d.title||'Instagram')}</div><div class="og-desc">${esc(d.description||'')}</div></div></div>`;
+    } else {
+      preview.innerHTML=`<div class="og-card"><span class="og-loading">⚠️ ${esc(d.error||'추출 실패')}</span></div>`;
+      scrapOgData=null;
+    }
+  }catch(err){ preview.innerHTML='<div class="og-card"><span class="og-loading">⚠️ 연결 실패</span></div>'; scrapOgData=null; }
+});
 document.getElementById('sc_file').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
   const reader=new FileReader();
