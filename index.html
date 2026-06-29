@@ -890,11 +890,6 @@
 
 <script>
 /* ============ 로그인 ============ */
-const PIN='0331';
-function checkLogin(input){
-  const digits=(input||'').replace(/[^\d]/g,'');
-  return digits===PIN;
-}
 let isGuestMode=false;
 function unlockApp(isGuest){
   document.getElementById('loginOverlay').classList.add('hidden');
@@ -907,18 +902,39 @@ function unlockApp(isGuest){
     load();
   } else { sessionStorage.setItem('sh_auth','1'); }
 }
+async function tryLogin(){
+  const btn=document.getElementById('loginBtn');
+  const errEl=document.getElementById('loginErr');
+  const input=document.getElementById('loginInput');
+  const v=input.value.trim();
+  if(!v){ errEl.textContent='비밀번호를 입력해주세요.'; return; }
+  btn.disabled=true; btn.textContent='확인 중…';
+  try{
+    const r=await fetch('/api/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pin:v})
+    });
+    const d=await r.json();
+    if(d.ok){ unlockApp(false); return; }
+    errEl.textContent=d.error||'비밀번호가 틀렸어요.';
+    if(d.locked){
+      input.disabled=true; btn.disabled=true;
+      btn.textContent='잠금됨';
+      const sec=d.remainSeconds||300;
+      setTimeout(()=>{ input.disabled=false; btn.disabled=false; btn.textContent='입장하기'; errEl.textContent=''; },sec*1000);
+    }
+  }catch(e){ errEl.textContent='서버 연결 실패'; }
+  finally{ if(!btn.textContent.includes('잠금')){ btn.disabled=false; btn.textContent='입장하기'; } }
+}
 (function(){
   if(sessionStorage.getItem('sh_auth')==='1'){
     document.getElementById('loginOverlay').classList.add('hidden');
     return;
   }
-  document.getElementById('loginBtn').onclick=()=>{
-    const v=document.getElementById('loginInput').value.trim();
-    if(checkLogin(v)){ unlockApp(false); }
-    else { document.getElementById('loginErr').textContent='비밀번호가 맞지 않아요.'; }
-  };
+  document.getElementById('loginBtn').onclick=tryLogin;
   document.getElementById('loginInput').addEventListener('keydown',e=>{
-    if(e.key==='Enter') document.getElementById('loginBtn').click();
+    if(e.key==='Enter') tryLogin();
   });
   document.getElementById('loginGuest').onclick=()=>unlockApp(true);
 })();
