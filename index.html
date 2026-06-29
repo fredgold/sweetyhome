@@ -1673,17 +1673,20 @@ document.getElementById('mapExpand').onclick=()=>{
   setTimeout(()=>overview&&overview.invalidateSize(),300);
 };
 
+async function geocode(q){
+  const res=await fetch('https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q:q+' 서울',format:'json',limit:'1',countrycodes:'kr'}),{headers:{'Accept-Language':'ko'}});
+  const arr=await res.json();
+  if(arr.length) return {lat:parseFloat(arr[0].lat),lng:parseFloat(arr[0].lon),found:true};
+  return {found:false};
+}
 async function autoGeocode(){
   const noCoord=state.properties.filter(p=>!p.lat&&(p.name||p.loc));
   if(!noCoord.length) return;
   for(const p of noCoord){
     const q=((p.name||'')+' '+(p.loc||'')).trim();
     try{
-      const out=await claudeAPI([{role:'user',content:
-        `대한민국 서울에 있는 '${q}'의 정확한 위도·경도를 JSON만 출력. 설명 금지.\n형식:{"lat":숫자,"lng":숫자,"found":true}. 못 찾으면 {"found":false}.`}],
-        [{type:'web_search_20250305',name:'web_search'}]);
-      const j=parseJSON(out);
-      if(j&&j.found&&j.lat&&j.lng){ p.lat=j.lat; p.lng=j.lng; }
+      const j=await geocode(q);
+      if(j.found){ p.lat=j.lat; p.lng=j.lng; }
     }catch(e){ break; }
   }
   if(noCoord.some(p=>p.lat)) { save(); refreshOverview(); }
@@ -1802,14 +1805,10 @@ document.getElementById('findBtn').onclick=async()=>{
   if(!q){document.getElementById('f_name').focus();return;}
   const btn=document.getElementById('findBtn'); btn.disabled=true; const old=btn.textContent; btn.textContent='찾는 중…';
   try{
-    const out=await claudeAPI([{role:"user",content:
-      `대한민국 서울에 있는 '${q}'의 정확한 위도·경도를 웹에서 찾아 JSON만 출력해. 설명·마크다운 금지.\n`+
-      `형식: {"lat":위도숫자,"lng":경도숫자,"found":true}. 못 찾으면 {"found":false}.`}],
-      [{type:"web_search_20250305",name:"web_search"}]);
-    const j=parseJSON(out);
-    if(j&&j.found&&j.lat&&j.lng){ setFormPin(j.lat,j.lng,true); btn.textContent='✓ 찾았어요'; }
+    const j=await geocode(q);
+    if(j.found){ setFormPin(j.lat,j.lng,true); btn.textContent='✓ 찾았어요'; }
     else { btn.textContent='못 찾음 — 지도 탭'; }
-  }catch(e){ alert(e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'위치 자동 찾기에 실패했어요. 지도를 직접 탭해 주세요.'); btn.textContent=old; }
+  }catch(e){ btn.textContent='검색 실패 — 지도 직접 탭'; }
   setTimeout(()=>{btn.disabled=false;btn.textContent=old;},1600);
 };
 
