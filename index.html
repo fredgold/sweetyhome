@@ -394,6 +394,14 @@
   .modal .macts{display:flex;gap:8px;justify-content:flex-end;margin-top:13px;}
   .modal .hint{font-size:11.5px;color:var(--line9-deep);background:var(--line9-wash);border-radius:9px;padding:9px 11px;margin-bottom:12px;line-height:1.5;}
   .modal .ok{font-size:12px;color:var(--s-final);font-weight:700;text-align:center;margin-top:9px;min-height:16px;}
+  .pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .pf-grid label{font-size:11px;font-weight:700;color:var(--ink-soft);}
+  .pf-grid input{width:100%;border:1.5px solid var(--hairline);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;margin-top:3px;background:#fff;}
+  .pf-grid input:focus{outline:none;border-color:var(--line9);}
+  .ms-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+  .ms-row input{flex:1;border:1.5px solid var(--hairline);border-radius:8px;padding:7px 9px;font-size:12px;font-weight:600;}
+  .ms-row input:focus{outline:none;border-color:var(--line9);}
+  .ms-row .ms-del{background:none;border:none;font-size:14px;cursor:pointer;color:var(--s-drop);padding:4px;}
 
   /* ===== v2: AI ===== */
   .chip.score{background:#EDE7F4;color:#6B4FA0;}
@@ -558,10 +566,11 @@
       <span class="mark">🏡</span>
       <div>
         <h1>스위티홈 <span class="guest-badge" id="guestBadge">게스트</span></h1>
-        <span class="sub">테디 ♥ 연정 · 결혼 & 내집마련 준비 보드</span>
+        <span class="sub" id="brandSub">테디 ♥ 연정 · 결혼 & 내집마련 준비 보드</span>
       </div>
     </div>
     <div class="topacts">
+      <button class="btn-mini" id="profileBtn">👤 프로필</button>
       <button class="btn-mini" id="exportBtn">⬆ 내보내기</button>
       <button class="btn-mini" id="importBtn">⬇ 가져오기</button>
       <button class="btn-mini" id="logoutBtn">🔒 잠금</button>
@@ -676,12 +685,7 @@
   <section class="panel" id="panel-props">
     <div class="gates">
       <div class="gh">◆ 우리가 매물 볼 때 보는 기준</div>
-      <div class="gatelist">
-        <div class="gate"><span class="ic">📍</span><div><div class="gt">서울시 內 <em>필수</em></div><div class="gd">이자지원 자격</div></div></div>
-        <div class="gate"><span class="ic">📐</span><div><div class="gt">전용 85㎡ 이하 <em>필수</em></div><div class="gd">청약 자격 보존</div></div></div>
-        <div class="gate"><span class="ic">💰</span><div><div class="gt">전세 4~5억 <em>필수</em></div><div class="gd">보증금 예산</div></div></div>
-        <div class="gate"><span class="ic">🚇</span><div><div class="gt">교통·단지 조건 <em class="pref">선호</em></div><div class="gd">9호선 우선 + 좋은 단지면 OK</div></div></div>
-      </div>
+      <div class="gatelist" id="gateList"></div>
     </div>
 
     <div class="mapcard" id="mapcard">
@@ -885,6 +889,30 @@
     </div>
   </div>
 
+  <div class="modal" id="profileModal">
+    <div class="box">
+      <h3>👤 프로필 & 일정 설정</h3>
+      <div class="mdesc">여기서 바꾸면 타임라인·게이트·AI 상담에 자동 반영돼요.</div>
+      <div class="pf-grid">
+        <label>이름<input id="pf_names" placeholder="예: 테디 ♥ 연정"></label>
+        <label>출생연도<input id="pf_birthYear" type="number" placeholder="1995"></label>
+        <label>고용형태<input id="pf_employment" placeholder="맞벌이"></label>
+        <label>주거상태<input id="pf_housing" placeholder="무주택"></label>
+        <label>필수 지역<input id="pf_city" placeholder="서울"></label>
+        <label>전용면적 상한(㎡)<input id="pf_maxArea" type="number" placeholder="85"></label>
+        <label>보증금 범위(억)<input id="pf_depositRange" placeholder="4~5"></label>
+        <label>선호 교통<input id="pf_transport" placeholder="9호선"></label>
+      </div>
+      <h4 style="font-size:13px;font-weight:800;margin:16px 0 8px;">📅 마일스톤 (타임라인)</h4>
+      <div id="pf_milestones"></div>
+      <button class="btn-ghost" id="pf_addMs" style="font-size:12px;margin-top:6px;">＋ 마일스톤 추가</button>
+      <div class="macts">
+        <button class="btn-ghost" data-close="profileModal">취소</button>
+        <button class="btn-save" id="pf_save">저장</button>
+      </div>
+    </div>
+  </div>
+
   <div class="saved" id="savedNote">변경사항은 자동 저장됩니다</div>
 </div>
 
@@ -982,7 +1010,23 @@ let OWNERS=['규범','연정','공동'];
 const ATYPES=['현금','적금','예금','주식','펀드','청약통장','기타'];
 const LIQUIDITY=['즉시','만기·장기'];
 
+const DEFAULT_PROFILE={
+  names:'테디 ♥ 연정',
+  birthYear:1995,
+  employment:'맞벌이',
+  housing:'무주택',
+  city:'서울',
+  maxArea:85,
+  depositRange:'4~5',
+  transport:'9호선',
+  milestones:[
+    {label:'이자지원 오픈',date:'2026-08-01'},
+    {label:'결혼',date:'2027-02-01'},
+    {label:'매수 목표',date:'2028-01-01'},
+  ],
+};
 const DEFAULT={
+  profile:structuredClone(DEFAULT_PROFILE),
   assets:{items:[],notes:'',reserve:1000},
   settings:{targetDeposit:4.5,weights:{commute:3,budget:3,area:3,complex:3,risk:3}},
   chatHistory:[],
@@ -1049,6 +1093,8 @@ let overview=null, ovMarkers=[], formMapObj=null, formMarker=null, tempLatLng=nu
 /* ---- load with migration ---- */
 function applyGuards(raw){
   state=Object.assign(structuredClone(DEFAULT), raw||{});
+  state.profile=Object.assign(structuredClone(DEFAULT_PROFILE), state.profile||{});
+  if(!Array.isArray(state.profile.milestones)||!state.profile.milestones.length) state.profile.milestones=structuredClone(DEFAULT_PROFILE.milestones);
   state.assets=Object.assign(structuredClone(DEFAULT.assets), state.assets||{});
   if(!Array.isArray(state.assets.items)){
     const old=state.assets, mig=[];
@@ -1152,13 +1198,23 @@ function sumMobImmediate(){return assetItems().filter(it=>it.liquidity==='즉시
 function sumByOwner(o){return assetItems().filter(it=>it.owner===o).reduce((s,it)=>s+(+it.amount||0),0);}
 function assetTotal(){return sumMobImmediate();} // 실제 동원 가능(즉시) 기준
 
+function renderGates(){
+  const p=state.profile;
+  document.getElementById('gateList').innerHTML=
+    `<div class="gate"><span class="ic">📍</span><div><div class="gt">${esc(p.city)}시 內 <em>필수</em></div><div class="gd">이자지원 자격</div></div></div>`+
+    `<div class="gate"><span class="ic">📐</span><div><div class="gt">전용 ${p.maxArea}㎡ 이하 <em>필수</em></div><div class="gd">청약 자격 보존</div></div></div>`+
+    `<div class="gate"><span class="ic">💰</span><div><div class="gt">전세 ${esc(p.depositRange)}억 <em>필수</em></div><div class="gd">보증금 예산</div></div></div>`+
+    `<div class="gate"><span class="ic">🚇</span><div><div class="gt">교통·단지 조건 <em class="pref">선호</em></div><div class="gd">${esc(p.transport)} 우선 + 좋은 단지면 OK</div></div></div>`;
+}
 function renderJourney(){
-  const steps=[
-    {t:'오늘',     d:'2026.6',  now:true},
-    {t:'이자지원 오픈', d:'~2026.8', date:'2026-08-01'},
-    {t:'결혼',     d:'2027.2',  date:'2027-02-01'},
-    {t:'매수 목표', d:'2028',    date:'2028-01-01'},
-  ];
+  const now=new Date();
+  const nowLabel=`${now.getFullYear()}.${now.getMonth()+1}`;
+  const steps=[{t:'오늘',d:nowLabel,now:true}];
+  (state.profile.milestones||[]).forEach(m=>{
+    if(!m.label&&!m.date)return;
+    const d=m.date?m.date.replace(/-/g,'.').replace(/\.0/g,'.').replace(/\.(\d+)$/,''):''
+    steps.push({t:m.label,d:d,date:m.date});
+  });
   document.getElementById('journey').innerHTML=steps.map(s=>`
     <div class="jstop ${s.now?'now':''}">
       <div class="dot">${s.now?'📍':'◆'}</div>
@@ -1295,7 +1351,7 @@ document.getElementById('act_suggestBtn').onclick=async()=>{
       `이미 있는 액션과 겹치지 않게. 실용적이고 바로 실행 가능한 것 위주.\n\n`+
       `[현재 데이터]\n${stateSnapshot()}`}],
       [{type:'web_search_20250305',name:'web_search'}],
-      `당신은 1995년생 예비부부(2027.2 결혼, 서울 전세 후 2028 매수)의 내집마련 코치. 한국어. 최신 정보는 web_search로 확인.`);
+      `당신은 ${profileLine()} 내집마련 코치. 한국어. 최신 정보는 web_search로 확인.`);
     const arr=parseJSON(out);
     if(Array.isArray(arr)&&arr.length){
       box.innerHTML=arr.map(s=>`
@@ -1403,7 +1459,7 @@ async function checkFit(id){
     const out=await claudeAPI([{role:'user',content:
       `우리 조건으로 이 매물/청약에 지원 가능한지 판단해. 설명·마크다운 금지, JSON만.\n`+
       `형식:{"fit":"가능|불가|확인필요","reason":"한 줄 이유"}\n`+
-      `[우리 조건] 1995년생 예비부부, 서울 거주, 맞벌이, 무주택, 2027.2 결혼 예정. 전세 보증금 목표 ${state.settings.targetDeposit}억.\n`+
+      `[우리 조건] ${profileLine()}\n`+
       `[매물/청약] 단지:${p.name||'?'} / 일정:${p.schedule||'?'} / 자격:${p.qualification||'?'} / 소득:${p.income||'?'} / 면적:${p.area||'?'} / 가격:${p.price||'?'}`}]);
     const j=parseJSON(out);
     if(j){
@@ -1424,7 +1480,7 @@ document.getElementById('sc_fitBtn').onclick=async()=>{
     if(img) content.push({type:'image',source:{type:'base64',media_type:img.media_type,data:img.data}});
     content.push({type:'text',text:
       `이 매물/청약 정보를 읽고 우리 조건으로 지원 가능한지 한 줄로 답해.\n`+
-      `[우리 조건] 1995년생 예비부부, 서울 거주, 맞벌이, 무주택, 2027.2 결혼 예정. 전세 보증금 목표 ${state.settings.targetDeposit}억.\n\n${txt||'(이미지에서 읽어주세요)'}`});
+      `[우리 조건] ${profileLine()}\n\n${txt||'(이미지에서 읽어주세요)'}`});
     const out=await claudeAPI([{role:'user',content}]);
     alert(out||'응답 없음');
   }catch(e){ alert(e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 연결 실패'); }
@@ -1472,7 +1528,7 @@ document.getElementById('rn_fetchBtn').onclick=async()=>{
       '전세사기 보증보험 HUG 변경사항 2026'
     ];
     const out=await claudeAPI([{role:'user',content:
-      `우리는 1995년생 서울 거주 예비부부(맞벌이, 2027.2 결혼, 전세 4~5억 목표)야.\n`+
+      `우리는 ${profileLine()}\n`+
       `다음 키워드로 최신 규제·정책·금리 뉴스를 웹에서 찾아 JSON 배열로 정리해. 설명·마크다운 금지, JSON 배열만 출력.\n`+
       `키워드: ${queries.join(' / ')}\n`+
       `형식: [{"title":"제목","summary":"1~2문장 요약","date":"YYYY-MM-DD 또는 YYYY-MM","source":"출처URL"}]\n`+
@@ -1908,7 +1964,7 @@ async function aiAnalyze(id){
     const out=await claudeAPI([{role:"user",content:
       `우리 부부 전세 매물을 분석해줘. 설명·마크다운 금지, JSON만.\n`+
       `형식:{"score":0~100정수,"summary":"우리 조건 대비 장단점·적합도 3~4문장","risk":"재건축·이주 등 핵심 리스크 한 줄(없으면 빈 문자열)"}\n`+
-      `[우리 조건] 서울시 內 필수, 전용 85㎡ 이하 필수, 보증금 목표 ${state.settings.targetDeposit}억, 9호선 선호. 2028 매수 전 브릿지 전세.\n`+
+      `[우리 조건] ${profileLine()}\n`+
       `[매물] 이름:${p.name||'?'} / 위치:${p.loc||'?'} / 보증금:${p.deposit||'?'}억 / 전용:${p.area||'?'}㎡ / 메모:${p.memo||'없음'}\n`+
       `시세·평판·재건축 단계는 web_search로 확인.`}],
       [{type:"web_search_20250305",name:"web_search"}]);
@@ -2031,7 +2087,7 @@ document.getElementById('evalBtn').onclick=async()=>{
       const out=await claudeAPI([{role:"user",content:
         `우리 부부 전세 매물을 0~100점으로 채점하고 한 줄 코멘트. 설명·마크다운 금지, JSON만.\n`+
         `형식:{"score":정수,"comment":"한 줄"}\n`+
-        `[우리 조건] 서울시 內 필수, 전용 85㎡ 이하 필수, 보증금 목표 ${state.settings.targetDeposit}억, 9호선 선호.\n`+
+        `[우리 조건] ${profileLine()}\n`+
         `[가중치 1~5] ${weightLine()}.\n`+
         `[매물] 이름:${p.name||'?'} / 위치:${p.loc||'?'} / 보증금:${p.deposit||'?'}억 / 전용:${p.area||'?'}㎡ / 메모:${p.memo||'없음'}\n`+
         `재건축 이주 리스크가 크면 감점.`}],
@@ -2075,6 +2131,51 @@ function readBackup(code){
   }catch(e){return null;}
 }
 
+/* ============ 프로필 모달 ============ */
+function renderProfileMilestones(){
+  const box=document.getElementById('pf_milestones');
+  const ms=state.profile.milestones;
+  box.innerHTML=ms.map((m,i)=>`<div class="ms-row"><input class="ms-label" data-i="${i}" value="${esc(m.label)}" placeholder="이름"><input class="ms-date" data-i="${i}" type="date" value="${m.date||''}"><button class="ms-del" data-i="${i}">✕</button></div>`).join('');
+  box.querySelectorAll('.ms-del').forEach(b=>b.onclick=()=>{ms.splice(+b.dataset.i,1);renderProfileMilestones();});
+}
+function openProfile(){
+  const p=state.profile;
+  document.getElementById('pf_names').value=p.names||'';
+  document.getElementById('pf_birthYear').value=p.birthYear||'';
+  document.getElementById('pf_employment').value=p.employment||'';
+  document.getElementById('pf_housing').value=p.housing||'';
+  document.getElementById('pf_city').value=p.city||'';
+  document.getElementById('pf_maxArea').value=p.maxArea||'';
+  document.getElementById('pf_depositRange').value=p.depositRange||'';
+  document.getElementById('pf_transport').value=p.transport||'';
+  renderProfileMilestones();
+  openModal('profileModal');
+}
+document.getElementById('profileBtn').onclick=openProfile;
+document.getElementById('pf_addMs').onclick=()=>{
+  state.profile.milestones.push({label:'',date:''});
+  renderProfileMilestones();
+};
+document.getElementById('pf_save').onclick=()=>{
+  const p=state.profile;
+  p.names=document.getElementById('pf_names').value.trim()||p.names;
+  p.birthYear=+document.getElementById('pf_birthYear').value||p.birthYear;
+  p.employment=document.getElementById('pf_employment').value.trim()||p.employment;
+  p.housing=document.getElementById('pf_housing').value.trim()||p.housing;
+  p.city=document.getElementById('pf_city').value.trim()||p.city;
+  p.maxArea=+document.getElementById('pf_maxArea').value||p.maxArea;
+  p.depositRange=document.getElementById('pf_depositRange').value.trim()||p.depositRange;
+  p.transport=document.getElementById('pf_transport').value.trim()||p.transport;
+  document.querySelectorAll('#pf_milestones .ms-row').forEach(row=>{
+    const i=+row.querySelector('.ms-label').dataset.i;
+    p.milestones[i].label=row.querySelector('.ms-label').value.trim();
+    p.milestones[i].date=row.querySelector('.ms-date').value;
+  });
+  p.milestones=p.milestones.filter(m=>m.label||m.date);
+  save(); renderJourney(); renderAll();
+  closeModal('profileModal');
+};
+
 document.getElementById('exportBtn').onclick=()=>{
   document.getElementById('exportText').value=makeBackup();
   document.getElementById('exportOk').textContent='';
@@ -2102,6 +2203,7 @@ document.getElementById('doImport').onclick=()=>{
   if(o.kind==='full'){
     if(!confirm('지금 보드 내용을 백업본으로 전부 교체할까요?')) return;
     state=Object.assign(structuredClone(DEFAULT), o.state);
+    state.profile=Object.assign(structuredClone(DEFAULT_PROFILE), state.profile||{});
     state.assets=Object.assign(structuredClone(DEFAULT.assets), state.assets||{});
     state.settings=Object.assign(structuredClone(DEFAULT.settings), state.settings||{});
     state.actions=state.actions||structuredClone(DEFAULT.actions);
@@ -2120,7 +2222,11 @@ document.getElementById('doImport').onclick=()=>{
 };
 
 /* ============ v2: AI 상담 ============ */
-const CHAT_CHIPS=['지금 뭐부터 해야 해?','우리 실탄으로 전세 가능?','후보 매물 비교해줘','8월 이자지원 준비 체크'];
+function chatChips(){
+  const next=state.profile.milestones.find(m=>m.date&&new Date(m.date)>new Date());
+  const chip4=next?`${next.label} 준비 체크`:'다음 일정 확인';
+  return ['지금 뭐부터 해야 해?','우리 실탄으로 전세 가능?','후보 매물 비교해줘',chip4];
+}
 function stateSnapshot(){
   const items=assetItems();
   const aLine=items.length?items.map(it=>`  · ${it.owner} ${it.name} ${comma(it.amount)}원 (${it.type}/${it.liquidity})`).join('\n'):'  (없음)';
@@ -2128,13 +2234,19 @@ function stateSnapshot(){
   const acts=state.actions.filter(x=>!x.done).map(x=>`- ${x.text}`).join('\n')||'(없음)';
   return `[자산] 즉시 동원 가능액 ${won(sumMobImmediate())}(=지금 집 자금 실투입 가능), 총 자산 ${won(sumAmount())}, 만기 포함 전체 동원 ${won(sumMob())}. 소유자별 규범 ${won(sumByOwner('규범'))}/연정 ${won(sumByOwner('연정'))}/공동 ${won(sumByOwner('공동'))}. 예비비 ${state.assets.reserve||0}만원.\n${aLine}\n메모:${state.assets.notes||'없음'}\n[매물]\n${props}\n[미완료 액션]\n${acts}`;
 }
+function profileLine(){
+  const p=state.profile;
+  const wedding=p.milestones.find(m=>m.label.includes('결혼'));
+  const buy=p.milestones.find(m=>m.label.includes('매수'));
+  return `${p.birthYear}년생 예비부부(${p.employment}, ${p.housing}, ${p.city} 거주${wedding?', '+wedding.date.replace(/-/g,'.')+' 결혼':''}${buy?', '+buy.date.slice(0,4)+' 매수 목표':''}). 조건: ${p.city}시 內 필수, 전용 ${p.maxArea}㎡ 이하 필수, 전세 보증금 목표 ${state.settings.targetDeposit}억, ${p.transport} 선호.`;
+}
 function chatSystem(){
-  return `당신은 1995년생 예비부부(2027.2 결혼, 서울 전세 후 2028 매수)의 내집마련 코치입니다. 한국어로 간결하고 실용적으로, 우선순위 액션 위주로 답하세요. 조건: 서울시 內 필수, 전용 85㎡ 이하 필수, 전세 보증금 목표 ${state.settings.targetDeposit}억, 9호선 선호. 최신 규제·금리·시세는 web_search로 확인. 답변은 핵심 위주로 너무 길지 않게.\n[현재 데이터]\n${stateSnapshot()}`;
+  return `당신은 ${profileLine().replace('. 조건:',')의 내집마련 코치입니다. 한국어로 간결하고 실용적으로, 우선순위 액션 위주로 답하세요. 조건:')} 최신 규제·금리·시세는 web_search로 확인. 답변은 핵심 위주로 너무 길지 않게.\n[현재 데이터]\n${stateSnapshot()}`;
 }
 function renderChat(){
   const m=document.getElementById('msgs');
   const chips=document.getElementById('chatchips');
-  chips.innerHTML=CHAT_CHIPS.map(c=>`<button>${c}</button>`).join('');
+  chips.innerHTML=chatChips().map(c=>`<button>${c}</button>`).join('');
   chips.querySelectorAll('button').forEach(b=>b.onclick=()=>{document.getElementById('chatInput').value=b.textContent;sendChat();});
   const h=state.chatHistory||[];
   if(!h.length){ m.innerHTML=`<div class="chatempty">안녕하세요 👋 우리 자산·매물·액션을 보고 있어요.<br>아래 버튼을 누르거나 직접 물어보세요.</div>`; return; }
@@ -2165,6 +2277,8 @@ document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='
 
 /* ============ boot ============ */
 function renderAll(){
+  if(!isGuestMode) document.getElementById('brandSub').textContent=state.profile.names+' · 결혼 & 내집마련 준비 보드';
+  renderGates();
   renderDash();
   renderAssets();
   renderProps();
