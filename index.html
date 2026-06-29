@@ -554,7 +554,7 @@
 
 <div class="wrap">
   <header>
-    <div class="brand">
+    <div class="brand" id="goHome" style="cursor:pointer">
       <span class="mark">🏡</span>
       <div>
         <h1>스위티홈 <span class="guest-badge" id="guestBadge">게스트</span></h1>
@@ -564,6 +564,7 @@
     <div class="topacts">
       <button class="btn-mini" id="exportBtn">⬆ 내보내기</button>
       <button class="btn-mini" id="importBtn">⬇ 가져오기</button>
+      <button class="btn-mini" id="logoutBtn">🔒 잠금</button>
     </div>
   </header>
 
@@ -921,6 +922,11 @@ function unlockApp(isGuest){
   });
   document.getElementById('loginGuest').onclick=()=>unlockApp(true);
 })();
+document.getElementById('goHome').onclick=()=>switchPanel('dash');
+document.getElementById('logoutBtn').onclick=()=>{
+  sessionStorage.removeItem('sh_auth');
+  location.reload();
+};
 
 const CHECK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 const SC={관심:'--s-interest',방문예정:'--s-visit',검토중:'--s-review',후보확정:'--s-final',보류:'--s-hold',탈락:'--s-drop'};
