@@ -1830,11 +1830,11 @@ async function claudeAPI(messages,tools,system){
   }
   return (data.content||[]).filter(i=>i.type==="text").map(i=>i.text).join("\n");
 }
-function aiUnavailableMsg(){ return 'AI 크레딧 충전 필요 → platform.openai.com'; }
+function aiUnavailableMsg(){ return 'AI 크레딧 충전 필요 → console.anthropic.com'; }
 function updateAiButtons(){
   if(aiAvailable===false){
     const s=document.getElementById('chatApiStatus');
-    if(s){s.className='ai-status warn';s.textContent='⚠️ AI 기능은 크레딧 충전이 필요해요. → platform.openai.com';}
+    if(s){s.className='ai-status warn';s.textContent='⚠️ AI 기능은 크레딧 충전이 필요해요. → console.anthropic.com';}
   }
 }
 function parseJSON(t){try{return JSON.parse((t||'').replace(/```json|```/g,'').trim());}catch(e){return null;}}
