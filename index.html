@@ -324,7 +324,6 @@
 
   .guest-badge{display:none;font-size:10.5px;font-weight:700;background:#FFF3E0;color:#E65100;border-radius:7px;padding:4px 9px;margin-left:8px;}
   body.guest .guest-badge{display:inline-block;}
-  body.guest .privacy-wall{filter:blur(6px);pointer-events:none;user-select:none;}
 
   /* ===== AI 상태 ===== */
   .ai-status{margin-top:8px;padding:9px 12px;border-radius:9px;font-size:12px;font-weight:600;line-height:1.5;}
@@ -588,7 +587,7 @@
     <div class="dcards">
       <div class="dcard">
         <div class="dt">💰 예상 실탄 <a data-goto="assets">자산 관리 →</a></div>
-        <div id="d_assetSummary" class="privacy-wall"></div>
+        <div id="d_assetSummary"></div>
       </div>
       <div class="dcard">
         <div class="dt">🏘️ 매물 현황 <a data-goto="props">매물 보기 →</a></div>
@@ -615,7 +614,7 @@
   </section>
 
   <!-- ===================== 자산 ===================== -->
-  <section class="panel privacy-wall" id="panel-assets">
+  <section class="panel" id="panel-assets">
     <div class="asec">
       <div class="ah">
         <h2>💰 우리 자산</h2>
@@ -895,10 +894,16 @@ function checkLogin(input){
   const digits=(input||'').replace(/[^\d]/g,'');
   return digits===WEDDING;
 }
+let isGuestMode=false;
 function unlockApp(isGuest){
   document.getElementById('loginOverlay').classList.add('hidden');
-  if(isGuest){ document.body.classList.add('guest'); }
-  else { sessionStorage.setItem('sh_auth','1'); }
+  if(isGuest){
+    isGuestMode=true;
+    OWNERS=['본인','배우자','공동'];
+    document.body.classList.add('guest');
+    document.querySelector('.brand h1').innerHTML='스위티홈 <span class="guest-badge">데모</span>';
+    document.querySelector('.brand .sub').textContent='예비부부 · 결혼 & 내집마련 준비 보드 (체험판)';
+  } else { sessionStorage.setItem('sh_auth','1'); }
 }
 (function(){
   if(sessionStorage.getItem('sh_auth')==='1'){
@@ -936,7 +941,7 @@ const CHECKLIST=[
   {id:'k9',t:'입주민 후기',s:'하자·집주인·실거주 평판',vl:'호갱노노',vu:n=>gUrl(n+' 호갱노노 이야기')},
 ];
 
-const OWNERS=['규범','연정','공동'];
+let OWNERS=['규범','연정','공동'];
 const ATYPES=['현금','적금','예금','주식','펀드','청약통장','기타'];
 const LIQUIDITY=['즉시','만기·장기'];
 
@@ -967,6 +972,43 @@ const DEFAULT={
   ],
 };
 
+const GUEST_STATE={
+  assets:{items:[
+    {id:'g1',owner:'본인',name:'월급통장',amount:18500000,type:'현금',liquidity:'즉시',mobilizable:18500000,memo:''},
+    {id:'g2',owner:'본인',name:'정기적금 (만기 12월)',amount:24000000,type:'적금',liquidity:'만기·장기',mobilizable:24000000,memo:'자동이체 50만/월'},
+    {id:'g3',owner:'배우자',name:'예금',amount:32000000,type:'예금',liquidity:'즉시',mobilizable:32000000,memo:''},
+    {id:'g4',owner:'배우자',name:'청약통장',amount:9600000,type:'청약통장',liquidity:'만기·장기',mobilizable:0,memo:'납입 24회'},
+    {id:'g5',owner:'공동',name:'결혼자금 (양가지원)',amount:100000000,type:'기타',liquidity:'즉시',mobilizable:100000000,memo:'각 5천만'},
+  ],notes:'예시 데이터입니다.',reserve:1500},
+  settings:{targetDeposit:4.5,weights:{commute:4,budget:3,area:3,complex:3,risk:4}},
+  chatHistory:[],
+  actions:[
+    {id:'ga1',text:'전세대출 자가진단 사이트 확인',priority:1,done:false},
+    {id:'ga2',text:'신혼부부 이자지원 접수일 모니터링',priority:2,done:false},
+    {id:'ga3',text:'협약은행 3곳 대출상담 예약',priority:3,done:true},
+  ],
+  properties:[
+    {id:'gp1',created:Date.now(),name:'행복아파트',loc:'강남구 역삼동 · 2호선 역삼역 도보 5분',deposit:4.5,area:59.9,status:'검토중',lat:37.4996,lng:127.0365,memo:'500세대 · 계단식 · 주차 1.2대 · 2020년식',checks:{k1:true,k3:true,k4:true},aiScore:78,aiComment:'역세권 + 신축이라 전세가 안정적'},
+    {id:'gp2',created:Date.now()-1,name:'푸른마을아파트',loc:'동작구 노량진동 · 9호선 노량진역 도보 8분',deposit:3.8,area:84.5,status:'관심',lat:37.5133,lng:126.9425,memo:'820세대 · 복도식 · 관리비 12만',checks:{},aiScore:null,aiComment:''},
+    {id:'gp3',created:Date.now()-2,name:'드림타워',loc:'영등포구 당산동 · 2호선 당산역 도보 3분',deposit:5.0,area:74.2,status:'후보확정',lat:37.5340,lng:126.9027,memo:'1200세대 대단지 · 역세권 · 관리비 15만',checks:{k1:true,k2:true,k3:true,k4:true,k5:true},aiScore:88,aiComment:'대단지 역세권, 예산만 맞으면 최적'},
+  ],
+  regNews:[{id:'grn1',title:'2026 하반기 전세대출 금리 인하 예고',summary:'금융위원회가 신혼부부 전세대출 우대금리를 0.2%p 추가 인하한다고 발표했습니다.',date:'2026-06',source:''}],
+  scraps:[],
+  prep:[
+    {id:'p1',tx:'전세대출 사전 자가진단',sub:'대출 자격 먼저 확인',done:true},
+    {id:'p2',tx:'신혼부부 이자지원 오픈 모니터링',sub:'8월경 접수 시작',done:false},
+    {id:'p3',tx:'협약은행 대출상담 예약',sub:'한도·금리 사전 확인',done:true},
+    {id:'p4',tx:'부모님 지원금 계획 정리',sub:'증여공제 활용',done:false},
+  ],
+  steps:[
+    {id:'s1',tx:'매물 확정',sub:'조건 통과 + 가계약 전 점검',done:false},
+    {id:'s2',tx:'융자추천 온라인 신청',sub:'',done:false},
+    {id:'s3',tx:'전세대출 신청',sub:'',done:false},
+    {id:'s4',tx:'전세보증보험 가입',sub:'HUG / HF',done:false},
+    {id:'s5',tx:'잔금 · 전입신고',sub:'',done:false},
+  ],
+};
+
 let state=null, activeTab='전체', activePanel='dash';
 let overview=null, ovMarkers=[], formMapObj=null, formMarker=null, tempLatLng=null, tempChecks=null;
 
@@ -993,6 +1035,11 @@ function applyGuards(raw){
   state.properties.forEach(p=>{ if(!p.checks)p.checks={}; });
 }
 async function load(){
+  if(isGuestMode){
+    applyGuards(structuredClone(GUEST_STATE));
+    renderAll();
+    return;
+  }
   let raw=null;
   try{
     const res=await fetch('/api/state');
@@ -1010,6 +1057,7 @@ async function load(){
 }
 let st, syncTimer;
 async function save(){
+  if(isGuestMode){ const n=document.getElementById('savedNote'); n.textContent='데모 모드 — 저장되지 않아요'; n.style.color='var(--ink-faint)'; return; }
   const n=document.getElementById('savedNote'); n.textContent='저장 중…'; n.style.color='var(--ink-soft)';
   try{ localStorage.setItem('sweetyhome',JSON.stringify(state)); }catch(e){}
   clearTimeout(syncTimer);
