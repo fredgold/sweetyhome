@@ -890,10 +890,10 @@
 
 <script>
 /* ============ 로그인 ============ */
-const WEDDING='20270201';
+const WEDDING='20272027';
 function checkLogin(input){
   const digits=(input||'').replace(/[^\d]/g,'');
-  return digits===WEDDING || digits==='2027021' || digits==='202721' || digits==='20272';
+  return digits===WEDDING;
 }
 function unlockApp(isGuest){
   document.getElementById('loginOverlay').classList.add('hidden');
