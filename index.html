@@ -5,7 +5,6 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
     --bg:#EDEBE4; --surface:#FFFFFF; --ink:#1E2522; --ink-soft:#5C645F; --ink-faint:#9AA09B;
@@ -307,29 +306,6 @@
   .step .stx small{display:block;font-weight:500;color:var(--ink-faint);}
   .saved{font-size:10.5px;color:var(--ink-faint);text-align:center;margin-top:18px;font-weight:600;}
 
-  /* ===== 분담 탭 ===== */
-  .ldg-sec{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px;}
-  .ldg-sec .lh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;flex-wrap:wrap;}
-  .ldg-sec .lh h2{font-size:16px;font-weight:800;letter-spacing:-.02em;}
-  .ldg-desc{font-size:12px;color:var(--ink-soft);font-weight:500;margin-bottom:14px;}
-  .ldg-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px;}
-  .ldg-row .field{flex:1;min-width:90px;}
-  .ldg-add{background:var(--money);color:#fff;font-size:13px;font-weight:700;padding:9px 16px;border-radius:10px;white-space:nowrap;flex-shrink:0;}
-  .ldg-add:hover{background:var(--money-deep);}
-  .ldg-tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px;}
-  .ldg-tbl th{font-size:11px;font-weight:800;color:var(--ink-soft);padding:7px 8px;border-bottom:2px solid var(--hairline);text-align:right;white-space:nowrap;}
-  .ldg-tbl th:first-child{text-align:left;}
-  .ldg-tbl td{padding:7px 8px;border-bottom:1px solid var(--hairline-soft);text-align:right;font-variant-numeric:tabular-nums;}
-  .ldg-tbl td:first-child{text-align:left;font-weight:700;}
-  .ldg-tbl tr:last-child td{border-bottom:none;}
-  .ldg-tbl .need{font-weight:800;color:var(--money-deep);}
-  .ldg-tbl .zero{color:var(--ink-faint);}
-  .ldg-cat{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;display:inline-block;}
-  .ldg-cat.date{background:var(--money-wash);color:var(--money-deep);}
-  .ldg-cat.wedding{background:var(--line9-wash);color:var(--line9-deep);}
-  .ldg-cat.pn{background:var(--hairline-soft);color:var(--ink);}
-  .ldg-cat.py{background:#EEF0F6;color:var(--s-interest);}
-  .ldg-empty{padding:28px 16px;text-align:center;color:var(--ink-faint);font-size:13px;line-height:1.6;}
 
   /* ===== 동기화 상태 칩 ===== */
   .sync-wrap{position:relative;}
@@ -637,7 +613,6 @@
     <button class="atab" data-panel="regnews">📰 규제·뉴스</button>
     <button class="atab" data-panel="actions">✅ 액션</button>
     <button class="atab" data-panel="scraps">📋 스크랩</button>
-    <button class="atab" data-panel="ledger">💳 분담</button>
   </nav>
 
   <!-- ===================== 대시보드 ===================== -->
@@ -902,75 +877,6 @@
     </div>
   </section>
 
-  <!-- 분담 탭 -->
-  <section class="panel" id="panel-ledger">
-
-    <!-- 엑셀 가져오기 / 내보내기 -->
-    <div class="ldg-sec">
-      <div class="lh"><h2>📂 엑셀 가져오기 / 내보내기</h2></div>
-      <div class="ldg-desc">기존 엑셀(거래장부·입금관리 시트)을 그대로 가져오거나, 현재 데이터를 엑셀로 내보낼 수 있습니다. 중복 항목은 자동으로 건너뜁니다.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <button class="ldg-add" id="ldg_importBtn">📥 엑셀 가져오기</button>
-        <button class="ldg-add" id="ldg_exportBtn" style="background:var(--line9-deep);">📤 엑셀 내보내기</button>
-      </div>
-      <input type="file" id="ldg_fileInput" accept=".xlsx" style="display:none">
-      <div id="ldg_xlsxResult" style="margin-top:10px;font-size:12px;font-weight:700;min-height:16px;"></div>
-    </div>
-
-    <!-- 사이클 요약 -->
-    <div class="ldg-sec">
-      <div class="lh"><h2>💳 분담 현황</h2></div>
-      <div class="ldg-desc">사이클 = 전월 13일 사용 ~ 당월 12일 사용분. 각 사이클의 부담·입금·추가필요액.</div>
-      <div id="ldg_summary"></div>
-    </div>
-
-    <!-- 거래 추가 -->
-    <div class="ldg-sec">
-      <div class="lh"><h2>➕ 거래 추가</h2></div>
-      <div class="ldg-desc">카드·현금 사용 내역을 직접 입력해 엑셀 값과 대조하세요.</div>
-      <div class="ldg-row">
-        <div class="field"><label>사용일<input type="date" id="lt_date"></label></div>
-        <div class="field"><label>사용처<input type="text" id="lt_place" placeholder="예: 대포집"></label></div>
-        <div class="field"><label>금액(원)<input type="number" id="lt_amount" placeholder="58000" min="0"></label></div>
-        <div class="field"><label>분류<select id="lt_cat">
-          <option value="date">데이트</option>
-          <option value="wedding">결혼</option>
-          <option value="personal_norm" id="lt_cat_pn">개인(본인)</option>
-          <option value="personal_yeon" id="lt_cat_py">개인(배우자)</option>
-        </select></label></div>
-        <div class="field"><label>메모<input type="text" id="lt_memo" placeholder="선택"></label></div>
-        <button class="ldg-add" id="lt_add">추가</button>
-      </div>
-      <div id="lt_err" style="font-size:12px;color:var(--s-drop);min-height:16px;font-weight:700;"></div>
-    </div>
-
-    <!-- 입금 추가 -->
-    <div class="ldg-sec">
-      <div class="lh"><h2>➕ 입금 추가</h2></div>
-      <div class="ldg-desc">공동통장 입금 내역. 완료/예정 구분해 추가필요액에 반영됩니다.</div>
-      <div class="ldg-row">
-        <div class="field"><label>입금일<input type="date" id="ld_date"></label></div>
-        <div class="field"><label>입금자<select id="ld_payer">
-          <option value="norm" id="ld_payer_n">본인</option>
-          <option value="yeon" id="ld_payer_y">배우자</option>
-        </select></label></div>
-        <div class="field"><label>금액(원)<input type="number" id="ld_amount" placeholder="300000" min="0"></label></div>
-        <div class="field"><label>용도<select id="ld_purpose">
-          <option value="date">데이트</option>
-          <option value="wedding">결혼</option>
-          <option value="etc">기타</option>
-        </select></label></div>
-        <div class="field"><label>상태<select id="ld_status">
-          <option value="done">완료</option>
-          <option value="planned">예정</option>
-        </select></label></div>
-        <div class="field"><label>메모<input type="text" id="ld_memo" placeholder="선택"></label></div>
-        <button class="ldg-add" id="ld_add">추가</button>
-      </div>
-      <div id="ld_err" style="font-size:12px;color:var(--s-drop);min-height:16px;font-weight:700;"></div>
-    </div>
-
-  </section>
 
   <!-- 백업 모달 -->
   <div class="modal" id="exportModal">
@@ -1175,8 +1081,6 @@ const LIQUIDITY=['즉시','만기·장기'];
 
 const DEFAULT_PROFILE={
   names:'테디 ♥ 연정',
-  normName:'',
-  yeonName:'',
   birthYear:1995,
   employment:'맞벌이',
   housing:'무주택',
@@ -1216,19 +1120,6 @@ const DEFAULT={
     {id:'s4',tx:'전세보증보험 가입',sub:'HUG / HF',done:false},
     {id:'s5',tx:'잔금 · 전입신고',sub:'→ 세대분리 자동 완료',done:false},
   ],
-  ledger:{
-    config:{
-      cycleAnchorDay:13,
-      splitRules:{
-        date:[{from:'2026-01',norm:0.6,yeon:0.4}],
-        wedding:[{from:'2026-01',norm:0.5,yeon:0.5}]
-      },
-      fixedMonthlyDeposit:{norm:0,yeon:0},
-      currentBalance:0
-    },
-    txns:[],
-    deposits:[]
-  },
 };
 
 const GUEST_STATE={
@@ -1291,20 +1182,6 @@ function applyGuards(raw){
   state.prep=state.prep||structuredClone(DEFAULT.prep);
   state.steps=state.steps||structuredClone(DEFAULT.steps);
   state.properties.forEach(p=>{ if(!p.checks)p.checks={}; });
-  if(state.profile.normName==null) state.profile.normName='';
-  if(state.profile.yeonName==null) state.profile.yeonName='';
-  // ledger guard
-  if(!state.ledger||typeof state.ledger!=='object') state.ledger={};
-  const DL=DEFAULT.ledger;
-  if(!state.ledger.config||typeof state.ledger.config!=='object') state.ledger.config={};
-  state.ledger.config=Object.assign(structuredClone(DL.config),state.ledger.config);
-  if(!state.ledger.config.splitRules||typeof state.ledger.config.splitRules!=='object') state.ledger.config.splitRules=structuredClone(DL.config.splitRules);
-  if(!Array.isArray(state.ledger.config.splitRules.date)) state.ledger.config.splitRules.date=structuredClone(DL.config.splitRules.date);
-  if(!Array.isArray(state.ledger.config.splitRules.wedding)) state.ledger.config.splitRules.wedding=structuredClone(DL.config.splitRules.wedding);
-  if(!state.ledger.config.fixedMonthlyDeposit||typeof state.ledger.config.fixedMonthlyDeposit!=='object') state.ledger.config.fixedMonthlyDeposit={norm:0,yeon:0};
-  if(state.ledger.config.currentBalance==null) state.ledger.config.currentBalance=0;
-  if(!Array.isArray(state.ledger.txns)) state.ledger.txns=[];
-  if(!Array.isArray(state.ledger.deposits)) state.ledger.deposits=[];
 }
 async function load(){
   if(isGuestMode){
@@ -1369,7 +1246,6 @@ function switchPanel(name){
   if(name==='regnews') renderRegNews();
   if(name==='actions') renderActions();
   if(name==='scraps') renderScraps();
-  if(name==='ledger') renderLedger();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelectorAll('.atab[data-panel]').forEach(b=>b.onclick=()=>switchPanel(b.dataset.panel));
@@ -2478,317 +2354,6 @@ async function sendChat(){
 document.getElementById('chatSend').onclick=sendChat;
 document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
 
-/* ============ LEDGER CALC ============ */
-// cycleOf: day >= anchorDay → 다음달, 미만 → 그달. 엑셀 수식: TEXT(EDATE(A, IF(DAY(A)>=13,1,0)),"yyyy-mm")
-function cycleOf(dateStr, anchorDay){
-  const d=new Date(dateStr+'T00:00:00');
-  if(isNaN(d)) return '';
-  let y=d.getFullYear(), m=d.getMonth(); // 0-based
-  if(d.getDate()>=anchorDay){ m+=1; if(m>11){y+=1;m=0;} }
-  return y+'-'+String(m+1).padStart(2,'0');
-}
-// splitFor: splitRules에서 from<=cycle 중 가장 최근 규칙 적용
-function splitFor(category, cycle, config){
-  if(category==='personal_norm') return {norm:1,yeon:0};
-  if(category==='personal_yeon') return {norm:0,yeon:1};
-  const rules=(config.splitRules&&config.splitRules[category])||[];
-  const ok=rules.filter(r=>r.from<=cycle);
-  if(!ok.length) return {norm:0.5,yeon:0.5};
-  const r=ok.reduce((a,b)=>a.from>=b.from?a:b);
-  return {norm:r.norm,yeon:r.yeon};
-}
-// burdenOf: amount × splitFor
-function burdenOf(txn, config){
-  const sp=splitFor(txn.category, cycleOf(txn.date,config.cycleAnchorDay), config);
-  return {norm:txn.amount*sp.norm, yeon:txn.amount*sp.yeon};
-}
-// calcCycle: 사이클 키에 대한 부담·입금·추가필요 집계
-function calcCycle(cycleKey, ledger){
-  const cfg=ledger.config;
-  const ad=cfg.cycleAnchorDay;
-  const txns=ledger.txns.filter(t=>cycleOf(t.date,ad)===cycleKey);
-  const deps=ledger.deposits.filter(d=>cycleOf(d.date,ad)===cycleKey);
-  const byCategory={date:{norm:0,yeon:0},wedding:{norm:0,yeon:0},personal_norm:{norm:0,yeon:0},personal_yeon:{norm:0,yeon:0}};
-  for(const t of txns){
-    const b=burdenOf(t,cfg);
-    const c=t.category||'date';
-    if(!byCategory[c]) byCategory[c]={norm:0,yeon:0};
-    byCategory[c].norm+=b.norm; byCategory[c].yeon+=b.yeon;
-  }
-  const burden={norm:0,yeon:0};
-  for(const c of Object.keys(byCategory)){ burden.norm+=byCategory[c].norm; burden.yeon+=byCategory[c].yeon; }
-  const depositDone={norm:0,yeon:0};
-  for(const d of deps){ if(d.status==='done'){ depositDone[d.payer]=(depositDone[d.payer]||0)+d.amount; } }
-  const needMore={norm:Math.max(0,burden.norm-depositDone.norm),yeon:Math.max(0,burden.yeon-depositDone.yeon)};
-  return {byCategory,burden,depositDone,needMore};
-}
-// allCycles: txns+deposits 전체에서 사이클 키 목록 추출 (정렬)
-function allCycles(ledger){
-  const ad=ledger.config.cycleAnchorDay;
-  const s=new Set();
-  for(const t of ledger.txns){const c=cycleOf(t.date,ad);if(c)s.add(c);}
-  for(const d of ledger.deposits){const c=cycleOf(d.date,ad);if(c)s.add(c);}
-  return Array.from(s).sort();
-}
-// ldgName: 내부키(norm/yeon) → 표시명
-function ldgName(key){
-  const p=state.profile;
-  if(key==='norm') return p.normName||'본인';
-  if(key==='yeon') return p.yeonName||'배우자';
-  return key;
-}
-function ldgWon(n){ return Math.round(n).toLocaleString()+'원'; }
-
-/* ============ LEDGER XLSX IMPORT / EXPORT ============ */
-// UTC 기준으로 날짜 추출 (SheetJS cellDates:true 가 UTC midnight으로 반환)
-function xlsxDateToStr(v){
-  if(v instanceof Date){
-    const y=v.getUTCFullYear(), m=String(v.getUTCMonth()+1).padStart(2,'0'), d=String(v.getUTCDate()).padStart(2,'0');
-    return `${y}-${m}-${d}`;
-  }
-  return String(v||'').slice(0,10);
-}
-
-async function importLedgerXlsx(file){
-  const buf=await file.arrayBuffer();
-  const wb=XLSX.read(buf,{cellDates:true,cellNF:false,cellFormula:false});
-
-  // 분담 비율 읽기 (거래장부 B3=데이트 규범, F3=결혼 규범)
-  const wsT=wb.Sheets['거래장부'];
-  if(!wsT) throw new Error("'거래장부' 시트를 찾을 수 없습니다.");
-  const b3=wsT['B3']?.v, f3=wsT['F3']?.v;
-  if(b3!=null&&!isNaN(b3)){
-    const n=+b3;
-    state.ledger.config.splitRules.date=[{from:'2026-01',norm:n,yeon:+(1-n).toFixed(10)}];
-  }
-  if(f3!=null&&!isNaN(f3)){
-    const n=+f3;
-    state.ledger.config.splitRules.wedding=[{from:'2026-01',norm:n,yeon:+(1-n).toFixed(10)}];
-  }
-
-  // 거래장부 파싱 (headers row5=index4, data row6+)
-  const CAT={'데이트':'date','결혼':'wedding','개인-규범':'personal_norm','개인-연정':'personal_yeon'};
-  const txnRows=XLSX.utils.sheet_to_json(wsT,{header:1,range:4,defval:null});
-  let addT=0,skipT=0;
-  for(const row of txnRows.slice(1)){
-    if(!row[0]||row[2]==null) continue;
-    const dateStr=xlsxDateToStr(row[0]);
-    const place=String(row[1]||'').trim();
-    const amount=Number(row[2]);
-    const category=CAT[String(row[3]||'').trim()]||'date';
-    if(!dateStr||!place||!amount||amount<=0) continue;
-    const dup=state.ledger.txns.some(t=>t.date===dateStr&&t.place===place&&t.amount===amount);
-    if(dup){skipT++;continue;}
-    state.ledger.txns.push({id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:dateStr,place,amount,category,memo:''});
-    addT++;
-  }
-
-  // 입금관리 파싱
-  const wsD=wb.Sheets['입금 관리'];
-  if(!wsD) throw new Error("'입금 관리' 시트를 찾을 수 없습니다.");
-  // 고정 월 입금 예정액 읽기 (C4=규범, E4=연정)
-  const c4=wsD['C4']?.v, e4=wsD['E4']?.v;
-  if(c4!=null&&!isNaN(c4)) state.ledger.config.fixedMonthlyDeposit.norm=+c4;
-  if(e4!=null&&!isNaN(e4)) state.ledger.config.fixedMonthlyDeposit.yeon=+e4;
-
-  const PAYER={'규범':'norm','연정':'yeon'};
-  const PURP={'데이트':'date','결혼':'wedding','기타':'etc'};
-  const STAT={'완료':'done','예정':'planned'};
-  const depRows=XLSX.utils.sheet_to_json(wsD,{header:1,range:4,defval:null});
-  let addD=0,skipD=0;
-  for(const row of depRows.slice(1)){
-    if(!row[0]||row[3]==null) continue;
-    const dateStr=xlsxDateToStr(row[0]);
-    const payer=PAYER[String(row[2]||'').trim()]||'norm';
-    const amount=Number(row[3]);
-    const purpose=PURP[String(row[4]||'').trim()]||'date';
-    const status=STAT[String(row[5]||'').trim()]||'done';
-    if(!dateStr||!amount||amount<=0) continue;
-    const dup=state.ledger.deposits.some(d=>d.date===dateStr&&d.payer===payer&&d.amount===amount&&d.purpose===purpose);
-    if(dup){skipD++;continue;}
-    state.ledger.deposits.push({id:'d'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:dateStr,payer,amount,purpose,status,memo:''});
-    addD++;
-  }
-  return {addT,skipT,addD,skipD};
-}
-
-function exportLedgerXlsx(){
-  const ldg=state.ledger, cfg=ldg.config, ad=cfg.cycleAnchorDay;
-  const latestDateRule=cfg.splitRules.date.reduce((a,b)=>a.from>=b.from?a:b,cfg.splitRules.date[0]||{norm:0.6});
-  const latestWedRule=cfg.splitRules.wedding.reduce((a,b)=>a.from>=b.from?a:b,cfg.splitRules.wedding[0]||{norm:0.5});
-  const nDate=latestDateRule.norm, nWed=latestWedRule.norm;
-  const CATko={date:'데이트',wedding:'결혼',personal_norm:'개인-규범',personal_yeon:'개인-연정'};
-  const PAYERko={norm:'규범',yeon:'연정'};
-  const PURPko={date:'데이트',wedding:'결혼',etc:'기타'};
-  const STATko={done:'완료',planned:'예정'};
-
-  const wb=XLSX.utils.book_new();
-
-  // 거래장부 시트
-  const txnAoa=[
-    ['거래장부'],[],
-    ['[데이트] 규범',nDate,'[데이트] 연정',1-nDate,'[결혼] 규범',nWed,'[결혼] 연정',1-nWed],
-    [],
-    ['사용일','사용처','금액','분류','사이클','규범 부담액','연정 부담액'],
-    ...ldg.txns.map(t=>{
-      const cy=cycleOf(t.date,ad), b=burdenOf(t,cfg);
-      return [new Date(t.date+'T00:00:00Z'),t.place,t.amount,CATko[t.category]||t.category,cy,Math.round(b.norm),Math.round(b.yeon)];
-    })
-  ];
-  const wsT=XLSX.utils.aoa_to_sheet(txnAoa,{cellDates:true});
-  for(let i=5;i<txnAoa.length;i++){const r=XLSX.utils.encode_cell({r:i,c:0});if(wsT[r])wsT[r].z='yyyy-mm-dd';}
-  XLSX.utils.book_append_sheet(wb,wsT,'거래장부');
-
-  // 입금 관리 시트
-  const depAoa=[
-    ['입금 관리'],[],
-    [],
-    ['[고정 데이트] 월 입금 예정액','규범 →',cfg.fixedMonthlyDeposit.norm,'연정 →',cfg.fixedMonthlyDeposit.yeon],
-    ['입금일','사이클','입금자','금액','용도','완료'],
-    ...ldg.deposits.map(d=>{
-      const cy=cycleOf(d.date,ad);
-      return [new Date(d.date+'T00:00:00Z'),cy,PAYERko[d.payer]||d.payer,d.amount,PURPko[d.purpose]||d.purpose,STATko[d.status]||d.status];
-    })
-  ];
-  const wsD=XLSX.utils.aoa_to_sheet(depAoa,{cellDates:true});
-  for(let i=5;i<depAoa.length;i++){const r=XLSX.utils.encode_cell({r:i,c:0});if(wsD[r])wsD[r].z='yyyy-mm-dd';}
-  XLSX.utils.book_append_sheet(wb,wsD,'입금 관리');
-
-  // 사이클 요약 시트
-  const cycles=allCycles(ldg);
-  const nN=ldgName('norm'), nY=ldgName('yeon');
-  const sumAoa=[
-    ['사이클 요약'],[`사이클 = 전월 ${ad}일 ~ 당월 ${ad-1}일 사용분`],
-    ['사이클','사용합계','데이트','결혼','개인합계',
-     `${nN} 부담합`,`${nN} 데이트`,`${nN} 결혼`,`${nN} 개인`,
-     `${nY} 부담합`,`${nY} 데이트`,`${nY} 결혼`,`${nY} 개인`,
-     `${nN} 입금(완료)`,`${nY} 입금(완료)`,`${nN} 추가필요`,`${nY} 추가필요`],
-    ...cycles.map(ck=>{
-      const r=calcCycle(ck,ldg), bc=r.byCategory;
-      const useTotal=(bc.date?.norm||0)+(bc.date?.yeon||0)+(bc.wedding?.norm||0)+(bc.wedding?.yeon||0)
-                    +(bc.personal_norm?.norm||0)+(bc.personal_yeon?.yeon||0);
-      return [ck,Math.round(useTotal),
-        Math.round((bc.date?.norm||0)+(bc.date?.yeon||0)),
-        Math.round((bc.wedding?.norm||0)+(bc.wedding?.yeon||0)),
-        Math.round((bc.personal_norm?.norm||0)+(bc.personal_yeon?.yeon||0)),
-        Math.round(r.burden.norm),Math.round(bc.date?.norm||0),Math.round(bc.wedding?.norm||0),Math.round(bc.personal_norm?.norm||0),
-        Math.round(r.burden.yeon),Math.round(bc.date?.yeon||0),Math.round(bc.wedding?.yeon||0),Math.round(bc.personal_yeon?.yeon||0),
-        Math.round(r.depositDone.norm),Math.round(r.depositDone.yeon),
-        Math.round(r.needMore.norm),Math.round(r.needMore.yeon)];
-    })
-  ];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumAoa),'사이클 요약');
-
-  const today=new Date().toISOString().slice(0,10).replace(/-/g,'');
-  XLSX.writeFile(wb,`분담_${today}.xlsx`);
-}
-
-/* ============ LEDGER RENDER ============ */
-function renderLedger(){
-  if(isGuestMode) return;
-  const ldg=state.ledger;
-  const cycles=allCycles(ldg);
-  const el=document.getElementById('ldg_summary');
-  if(!el) return;
-
-  // 분류 표시명
-  const catLabel={date:'데이트',wedding:'결혼',personal_norm:'개인('+ldgName('norm')+')',personal_yeon:'개인('+ldgName('yeon')+')'};
-  const catCls={date:'date',wedding:'wedding',personal_norm:'pn',personal_yeon:'py'};
-
-  if(!cycles.length){
-    el.innerHTML='<div class="ldg-empty">거래나 입금을 추가하면 사이클 요약이 여기에 표시됩니다.</div>';
-  } else {
-    const nm=ldgName('norm'), ny=ldgName('yeon');
-    let rows='';
-    for(const ck of cycles){
-      const r=calcCycle(ck,ldg);
-      const needN=r.needMore.norm>0?`<span class="need">${ldgWon(r.needMore.norm)}</span>`:`<span class="zero">0원</span>`;
-      const needY=r.needMore.yeon>0?`<span class="need">${ldgWon(r.needMore.yeon)}</span>`:`<span class="zero">0원</span>`;
-      rows+=`<tr>
-        <td>${ck}</td>
-        <td>${ldgWon(r.burden.norm+r.burden.yeon)}</td>
-        <td>${ldgWon(r.burden.norm)}</td>
-        <td>${ldgWon(r.burden.yeon)}</td>
-        <td>${ldgWon(r.depositDone.norm)}</td>
-        <td>${ldgWon(r.depositDone.yeon)}</td>
-        <td>${needN}</td>
-        <td>${needY}</td>
-      </tr>`;
-    }
-    el.innerHTML=`<table class="ldg-tbl">
-      <thead><tr>
-        <th>사이클</th>
-        <th>사용합계</th>
-        <th>${esc(nm)} 부담</th>
-        <th>${esc(ny)} 부담</th>
-        <th>${esc(nm)} 입금(완료)</th>
-        <th>${esc(ny)} 입금(완료)</th>
-        <th>${esc(nm)} 추가필요</th>
-        <th>${esc(ny)} 추가필요</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-  }
-
-  // 분류 선택지 표시명 갱신
-  const pn=document.getElementById('lt_cat_pn'); if(pn) pn.textContent='개인('+ldgName('norm')+')';
-  const py=document.getElementById('lt_cat_py'); if(py) py.textContent='개인('+ldgName('yeon')+')';
-  const dn=document.getElementById('ld_payer_n'); if(dn) dn.textContent=ldgName('norm');
-  const dy=document.getElementById('ld_payer_y'); if(dy) dy.textContent=ldgName('yeon');
-}
-
-/* ============ LEDGER EVENT HANDLERS ============ */
-document.getElementById('ldg_importBtn').onclick=()=>document.getElementById('ldg_fileInput').click();
-document.getElementById('ldg_fileInput').onchange=async function(){
-  const file=this.files[0]; if(!file) return;
-  const res=document.getElementById('ldg_xlsxResult');
-  res.style.color='var(--ink-soft)'; res.textContent='읽는 중…';
-  try{
-    const r=await importLedgerXlsx(file);
-    res.style.color='var(--money-deep)';
-    res.textContent=`완료 — 거래 ${r.addT}건 추가 (중복 ${r.skipT}건 건너뜀), 입금 ${r.addD}건 추가 (중복 ${r.skipD}건 건너뜀)`;
-    save(); renderLedger();
-  }catch(e){
-    res.style.color='var(--s-drop)'; res.textContent='오류: '+e.message;
-  }
-  this.value=''; // 같은 파일 재선택 허용
-};
-document.getElementById('ldg_exportBtn').onclick=function(){
-  const res=document.getElementById('ldg_xlsxResult');
-  try{ exportLedgerXlsx(); res.style.color='var(--money-deep)'; res.textContent='엑셀 내보내기 완료.'; }
-  catch(e){ res.style.color='var(--s-drop)'; res.textContent='오류: '+e.message; }
-};
-document.getElementById('lt_add').onclick=function(){
-  const err=document.getElementById('lt_err');
-  const dateV=document.getElementById('lt_date').value;
-  const place=document.getElementById('lt_place').value.trim();
-  const amount=Number(document.getElementById('lt_amount').value);
-  const category=document.getElementById('lt_cat').value;
-  const memo=document.getElementById('lt_memo').value.trim();
-  if(!dateV||!place||!amount||amount<=0){ err.textContent='사용일·사용처·금액은 필수입니다.'; return; }
-  err.textContent='';
-  state.ledger.txns.push({id:'t'+Date.now(),date:dateV,place,amount,category,memo});
-  document.getElementById('lt_place').value='';
-  document.getElementById('lt_amount').value='';
-  document.getElementById('lt_memo').value='';
-  save(); renderLedger();
-};
-document.getElementById('ld_add').onclick=function(){
-  const err=document.getElementById('ld_err');
-  const dateV=document.getElementById('ld_date').value;
-  const payer=document.getElementById('ld_payer').value;
-  const amount=Number(document.getElementById('ld_amount').value);
-  const purpose=document.getElementById('ld_purpose').value;
-  const status=document.getElementById('ld_status').value;
-  const memo=document.getElementById('ld_memo').value.trim();
-  if(!dateV||!amount||amount<=0){ err.textContent='입금일·금액은 필수입니다.'; return; }
-  err.textContent='';
-  state.ledger.deposits.push({id:'d'+Date.now(),date:dateV,payer,amount,purpose,status,memo});
-  document.getElementById('ld_amount').value='';
-  document.getElementById('ld_memo').value='';
-  save(); renderLedger();
-};
-
 /* ============ boot ============ */
 function renderAll(){
   if(!isGuestMode) document.getElementById('brandSub').textContent=state.profile.names+' · 결혼 & 내집마련 준비 보드';
@@ -2799,7 +2364,6 @@ function renderAll(){
   renderActions();
   renderScraps();
   renderRegNews();
-  renderLedger();
   if(activePanel==='props'){ initOverview(); }
 }
 load();
