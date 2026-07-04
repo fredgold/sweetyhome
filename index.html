@@ -2698,10 +2698,10 @@ function renderLedger(){
   if(!cycles.length){
     el.innerHTML='<div class="ldg-empty">거래나 입금을 추가하면 사이클 요약이 여기에 표시됩니다.</div>';
   } else {
+    const nm=ldgName('norm'), ny=ldgName('yeon');
     let rows='';
     for(const ck of cycles){
       const r=calcCycle(ck,ldg);
-      const nm=ldgName('norm'), ny=ldgName('yeon');
       const needN=r.needMore.norm>0?`<span class="need">${ldgWon(r.needMore.norm)}</span>`:`<span class="zero">0원</span>`;
       const needY=r.needMore.yeon>0?`<span class="need">${ldgWon(r.needMore.yeon)}</span>`:`<span class="zero">0원</span>`;
       rows+=`<tr>
