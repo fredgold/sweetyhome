@@ -961,8 +961,8 @@ function unlockApp(isGuest){
     document.body.classList.add('guest');
     document.querySelector('.brand h1').innerHTML='스위티홈 <span class="guest-badge">데모</span>';
     document.querySelector('.brand .sub').textContent='예비부부 · 결혼 & 내집마련 준비 보드 (체험판)';
-    load();
   }
+  load();
 }
 function forceLogin(){
   sessionStorage.removeItem('sh_token');
