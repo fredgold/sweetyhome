@@ -61,6 +61,7 @@ export default async function handler(req, res) {
         : `시도 횟수 초과. ${Math.ceil(LOCKOUT_SECONDS / 60)}분 후 다시 시도해주세요.`,
     });
   } catch (e) {
-    return res.status(500).json({ ok: false, error: '서버 오류: ' + String(e.message || e) });
+    console.error('[login] unexpected error:', e);
+    return res.status(500).json({ ok: false, error: '서버 오류가 발생했습니다.' });
   }
 }

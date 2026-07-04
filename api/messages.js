@@ -57,6 +57,7 @@ export default async function handler(req, res) {
     const data = await upstream.json();
     res.status(upstream.status).json(data);
   } catch (e) {
-    res.status(500).json({ error: String((e && e.message) || e) });
+    console.error('[messages] unexpected error:', e);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 }

@@ -11,7 +11,8 @@ export default async function handler(req, res) {
       const data = await redis.get(KEY);
       res.status(200).json({ ok: true, state: data || null });
     } catch (e) {
-      res.status(500).json({ ok: false, error: String(e.message || e) });
+      console.error('[state/GET] unexpected error:', e);
+      res.status(500).json({ ok: false, error: '서버 오류가 발생했습니다.' });
     }
     return;
   }
@@ -26,7 +27,8 @@ export default async function handler(req, res) {
       await redis.set(KEY, body.state);
       res.status(200).json({ ok: true });
     } catch (e) {
-      res.status(500).json({ ok: false, error: String(e.message || e) });
+      console.error('[state/POST] unexpected error:', e);
+      res.status(500).json({ ok: false, error: '서버 오류가 발생했습니다.' });
     }
     return;
   }

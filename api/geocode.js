@@ -35,6 +35,7 @@ export default async function handler(req, res) {
       res.status(200).json({ ok: false });
     }
   } catch (e) {
-    res.status(500).json({ ok: false, error: String(e.message || e) });
+    console.error('[geocode] unexpected error:', e);
+    res.status(500).json({ ok: false, error: '서버 오류가 발생했습니다.' });
   }
 }
