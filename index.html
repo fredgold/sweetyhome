@@ -406,6 +406,8 @@
   .sc-badge.type-sale{background:#EEF0F6;color:var(--s-interest);}
   .sc-badge.type-area,.sc-badge.type-policy{background:var(--hairline-soft);color:var(--ink-soft);}
   .sc-badge.type-review{background:#F0EEF6;color:#6B5EA8;}
+  .sc-badge.type-note{background:#F6F6EE;color:#7A7A50;}
+  .sc-badge.type-ai_log{background:#EEF6F4;color:#3A7A6A;}
   .sc-badge.st-new{background:var(--hairline-soft);color:var(--ink-soft);}
   .sc-badge.st-review{background:var(--line9-wash);color:var(--line9-deep);}
   .sc-badge.st-interested{background:var(--money-wash);color:var(--money-deep);}
@@ -696,7 +698,7 @@
     <button class="atab" data-panel="props">🏘️ 매물</button>
 
     <button class="atab" data-panel="actions">✅ 액션</button>
-    <button class="atab" data-panel="scraps">📋 스크랩</button>
+    <button class="atab" data-panel="scraps">📋 수집함</button>
   </nav>
 
   <!-- ===================== 대시보드 ===================== -->
@@ -730,7 +732,7 @@
 
     <div class="regline" id="d_regline">
       <span class="ic">📋</span>
-      <span>정책·규제 정보는 <b>스크랩 탭</b>에서 직접 수집·관리하세요.</span>
+      <span>정책·규제 정보는 <b>수집함</b>에서 직접 수집·관리하세요.</span>
       <em data-goto="scraps" style="cursor:pointer">바로가기</em>
     </div>
   </section>
@@ -925,19 +927,19 @@
   <!-- ===================== 스크랩 ===================== -->
   <section class="panel" id="panel-scraps">
     <div class="asec">
-      <div class="ah"><h2>📋 스크랩</h2></div>
-      <div class="adesc">청약·전세·매물·뉴스 정보를 빠르게 저장하세요. AI 없이도 수동으로 분류·관리할 수 있어요.</div>
+      <div class="ah"><h2>📋 수집함</h2></div>
+      <div class="adesc">청약·매물·뉴스·메모·AI 대화까지 빠르게 모아두세요. AI 없이도 수동으로 분류·관리할 수 있어요.</div>
 
       <!-- 추가 버튼 바 -->
       <div class="sc-add-bar">
-        <button class="sc-add-btn" id="sc_addToggle">➕ 스크랩 추가</button>
+        <button class="sc-add-btn" id="sc_addToggle">➕ 추가</button>
         <button class="sc-import-trigger" id="sc_importTrigger">📋 붙여넣기 임포트</button>
       </div>
 
       <!-- 입력 폼 (기본 접힘) -->
       <div class="sc-form" id="sc_form">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
-          <h3 id="sc_formTitle" style="margin-bottom:0;">➕ 스크랩 추가</h3>
+          <h3 id="sc_formTitle" style="margin-bottom:0;">➕ 추가</h3>
           <button type="button" class="sc-import-trigger" id="sc_formClose" style="font-size:16px;border:none;background:none;color:var(--ink-faint);padding:4px 6px;">✕</button>
         </div>
 
@@ -955,6 +957,8 @@
             <span class="sc-type-chip" data-type="area">동네·시세</span>
             <span class="sc-type-chip" data-type="policy">정책·뉴스</span>
             <span class="sc-type-chip" data-type="review">임장후기</span>
+            <span class="sc-type-chip" data-type="note">메모</span>
+            <span class="sc-type-chip" data-type="ai_log">AI기록</span>
           </div>
         </div>
 
@@ -982,14 +986,14 @@
         </div>
 
         <div class="sc-more-toggle" id="sc_moreToggle">
-          <span id="sc_moreArrow">▶</span> 위치·가격·일정 등 추가 입력
+          <span id="sc_moreArrow">▶</span><span id="sc_moreLabel"> 위치·가격·일정 등 추가 입력</span>
         </div>
         <div class="sc-more-fields" id="sc_moreFields">
           <div class="sc-field-row">
             <div class="sc-field"><label>위치 (동네/역)</label><input type="text" id="sc_location" placeholder="예: 동작구 이수역"></div>
-            <div class="sc-field"><label>가격</label><input type="text" id="sc_price" placeholder="예: 전세 4.2억"></div>
+            <div class="sc-field" id="sc_fieldPrice"><label>가격</label><input type="text" id="sc_price" placeholder="예: 전세 4.2억"></div>
           </div>
-          <div class="sc-field-row">
+          <div class="sc-field-row" id="sc_rowAreaSchedule">
             <div class="sc-field"><label>면적·평형</label><input type="text" id="sc_area" placeholder="예: 전용 59㎡"></div>
             <div class="sc-field"><label>일정</label><input type="text" id="sc_schedule" placeholder="예: 청약 7/10~12"></div>
           </div>
@@ -1034,6 +1038,8 @@
           <span class="sc-filter-chip" data-ftype="area">동네·시세</span>
           <span class="sc-filter-chip" data-ftype="policy">정책·뉴스</span>
           <span class="sc-filter-chip" data-ftype="review">임장후기</span>
+          <span class="sc-filter-chip" data-ftype="note">메모</span>
+          <span class="sc-filter-chip" data-ftype="ai_log">AI기록</span>
         </div>
         <div class="sc-filter-label">상태</div>
         <div class="sc-filter-row" id="sc_statusFilter">
@@ -1671,8 +1677,17 @@ document.getElementById('act_suggestBtn').onclick=async()=>{
 /* ============ 스크랩 ============ */
 let scrapImgData=null;
 let scFilterType='', scFilterStatus='', scEditId=null;
-const SC_TYPE={subscription:'청약공고',jeonse:'전세',sale:'매매',area:'동네·시세',policy:'정책·뉴스',review:'임장후기'};
+const SC_TYPE={subscription:'청약공고',jeonse:'전세',sale:'매매',area:'동네·시세',policy:'정책·뉴스',review:'임장후기',note:'메모',ai_log:'AI기록'};
 const SC_STATUS={new:'신규',review:'검토중',interested:'관심',hold:'보류',promoted:'매물등록',dropped:'제외'};
+const SC_PROPLESS=new Set(['note','ai_log']);
+
+function scUpdatePropFields(type){
+  const hide=SC_PROPLESS.has(type);
+  document.getElementById('sc_fieldPrice').style.display=hide?'none':'';
+  document.getElementById('sc_rowAreaSchedule').style.display=hide?'none':'';
+  const lbl=document.getElementById('sc_moreLabel');
+  if(lbl) lbl.textContent=hide?' 위치·조건 등 추가 입력':' 위치·가격·일정 등 추가 입력';
+}
 
 // ── 마크다운 렌더 ──
 function renderMd(text){
@@ -1778,6 +1793,7 @@ document.getElementById('sc_typeChips').onclick=e=>{
   const chip=e.target.closest('.sc-type-chip'); if(!chip)return;
   document.querySelectorAll('.sc-type-chip').forEach(c=>c.classList.remove('on'));
   chip.classList.add('on');
+  scUpdatePropFields(chip.dataset.type);
 };
 
 document.getElementById('sc_moreToggle').onclick=()=>{
@@ -1836,13 +1852,14 @@ function scClearForm(){
   const scPToggle=document.getElementById('sc_previewToggle');
   scPToggle.classList.remove('on'); scPToggle.textContent='👁 미리보기';
   scrapImgData=null; scEditId=null;
-  document.getElementById('sc_formTitle').textContent='➕ 스크랩 추가';
+  document.getElementById('sc_formTitle').textContent='➕ 추가';
   document.getElementById('sc_cancelBtn').style.display='none';
   document.querySelectorAll('.sc-type-chip').forEach((c,i)=>c.classList.toggle('on',i===0));
+  scUpdatePropFields('subscription');
 }
 
 function scOpenForm(){ document.getElementById('sc_form').classList.add('open'); document.getElementById('sc_addToggle').textContent='▲ 접기'; document.getElementById('sc_form').scrollIntoView({behavior:'smooth',block:'nearest'}); }
-function scCloseForm(){ scClearForm(); document.getElementById('sc_form').classList.remove('open'); document.getElementById('sc_addToggle').textContent='➕ 스크랩 추가'; }
+function scCloseForm(){ scClearForm(); document.getElementById('sc_form').classList.remove('open'); document.getElementById('sc_addToggle').textContent='➕ 추가'; }
 document.getElementById('sc_addToggle').onclick=()=>{ const isOpen=document.getElementById('sc_form').classList.contains('open'); isOpen?scCloseForm():scOpenForm(); };
 document.getElementById('sc_formClose').onclick=scCloseForm;
 document.getElementById('sc_cancelBtn').onclick=()=>{scCloseForm();renderScraps();};
@@ -1851,7 +1868,7 @@ document.getElementById('sc_analyzeBtn').onclick=()=>{};
 function openScEdit(id){
   const s=state.scraps.find(x=>x.id===id); if(!s)return;
   scEditId=id;
-  document.getElementById('sc_formTitle').textContent='✏️ 스크랩 수정';
+  document.getElementById('sc_formTitle').textContent='✏️ 수정';
   document.getElementById('sc_cancelBtn').style.display='';
   document.getElementById('sc_title').value=s.title||'';
   document.getElementById('sc_text').value=s.raw||'';
@@ -1864,6 +1881,7 @@ function openScEdit(id){
   document.getElementById('sc_fit').value=['high','mid','low'].includes(s.fit)?s.fit:'';
   document.getElementById('sc_tags').value=(s.tags||[]).join(', ');
   document.querySelectorAll('.sc-type-chip').forEach(c=>c.classList.toggle('on',c.dataset.type===s.type));
+  scUpdatePropFields(s.type);
   document.getElementById('sc_moreFields').classList.add('open');
   document.getElementById('sc_moreArrow').textContent='▼';
   scOpenForm();
@@ -1877,7 +1895,7 @@ function renderScraps(){
   if(scFilterType) list=list.filter(s=>s.type===scFilterType);
   if(scFilterStatus) list=list.filter(s=>s.status===scFilterStatus);
   if(!list.length){
-    el.innerHTML=`<div class="sc-empty">${state.scraps.length?'조건에 맞는 스크랩이 없어요.':'아직 스크랩이 없어요.<br>위 폼에서 첫 번째 스크랩을 추가해보세요!'}</div>`;
+    el.innerHTML=`<div class="sc-empty">${state.scraps.length?'조건에 맞는 항목이 없어요.':'아직 항목이 없어요.<br>위 버튼으로 첫 번째 항목을 추가해보세요!'}</div>`;
     return;
   }
   el.innerHTML='<div class="sc-list">'+list.map(s=>{
@@ -1889,7 +1907,8 @@ function renderScraps(){
     if(s.fit==='high'||s.fit==='가능'){fitCls='high';fitLbl='✅ 적합';}
     else if(s.fit==='low'||s.fit==='불가'){fitCls='low';fitLbl='❌ 부적합';}
     else if(s.fit){fitCls='mid';fitLbl='⚠️ '+esc(s.fit);}
-    const metaParts=[s.location&&`📍 ${esc(s.location)}`,s.price&&`💰 ${esc(s.price)}`,s.area&&`📐 ${esc(s.area)}`,s.schedule&&`📅 ${esc(s.schedule)}`].filter(Boolean);
+    const isPropLess=SC_PROPLESS.has(s.type);
+    const metaParts=[s.location&&`📍 ${esc(s.location)}`,!isPropLess&&s.price&&`💰 ${esc(s.price)}`,!isPropLess&&s.area&&`📐 ${esc(s.area)}`,!isPropLess&&s.schedule&&`📅 ${esc(s.schedule)}`].filter(Boolean);
     const rawText=s.raw||'';
     return `<div class="sc-card" data-scid="${s.id}">
       <div class="sc-card-head">
@@ -1917,7 +1936,7 @@ function renderScraps(){
   });
   el.querySelectorAll('[data-sc-edit]').forEach(b=>b.onclick=()=>openScEdit(b.dataset.scEdit));
   el.querySelectorAll('[data-sc-del]').forEach(b=>b.onclick=()=>{
-    if(!confirm('이 스크랩을 삭제할까요?'))return;
+    if(!confirm('이 항목을 삭제할까요?'))return;
     state.scraps=state.scraps.filter(x=>x.id!==b.dataset.scDel);save();renderScraps();
   });
 }
@@ -1969,6 +1988,8 @@ const SC_TYPE_MAP={
   '동네·시세':'area','동네':'area','시세':'area',
   '정책·뉴스':'policy','정책':'policy','뉴스':'policy',
   '임장후기':'review','임장':'review',
+  '메모':'note','note':'note',
+  'AI기록':'ai_log','ai기록':'ai_log','ai_log':'ai_log',
 };
 const SC_FIT_MAP={
   '높음':'high','고':'high','가능':'high','적합':'high','high':'high',
