@@ -362,7 +362,6 @@
         <div class="sc-field">
           <div class="sc-md-header">
             <label>원문·메모 (필수)</label>
-            <button type="button" class="sc-preview-toggle" id="sc_previewToggle">◀ 숨기기</button>
           </div>
           <div class="sc-md-toolbar" id="sc_mdToolbar">
             <button type="button" data-mdwrap="**||**" title="굵게 (Ctrl+B)"><b>B</b></button>
@@ -541,7 +540,6 @@
       <div class="sc-field">
         <div class="sc-md-header">
           <label>원문·메모</label>
-          <button type="button" class="sc-preview-toggle" id="sem_previewToggle">👁 미리보기</button>
         </div>
         <div class="sc-md-toolbar" id="sem_mdToolbar">
           <button type="button" data-semwrap="**||**" title="굵게 (Ctrl+B)"><b>B</b></button>
@@ -551,8 +549,10 @@
           <button type="button" data-semline="- " title="목록">•</button>
           <button type="button" data-semline="> " title="인용">❝</button>
         </div>
-        <textarea id="sem_text" class="sc-md-textarea" style="min-height:120px;" placeholder="원문·메모"></textarea>
-        <div id="sem_mdPreview" class="sc-md-preview sc-md-content" style="display:none;"></div>
+        <div class="sc-md-split" id="sem_mdSplit">
+          <textarea id="sem_text" class="sc-md-textarea" style="min-height:120px;" placeholder="원문·메모"></textarea>
+          <div id="sem_mdPreview" class="sc-md-preview sc-md-content"></div>
+        </div>
       </div>
       <div class="sc-more-toggle" id="sem_moreToggle" style="margin-top:8px;">
         <span id="sem_moreArrow">▶</span><span id="sem_moreLabel"> 위치·가격·일정 등</span>

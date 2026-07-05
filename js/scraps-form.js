@@ -26,11 +26,6 @@ document.getElementById('sc_text').addEventListener('input',e=>{
     ogPrev.style.display='block';
     ogPrev.innerHTML='<div class="og-card"><span class="og-loading">💡 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
   } else { ogPrev.style.display='none'; }
-  // 실시간 미리보기
-  const mdPrev=document.getElementById('sc_mdPreview');
-  if(mdPrev&&!document.getElementById('sc_mdSplit')?.classList.contains('preview-hidden')){
-    mdPrev.innerHTML=e.target.value?renderMd(e.target.value):'<span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span>';
-  }
   // 슬래시 커맨드 감지
   scDetectSlash(e.target);
 });
@@ -68,21 +63,13 @@ document.getElementById('sc_text').addEventListener('keydown',e=>{
 });
 
 // ── 툴바 버튼 ──
+document.getElementById('sc_mdToolbar').addEventListener('mousedown',e=>e.preventDefault());
 document.getElementById('sc_mdToolbar').onclick=e=>{
   const btn=e.target.closest('button[data-mdwrap],button[data-mdline]');
   if(!btn) return;
   const ta=document.getElementById('sc_text');
-  if(btn.dataset.mdwrap){
-    const parts=btn.dataset.mdwrap.split('||');
-    mdWrap(ta,parts[0],parts[1]);
-  } else if(btn.dataset.mdline){
-    mdLine(ta,btn.dataset.mdline);
-  }
-  // 툴바 조작 후 미리보기 갱신
-  const mdPrev=document.getElementById('sc_mdPreview');
-  if(mdPrev&&!document.getElementById('sc_mdSplit')?.classList.contains('preview-hidden')){
-    mdPrev.innerHTML=ta.value?renderMd(ta.value):'<span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span>';
-  }
+  if(btn.dataset.mdwrap){const parts=btn.dataset.mdwrap.split('||');mdWrap(ta,parts[0],parts[1]);}
+  else if(btn.dataset.mdline){mdLine(ta,btn.dataset.mdline);}
 };
 
 // ── 슬래시 커맨드 ──
@@ -123,6 +110,7 @@ function scShowSlash(items){
   menu.innerHTML=items.map((c,i)=>`<div class="slash-item${i===0?' active':''}" data-key="${c.key}"><span class="slash-icon">${c.icon}</span><span class="slash-label">${c.label}</span></div>`).join('');
   menu.style.display='';
   menu.querySelectorAll('.slash-item').forEach(item=>{
+    item.addEventListener('mousedown',e=>e.preventDefault());
     item.onclick=()=>scApplySlash(document.getElementById('sc_text'),item.dataset.key);
   });
 }
@@ -162,20 +150,24 @@ function scApplySlash(ta,key){
   ta.selectionStart=ta.selectionEnd=pos;
   scCloseSlash();
   autoResizeTa(ta);
-  // 미리보기 갱신
-  const prev=document.getElementById('sc_mdPreview');
-  if(prev&&!document.getElementById('sc_mdSplit')?.classList.contains('preview-hidden')){
-    prev.innerHTML=ta.value?renderMd(ta.value):'<span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span>';
-  }
   ta.focus();
 }
 
-// ── 미리보기 토글 (split view) ──
-document.getElementById('sc_previewToggle').onclick=function(){
-  const split=document.getElementById('sc_mdSplit');
-  const hiding=split.classList.toggle('preview-hidden');
-  this.textContent=hiding?'👁 미리보기':'◀ 숨기기';
-};
+// ── 편집 ↔ 미리보기 전환 ──
+function scToView(){
+  const ta=document.getElementById('sc_text');
+  if(!ta.value.trim())return;
+  document.getElementById('sc_mdPreview').innerHTML=renderMd(ta.value);
+  document.getElementById('sc_mdSplit').classList.add('sc-view-mode');
+  document.getElementById('sc_mdToolbar').style.display='none';
+}
+function scToEdit(){
+  document.getElementById('sc_mdSplit').classList.remove('sc-view-mode');
+  document.getElementById('sc_mdToolbar').style.display='';
+  document.getElementById('sc_text').focus();
+}
+document.getElementById('sc_text').addEventListener('blur',scToView);
+document.getElementById('sc_mdPreview').addEventListener('click',scToEdit);
 
 document.getElementById('sc_file').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
@@ -243,14 +235,11 @@ function scClearForm(){
   document.getElementById('sc_file').value='';
   document.getElementById('sc_ogPreview').style.display='none';
   const scTa=document.getElementById('sc_text');
-  const scPrev=document.getElementById('sc_mdPreview');
-  scTa.style.display=''; scTa.style.height='auto';
-  scPrev.innerHTML='<span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span>';
+  scTa.style.height='auto';
+  document.getElementById('sc_mdPreview').innerHTML='<span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span>';
   const scSplit=document.getElementById('sc_mdSplit');
-  if(scSplit) scSplit.classList.remove('preview-hidden');
+  if(scSplit) scSplit.classList.remove('sc-view-mode');
   document.getElementById('sc_mdToolbar').style.display='';
-  const scPToggle=document.getElementById('sc_previewToggle');
-  scPToggle.textContent='◀ 숨기기';
   scCloseSlash();
   scrapImgData=null; scEditId=null;
   document.getElementById('sc_formTitle').textContent='➕ 추가';
@@ -295,12 +284,10 @@ function openScEdit(id){
   semUpdatePropFields(s.type);
   document.getElementById('sem_moreFields').classList.remove('open');
   document.getElementById('sem_moreArrow').textContent='▶';
-  // reset markdown preview
-  document.getElementById('sem_text').style.display='';
-  document.getElementById('sem_mdPreview').style.display='none';
+  // reset to edit mode
+  const semSplit=document.getElementById('sem_mdSplit');
+  if(semSplit) semSplit.classList.remove('sc-view-mode');
   document.getElementById('sem_mdToolbar').style.display='';
-  const pt=document.getElementById('sem_previewToggle');
-  pt.classList.remove('on'); pt.textContent='👁 미리보기';
   document.getElementById('sem_err').textContent='';
   // 이미지 초기화
   semImgData=null;
@@ -326,17 +313,22 @@ document.getElementById('sem_moreToggle').onclick=()=>{
   const open=f.classList.toggle('open');
   a.textContent=open?'▼':'▶';
 };
-document.getElementById('sem_previewToggle').onclick=function(){
+// ── 수정 모달 편집 ↔ 미리보기 전환 ──
+document.getElementById('sem_mdToolbar').addEventListener('mousedown',e=>e.preventDefault());
+document.getElementById('sem_text').addEventListener('blur',()=>{
   const ta=document.getElementById('sem_text');
-  const prev=document.getElementById('sem_mdPreview');
-  const on=prev.style.display==='none';
-  prev.style.display=on?'':'none';
-  ta.style.display=on?'none':'';
-  document.getElementById('sem_mdToolbar').style.display=on?'none':'';
-  this.classList.toggle('on',on);
-  this.textContent=on?'✏️ 편집':'👁 미리보기';
-  if(on) prev.innerHTML=renderMd(ta.value)||'<span style="color:var(--ink-faint);font-size:12px;">내용을 입력하면 미리보기가 표시됩니다.</span>';
-};
+  const split=document.getElementById('sem_mdSplit');
+  if(!ta.value.trim()||!split)return;
+  document.getElementById('sem_mdPreview').innerHTML=renderMd(ta.value);
+  split.classList.add('sc-view-mode');
+  document.getElementById('sem_mdToolbar').style.display='none';
+});
+document.getElementById('sem_mdPreview').addEventListener('click',()=>{
+  const split=document.getElementById('sem_mdSplit');
+  if(split) split.classList.remove('sc-view-mode');
+  document.getElementById('sem_mdToolbar').style.display='';
+  document.getElementById('sem_text').focus();
+});
 document.getElementById('sem_mdToolbar').onclick=e=>{
   const btn=e.target.closest('[data-semwrap],[data-semline]');if(!btn)return;
   const ta=document.getElementById('sem_text');

@@ -430,14 +430,13 @@
   /* 마크다운 에디터 */
   .sc-md-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
   .sc-md-header label{margin-bottom:0;font-size:11.5px;font-weight:700;color:var(--ink-soft);}
-  .sc-preview-toggle{font-size:11px;font-weight:700;color:var(--ink-soft);border:1px solid var(--hairline);border-radius:7px;padding:4px 9px;background:var(--surface);}
-  .sc-preview-toggle.on,.sc-preview-toggle:hover{background:var(--money-wash);color:var(--money-deep);border-color:var(--money);}
   .sc-md-toolbar{display:flex;gap:3px;flex-wrap:wrap;padding:5px 6px;background:var(--hairline-soft);border:1px solid var(--hairline);border-bottom:none;border-radius:9px 9px 0 0;}
   .sc-md-toolbar button{font-size:12px;font-weight:700;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-family:monospace;line-height:1;}
   .sc-md-toolbar button:hover{background:var(--surface);color:var(--ink);}
   .sc-md-toolbar .tb-sep{width:1px;background:var(--hairline);margin:2px 3px;align-self:stretch;}
   .sc-md-textarea{border-radius:0 0 9px 9px !important;min-height:100px;overflow-y:auto !important;}
-  .sc-md-preview{border:1px solid var(--money);border-radius:0 0 9px 9px;padding:11px 13px;min-height:80px;background:var(--surface);font-size:13px;line-height:1.7;overflow-y:auto;max-height:340px;}
+  .sc-md-preview{border:1px solid var(--money);border-radius:0 0 9px 9px;padding:11px 13px;min-height:80px;background:var(--surface);font-size:13px;line-height:1.7;overflow-y:auto;max-height:340px;cursor:pointer;position:relative;}
+  .sc-md-preview:hover::after{content:'✏️ 편집';position:absolute;top:8px;right:10px;font-size:11px;color:var(--ink-faint);}
   /* 마크다운 콘텐츠 공통 스타일 */
   .sc-md-content h1,.sc-md-content h2,.sc-md-content h3{font-weight:800;letter-spacing:-.02em;margin:.6em 0 .2em;}
   .sc-md-content h1{font-size:16px;} .sc-md-content h2{font-size:14.5px;} .sc-md-content h3{font-size:13px;}
@@ -674,13 +673,12 @@
   .sc-gallery-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
   .sc-gallery-date{font-size:10px;color:var(--ink-faint);margin-left:auto;}
 
-  /* ── 에디터 split view ── */
-  .sc-md-split{position:relative;display:flex;gap:10px;align-items:flex-start;}
-  .sc-md-split>.sc-md-textarea{flex:1;min-height:120px;}
-  .sc-md-split>.sc-md-preview{flex:1;min-height:120px;max-height:400px;overflow-y:auto;border:1px solid var(--hairline);border-radius:9px;padding:10px 14px;box-sizing:border-box;}
-  .sc-md-split.preview-hidden>.sc-md-preview{display:none!important;}
+  /* ── 에디터 click-to-edit ── */
+  .sc-md-split{position:relative;}
+  .sc-md-split .sc-md-preview{display:none;}
+  .sc-md-split.sc-view-mode .sc-md-textarea{display:none!important;}
+  .sc-md-split.sc-view-mode .sc-md-preview{display:block!important;border-radius:9px!important;}
   .split-placeholder{color:var(--ink-faint);font-size:12px;}
-  @media(max-width:640px){.sc-md-split{flex-direction:column;}.sc-md-split>.sc-md-preview{width:100%;box-sizing:border-box;}}
 
   /* ── 슬래시 커맨드 메뉴 ── */
   .slash-menu{position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:var(--surface);border:1px solid var(--hairline);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.13);min-width:220px;max-height:250px;overflow-y:auto;display:none;}
