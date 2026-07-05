@@ -355,33 +355,73 @@
   .act-suggest-card .stx{flex:1;font-size:13px;font-weight:600;line-height:1.4;}
   .act-suggest-card .btn-adopt{font-size:12px;font-weight:700;color:#fff;background:var(--line9-deep);border-radius:8px;padding:6px 12px;white-space:nowrap;}
 
-  /* ===== v3: 스크랩 ===== */
-  .scrap-input{background:var(--hairline-soft);border-radius:12px;padding:14px;margin-bottom:16px;}
-  .scrap-input textarea{width:100%;border:1px solid var(--hairline);border-radius:10px;padding:10px;min-height:80px;resize:vertical;background:#fff;font-size:13px;line-height:1.5;}
-  .scrap-input textarea:focus{outline:none;border-color:var(--line9);}
-  .scrap-or{text-align:center;font-size:11px;color:var(--ink-faint);font-weight:700;margin:8px 0;}
-  .scrap-upload{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--line9-deep);border:1px dashed var(--line9);border-radius:10px;padding:10px 16px;cursor:pointer;transition:.12s;}
-  .scrap-upload:hover{background:var(--line9-wash);}
-  .scrap-preview{margin-top:8px;}
-  .scrap-preview img{max-width:100%;max-height:200px;border-radius:10px;border:1px solid var(--hairline);}
-  .scrap-acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
-  .sc-list{display:flex;flex-direction:column;gap:12px;margin-top:14px;}
+  /* ===== 스크랩 탭 ===== */
+  .sc-form{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow);}
+  .sc-form h3{font-size:14px;font-weight:800;margin-bottom:12px;}
+  .sc-field{margin-bottom:10px;}
+  .sc-field label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;}
+  .sc-field input,.sc-field textarea,.sc-field select{width:100%;border:1px solid var(--hairline);border-radius:9px;padding:9px 11px;font-size:13px;background:#fff;font-family:inherit;box-sizing:border-box;}
+  .sc-field textarea{min-height:76px;resize:vertical;line-height:1.5;}
+  .sc-field input:focus,.sc-field textarea:focus,.sc-field select:focus{outline:none;border-color:var(--money);}
+  .sc-field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .sc-type-chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .sc-type-chip{font-size:12px;font-weight:700;padding:7px 12px;border-radius:9px;border:1.5px solid var(--hairline);color:var(--ink-soft);cursor:pointer;transition:.1s;user-select:none;}
+  .sc-type-chip.on{border-color:var(--money);background:var(--money-wash);color:var(--money-deep);}
+  .sc-more-toggle{font-size:12px;font-weight:700;color:var(--ink-faint);padding:6px 0;display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;margin-bottom:2px;}
+  .sc-more-toggle:hover{color:var(--ink-soft);}
+  .sc-more-fields{display:none;}
+  .sc-more-fields.open{display:block;}
+  .sc-form-acts{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;}
+  .sc-save-btn{flex:1;padding:11px;background:var(--money);color:#fff;font-size:14px;font-weight:800;border-radius:10px;}
+  .sc-save-btn:hover{background:var(--money-deep);}
+  .sc-cancel-btn{padding:10px 14px;font-size:13px;font-weight:700;color:var(--ink-soft);border:1px solid var(--hairline);border-radius:10px;}
+  .sc-cancel-btn:hover{background:var(--hairline-soft);}
+  .sc-ai-form-btn{padding:10px 13px;font-size:12px;font-weight:700;color:var(--ink-faint);border:1px solid var(--hairline);border-radius:10px;opacity:.45;cursor:not-allowed;}
+  .sc-ai-note{font-size:11px;color:var(--ink-faint);margin-top:7px;line-height:1.5;}
+  .sc-upload-row{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .sc-upload-label{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--line9-deep);border:1px dashed var(--line9);border-radius:9px;padding:8px 12px;cursor:pointer;transition:.1s;}
+  .sc-upload-label:hover{background:var(--line9-wash);}
+  .sc-img-preview{margin-top:6px;}
+  .sc-img-preview img{max-width:100%;max-height:160px;border-radius:9px;border:1px solid var(--hairline);}
+  /* 필터 바 */
+  .sc-filter-bar{margin-bottom:14px;}
+  .sc-filter-label{font-size:10.5px;font-weight:700;color:var(--ink-faint);margin-bottom:5px;margin-top:9px;}
+  .sc-filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+  .sc-filter-row::-webkit-scrollbar{display:none;}
+  .sc-filter-chip{font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:20px;border:1.5px solid var(--hairline);color:var(--ink-soft);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:.1s;user-select:none;}
+  .sc-filter-chip.on{border-color:var(--money);background:var(--money-wash);color:var(--money-deep);}
+  /* 카드 */
+  .sc-list{display:flex;flex-direction:column;gap:10px;}
   .sc-card{background:var(--surface);border:1px solid var(--hairline);border-radius:13px;padding:14px 15px;box-shadow:var(--shadow);}
-  .sc-card .sc-parsed{margin-bottom:8px;}
-  .sc-card .sc-row{display:flex;gap:6px;align-items:center;font-size:12.5px;font-weight:600;padding:3px 0;}
-  .sc-card .sc-row .sc-label{color:var(--ink-faint);flex:none;width:70px;}
-  .sc-card .sc-row .sc-val{color:var(--ink);font-weight:700;}
-  .sc-card .sc-tags{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0;}
-  .sc-card .sc-tag{font-size:10.5px;font-weight:700;background:var(--line9-wash);color:var(--line9-deep);border-radius:6px;padding:3px 7px;}
-  .sc-card .sc-fit{font-size:12px;font-weight:700;padding:8px 10px;border-radius:9px;margin-top:8px;}
-  .sc-card .sc-fit.yes{background:#E8F1EA;color:#3C7A4C;}
-  .sc-card .sc-fit.no{background:#FBEDE5;color:#B5602F;}
-  .sc-card .sc-fit.maybe{background:var(--line9-wash);color:var(--line9-deep);}
-  .sc-card .sc-raw{font-size:11px;color:var(--ink-faint);margin-top:8px;border-top:1px dashed var(--hairline);padding-top:8px;white-space:pre-wrap;max-height:60px;overflow:hidden;cursor:pointer;}
-  .sc-card .sc-raw.expand{max-height:none;}
-  .sc-card .sc-actions{display:flex;gap:6px;margin-top:8px;}
-  .sc-card .sc-actions button{font-size:11px;font-weight:600;color:var(--ink-faint);padding:4px 8px;border-radius:7px;}
-  .sc-card .sc-actions button:hover{background:var(--hairline-soft);color:var(--ink);}
+  .sc-card-head{display:flex;gap:6px;align-items:flex-start;margin-bottom:7px;flex-wrap:wrap;}
+  .sc-card-title{font-size:14px;font-weight:800;flex:1;min-width:120px;letter-spacing:-.02em;line-height:1.3;}
+  .sc-badge{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0;}
+  .sc-badge.type-subscription{background:var(--line9-wash);color:var(--line9-deep);}
+  .sc-badge.type-jeonse{background:var(--money-wash);color:var(--money-deep);}
+  .sc-badge.type-sale{background:#EEF0F6;color:var(--s-interest);}
+  .sc-badge.type-area,.sc-badge.type-policy{background:var(--hairline-soft);color:var(--ink-soft);}
+  .sc-badge.type-review{background:#F0EEF6;color:#6B5EA8;}
+  .sc-badge.st-new{background:var(--hairline-soft);color:var(--ink-soft);}
+  .sc-badge.st-review{background:var(--line9-wash);color:var(--line9-deep);}
+  .sc-badge.st-interested{background:var(--money-wash);color:var(--money-deep);}
+  .sc-badge.st-hold{background:var(--hairline-soft);color:var(--ink-faint);}
+  .sc-badge.st-promoted{background:var(--money);color:#fff;}
+  .sc-badge.st-dropped{background:#FBEDE5;color:#B5602F;}
+  .sc-fit-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;margin-bottom:5px;}
+  .sc-fit-badge.high{background:#E8F1EA;color:#3C7A4C;}
+  .sc-fit-badge.mid{background:var(--line9-wash);color:var(--line9-deep);}
+  .sc-fit-badge.low{background:#FBEDE5;color:#B5602F;}
+  .sc-card-meta{font-size:12px;color:var(--ink-soft);font-weight:600;line-height:1.7;margin-bottom:5px;}
+  .sc-card-tags{display:flex;gap:5px;flex-wrap:wrap;margin:5px 0;}
+  .sc-card-tag{font-size:10.5px;font-weight:700;background:var(--line9-wash);color:var(--line9-deep);border-radius:6px;padding:2px 7px;}
+  .sc-card-raw{font-size:11px;color:var(--ink-faint);margin-top:7px;border-top:1px dashed var(--hairline);padding-top:7px;white-space:pre-wrap;max-height:52px;overflow:hidden;cursor:pointer;line-height:1.5;}
+  .sc-card-raw.expand{max-height:none;}
+  .sc-card-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center;}
+  .sc-card-actions button{font-size:11.5px;font-weight:600;color:var(--ink-soft);padding:5px 9px;border-radius:7px;border:1px solid var(--hairline);}
+  .sc-card-actions button:hover:not([disabled]){background:var(--hairline-soft);}
+  .sc-card-actions button[disabled]{opacity:.4;cursor:not-allowed;}
+  .sc-card-actions select{font-size:11.5px;font-weight:600;padding:4px 7px;border-radius:7px;border:1px solid var(--hairline);color:var(--ink);background:#fff;font-family:inherit;}
+  .sc-empty{padding:28px 16px;text-align:center;color:var(--ink-faint);font-size:13px;line-height:1.8;}
 
   /* ===== v3: 규제·뉴스 ===== */
   .rn-list{display:flex;flex-direction:column;gap:12px;margin-top:14px;}
@@ -841,23 +881,99 @@
   <!-- ===================== 스크랩 ===================== -->
   <section class="panel" id="panel-scraps">
     <div class="asec">
-      <div class="ah">
-        <h2>📋 청약·매물 스크랩</h2>
-      </div>
-      <div class="adesc">인스타·블로그·뉴스에서 본 청약·매물 정보를 캡션 붙여넣기 또는 스크린샷 업로드로 스크랩하세요. AI가 핵심 정보를 추출해요.</div>
+      <div class="ah"><h2>📋 스크랩</h2></div>
+      <div class="adesc">청약·전세·매물·뉴스 정보를 빠르게 저장하세요. AI 없이도 수동으로 분류·관리할 수 있어요.</div>
 
-      <div class="scrap-input">
-        <textarea id="sc_text" placeholder="캡션·텍스트를 여기 붙여넣으세요&#10;예: [동작구 신축] 전용 59㎡ 전세 4.2억 / 입주 2027.3 / 세대수 820 / 역세권…"></textarea>
-        <div id="sc_ogPreview" style="display:none;"></div>
-        <div class="scrap-or">또는</div>
-        <label class="scrap-upload" for="sc_file">
-          <span id="sc_uploadLabel">📷 스크린샷 업로드</span>
-          <input type="file" id="sc_file" accept="image/*" style="display:none">
-        </label>
-        <div id="sc_preview" class="scrap-preview"></div>
-        <div class="scrap-acts">
-          <button class="btn-save" id="sc_analyzeBtn">✨ AI 분석 & 저장</button>
-          <button class="btn-ai" id="sc_fitBtn">🔍 우리 자격으로 가능?</button>
+      <!-- 입력 폼 -->
+      <div class="sc-form" id="sc_form">
+        <h3 id="sc_formTitle">➕ 스크랩 추가</h3>
+
+        <div class="sc-field">
+          <label>제목 (필수) — 단지명·공고명·한 줄 요약</label>
+          <input type="text" id="sc_title" placeholder="예: 동작구 이수역 신축 전용59㎡ 전세">
+        </div>
+
+        <div class="sc-field">
+          <label>유형 (필수)</label>
+          <div class="sc-type-chips" id="sc_typeChips">
+            <span class="sc-type-chip on" data-type="subscription">청약공고</span>
+            <span class="sc-type-chip" data-type="jeonse">전세</span>
+            <span class="sc-type-chip" data-type="sale">매매</span>
+            <span class="sc-type-chip" data-type="area">동네·시세</span>
+            <span class="sc-type-chip" data-type="policy">정책·뉴스</span>
+            <span class="sc-type-chip" data-type="review">임장후기</span>
+          </div>
+        </div>
+
+        <div class="sc-field">
+          <label>원문·메모 (필수) — 캡션 붙여넣기 또는 직접 입력</label>
+          <textarea id="sc_text" placeholder="인스타·블로그 캡션을 그대로 붙여넣거나&#10;직접 메모를 입력하세요."></textarea>
+          <div id="sc_ogPreview" style="display:none;margin-top:6px;"></div>
+        </div>
+
+        <div class="sc-more-toggle" id="sc_moreToggle">
+          <span id="sc_moreArrow">▶</span> 위치·가격·일정 등 추가 입력
+        </div>
+        <div class="sc-more-fields" id="sc_moreFields">
+          <div class="sc-field-row">
+            <div class="sc-field"><label>위치 (동네/역)</label><input type="text" id="sc_location" placeholder="예: 동작구 이수역"></div>
+            <div class="sc-field"><label>가격</label><input type="text" id="sc_price" placeholder="예: 전세 4.2억"></div>
+          </div>
+          <div class="sc-field-row">
+            <div class="sc-field"><label>면적·평형</label><input type="text" id="sc_area" placeholder="예: 전용 59㎡"></div>
+            <div class="sc-field"><label>일정</label><input type="text" id="sc_schedule" placeholder="예: 청약 7/10~12"></div>
+          </div>
+          <div class="sc-field"><label>조건·자격</label><input type="text" id="sc_condition" placeholder="예: 신혼부부 전용, 소득 130% 이하"></div>
+          <div class="sc-field"><label>출처 (URL·계정명)</label><input type="text" id="sc_source" placeholder="예: @계정명 또는 URL"></div>
+          <div class="sc-field-row">
+            <div class="sc-field"><label>태그 (쉼표 구분)</label><input type="text" id="sc_tags" placeholder="예: 역세권, 신혼, 59㎡"></div>
+            <div class="sc-field"><label>적합도</label><select id="sc_fit">
+              <option value="">미설정</option>
+              <option value="high">✅ 적합</option>
+              <option value="mid">⚠️ 검토필요</option>
+              <option value="low">❌ 부적합</option>
+            </select></div>
+          </div>
+        </div>
+
+        <div class="sc-upload-row">
+          <label class="sc-upload-label" for="sc_file">
+            <span id="sc_uploadLabel">📷 스크린샷 첨부</span>
+            <input type="file" id="sc_file" accept="image/*" style="display:none">
+          </label>
+        </div>
+        <div id="sc_preview" class="sc-img-preview"></div>
+
+        <div class="sc-form-acts">
+          <button class="sc-save-btn" id="sc_saveBtn">저장</button>
+          <button class="sc-cancel-btn" id="sc_cancelBtn" style="display:none">취소</button>
+          <button class="sc-ai-form-btn" id="sc_analyzeBtn" disabled title="AI 자동채움 — Anthropic 크레딧 필요">✨ AI 자동채움</button>
+        </div>
+        <div class="sc-ai-note">✨ AI 자동채움은 Anthropic 크레딧 충전 시 활성화됩니다. 수동 저장은 지금 바로 사용 가능해요.</div>
+        <div id="sc_formErr" style="font-size:12px;color:var(--s-drop);min-height:16px;font-weight:700;margin-top:4px;"></div>
+      </div>
+
+      <!-- 필터 바 -->
+      <div class="sc-filter-bar">
+        <div class="sc-filter-label">유형</div>
+        <div class="sc-filter-row" id="sc_typeFilter">
+          <span class="sc-filter-chip on" data-ftype="">전체</span>
+          <span class="sc-filter-chip" data-ftype="subscription">청약공고</span>
+          <span class="sc-filter-chip" data-ftype="jeonse">전세</span>
+          <span class="sc-filter-chip" data-ftype="sale">매매</span>
+          <span class="sc-filter-chip" data-ftype="area">동네·시세</span>
+          <span class="sc-filter-chip" data-ftype="policy">정책·뉴스</span>
+          <span class="sc-filter-chip" data-ftype="review">임장후기</span>
+        </div>
+        <div class="sc-filter-label">상태</div>
+        <div class="sc-filter-row" id="sc_statusFilter">
+          <span class="sc-filter-chip on" data-fstatus="">전체</span>
+          <span class="sc-filter-chip" data-fstatus="new">신규</span>
+          <span class="sc-filter-chip" data-fstatus="review">검토중</span>
+          <span class="sc-filter-chip" data-fstatus="interested">관심</span>
+          <span class="sc-filter-chip" data-fstatus="hold">보류</span>
+          <span class="sc-filter-chip" data-fstatus="promoted">매물등록</span>
+          <span class="sc-filter-chip" data-fstatus="dropped">제외</span>
         </div>
       </div>
 
@@ -1178,7 +1294,26 @@ function applyGuards(raw){
   state.actions=state.actions||structuredClone(DEFAULT.actions);
   state.properties=state.properties||[];
   state.regNews=state.regNews||[];
-  state.scraps=state.scraps||[];
+  state.scraps=(state.scraps||[]).map(s=>{
+    const p=s.parsed||{};
+    return {
+      id: s.id||'sc'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+      createdAt: s.createdAt||Date.now(),
+      title: s.title||(p.name||'')||(s.raw||'').slice(0,40)||'(제목 없음)',
+      type: s.type||'subscription',
+      raw: s.raw||'',
+      location: s.location||'',
+      price: s.price||(p.price||''),
+      area: s.area||(p.area||''),
+      schedule: s.schedule||(p.schedule||''),
+      condition: s.condition||(p.qualification||''),
+      source: s.source||'',
+      status: s.status||'new',
+      tags: Array.isArray(s.tags)?s.tags:[],
+      fit: s.fit||'',
+      parsed: s.parsed||null,
+    };
+  });
   state.prep=state.prep||structuredClone(DEFAULT.prep);
   state.steps=state.steps||structuredClone(DEFAULT.steps);
   state.properties.forEach(p=>{ if(!p.checks)p.checks={}; });
@@ -1444,6 +1579,10 @@ document.getElementById('act_suggestBtn').onclick=async()=>{
 
 /* ============ 스크랩 ============ */
 let scrapImgData=null;
+let scFilterType='', scFilterStatus='', scEditId=null;
+const SC_TYPE={subscription:'청약공고',jeonse:'전세',sale:'매매',area:'동네·시세',policy:'정책·뉴스',review:'임장후기'};
+const SC_STATUS={new:'신규',review:'검토중',interested:'관심',hold:'보류',promoted:'매물등록',dropped:'제외'};
+
 document.getElementById('sc_text').addEventListener('input',e=>{
   const v=e.target.value.trim();
   const preview=document.getElementById('sc_ogPreview');
@@ -1452,6 +1591,7 @@ document.getElementById('sc_text').addEventListener('input',e=>{
     preview.innerHTML='<div class="og-card"><span class="og-loading">💡 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
   } else { preview.style.display='none'; }
 });
+
 document.getElementById('sc_file').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
   const reader=new FileReader();
@@ -1464,107 +1604,168 @@ document.getElementById('sc_file').onchange=e=>{
   reader.readAsDataURL(f);
 };
 
+document.getElementById('sc_typeChips').onclick=e=>{
+  const chip=e.target.closest('.sc-type-chip'); if(!chip)return;
+  document.querySelectorAll('.sc-type-chip').forEach(c=>c.classList.remove('on'));
+  chip.classList.add('on');
+};
+
+document.getElementById('sc_moreToggle').onclick=()=>{
+  const f=document.getElementById('sc_moreFields');
+  const a=document.getElementById('sc_moreArrow');
+  const open=f.classList.toggle('open');
+  a.textContent=open?'▼':'▶';
+};
+
+document.getElementById('sc_saveBtn').onclick=()=>{
+  const title=document.getElementById('sc_title').value.trim();
+  const type=document.querySelector('.sc-type-chip.on')?.dataset.type||'subscription';
+  const raw=document.getElementById('sc_text').value.trim();
+  const err=document.getElementById('sc_formErr');
+  if(!title){err.textContent='제목을 입력해주세요.';document.getElementById('sc_title').focus();return;}
+  if(!raw&&!scrapImgData){err.textContent='원문·메모를 입력하거나 스크린샷을 첨부해주세요.';document.getElementById('sc_text').focus();return;}
+  err.textContent='';
+  const tagsRaw=document.getElementById('sc_tags').value;
+  const fields={
+    title,type,
+    raw:raw||(scrapImgData?'[이미지 스크랩]':''),
+    location:document.getElementById('sc_location').value.trim(),
+    price:document.getElementById('sc_price').value.trim(),
+    area:document.getElementById('sc_area').value.trim(),
+    schedule:document.getElementById('sc_schedule').value.trim(),
+    condition:document.getElementById('sc_condition').value.trim(),
+    source:document.getElementById('sc_source').value.trim(),
+    fit:document.getElementById('sc_fit').value,
+    tags:tagsRaw?tagsRaw.split(/[,、]+/).map(t=>t.trim()).filter(Boolean):[],
+  };
+  if(scEditId){
+    const s=state.scraps.find(x=>x.id===scEditId);
+    if(s) Object.assign(s,fields);
+  } else {
+    state.scraps.unshift({
+      id:'sc'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+      createdAt:Date.now(),status:'new',parsed:null,...fields
+    });
+  }
+  scClearForm();save();renderScraps();
+};
+
+function scClearForm(){
+  ['sc_title','sc_text','sc_location','sc_price','sc_area','sc_schedule','sc_condition','sc_source','sc_tags'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('sc_fit').value='';
+  document.getElementById('sc_formErr').textContent='';
+  document.getElementById('sc_preview').innerHTML='';
+  document.getElementById('sc_uploadLabel').textContent='📷 스크린샷 첨부';
+  document.getElementById('sc_file').value='';
+  document.getElementById('sc_ogPreview').style.display='none';
+  scrapImgData=null; scEditId=null;
+  document.getElementById('sc_formTitle').textContent='➕ 스크랩 추가';
+  document.getElementById('sc_cancelBtn').style.display='none';
+  document.querySelectorAll('.sc-type-chip').forEach((c,i)=>c.classList.toggle('on',i===0));
+}
+
+document.getElementById('sc_cancelBtn').onclick=()=>{scClearForm();renderScraps();};
+document.getElementById('sc_analyzeBtn').onclick=()=>{};
+
+function openScEdit(id){
+  const s=state.scraps.find(x=>x.id===id); if(!s)return;
+  scEditId=id;
+  document.getElementById('sc_formTitle').textContent='✏️ 스크랩 수정';
+  document.getElementById('sc_cancelBtn').style.display='';
+  document.getElementById('sc_title').value=s.title||'';
+  document.getElementById('sc_text').value=s.raw||'';
+  document.getElementById('sc_location').value=s.location||'';
+  document.getElementById('sc_price').value=s.price||'';
+  document.getElementById('sc_area').value=s.area||'';
+  document.getElementById('sc_schedule').value=s.schedule||'';
+  document.getElementById('sc_condition').value=s.condition||'';
+  document.getElementById('sc_source').value=s.source||'';
+  document.getElementById('sc_fit').value=['high','mid','low'].includes(s.fit)?s.fit:'';
+  document.getElementById('sc_tags').value=(s.tags||[]).join(', ');
+  document.querySelectorAll('.sc-type-chip').forEach(c=>c.classList.toggle('on',c.dataset.type===s.type));
+  document.getElementById('sc_moreFields').classList.add('open');
+  document.getElementById('sc_moreArrow').textContent='▼';
+  document.getElementById('sc_form').scrollIntoView({behavior:'smooth'});
+}
+
 function renderScraps(){
+  document.querySelectorAll('[data-ftype]').forEach(c=>c.classList.toggle('on',c.dataset.ftype===scFilterType));
+  document.querySelectorAll('[data-fstatus]').forEach(c=>c.classList.toggle('on',c.dataset.fstatus===scFilterStatus));
   const el=document.getElementById('sc_cards');
-  if(!state.scraps.length){
-    el.innerHTML='<div class="rn-empty">아직 스크랩이 없어요.<br>위에서 텍스트 붙여넣기 또는 스크린샷을 올려보세요.</div>';
+  let list=state.scraps.slice();
+  if(scFilterType) list=list.filter(s=>s.type===scFilterType);
+  if(scFilterStatus) list=list.filter(s=>s.status===scFilterStatus);
+  if(!list.length){
+    el.innerHTML=`<div class="sc-empty">${state.scraps.length?'조건에 맞는 스크랩이 없어요.':'아직 스크랩이 없어요.<br>위 폼에서 첫 번째 스크랩을 추가해보세요!'}</div>`;
     return;
   }
-  el.innerHTML='<div class="sc-list">'+state.scraps.map(s=>{
-    const p=s.parsed||{};
-    let fitClass=s.fit==='가능'?'yes':s.fit==='불가'?'no':'maybe';
+  el.innerHTML='<div class="sc-list">'+list.map(s=>{
+    const tLabel=SC_TYPE[s.type]||s.type||'';
+    const stLabel=SC_STATUS[s.status]||s.status||'신규';
+    const tCls='type-'+(s.type||'subscription');
+    const stCls='st-'+(s.status||'new');
+    let fitCls='', fitLbl='';
+    if(s.fit==='high'||s.fit==='가능'){fitCls='high';fitLbl='✅ 적합';}
+    else if(s.fit==='low'||s.fit==='불가'){fitCls='low';fitLbl='❌ 부적합';}
+    else if(s.fit){fitCls='mid';fitLbl='⚠️ '+esc(s.fit);}
+    const metaParts=[s.location&&`📍 ${esc(s.location)}`,s.price&&`💰 ${esc(s.price)}`,s.area&&`📐 ${esc(s.area)}`,s.schedule&&`📅 ${esc(s.schedule)}`].filter(Boolean);
+    const rawText=s.raw||'';
     return `<div class="sc-card" data-scid="${s.id}">
-      <div class="sc-parsed">
-        ${p.name?`<div class="sc-row"><span class="sc-label">단지</span><span class="sc-val">${esc(p.name)}</span></div>`:''}
-        ${p.schedule?`<div class="sc-row"><span class="sc-label">일정</span><span class="sc-val">${esc(p.schedule)}</span></div>`:''}
-        ${p.qualification?`<div class="sc-row"><span class="sc-label">자격</span><span class="sc-val">${esc(p.qualification)}</span></div>`:''}
-        ${p.income?`<div class="sc-row"><span class="sc-label">소득기준</span><span class="sc-val">${esc(p.income)}</span></div>`:''}
-        ${p.area?`<div class="sc-row"><span class="sc-label">면적</span><span class="sc-val">${esc(p.area)}</span></div>`:''}
-        ${p.price?`<div class="sc-row"><span class="sc-label">가격</span><span class="sc-val">${esc(p.price)}</span></div>`:''}
+      <div class="sc-card-head">
+        <div class="sc-card-title">${esc(s.title||'(제목 없음)')}</div>
+        <span class="sc-badge ${tCls}">${tLabel}</span>
+        <span class="sc-badge ${stCls}">${stLabel}</span>
       </div>
-      ${(s.tags||[]).length?`<div class="sc-tags">${s.tags.map(t=>`<span class="sc-tag">${esc(t)}</span>`).join('')}</div>`:''}
-      ${s.fit?`<div class="sc-fit ${fitClass}">${s.fit==='가능'?'✅':'⚠️'} 우리 자격: ${esc(s.fit)}</div>`:''}
-      ${s.raw?`<div class="sc-raw" onclick="this.classList.toggle('expand')">${esc(s.raw.slice(0,200))}${s.raw.length>200?'…':''}</div>`:''}
-      <div class="sc-actions">
-        <button data-sc-fit="${s.id}">🔍 자격 확인</button>
-        <button data-sc-del="${s.id}">삭제</button>
+      ${metaParts.length?`<div class="sc-card-meta">${metaParts.join(' &nbsp;·&nbsp; ')}</div>`:''}
+      ${(s.tags||[]).length?`<div class="sc-card-tags">${s.tags.map(t=>`<span class="sc-card-tag">${esc(t)}</span>`).join('')}</div>`:''}
+      ${s.fit?`<span class="sc-fit-badge ${fitCls}">${fitLbl}</span>`:''}
+      ${rawText?`<div class="sc-card-raw" onclick="this.classList.toggle('expand')">${esc(rawText.slice(0,160))}${rawText.length>160?'…':''}</div>`:''}
+      <div class="sc-card-actions">
+        <select class="sc-status-sel" data-scst="${s.id}">
+          ${Object.entries(SC_STATUS).map(([v,l])=>`<option value="${v}"${s.status===v?' selected':''}>${l}</option>`).join('')}
+        </select>
+        <button data-sc-edit="${s.id}">수정</button>
+        <button data-sc-fit="${s.id}" disabled title="AI 자격확인 — 크레딧 필요">🔍 자격확인</button>
+        <button data-sc-del="${s.id}" style="color:var(--s-drop)">삭제</button>
       </div>
     </div>`;
   }).join('')+'</div>';
+  el.querySelectorAll('.sc-status-sel').forEach(sel=>sel.onchange=()=>{
+    const s=state.scraps.find(x=>x.id===sel.dataset.scst);
+    if(s){s.status=sel.value;save();renderScraps();}
+  });
+  el.querySelectorAll('[data-sc-edit]').forEach(b=>b.onclick=()=>openScEdit(b.dataset.scEdit));
   el.querySelectorAll('[data-sc-del]').forEach(b=>b.onclick=()=>{
     if(!confirm('이 스크랩을 삭제할까요?'))return;
     state.scraps=state.scraps.filter(x=>x.id!==b.dataset.scDel);save();renderScraps();
   });
-  el.querySelectorAll('[data-sc-fit]').forEach(b=>b.onclick=()=>checkFit(b.dataset.scFit));
 }
 
-document.getElementById('sc_analyzeBtn').onclick=async()=>{
-  const txt=document.getElementById('sc_text').value.trim();
-  const img=scrapImgData;
-  if(!txt&&!img){document.getElementById('sc_text').focus();return;}
-  const btn=document.getElementById('sc_analyzeBtn');
-  btn.disabled=true; const old=btn.textContent; btn.textContent='분석 중…';
-  try{
-    const content=[];
-    if(img) content.push({type:'image',source:{type:'base64',media_type:img.media_type,data:img.data}});
-    content.push({type:'text',text:
-      `다음 한국 부동산/청약 정보에서 핵심을 추출해 JSON으로. 설명·마크다운 금지, JSON만.\n`+
-      `형식:{"name":"단지명","schedule":"청약일정/입주시기","qualification":"자격요건","income":"소득기준","area":"면적","price":"분양가/전세가","tags":["태그1","태그2"]}\n`+
-      `모르면 빈 문자열. tags는 지역·유형·특징 2~4개.\n\n${txt||'(이미지에서 텍스트를 읽어주세요)'}`});
-    const out=await claudeAPI([{role:'user',content}]);
-    const parsed=parseJSON(out);
-    if(parsed){
-      const scrap={id:'sc'+Date.now()+Math.random().toString(36).slice(2,5),raw:txt||(img?'[이미지 스크랩]':''),parsed,tags:parsed.tags||[],fit:''};
-      delete scrap.parsed.tags;
-      state.scraps.unshift(scrap);
-      save();renderScraps();
-      document.getElementById('sc_text').value='';scrapImgData=null;
-      document.getElementById('sc_preview').innerHTML='';
-      document.getElementById('sc_uploadLabel').textContent='📷 스크린샷 업로드';
-      document.getElementById('sc_file').value='';
-      btn.textContent='✓ 저장 완료';
-    } else { btn.textContent='분석 실패 — 다시 시도해주세요'; }
-  }catch(e){ btn.textContent=e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 연결 실패'; }
-  setTimeout(()=>{btn.disabled=false;btn.textContent=old;},2000);
+document.getElementById('sc_typeFilter').onclick=e=>{
+  const c=e.target.closest('[data-ftype]');if(!c)return;
+  scFilterType=c.dataset.ftype;renderScraps();
+};
+document.getElementById('sc_statusFilter').onclick=e=>{
+  const c=e.target.closest('[data-fstatus]');if(!c)return;
+  scFilterStatus=c.dataset.fstatus;renderScraps();
 };
 
 async function checkFit(id){
   const s=state.scraps.find(x=>x.id===id); if(!s)return;
   const p=s.parsed||{};
   const card=document.querySelector(`[data-scid="${id}"]`);
-  const fitEl=card?.querySelector('.sc-fit');
-  if(fitEl){fitEl.className='sc-fit maybe';fitEl.textContent='확인 중…';}
+  const fitEl=card?.querySelector('.sc-fit-badge');
+  if(fitEl){fitEl.className='sc-fit-badge mid';fitEl.textContent='확인 중…';}
   try{
     const out=await claudeAPI([{role:'user',content:
       `우리 조건으로 이 매물/청약에 지원 가능한지 판단해. 설명·마크다운 금지, JSON만.\n`+
       `형식:{"fit":"가능|불가|확인필요","reason":"한 줄 이유"}\n`+
       `[우리 조건] ${profileLine()}\n`+
-      `[매물/청약] 단지:${p.name||'?'} / 일정:${p.schedule||'?'} / 자격:${p.qualification||'?'} / 소득:${p.income||'?'} / 면적:${p.area||'?'} / 가격:${p.price||'?'}`}]);
+      `[매물/청약] ${s.title||'?'} / 일정:${s.schedule||p.schedule||'?'} / 자격:${s.condition||p.qualification||'?'} / 면적:${s.area||p.area||'?'} / 가격:${s.price||p.price||'?'}`}]);
     const j=parseJSON(out);
-    if(j){
-      s.fit=j.fit+(j.reason?' — '+j.reason:'');
-      save();renderScraps();
-    }
-  }catch(e){ if(fitEl){fitEl.className='sc-fit no';fitEl.textContent=e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 연결 실패';} }
+    if(j){s.fit=j.fit+(j.reason?' — '+j.reason:'');save();renderScraps();}
+  }catch(e){ if(fitEl){fitEl.className='sc-fit-badge low';fitEl.textContent=e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 연결 실패';} }
 }
-
-document.getElementById('sc_fitBtn').onclick=async()=>{
-  const txt=document.getElementById('sc_text').value.trim();
-  const img=scrapImgData;
-  if(!txt&&!img){document.getElementById('sc_text').focus();return;}
-  const btn=document.getElementById('sc_fitBtn');
-  btn.disabled=true; const old=btn.textContent; btn.textContent='확인 중…';
-  try{
-    const content=[];
-    if(img) content.push({type:'image',source:{type:'base64',media_type:img.media_type,data:img.data}});
-    content.push({type:'text',text:
-      `이 매물/청약 정보를 읽고 우리 조건으로 지원 가능한지 한 줄로 답해.\n`+
-      `[우리 조건] ${profileLine()}\n\n${txt||'(이미지에서 읽어주세요)'}`});
-    const out=await claudeAPI([{role:'user',content}]);
-    alert(out||'응답 없음');
-  }catch(e){ alert(e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 연결 실패'); }
-  btn.disabled=false; btn.textContent=old;
-};
 
 /* ============ 규제·뉴스 ============ */
 function renderRegNews(){
