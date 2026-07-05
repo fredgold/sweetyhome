@@ -391,9 +391,14 @@
   .sc-img-preview{margin-top:6px;}
   .sc-img-preview img{max-width:100%;max-height:160px;border-radius:9px;border:1px solid var(--hairline);}
   /* 필터 바 */
-  .sc-search-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .sc-search-bar,.prop-search-bar,.act-search-bar,.asset-filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
   .sc-search-input{flex:1;border:1px solid var(--hairline);border-radius:9px;padding:7px 12px;font-size:13px;color:var(--ink);background:var(--surface);}
-  .sc-search-input:focus{outline:none;border-color:var(--money);}
+  .sc-search-input:focus,.prop-search-input:focus,.act-search-input:focus,.asset-search-input:focus{outline:none;border-color:var(--money);}
+  .prop-search-input,.act-search-input,.asset-search-input{flex:1;min-width:140px;border:1px solid var(--hairline);border-radius:9px;padding:7px 12px;font-size:13px;color:var(--ink);background:var(--surface);}
+  .asset-owner-sel{font-size:12px;font-weight:700;border:1px solid var(--hairline);border-radius:9px;padding:6px 10px;color:var(--ink-soft);background:var(--surface);}
+  .card-img-thumb{width:100%;max-height:180px;object-fit:cover;border-radius:8px;margin:8px 0;display:block;}
+  .card-img-sm{width:56px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;}
+  .sc-card-img{width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin:8px 0;display:block;}
   .sc-sort-select{font-size:12px;font-weight:700;border:1px solid var(--hairline);border-radius:9px;padding:6px 10px;color:var(--ink-soft);background:var(--surface);}
   .sc-filter-bar{margin-bottom:14px;}
   .sc-filter-label{font-size:10.5px;font-weight:700;color:var(--ink-faint);margin-bottom:5px;margin-top:9px;}
@@ -772,6 +777,15 @@
         <div class="reghead">
           <span>소유자</span><span>자산 항목</span><span>현재 금액</span><span>형태</span><span>유동성</span><span>동원 가능액</span><span>메모</span><span></span>
         </div>
+        <div class="asset-filter-bar">
+          <select class="asset-owner-sel" id="asset_ownerFilter">
+            <option value="">전체 소유자</option>
+            <option value="규범">규범</option>
+            <option value="연정">연정</option>
+            <option value="공동">공동</option>
+          </select>
+          <input class="asset-search-input" id="asset_search" placeholder="🔍 항목명 검색...">
+        </div>
         <div id="a_rows"></div>
         <div class="regadd">
           <button class="btn-addrow" id="addAssetRow">＋ 항목 추가</button>
@@ -892,12 +906,26 @@
             <div class="fm-hint">단지명 넣고 ‘위치 자동 찾기’를 누르거나, 지도를 직접 탭해서 핀을 놓으세요.</div>
           </div>
           <div class="field" style="margin-bottom:10px"><label>메모</label><textarea id="f_memo" placeholder="채광, 곰팡이, 보증보험 가능 여부, 집주인 융자 등"></textarea></div>
+          <div class="field" style="margin-bottom:10px">
+            <label>사진 첨부 (선택)</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <label class="sc-upload-label" for="f_img" style="cursor:pointer;">
+                <span id="f_imgLabel">📷 사진 추가</span>
+                <input type="file" id="f_img" accept="image/*" style="display:none">
+              </label>
+              <img id="f_imgPreview" class="card-img-sm" style="display:none;">
+              <button type="button" id="f_imgClear" style="display:none;font-size:11px;color:var(--s-drop);border:none;background:none;cursor:pointer;">✕ 제거</button>
+            </div>
+          </div>
           <div class="form-actions">
             <button class="btn-ghost" id="cancelBtn">취소</button>
             <button class="btn-save" id="saveBtn">저장</button>
           </div>
         </div>
 
+        <div class="prop-search-bar">
+          <input class="prop-search-input" id="prop_search" placeholder="🔍 단지명·위치·메모 검색...">
+        </div>
         <div class="tabs" id="tabs"></div>
         <div class="rail" id="list"></div>
       </section>
@@ -934,6 +962,9 @@
         <button class="btn-ai" id="act_suggestBtn" disabled title="AI 크레딧 충전 시 활성화">✨ 새 액션 제안</button>
       </div>
       <div class="adesc">해야 할 일을 관리하세요. ★을 누르면 맨 위로, 체크하면 완료. AI가 우리 상황에 맞는 다음 액션을 제안해줘요.</div>
+      <div class="act-search-bar">
+        <input class="act-search-input" id="act_search" placeholder="🔍 액션 검색...">
+      </div>
       <div id="act_list"></div>
       <div class="addact">
         <input id="act_input" placeholder="할 일을 적고 Enter (예: HUG 보증보험 조건 확인)">
@@ -1196,6 +1227,14 @@
       <div class="macts" style="margin-top:14px;">
         <button class="btn-ghost" id="sem_cancel">취소</button>
         <button class="btn-save" id="sem_save">저장</button>
+      </div>
+      <div class="sc-field" style="margin-top:6px;">
+        <label>사진 (선택)</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label class="sc-upload-label" for="sem_img" style="cursor:pointer;"><span id="sem_imgLabel">📷 첨부/변경</span><input type="file" id="sem_img" accept="image/*" style="display:none"></label>
+          <img id="sem_imgPreview" class="card-img-sm" style="display:none;">
+          <button type="button" id="sem_imgClear" style="display:none;font-size:11px;color:var(--s-drop);border:none;background:none;cursor:pointer;">✕ 제거</button>
+        </div>
       </div>
       <div id="sem_err" style="font-size:12px;color:var(--s-drop);min-height:16px;font-weight:700;margin-top:4px;"></div>
     </div>
@@ -1513,6 +1552,7 @@ function applyGuards(raw){
       status: s.status||'new',
       tags: Array.isArray(s.tags)?s.tags:[],
       fit: s.fit||'',
+      img: s.img||'',
       parsed: s.parsed||null,
     };
   });
@@ -1689,10 +1729,13 @@ document.getElementById('d_actAdd').onclick=addAction;
 document.getElementById('d_actInput').addEventListener('keydown',e=>{if(e.key==='Enter')addAction();});
 
 /* ============ 액션 (전체) ============ */
+let actSearchQuery='';
 function renderActions(){
+  const aq=(document.getElementById('act_search')?.value||'').trim().toLowerCase();
   const sorted=[...state.actions].sort((a,b)=>(a.done-b.done)||(a.priority-b.priority));
-  const live=sorted.filter(a=>!a.done);
-  const done=sorted.filter(a=>a.done);
+  let live=sorted.filter(a=>!a.done);
+  let done=sorted.filter(a=>a.done);
+  if(aq){ live=live.filter(a=>(a.text||'').toLowerCase().includes(aq)); done=done.filter(a=>(a.text||'').toLowerCase().includes(aq)); }
   const el=document.getElementById('act_list');
   if(!state.actions.length){
     el.innerHTML='<div class="empty"><div class="big">아직 액션이 없어요</div>아래에 할 일을 적어보세요.</div>';
@@ -1746,6 +1789,7 @@ function addActionFull(){
   inp.value=''; save(); renderActions(); renderTop3();
 }
 document.getElementById('act_addBtn').onclick=addActionFull;
+document.getElementById('act_search').addEventListener('input',e=>{actSearchQuery=e.target.value.trim();renderActions();});
 document.getElementById('act_input').addEventListener('keydown',e=>{if(e.key==='Enter')addActionFull();});
 
 document.getElementById('act_suggestBtn').onclick=async()=>{
@@ -1784,6 +1828,24 @@ document.getElementById('act_suggestBtn').onclick=async()=>{
 let scrapImgData=null;
 let scFilterType='', scFilterStatus='', scEditId=null;
 const SC_TYPE={subscription:'청약공고',jeonse:'전세',sale:'매매',area:'동네·시세',policy:'정책·뉴스',review:'임장후기',note:'메모',ai_log:'AI기록'};
+/* ── 이미지 압축 유틸 (max 600px, JPEG 0.65) ── */
+function compressImage(file,cb){
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=600,w=img.width,h=img.height;
+      const scale=Math.min(1,MAX/Math.max(w,h));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(w*scale); cv.height=Math.round(h*scale);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      cb(cv.toDataURL('image/jpeg',0.65));
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 const SC_STATUS={new:'신규',review:'검토중',interested:'관심',hold:'보류',promoted:'매물등록',dropped:'제외'};
 const SC_PROPLESS=new Set(['note','ai_log']);
 
@@ -1885,14 +1947,11 @@ document.getElementById('sc_previewToggle').onclick=function(){
 
 document.getElementById('sc_file').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const base64=ev.target.result.split(',')[1];
-    scrapImgData={media_type:f.type,data:base64};
-    document.getElementById('sc_preview').innerHTML=`<img src="${ev.target.result}">`;
+  compressImage(f,dataUrl=>{
+    scrapImgData=dataUrl;
+    document.getElementById('sc_preview').innerHTML=`<img src="${dataUrl}" class="sc-card-img">`;
     document.getElementById('sc_uploadLabel').textContent='📷 '+f.name;
-  };
-  reader.readAsDataURL(f);
+  });
 };
 
 document.getElementById('sc_typeChips').onclick=e=>{
@@ -1920,7 +1979,8 @@ document.getElementById('sc_saveBtn').onclick=()=>{
   const tagsRaw=document.getElementById('sc_tags').value;
   const fields={
     title,type,
-    raw:raw||(scrapImgData?'[이미지 스크랩]':''),
+    raw:raw||'',
+    img:scrapImgData||'',
     location:document.getElementById('sc_location').value.trim(),
     price:document.getElementById('sc_price').value.trim(),
     area:document.getElementById('sc_area').value.trim(),
@@ -1972,7 +2032,7 @@ document.getElementById('sc_cancelBtn').onclick=()=>{scCloseForm();renderScraps(
 document.getElementById('sc_analyzeBtn').onclick=()=>{};
 
 /* ── 수정 모달 ── */
-let scModalEditId=null;
+let scModalEditId=null, semImgData=null;
 function semUpdatePropFields(type){
   const hide=SC_PROPLESS.has(type);
   const fp=document.getElementById('sem_fieldPrice');
@@ -2007,6 +2067,14 @@ function openScEdit(id){
   const pt=document.getElementById('sem_previewToggle');
   pt.classList.remove('on'); pt.textContent='👁 미리보기';
   document.getElementById('sem_err').textContent='';
+  // 이미지 초기화
+  semImgData=null;
+  const semPrev=document.getElementById('sem_imgPreview');
+  const semClr=document.getElementById('sem_imgClear');
+  if(s.img){semPrev.src=s.img;semPrev.style.display='';semClr.style.display='';}
+  else{semPrev.style.display='none';semClr.style.display='none';}
+  document.getElementById('sem_imgLabel').textContent='📷 첨부/변경';
+  document.getElementById('sem_img').value='';
   openModal('scEditModal');
 }
 
@@ -2054,7 +2122,7 @@ function renderScraps(){
       ${metaParts.length?`<div class="sc-card-meta">${metaParts.join(' &nbsp;·&nbsp; ')}</div>`:''}
       ${(s.tags||[]).length?`<div class="sc-card-tags">${s.tags.map(t=>`<span class="sc-card-tag">${esc(t)}</span>`).join('')}</div>`:''}
       ${s.fit?`<span class="sc-fit-badge ${fitCls}">${fitLbl}</span>`:''}
-      ${rawText?`<div class="sc-card-raw sc-md-content" onclick="this.classList.toggle('expand')">${renderMd(rawText)}</div>`:''}
+      ${s.img?`<img src="${s.img}" class="sc-card-img" loading="lazy">`:''}      ${rawText?`<div class="sc-card-raw sc-md-content" onclick="this.classList.toggle('expand')">${renderMd(rawText)}</div>`:''}
       <div class="sc-card-actions">
         <select class="sc-status-sel" data-scst="${s.id}">
           ${Object.entries(SC_STATUS).map(([v,l])=>`<option value="${v}"${s.status===v?' selected':''}>${l}</option>`).join('')}
@@ -2123,7 +2191,24 @@ document.getElementById('sem_text').addEventListener('keydown',e=>{
   if(mod&&e.key==='i'){e.preventDefault();mdWrap(ta,'*','*');return;}
 });
 document.getElementById('sem_text').addEventListener('input',e=>autoResizeTa(e.target));
-document.getElementById('sem_cancel').onclick=()=>closeModal('scEditModal');
+document.getElementById('sem_img').onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  compressImage(f,dataUrl=>{
+    semImgData=dataUrl;
+    const prev=document.getElementById('sem_imgPreview');
+    prev.src=dataUrl; prev.style.display='';
+    document.getElementById('sem_imgLabel').textContent='📷 '+f.name;
+    document.getElementById('sem_imgClear').style.display='';
+  });
+};
+document.getElementById('sem_imgClear').onclick=()=>{
+  semImgData=''; // empty string = remove image
+  document.getElementById('sem_imgPreview').style.display='none';
+  document.getElementById('sem_img').value='';
+  document.getElementById('sem_imgLabel').textContent='📷 첨부/변경';
+  document.getElementById('sem_imgClear').style.display='none';
+};
+document.getElementById('sem_cancel').onclick=()=>{semImgData=null;closeModal('scEditModal');};
 document.getElementById('sem_save').onclick=()=>{
   const s=state.scraps.find(x=>x.id===scModalEditId);
   if(!s){closeModal('scEditModal');return;}
@@ -2143,7 +2228,9 @@ document.getElementById('sem_save').onclick=()=>{
     source:document.getElementById('sem_source').value.trim(),
     fit:document.getElementById('sem_fit').value,
     tags:tagsRaw?tagsRaw.split(/[,、]+/).map(t=>t.trim()).filter(Boolean):[],
+    img:semImgData===null?s.img:(semImgData||''),
   });
+  semImgData=null;
   save();renderScraps();closeModal('scEditModal');
 };
 
@@ -2438,7 +2525,11 @@ function ownerSel(v){return OWNERS.map(o=>`<option ${o===v?'selected':''}>${o}</
 function typeSel(v){return ATYPES.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
 function liqSel(v){return LIQUIDITY.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
 function renderAssets(){
-  const items=assetItems();
+  const ownerF=(document.getElementById('asset_ownerFilter')?.value)||'';
+  const assetQ=(document.getElementById('asset_search')?.value||'').trim().toLowerCase();
+  let items=assetItems();
+  if(ownerF) items=items.filter(it=>it.owner===ownerF);
+  if(assetQ) items=items.filter(it=>(it.name||'').toLowerCase().includes(assetQ));
   const box=document.getElementById('a_rows');
   if(!items.length){
     box.innerHTML=`<div class="regempty">아직 자산 항목이 없어요.<br><b>＋ 항목 추가</b>로 한 줄씩 넣거나, <b>📋 시트 붙여넣기</b>로 한 번에 가져오세요.</div>`;
@@ -2522,6 +2613,9 @@ function updateTargetMsg(){
 }
 document.getElementById('a_target').addEventListener('input',e=>{state.settings.targetDeposit=+e.target.value||0;updateTargetMsg();renderDashSummaries();save();});
 document.getElementById('a_reserve').addEventListener('input',e=>{state.assets.reserve=+e.target.value||0;updateTargetMsg();save();});
+document.getElementById('asset_ownerFilter').addEventListener('change',()=>renderAssets());
+document.getElementById('asset_search').addEventListener('input',()=>renderAssets());
+
 document.getElementById('a_notes').addEventListener('input',e=>{
   state.assets.notes=e.target.value;
   state.assets.updatedAt=Date.now();
@@ -2840,9 +2934,12 @@ function renderTabs(){
 }
 function areaChip(a){if(a==null||a==='')return'';const n=parseFloat(a);if(isNaN(n))return'';return n<=85?`<span class="chip ok tnum">전용 ${n}㎡ · 청약 OK</span>`:`<span class="chip warn tnum">전용 ${n}㎡ · 청약 영향 ⚠</span>`;}
 function depositChip(d){if(d==null||d==='')return'';const n=parseFloat(d);if(isNaN(n))return'';return `<span class="chip deposit tnum">보증금 ${n}억${n>5?' · 예산↑?':''}</span>`;}
+let propSearchQuery='';
 function renderList(){
   let items=[...state.properties];
   if(activeTab!=='전체') items=items.filter(p=>p.status===activeTab);
+  const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
+  if(pq) items=items.filter(p=>(p.name||'').toLowerCase().includes(pq)||(p.loc||'').toLowerCase().includes(pq)||(p.memo||'').toLowerCase().includes(pq));
   if(sortMode==='score') items.sort((a,b)=>((b.aiScore??-1)-(a.aiScore??-1))||(ORDER[a.status]-ORDER[b.status]));
   else items.sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||(b.created-a.created));
   const el=document.getElementById('list');
@@ -2851,7 +2948,7 @@ function renderList(){
     <div class="c-top"><div><div class="c-name">${esc(p.name||'(이름 없음)')}</div>${p.loc?`<div class="c-loc">🚇 ${esc(p.loc)}</div>`:''}</div>
     <span class="pill" style="background:var(${SC[p.status]})">${p.status}</span></div>
     <div class="c-meta">${depositChip(p.deposit)}${areaChip(p.area)}${p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}${p.lat?'<span class="chip geo">📍 위치 저장됨</span>':''}</div>
-    ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
+    ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy">`:''}    ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
     <div class="c-actions">
       ${p.lat?`<button data-locate="${p.id}">🗺️ 지도에서 보기</button>`:''}
       <a class="naver" href="${naverUrl(p)}" target="_blank">📍 네이버지도</a>
@@ -2901,7 +2998,16 @@ function locate(id){
 }
 
 const form=document.getElementById('form');
-function clearForm(){['editId','f_name','f_loc','f_deposit','f_area','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');tempChecks=null;clearFormPin();}
+let propImgData=null;
+function clearForm(){
+  ['editId','f_name','f_loc','f_deposit','f_area','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
+  tempChecks=null;clearFormPin();
+  propImgData=null;
+  document.getElementById('f_img').value='';
+  document.getElementById('f_imgLabel').textContent='📷 사진 추가';
+  document.getElementById('f_imgPreview').style.display='none';
+  document.getElementById('f_imgClear').style.display='none';
+}
 function openForm(){form.classList.add('open');initFormMap();document.getElementById('f_name').focus();}
 function closeForm(){form.classList.remove('open');clearForm();}
 document.getElementById('toggleForm').onclick=()=>{ if(form.classList.contains('open'))closeForm(); else {clearForm();openForm();} };
@@ -2915,10 +3021,35 @@ function openEdit(id){
   document.getElementById('f_deposit').value=p.deposit??'';
   document.getElementById('f_area').value=p.area??'';
   document.getElementById('f_memo').value=p.memo||'';
+  // 이미지
+  propImgData=null;
+  const fPrev=document.getElementById('f_imgPreview');
+  const fClr=document.getElementById('f_imgClear');
+  if(p.img){fPrev.src=p.img;fPrev.style.display='';fClr.style.display='';}
+  else{fPrev.style.display='none';fClr.style.display='none';}
+  document.getElementById('f_imgLabel').textContent=p.img?'📷 사진 변경':'📷 사진 추가';
+  document.getElementById('f_img').value='';
   openForm();
   if(p.lat&&p.lng) setFormPin(p.lat,p.lng,true); else clearFormPin();
   document.getElementById('panel-props').scrollIntoView({behavior:'smooth',block:'start'});
 }
+document.getElementById('f_img').onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  compressImage(f,dataUrl=>{
+    propImgData=dataUrl;
+    const prev=document.getElementById('f_imgPreview');
+    prev.src=dataUrl; prev.style.display='';
+    document.getElementById('f_imgLabel').textContent='📷 '+f.name;
+    document.getElementById('f_imgClear').style.display='';
+  });
+};
+document.getElementById('f_imgClear').onclick=()=>{
+  propImgData='';
+  document.getElementById('f_img').value='';
+  document.getElementById('f_imgPreview').style.display='none';
+  document.getElementById('f_imgLabel').textContent='📷 사진 추가';
+  document.getElementById('f_imgClear').style.display='none';
+};
 document.getElementById('saveBtn').onclick=()=>{
   const name=document.getElementById('f_name').value.trim();
   if(!name){const f=document.getElementById('f_name');f.focus();f.style.borderColor='var(--s-drop)';return;}
@@ -2928,6 +3059,7 @@ document.getElementById('saveBtn').onclick=()=>{
     name, loc:document.getElementById('f_loc').value.trim(),
     deposit:document.getElementById('f_deposit').value, area:document.getElementById('f_area').value,
     memo:document.getElementById('f_memo').value.trim(),
+    img:propImgData===null?((existing&&existing.img)||''):(propImgData||''),
     status:existing?existing.status:'관심',
     lat:tempLatLng?tempLatLng.lat:(existing?existing.lat:null),
     lng:tempLatLng?tempLatLng.lng:(existing?existing.lng:null),
@@ -2980,6 +3112,13 @@ function renderSteps(){
   document.querySelectorAll('#steps .step').forEach(el=>el.onclick=()=>{const s=state.steps.find(x=>x.id===el.dataset.id);s.done=!s.done;save();renderSteps();});
 }
 function renderProps(){renderStats();renderTabs();renderList();renderPrep();renderSteps();renderWeights();}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const ps=document.getElementById('prop_search');
+  if(ps) ps.addEventListener('input',()=>renderList());
+});
+// prop_search 즉시 바인딩 (DOMContentLoaded 이미 지났을 때)
+(()=>{ const ps=document.getElementById('prop_search'); if(ps) ps.addEventListener('input',()=>renderList()); })();
 
 /* ============ v2: 가중치 · 자동 평가 · 정렬 ============ */
 const WEIGHTS=[['commute','통근'],['budget','예산'],['area','면적'],['complex','단지조건'],['risk','리스크']];
