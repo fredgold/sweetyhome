@@ -50,7 +50,7 @@
   /* ================= DASHBOARD ================= */
   .hero{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;padding:18px 18px 20px;margin-bottom:16px;box-shadow:var(--shadow);}
   .hero .hh{font-size:11.5px;font-weight:800;color:var(--line9-deep);letter-spacing:.07em;margin-bottom:14px;}
-  .journey{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;}
+  .journey{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;overflow-x:auto;}
   .journey::before{content:"";position:absolute;left:6%;right:6%;top:13px;height:3px;background:linear-gradient(90deg,var(--line9),var(--line9-wash));border-radius:3px;z-index:0;}
   .jstop{position:relative;z-index:1;text-align:center;}
   .jstop .dot{width:28px;height:28px;border-radius:50%;background:var(--surface);border:3px solid var(--line9);margin:0 auto 9px;display:flex;align-items:center;justify-content:center;font-size:13px;}
@@ -122,6 +122,8 @@
   .atarget .trow{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:8px;flex-wrap:wrap;}
   .atarget .trow input{width:70px;text-align:right;border:1px solid var(--hairline);border-radius:8px;padding:6px 9px;background:#fff;font-weight:700;}
   .atarget .trow input:focus{outline:none;border-color:var(--money);}
+  .anote .sc-md-toolbar{margin-bottom:6px;}
+  .anote .sc-md-textarea{width:100%;min-height:80px;max-height:300px;border:1px solid var(--hairline);border-radius:9px;padding:10px;font-size:13px;box-sizing:border-box;resize:vertical;}
   .anote{margin-top:16px;}
   .anote label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;}
   .anote textarea{width:100%;border:1px solid var(--hairline);border-radius:10px;padding:10px;min-height:60px;resize:vertical;background:#fff;}
@@ -389,6 +391,10 @@
   .sc-img-preview{margin-top:6px;}
   .sc-img-preview img{max-width:100%;max-height:160px;border-radius:9px;border:1px solid var(--hairline);}
   /* 필터 바 */
+  .sc-search-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .sc-search-input{flex:1;border:1px solid var(--hairline);border-radius:9px;padding:7px 12px;font-size:13px;color:var(--ink);background:var(--surface);}
+  .sc-search-input:focus{outline:none;border-color:var(--money);}
+  .sc-sort-select{font-size:12px;font-weight:700;border:1px solid var(--hairline);border-radius:9px;padding:6px 10px;color:var(--ink-soft);background:var(--surface);}
   .sc-filter-bar{margin-bottom:14px;}
   .sc-filter-label{font-size:10.5px;font-weight:700;color:var(--ink-faint);margin-bottom:5px;margin-top:9px;}
   .sc-filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
@@ -563,8 +569,8 @@
     .atab{font-size:12.5px;padding:8px 11px;white-space:nowrap;flex-shrink:0;border-radius:9px;}
     .hero{padding:14px 14px 16px;}
     .hero .hh{font-size:10.5px;margin-bottom:10px;}
-    .journey{grid-template-columns:1fr 1fr;gap:14px 6px;}
-    .journey::before{display:none;}
+    .journey{grid-template-columns:repeat(4,minmax(70px,1fr));overflow-x:auto;gap:8px;}
+    .journey::before{left:4%;right:4%;}
     .jstop .dot{width:24px;height:24px;font-size:11px;}
     .jstop .jt{font-size:11px;}
     .jstop .jd{font-size:10px;}
@@ -786,9 +792,22 @@
         </div>
       </div>
 
+      <div class="asset-updated" id="a_updated" style="font-size:11px;color:var(--ink-faint);text-align:right;margin-bottom:4px;"></div>
       <div class="anote">
-        <label>메모 (부모님 지원 조건, 증여 공제, 계획 등)</label>
-        <textarea id="a_notes" placeholder="예: 양가 각각 본인 계좌로 입금 (증여공제 활용) / 8월 이자지원 확인 후 한도 재계산"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <label>메모 (부모님 지원 조건, 증여 공제, 계획 등)</label>
+          <button type="button" class="sc-preview-toggle" id="an_previewToggle">👁 미리보기</button>
+        </div>
+        <div class="sc-md-toolbar" id="an_mdToolbar">
+          <button type="button" data-antgt="wrap" data-open="**" data-close="**" title="굵게 (Ctrl+B)"><b>B</b></button>
+          <button type="button" data-antgt="wrap" data-open="*" data-close="*" title="기울임 (Ctrl+I)"><i>I</i></button>
+          <span class="tb-sep"></span>
+          <button type="button" data-antgt="line" data-prefix="## " title="제목">H</button>
+          <button type="button" data-antgt="line" data-prefix="- " title="목록">•</button>
+          <button type="button" data-antgt="line" data-prefix="> " title="인용">❝</button>
+        </div>
+        <textarea id="a_notes" class="sc-md-textarea" placeholder="예: 양가 각각 본인 계좌로 입금 (증여공제 활용) / 8월 이자지원 확인 후 한도 재계산"></textarea>
+        <div id="an_mdPreview" class="sc-md-preview sc-md-content" style="display:none;border:1px solid var(--hairline);border-radius:9px;padding:12px;margin-top:6px;"></div>
       </div>
 
       <div class="privacy">🔒 입력값은 외부 서버로 전송되지 않고 이 브라우저(localStorage)에만 보관돼요. 더 안심하고 싶으면 정확한 금액 대신 <b>대략값</b>으로 적고, 실제 숫자는 따로 메모해두세요.</div>
@@ -1027,6 +1046,17 @@
         <div id="sc_formErr" style="font-size:12px;color:var(--s-drop);min-height:16px;font-weight:700;margin-top:4px;"></div>
       </div>
 
+      <!-- 검색 바 -->
+      <div class="sc-search-bar">
+        <input class="sc-search-input" id="sc_search" placeholder="🔍 제목·원문·태그 검색...">
+        <select class="sc-sort-select" id="sc_sort">
+          <option value="newest">최신순</option>
+          <option value="oldest">오래된순</option>
+          <option value="status">상태순</option>
+          <option value="type">유형순</option>
+        </select>
+      </div>
+
       <!-- 필터 바 -->
       <div class="sc-filter-bar">
         <div class="sc-filter-label">유형</div>
@@ -1095,6 +1125,79 @@
         <button class="btn-save" id="doImport">복원하기</button>
       </div>
       <div class="ok" id="importOk"></div>
+    </div>
+  </div>
+
+  <!-- 수집함 항목 수정 모달 -->
+  <div class="modal" id="scEditModal">
+    <div class="box" style="max-height:90vh;overflow-y:auto;">
+      <h3>✏️ 수정</h3>
+      <div class="sc-field">
+        <label>제목</label>
+        <input type="text" id="sem_title" placeholder="제목">
+      </div>
+      <div class="sc-field">
+        <label>유형</label>
+        <div class="sc-type-chips" id="sem_typeChips">
+          <span class="sc-type-chip" data-type="subscription">청약공고</span>
+          <span class="sc-type-chip" data-type="jeonse">전세</span>
+          <span class="sc-type-chip" data-type="sale">매매</span>
+          <span class="sc-type-chip" data-type="area">동네·시세</span>
+          <span class="sc-type-chip" data-type="policy">정책·뉴스</span>
+          <span class="sc-type-chip" data-type="review">임장후기</span>
+          <span class="sc-type-chip" data-type="note">메모</span>
+          <span class="sc-type-chip" data-type="ai_log">AI기록</span>
+        </div>
+      </div>
+      <div class="sc-field">
+        <label>상태</label>
+        <select id="sem_status" style="font-size:13px;border:1px solid var(--hairline);border-radius:9px;padding:7px 10px;width:100%;box-sizing:border-box;"></select>
+      </div>
+      <div class="sc-field">
+        <div class="sc-md-header">
+          <label>원문·메모</label>
+          <button type="button" class="sc-preview-toggle" id="sem_previewToggle">👁 미리보기</button>
+        </div>
+        <div class="sc-md-toolbar" id="sem_mdToolbar">
+          <button type="button" data-semwrap="**||**" title="굵게 (Ctrl+B)"><b>B</b></button>
+          <button type="button" data-semwrap="*||*" title="기울임 (Ctrl+I)"><i>I</i></button>
+          <span class="tb-sep"></span>
+          <button type="button" data-semline="## " title="제목">H</button>
+          <button type="button" data-semline="- " title="목록">•</button>
+          <button type="button" data-semline="> " title="인용">❝</button>
+        </div>
+        <textarea id="sem_text" class="sc-md-textarea" style="min-height:120px;" placeholder="원문·메모"></textarea>
+        <div id="sem_mdPreview" class="sc-md-preview sc-md-content" style="display:none;"></div>
+      </div>
+      <div class="sc-more-toggle" id="sem_moreToggle" style="margin-top:8px;">
+        <span id="sem_moreArrow">▶</span><span id="sem_moreLabel"> 위치·가격·일정 등</span>
+      </div>
+      <div class="sc-more-fields" id="sem_moreFields">
+        <div class="sc-field-row">
+          <div class="sc-field"><label>위치</label><input type="text" id="sem_location" placeholder="동네/역"></div>
+          <div class="sc-field" id="sem_fieldPrice"><label>가격</label><input type="text" id="sem_price" placeholder="예: 전세 4.2억"></div>
+        </div>
+        <div class="sc-field-row" id="sem_rowAreaSchedule">
+          <div class="sc-field"><label>면적·평형</label><input type="text" id="sem_area" placeholder="예: 전용 59㎡"></div>
+          <div class="sc-field"><label>일정</label><input type="text" id="sem_schedule" placeholder="예: 청약 7/10~12"></div>
+        </div>
+        <div class="sc-field"><label>조건·자격</label><input type="text" id="sem_condition" placeholder="예: 신혼부부 특별공급"></div>
+        <div class="sc-field"><label>출처</label><input type="text" id="sem_source" placeholder="URL 또는 출처명"></div>
+        <div class="sc-field-row">
+          <div class="sc-field"><label>태그 (쉼표 구분)</label><input type="text" id="sem_tags" placeholder="예: 역세권, 신혼"></div>
+          <div class="sc-field"><label>적합도</label><select id="sem_fit">
+            <option value="">미설정</option>
+            <option value="high">✅ 적합</option>
+            <option value="mid">⚠️ 검토필요</option>
+            <option value="low">❌ 부적합</option>
+          </select></div>
+        </div>
+      </div>
+      <div class="macts" style="margin-top:14px;">
+        <button class="btn-ghost" id="sem_cancel">취소</button>
+        <button class="btn-save" id="sem_save">저장</button>
+      </div>
+      <div id="sem_err" style="font-size:12px;color:var(--s-drop);min-height:16px;font-weight:700;margin-top:4px;"></div>
     </div>
   </div>
 
@@ -1518,7 +1621,10 @@ function renderJourney(){
     const d=m.date?m.date.replace(/-/g,'.').replace(/\.0/g,'.').replace(/\.(\d+)$/,''):''
     steps.push({t:m.label,d:d,date:m.date});
   });
-  document.getElementById('journey').innerHTML=steps.map(s=>`
+  const el=document.getElementById('journey');
+  const cols=Math.max(4,steps.length);
+  el.style.gridTemplateColumns=`repeat(${cols},minmax(68px,1fr))`;
+  el.innerHTML=steps.map(s=>`
     <div class="jstop ${s.now?'now':''}">
       <div class="dot">${s.now?'📍':'◆'}</div>
       <div class="jt">${s.t}</div>
@@ -1865,35 +1971,62 @@ document.getElementById('sc_formClose').onclick=scCloseForm;
 document.getElementById('sc_cancelBtn').onclick=()=>{scCloseForm();renderScraps();};
 document.getElementById('sc_analyzeBtn').onclick=()=>{};
 
+/* ── 수정 모달 ── */
+let scModalEditId=null;
+function semUpdatePropFields(type){
+  const hide=SC_PROPLESS.has(type);
+  const fp=document.getElementById('sem_fieldPrice');
+  const ra=document.getElementById('sem_rowAreaSchedule');
+  const lbl=document.getElementById('sem_moreLabel');
+  if(fp) fp.style.display=hide?'none':'';
+  if(ra) ra.style.display=hide?'none':'';
+  if(lbl) lbl.textContent=hide?' 위치·조건 등':' 위치·가격·일정 등';
+}
 function openScEdit(id){
   const s=state.scraps.find(x=>x.id===id); if(!s)return;
-  scEditId=id;
-  document.getElementById('sc_formTitle').textContent='✏️ 수정';
-  document.getElementById('sc_cancelBtn').style.display='';
-  document.getElementById('sc_title').value=s.title||'';
-  document.getElementById('sc_text').value=s.raw||'';
-  document.getElementById('sc_location').value=s.location||'';
-  document.getElementById('sc_price').value=s.price||'';
-  document.getElementById('sc_area').value=s.area||'';
-  document.getElementById('sc_schedule').value=s.schedule||'';
-  document.getElementById('sc_condition').value=s.condition||'';
-  document.getElementById('sc_source').value=s.source||'';
-  document.getElementById('sc_fit').value=['high','mid','low'].includes(s.fit)?s.fit:'';
-  document.getElementById('sc_tags').value=(s.tags||[]).join(', ');
-  document.querySelectorAll('.sc-type-chip').forEach(c=>c.classList.toggle('on',c.dataset.type===s.type));
-  scUpdatePropFields(s.type);
-  document.getElementById('sc_moreFields').classList.add('open');
-  document.getElementById('sc_moreArrow').textContent='▼';
-  scOpenForm();
+  scModalEditId=id;
+  document.getElementById('sem_title').value=s.title||'';
+  document.getElementById('sem_text').value=s.raw||'';
+  document.getElementById('sem_status').innerHTML=Object.entries(SC_STATUS).map(([v,l])=>`<option value="${v}"${s.status===v?' selected':''}>${l}</option>`).join('');
+  document.getElementById('sem_location').value=s.location||'';
+  document.getElementById('sem_price').value=s.price||'';
+  document.getElementById('sem_area').value=s.area||'';
+  document.getElementById('sem_schedule').value=s.schedule||'';
+  document.getElementById('sem_condition').value=s.condition||'';
+  document.getElementById('sem_source').value=s.source||'';
+  document.getElementById('sem_fit').value=['high','mid','low'].includes(s.fit)?s.fit:'';
+  document.getElementById('sem_tags').value=(s.tags||[]).join(', ');
+  document.querySelectorAll('#sem_typeChips .sc-type-chip').forEach(c=>c.classList.toggle('on',c.dataset.type===s.type));
+  semUpdatePropFields(s.type);
+  document.getElementById('sem_moreFields').classList.remove('open');
+  document.getElementById('sem_moreArrow').textContent='▶';
+  // reset markdown preview
+  document.getElementById('sem_text').style.display='';
+  document.getElementById('sem_mdPreview').style.display='none';
+  document.getElementById('sem_mdToolbar').style.display='';
+  const pt=document.getElementById('sem_previewToggle');
+  pt.classList.remove('on'); pt.textContent='👁 미리보기';
+  document.getElementById('sem_err').textContent='';
+  openModal('scEditModal');
 }
 
+let scSearchQuery='';
 function renderScraps(){
   document.querySelectorAll('[data-ftype]').forEach(c=>c.classList.toggle('on',c.dataset.ftype===scFilterType));
   document.querySelectorAll('[data-fstatus]').forEach(c=>c.classList.toggle('on',c.dataset.fstatus===scFilterStatus));
   const el=document.getElementById('sc_cards');
+  const sortKey=document.getElementById('sc_sort')?.value||'newest';
   let list=state.scraps.slice();
   if(scFilterType) list=list.filter(s=>s.type===scFilterType);
   if(scFilterStatus) list=list.filter(s=>s.status===scFilterStatus);
+  if(scSearchQuery){
+    const q=scSearchQuery.toLowerCase();
+    list=list.filter(s=>(s.title||'').toLowerCase().includes(q)||(s.raw||'').toLowerCase().includes(q)||(s.tags||[]).some(t=>t.toLowerCase().includes(q))||(s.location||'').toLowerCase().includes(q));
+  }
+  if(sortKey==='oldest') list.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  else if(sortKey==='status') list.sort((a,b)=>a.status.localeCompare(b.status));
+  else if(sortKey==='type') list.sort((a,b)=>a.type.localeCompare(b.type));
+  else list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   if(!list.length){
     el.innerHTML=`<div class="sc-empty">${state.scraps.length?'조건에 맞는 항목이 없어요.':'아직 항목이 없어요.<br>위 버튼으로 첫 번째 항목을 추가해보세요!'}</div>`;
     return;
@@ -1910,11 +2043,13 @@ function renderScraps(){
     const isPropLess=SC_PROPLESS.has(s.type);
     const metaParts=[s.location&&`📍 ${esc(s.location)}`,!isPropLess&&s.price&&`💰 ${esc(s.price)}`,!isPropLess&&s.area&&`📐 ${esc(s.area)}`,!isPropLess&&s.schedule&&`📅 ${esc(s.schedule)}`].filter(Boolean);
     const rawText=s.raw||'';
+    const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
     return `<div class="sc-card" data-scid="${s.id}">
       <div class="sc-card-head">
         <div class="sc-card-title">${esc(s.title||'(제목 없음)')}</div>
         <span class="sc-badge ${tCls}">${tLabel}</span>
         <span class="sc-badge ${stCls}">${stLabel}</span>
+        ${dateStr?`<span style="font-size:10px;color:var(--ink-faint);margin-left:auto;flex-shrink:0;">${dateStr}</span>`:''}
       </div>
       ${metaParts.length?`<div class="sc-card-meta">${metaParts.join(' &nbsp;·&nbsp; ')}</div>`:''}
       ${(s.tags||[]).length?`<div class="sc-card-tags">${s.tags.map(t=>`<span class="sc-card-tag">${esc(t)}</span>`).join('')}</div>`:''}
@@ -1948,6 +2083,68 @@ document.getElementById('sc_typeFilter').onclick=e=>{
 document.getElementById('sc_statusFilter').onclick=e=>{
   const c=e.target.closest('[data-fstatus]');if(!c)return;
   scFilterStatus=c.dataset.fstatus;renderScraps();
+};
+document.getElementById('sc_search').addEventListener('input',e=>{scSearchQuery=e.target.value.trim();renderScraps();});
+document.getElementById('sc_sort').addEventListener('change',()=>renderScraps());
+
+/* ── 수정 모달 이벤트 ── */
+document.getElementById('sem_typeChips').onclick=e=>{
+  const chip=e.target.closest('.sc-type-chip');if(!chip)return;
+  document.querySelectorAll('#sem_typeChips .sc-type-chip').forEach(c=>c.classList.remove('on'));
+  chip.classList.add('on');
+  semUpdatePropFields(chip.dataset.type);
+};
+document.getElementById('sem_moreToggle').onclick=()=>{
+  const f=document.getElementById('sem_moreFields');
+  const a=document.getElementById('sem_moreArrow');
+  const open=f.classList.toggle('open');
+  a.textContent=open?'▼':'▶';
+};
+document.getElementById('sem_previewToggle').onclick=function(){
+  const ta=document.getElementById('sem_text');
+  const prev=document.getElementById('sem_mdPreview');
+  const on=prev.style.display==='none';
+  prev.style.display=on?'':'none';
+  ta.style.display=on?'none':'';
+  document.getElementById('sem_mdToolbar').style.display=on?'none':'';
+  this.classList.toggle('on',on);
+  this.textContent=on?'✏️ 편집':'👁 미리보기';
+  if(on) prev.innerHTML=renderMd(ta.value)||'<span style="color:var(--ink-faint);font-size:12px;">내용을 입력하면 미리보기가 표시됩니다.</span>';
+};
+document.getElementById('sem_mdToolbar').onclick=e=>{
+  const btn=e.target.closest('[data-semwrap],[data-semline]');if(!btn)return;
+  const ta=document.getElementById('sem_text');
+  if(btn.dataset.semwrap){const parts=btn.dataset.semwrap.split('||');mdWrap(ta,parts[0],parts[1]);}
+  else if(btn.dataset.semline){mdLine(ta,btn.dataset.semline);}
+};
+document.getElementById('sem_text').addEventListener('keydown',e=>{
+  const ta=e.target, mod=e.ctrlKey||e.metaKey;
+  if(mod&&e.key==='b'){e.preventDefault();mdWrap(ta,'**','**');return;}
+  if(mod&&e.key==='i'){e.preventDefault();mdWrap(ta,'*','*');return;}
+});
+document.getElementById('sem_text').addEventListener('input',e=>autoResizeTa(e.target));
+document.getElementById('sem_cancel').onclick=()=>closeModal('scEditModal');
+document.getElementById('sem_save').onclick=()=>{
+  const s=state.scraps.find(x=>x.id===scModalEditId);
+  if(!s){closeModal('scEditModal');return;}
+  const title=document.getElementById('sem_title').value.trim();
+  if(!title){document.getElementById('sem_err').textContent='제목을 입력해주세요.';return;}
+  const type=document.querySelector('#sem_typeChips .sc-type-chip.on')?.dataset.type||s.type;
+  const tagsRaw=document.getElementById('sem_tags').value;
+  Object.assign(s,{
+    title,type,
+    raw:document.getElementById('sem_text').value,
+    status:document.getElementById('sem_status').value,
+    location:document.getElementById('sem_location').value.trim(),
+    price:document.getElementById('sem_price').value.trim(),
+    area:document.getElementById('sem_area').value.trim(),
+    schedule:document.getElementById('sem_schedule').value.trim(),
+    condition:document.getElementById('sem_condition').value.trim(),
+    source:document.getElementById('sem_source').value.trim(),
+    fit:document.getElementById('sem_fit').value,
+    tags:tagsRaw?tagsRaw.split(/[,、]+/).map(t=>t.trim()).filter(Boolean):[],
+  });
+  save();renderScraps();closeModal('scEditModal');
 };
 
 async function checkFit(id){
@@ -2263,6 +2460,9 @@ function renderAssets(){
   document.getElementById('a_target').value=state.settings.targetDeposit||'';
   document.getElementById('a_reserve').value=state.assets.reserve||'';
   document.getElementById('a_notes').value=state.assets.notes||'';
+  autoResizeTa(document.getElementById('a_notes'));
+  const updEl=document.getElementById('a_updated');
+  if(updEl&&state.assets.updatedAt) updEl.textContent='마지막 수정: '+new Date(state.assets.updatedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
   updateTargetMsg();
 }
 function bindAssetRows(){
@@ -2277,7 +2477,7 @@ function bindAssetRows(){
           it[f]=n;
           if(f==='amount' && (it.mobilizable==null || it.mobilizable===prevAmt || !it.mobilizable)){ it.mobilizable=n; }
         } else { it[f]=el.value; if(f==='liquidity') row.className='regrow '+(el.value==='즉시'?'imm':'lng'); }
-        renderAssetSummary(); updateTargetMsg(); save();
+        state.assets.updatedAt=Date.now(); renderAssetSummary(); updateTargetMsg(); save();
       };
       el.addEventListener(el.tagName==='SELECT'?'change':'input',handler);
       if((f==='amount'||f==='mobilizable')) el.addEventListener('blur',()=>{ el.value=it[f]?comma(it[f]):''; });
@@ -2322,7 +2522,36 @@ function updateTargetMsg(){
 }
 document.getElementById('a_target').addEventListener('input',e=>{state.settings.targetDeposit=+e.target.value||0;updateTargetMsg();renderDashSummaries();save();});
 document.getElementById('a_reserve').addEventListener('input',e=>{state.assets.reserve=+e.target.value||0;updateTargetMsg();save();});
-document.getElementById('a_notes').addEventListener('input',e=>{state.assets.notes=e.target.value;save();});
+document.getElementById('a_notes').addEventListener('input',e=>{
+  state.assets.notes=e.target.value;
+  state.assets.updatedAt=Date.now();
+  autoResizeTa(e.target);
+  save();
+});
+
+/* ── 자산 메모 마크다운 툴바 ── */
+document.getElementById('an_mdToolbar').onclick=e=>{
+  const btn=e.target.closest('[data-antgt]');if(!btn)return;
+  const ta=document.getElementById('a_notes');
+  if(btn.dataset.antgt==='wrap'){mdWrap(ta,btn.dataset.open,btn.dataset.close);}
+  else if(btn.dataset.antgt==='line'){mdLine(ta,btn.dataset.prefix);}
+};
+document.getElementById('a_notes').addEventListener('keydown',e=>{
+  const ta=e.target, mod=e.ctrlKey||e.metaKey;
+  if(mod&&e.key==='b'){e.preventDefault();mdWrap(ta,'**','**');}
+  if(mod&&e.key==='i'){e.preventDefault();mdWrap(ta,'*','*');}
+});
+document.getElementById('an_previewToggle').onclick=function(){
+  const ta=document.getElementById('a_notes');
+  const prev=document.getElementById('an_mdPreview');
+  const on=prev.style.display==='none';
+  prev.style.display=on?'':'none';
+  ta.style.display=on?'none':'';
+  document.getElementById('an_mdToolbar').style.display=on?'none':'';
+  this.classList.toggle('on',on);
+  this.textContent=on?'✏️ 편집':'👁 미리보기';
+  if(on) prev.innerHTML=renderMd(ta.value)||'<span style="color:var(--ink-faint);font-size:12px;">내용을 입력하면 미리보기가 표시됩니다.</span>';
+};
 
 /* 시트 붙여넣기 파서 — 탭(Tab) 구분 우선, 콤마는 천단위라 분리 금지 */
 function parseAssetPaste(text){
@@ -2841,6 +3070,11 @@ function openProfile(){
 }
 document.getElementById('profileBtn').onclick=openProfile;
 document.getElementById('pf_addMs').onclick=()=>{
+  document.querySelectorAll('#pf_milestones .ms-row').forEach(row=>{
+    const i=+row.querySelector('.ms-label').dataset.i;
+    state.profile.milestones[i].label=row.querySelector('.ms-label').value.trim();
+    state.profile.milestones[i].date=row.querySelector('.ms-date').value;
+  });
   state.profile.milestones.push({label:'',date:''});
   renderProfileMilestones();
 };
