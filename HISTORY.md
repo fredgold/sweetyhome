@@ -133,6 +133,37 @@
 
 ---
 
+## 2026-07-05 — 스크랩 탭 개편 (Phase 1: 수동 입력 우선)
+
+### 목표
+AI 크레딧 없이도 스크랩·분류·필터가 완전히 동작하도록 재구성.
+기존 구조는 "AI 분석 & 저장" 단일 흐름이라 AI 없으면 저장 자체가 불편했음.
+
+### state.scraps 스키마 확장
+- 기존: `{ id, raw, parsed, tags, fit }`
+- 추가: `createdAt, title, type, location, price, area, schedule, condition, source, status`
+- `type`: `subscription`(청약공고) / `jeonse`(전세) / `sale`(매매) / `area`(동네·시세) / `policy`(정책·뉴스) / `review`(임장후기)
+- `status`: `new` / `review` / `interested` / `hold` / `promoted` / `dropped`
+- applyGuards에서 기존 scraps를 새 스키마로 자동 마이그레이션 (기존 `parsed` 데이터를 각 필드에 복사, 데이터 손실 없음)
+
+### 입력 UX 개선
+- 필수 3개(제목·유형·원문)만으로 30초 안에 저장 가능
+- '더 보기' 토글로 선택 필드(위치·가격·면적·일정·조건·출처·태그·적합도) 펼침
+- '수정' 버튼 → 동일 폼 재사용 (editId + 취소 버튼)
+
+### 목록·관리 UI
+- 유형 필터 7개 + 상태 필터 7개 가로 스크롤 칩 바
+- 카드: 제목·유형뱃지·상태뱃지·위치/가격/면적/일정·태그·적합도·원문 접기/펼치기
+- 상태 select로 즉시 변경 → 자동 저장
+- 수정·삭제 버튼
+
+### AI 버튼 처리
+- "✨ AI 자동채움" 버튼: `disabled` 상태 유지 + "Anthropic 크레딧 충전 시 활성화" 안내
+- 카드별 "🔍 자격확인" 버튼: `disabled` 유지 (Phase 2에서 활성화 예정)
+- `checkFit()` 함수는 코드에 보존 — AI 크레딧 복구 시 바로 연결 가능
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
