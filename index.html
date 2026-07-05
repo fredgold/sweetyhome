@@ -5,6 +5,7 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
 <style>
   :root{
     --bg:#EDEBE4; --surface:#FFFFFF; --ink:#1E2522; --ink-soft:#5C645F; --ink-faint:#9AA09B;
@@ -414,8 +415,39 @@
   .sc-card-meta{font-size:12px;color:var(--ink-soft);font-weight:600;line-height:1.7;margin-bottom:5px;}
   .sc-card-tags{display:flex;gap:5px;flex-wrap:wrap;margin:5px 0;}
   .sc-card-tag{font-size:10.5px;font-weight:700;background:var(--line9-wash);color:var(--line9-deep);border-radius:6px;padding:2px 7px;}
-  .sc-card-raw{font-size:11px;color:var(--ink-faint);margin-top:7px;border-top:1px dashed var(--hairline);padding-top:7px;white-space:pre-wrap;max-height:52px;overflow:hidden;cursor:pointer;line-height:1.5;}
+  .sc-card-raw{font-size:12px;color:var(--ink-soft);margin-top:8px;border-top:1px dashed var(--hairline);padding-top:8px;max-height:80px;overflow:hidden;cursor:pointer;line-height:1.65;position:relative;}
   .sc-card-raw.expand{max-height:none;}
+  .sc-card-raw::after{content:'▾ 더보기';display:block;font-size:10px;font-weight:700;color:var(--ink-faint);margin-top:4px;}
+  .sc-card-raw.expand::after{content:'▴ 접기';}
+  /* 마크다운 에디터 */
+  .sc-md-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .sc-md-header label{margin-bottom:0;font-size:11.5px;font-weight:700;color:var(--ink-soft);}
+  .sc-preview-toggle{font-size:11px;font-weight:700;color:var(--ink-soft);border:1px solid var(--hairline);border-radius:7px;padding:4px 9px;background:var(--surface);}
+  .sc-preview-toggle.on,.sc-preview-toggle:hover{background:var(--money-wash);color:var(--money-deep);border-color:var(--money);}
+  .sc-md-toolbar{display:flex;gap:3px;flex-wrap:wrap;padding:5px 6px;background:var(--hairline-soft);border:1px solid var(--hairline);border-bottom:none;border-radius:9px 9px 0 0;}
+  .sc-md-toolbar button{font-size:12px;font-weight:700;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-family:monospace;line-height:1;}
+  .sc-md-toolbar button:hover{background:var(--surface);color:var(--ink);}
+  .sc-md-toolbar .tb-sep{width:1px;background:var(--hairline);margin:2px 3px;align-self:stretch;}
+  .sc-md-textarea{border-radius:0 0 9px 9px !important;min-height:100px;overflow-y:auto !important;}
+  .sc-md-preview{border:1px solid var(--money);border-radius:0 0 9px 9px;padding:11px 13px;min-height:80px;background:var(--surface);font-size:13px;line-height:1.7;overflow-y:auto;max-height:340px;}
+  /* 마크다운 콘텐츠 공통 스타일 */
+  .sc-md-content h1,.sc-md-content h2,.sc-md-content h3{font-weight:800;letter-spacing:-.02em;margin:.6em 0 .2em;}
+  .sc-md-content h1{font-size:16px;} .sc-md-content h2{font-size:14.5px;} .sc-md-content h3{font-size:13px;}
+  .sc-md-content p{margin:.3em 0;}
+  .sc-md-content ul,.sc-md-content ol{padding-left:20px;margin:.3em 0;}
+  .sc-md-content li{margin:.1em 0;line-height:1.6;}
+  .sc-md-content strong{font-weight:800;}
+  .sc-md-content em{font-style:italic;}
+  .sc-md-content del{text-decoration:line-through;color:var(--ink-faint);}
+  .sc-md-content code{font-family:monospace;background:var(--hairline-soft);border-radius:4px;padding:1px 5px;font-size:11.5px;}
+  .sc-md-content pre{background:var(--hairline-soft);border-radius:8px;padding:10px 12px;overflow-x:auto;margin:.4em 0;}
+  .sc-md-content pre code{background:none;padding:0;font-size:12px;}
+  .sc-md-content blockquote{border-left:3px solid var(--money);padding-left:10px;color:var(--ink-soft);margin:.3em 0 .3em 0;font-style:italic;}
+  .sc-md-content hr{border:none;border-top:1px solid var(--hairline);margin:.6em 0;}
+  .sc-md-content a{color:var(--money-deep);text-decoration:underline;}
+  .sc-md-content table{border-collapse:collapse;width:100%;font-size:12px;margin:.4em 0;}
+  .sc-md-content th,.sc-md-content td{border:1px solid var(--hairline);padding:5px 8px;text-align:left;}
+  .sc-md-content th{background:var(--hairline-soft);font-weight:700;}
   .sc-card-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center;}
   .sc-card-actions button{font-size:11.5px;font-weight:600;color:var(--ink-soft);padding:5px 9px;border-radius:7px;border:1px solid var(--hairline);}
   .sc-card-actions button:hover:not([disabled]){background:var(--hairline-soft);}
@@ -918,8 +950,25 @@
         </div>
 
         <div class="sc-field">
-          <label>원문·메모 (필수) — 캡션 붙여넣기 또는 직접 입력</label>
-          <textarea id="sc_text" placeholder="인스타·블로그 캡션을 그대로 붙여넣거나&#10;직접 메모를 입력하세요."></textarea>
+          <div class="sc-md-header">
+            <label>원문·메모 (필수)</label>
+            <button type="button" class="sc-preview-toggle" id="sc_previewToggle">👁 미리보기</button>
+          </div>
+          <div class="sc-md-toolbar" id="sc_mdToolbar">
+            <button type="button" data-mdwrap="**||**" title="굵게 (Ctrl+B)"><b>B</b></button>
+            <button type="button" data-mdwrap="*||*" title="기울임 (Ctrl+I)"><i>I</i></button>
+            <button type="button" data-mdwrap="~~||~~" title="취소선">~~</button>
+            <span class="tb-sep"></span>
+            <button type="button" data-mdline="## " title="제목 (H2)">H</button>
+            <button type="button" data-mdline="- " title="목록">•</button>
+            <button type="button" data-mdline="1. " title="번호 목록">1.</button>
+            <button type="button" data-mdline="> " title="인용">❝</button>
+            <span class="tb-sep"></span>
+            <button type="button" data-mdwrap="`||`" title="인라인 코드">{ }</button>
+            <button type="button" data-mdline="---" title="구분선">—</button>
+          </div>
+          <textarea id="sc_text" class="sc-md-textarea" placeholder="인스타·블로그 캡션을 붙여넣거나 직접 메모하세요.&#10;&#10;마크다운 지원: **굵게**, *기울임*, ## 제목, - 목록&#10;Ctrl+B / Ctrl+I 단축키 사용 가능"></textarea>
+          <div id="sc_mdPreview" class="sc-md-preview sc-md-content" style="display:none;"></div>
           <div id="sc_ogPreview" style="display:none;margin-top:6px;"></div>
         </div>
 
@@ -1618,7 +1667,39 @@ let scFilterType='', scFilterStatus='', scEditId=null;
 const SC_TYPE={subscription:'청약공고',jeonse:'전세',sale:'매매',area:'동네·시세',policy:'정책·뉴스',review:'임장후기'};
 const SC_STATUS={new:'신규',review:'검토중',interested:'관심',hold:'보류',promoted:'매물등록',dropped:'제외'};
 
+// ── 마크다운 렌더 ──
+function renderMd(text){
+  if(!text) return '';
+  try{
+    marked.setOptions({breaks:true,gfm:true});
+    const html=marked.parse(text);
+    return html.replace(/<script[\s\S]*?<\/script>/gi,'');
+  }catch(e){ return '<pre>'+esc(text)+'</pre>'; }
+}
+
+// ── 에디터 헬퍼 ──
+function mdWrap(ta,open,close){
+  const s=ta.selectionStart, e=ta.selectionEnd;
+  const sel=ta.value.slice(s,e)||'텍스트';
+  ta.value=ta.value.slice(0,s)+open+sel+close+ta.value.slice(e);
+  ta.selectionStart=s+open.length; ta.selectionEnd=s+open.length+sel.length;
+  ta.focus(); autoResizeTa(ta);
+}
+function mdLine(ta,prefix){
+  const s=ta.selectionStart;
+  const ls=ta.value.lastIndexOf('\n',s-1)+1;
+  ta.value=ta.value.slice(0,ls)+prefix+ta.value.slice(ls);
+  ta.selectionStart=ta.selectionEnd=s+prefix.length;
+  ta.focus(); autoResizeTa(ta);
+}
+function autoResizeTa(ta){
+  ta.style.height='auto';
+  ta.style.height=Math.min(ta.scrollHeight,400)+'px';
+}
+
+// ── sc_text: 인스타 감지 + 자동 높이 ──
 document.getElementById('sc_text').addEventListener('input',e=>{
+  autoResizeTa(e.target);
   const v=e.target.value.trim();
   const preview=document.getElementById('sc_ogPreview');
   if(/instagram\.com\/(p|reel)\//.test(v)){
@@ -1626,6 +1707,53 @@ document.getElementById('sc_text').addEventListener('input',e=>{
     preview.innerHTML='<div class="og-card"><span class="og-loading">💡 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
   } else { preview.style.display='none'; }
 });
+
+// ── 키보드 단축키 ──
+document.getElementById('sc_text').addEventListener('keydown',e=>{
+  const ta=e.target;
+  const mod=e.ctrlKey||e.metaKey;
+  if(mod&&e.key==='b'){e.preventDefault();mdWrap(ta,'**','**');return;}
+  if(mod&&e.key==='i'){e.preventDefault();mdWrap(ta,'*','*');return;}
+  if(e.key==='Enter'){
+    const s=ta.selectionStart;
+    const ls=ta.value.lastIndexOf('\n',s-1)+1;
+    const curLine=ta.value.slice(ls,s);
+    const m=curLine.match(/^(\s*)([-*+]|\d+\.)\s/);
+    if(m){
+      e.preventDefault();
+      const pfx=m[0];
+      ta.value=ta.value.slice(0,s)+'\n'+pfx+ta.value.slice(s);
+      ta.selectionStart=ta.selectionEnd=s+1+pfx.length;
+      autoResizeTa(ta);
+    }
+  }
+});
+
+// ── 툴바 버튼 ──
+document.getElementById('sc_mdToolbar').onclick=e=>{
+  const btn=e.target.closest('button[data-mdwrap],button[data-mdline]');
+  if(!btn) return;
+  const ta=document.getElementById('sc_text');
+  if(btn.dataset.mdwrap){
+    const parts=btn.dataset.mdwrap.split('||');
+    mdWrap(ta,parts[0],parts[1]);
+  } else if(btn.dataset.mdline){
+    mdLine(ta,btn.dataset.mdline);
+  }
+};
+
+// ── 미리보기 토글 ──
+document.getElementById('sc_previewToggle').onclick=function(){
+  const ta=document.getElementById('sc_text');
+  const prev=document.getElementById('sc_mdPreview');
+  const on=prev.style.display==='none';
+  prev.style.display=on?'':'none';
+  ta.style.display=on?'none':'';
+  document.getElementById('sc_mdToolbar').style.display=on?'none':'';
+  this.classList.toggle('on',on);
+  this.textContent=on?'✏️ 편집':'👁 미리보기';
+  if(on) prev.innerHTML=renderMd(ta.value)||'<span style="color:var(--ink-faint);font-size:12px;">내용을 입력하면 미리보기가 표시됩니다.</span>';
+};
 
 document.getElementById('sc_file').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
@@ -1693,6 +1821,13 @@ function scClearForm(){
   document.getElementById('sc_uploadLabel').textContent='📷 스크린샷 첨부';
   document.getElementById('sc_file').value='';
   document.getElementById('sc_ogPreview').style.display='none';
+  const scTa=document.getElementById('sc_text');
+  const scPrev=document.getElementById('sc_mdPreview');
+  scTa.style.display=''; scTa.style.height='auto';
+  scPrev.style.display='none'; scPrev.innerHTML='';
+  document.getElementById('sc_mdToolbar').style.display='';
+  const scPToggle=document.getElementById('sc_previewToggle');
+  scPToggle.classList.remove('on'); scPToggle.textContent='👁 미리보기';
   scrapImgData=null; scEditId=null;
   document.getElementById('sc_formTitle').textContent='➕ 스크랩 추가';
   document.getElementById('sc_cancelBtn').style.display='none';
@@ -1754,7 +1889,7 @@ function renderScraps(){
       ${metaParts.length?`<div class="sc-card-meta">${metaParts.join(' &nbsp;·&nbsp; ')}</div>`:''}
       ${(s.tags||[]).length?`<div class="sc-card-tags">${s.tags.map(t=>`<span class="sc-card-tag">${esc(t)}</span>`).join('')}</div>`:''}
       ${s.fit?`<span class="sc-fit-badge ${fitCls}">${fitLbl}</span>`:''}
-      ${rawText?`<div class="sc-card-raw" onclick="this.classList.toggle('expand')">${esc(rawText.slice(0,160))}${rawText.length>160?'…':''}</div>`:''}
+      ${rawText?`<div class="sc-card-raw sc-md-content" onclick="this.classList.toggle('expand')">${renderMd(rawText)}</div>`:''}
       <div class="sc-card-actions">
         <select class="sc-status-sel" data-scst="${s.id}">
           ${Object.entries(SC_STATUS).map(([v,l])=>`<option value="${v}"${s.status===v?' selected':''}>${l}</option>`).join('')}
