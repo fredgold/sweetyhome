@@ -1,0 +1,463 @@
+/* ============ PROPERTIES (흡수) ============ */
+function checklistHTML(p){
+  const ch=p.checks||{};
+  const done=CHECKLIST.filter(c=>ch[c.id]).length;
+  const pct=Math.round(done/CHECKLIST.length*100);
+  return `<div class="ck" data-pid="${p.id}">
+    <button class="ck-toggle" data-cktoggle="${p.id}">
+      <span>✔ 실사 체크</span>
+      <span class="bar"><i style="width:${pct}%"></i></span>
+      <span class="cnt">${done}/${CHECKLIST.length}</span>
+      <span class="arw">▾</span>
+    </button>
+    <div class="ck-body">
+      ${CHECKLIST.map(c=>`<div class="ck-item" data-ck="${p.id}|${c.id}" data-on="${ch[c.id]?1:0}">
+        <span class="cb">${CHECK}</span>
+        <span class="ct">${c.t}<small>${c.s}</small></span>
+        <a class="ck-verify" href="${c.vu(((p.name||'')+' '+(p.loc||'')).trim())}" target="_blank">🔎 ${c.vl}</a>
+      </div>`).join('')}
+    </div></div>`;
+}
+
+function waitLeaflet(cb){ if(typeof L!=='undefined'){cb();} else {setTimeout(()=>waitLeaflet(cb),120);} }
+function initOverview(){
+  waitLeaflet(()=>{
+    if(overview){refreshOverview();return;}
+    overview=L.map('overviewMap',{scrollWheelZoom:true}).setView(CENTER,13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(overview);
+    refreshOverview();
+  });
+}
+function refreshOverview(){
+  if(!overview) return;
+  ovMarkers.forEach(m=>overview.removeLayer(m)); ovMarkers=[];
+  const pts=[];
+  state.properties.filter(p=>p.lat&&p.lng).forEach(p=>{
+    const m=L.circleMarker([p.lat,p.lng],{radius:8,color:'#fff',weight:2,fillColor:HEX[p.status]||'#6B7C93',fillOpacity:1});
+    m.bindPopup(`<b>${esc(p.name||'')}</b><br>${esc(p.status)}${p.deposit?' · '+p.deposit+'억':''}${p.area?' · '+p.area+'㎡':''}<br><a href="${naverUrl(p)}" target="_blank">네이버에서 열기 →</a>`);
+    m.addTo(overview); ovMarkers.push(m); pts.push([p.lat,p.lng]);
+  });
+  if(pts.length===1) overview.setView(pts[0],15);
+  else if(pts.length>1) overview.fitBounds(pts,{padding:[40,40],maxZoom:15});
+  setTimeout(()=>overview.invalidateSize(),60);
+}
+document.getElementById('mapToggle').onclick=()=>{
+  const c=document.getElementById('mapcard'); c.classList.toggle('collapsed');
+  document.getElementById('mapToggle').textContent=c.classList.contains('collapsed')?'펼치기':'접기';
+  if(!c.classList.contains('collapsed')) setTimeout(()=>overview&&overview.invalidateSize(),80);
+};
+document.getElementById('mapExpand').onclick=()=>{
+  const c=document.getElementById('mapcard');
+  c.classList.toggle('expanded');
+  document.getElementById('mapExpand').textContent=c.classList.contains('expanded')?'작게 보기':'크게 보기';
+  setTimeout(()=>overview&&overview.invalidateSize(),300);
+};
+
+async function geocode(q){
+  try{
+    const res=await fetch('/api/geocode?'+new URLSearchParams({q}),{headers:authHeaders()});
+    const j=await res.json();
+    if(j.ok) return {lat:j.lat,lng:j.lng,found:true};
+  }catch(e){}
+  try{
+    const res=await fetch('https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q:q+' 서울',format:'json',limit:'1',countrycodes:'kr'}),{headers:{'Accept-Language':'ko'}});
+    const arr=await res.json();
+    if(arr.length) return {lat:parseFloat(arr[0].lat),lng:parseFloat(arr[0].lon),found:true};
+  }catch(e){}
+  return {found:false};
+}
+async function autoGeocode(){
+  const noCoord=state.properties.filter(p=>!p.lat&&(p.name||p.loc));
+  if(!noCoord.length) return;
+  for(const p of noCoord){
+    const q=((p.name||'')+' '+(p.loc||'')).trim();
+    try{
+      const j=await geocode(q);
+      if(j.found){ p.lat=j.lat; p.lng=j.lng; }
+    }catch(e){ break; }
+  }
+  if(noCoord.some(p=>p.lat)) { save(); refreshOverview(); }
+}
+
+function initFormMap(){
+  waitLeaflet(()=>{
+    if(formMapObj){setTimeout(()=>formMapObj.invalidateSize(),60);return;}
+    formMapObj=L.map('formMap').setView(CENTER,13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'}).addTo(formMapObj);
+    formMapObj.on('click',e=>setFormPin(e.latlng.lat,e.latlng.lng,true));
+    setTimeout(()=>formMapObj.invalidateSize(),60);
+  });
+}
+function setFormPin(lat,lng,recenter){
+  tempLatLng={lat,lng};
+  waitLeaflet(()=>{
+    if(!formMapObj) return;
+    if(formMarker) formMarker.setLatLng([lat,lng]);
+    else formMarker=L.marker([lat,lng],{draggable:true}).addTo(formMapObj).on('dragend',ev=>{const p=ev.target.getLatLng();tempLatLng={lat:p.lat,lng:p.lng};});
+    if(recenter) formMapObj.setView([lat,lng],16);
+  });
+}
+function clearFormPin(){ if(formMarker&&formMapObj){formMapObj.removeLayer(formMarker);} formMarker=null; tempLatLng=null; }
+
+let aiAvailable=null;
+async function claudeAPI(messages,tools,system){
+  if(aiAvailable===false) throw new Error('AI_UNAVAILABLE');
+  const body={model:"claude-haiku-4-5-20251001",max_tokens:1000,messages};
+  if(tools) body.tools=tools;
+  if(system) body.system=system;
+  const res=await fetch("/api/messages",{method:"POST",headers:authHeaders(),body:JSON.stringify(body)});
+  const data=await res.json();
+  if(data.error){
+    if(data.error.message && data.error.message.includes('credit balance')){
+      aiAvailable=false; updateAiButtons();
+      throw new Error('AI_UNAVAILABLE');
+    }
+    throw new Error(data.error.message||data.error);
+  }
+  return (data.content||[]).filter(i=>i.type==="text").map(i=>i.text).join("\n");
+}
+function aiUnavailableMsg(){ return 'AI 크레딧 충전 필요 → console.anthropic.com'; }
+function updateAiButtons(){
+  if(aiAvailable===false){
+    const s=document.getElementById('chatApiStatus');
+    if(s){s.className='ai-status warn';s.textContent='⚠️ AI 기능은 크레딧 충전이 필요해요. → console.anthropic.com';}
+  }
+}
+function parseNaver(t){
+  const r={};
+  const firstLine=(t.trim().split('\n')[0]||'').trim();
+  if(firstLine && firstLine.length<=40) r.name=firstLine;
+  let d=t.match(/전세가[\s\S]{0,15}?(\d+)\s*억\s*([\d,]+)\s*만/)||t.match(/전세가[\s\S]{0,15}?(\d+)\s*억/)||t.match(/(\d+)\s*억\s*([\d,]+)\s*만/)||t.match(/(\d+)\s*억/);
+  if(d){const e=parseInt(d[1]||'0',10);const m=d[2]?parseInt(d[2].replace(/,/g,''),10):0;r.deposit=+(e+m/10000).toFixed(2);}
+  else{const m=t.match(/([\d,]+)\s*만\s*원/);if(m)r.deposit=+(parseInt(m[1].replace(/,/g,''),10)/10000).toFixed(2);}
+  const a=t.match(/전용면적[^\d]*([\d.]+)\s*㎡/)||t.match(/전용\s*([\d.]+)/);
+  if(a)r.area=parseFloat(a[1]);
+  const loc=t.match(/서울[특별시]*\s*([가-힣]+구)\s*([가-힣]+동)/);
+  if(loc)r.loc=loc[1]+' '+loc[2];
+  const bits=[];
+  const sed=t.match(/([\d,]+)\s*세대/); const sedN=sed?parseInt(sed[1].replace(/,/g,''),10):null; if(sed)bits.push(sedN+'세대');
+  const hy=t.match(/(복도식|계단식|복도혼합|타워형)/); if(hy)bits.push(hy[1]);
+  const nan=t.match(/(중앙난방|지역난방|개별난방)/); if(nan)bits.push(nan[1]);
+  const pk=t.match(/세대당\s*([\d.]+)\s*대/); if(pk)bits.push('주차 '+pk[1]+'대/세대');
+  const yr=t.match(/\((\d+)년차\)/); if(yr)bits.push(yr[1]+'년차');
+  const mg=t.match(/관리비[\s\S]{0,6}?([\d,]+)\s*만원/); if(mg)bits.push('관리비 '+mg[1]+'만');
+  const mv=t.match(/입주가능일[\s\S]{0,15}?(\d{4}년\s*\d{1,2}월\s*\d{1,2}일)/); if(mv)bits.push('입주 '+mv[1].replace(/\s+/g,''));
+  const ln=t.match(/융자금[\s\S]{0,6}?(없음|있음)/); if(ln)bits.push('융자 '+ln[1]);
+  if(bits.length)r.memo=bits.join(' · ');
+  r._auto={};
+  if(sedN!=null&&sedN>=500) r._auto.k4=true;
+  if(hy) r._auto.k5=true;
+  if(nan) r._auto.k6=true;
+  if(pk) r._auto.k8=true;
+  return r;
+}
+function applyFill(j){
+  if(j.name) document.getElementById('f_name').value=j.name;
+  if(j.loc) document.getElementById('f_loc').value=j.loc;
+  if(j.deposit!=null&&j.deposit!=='') document.getElementById('f_deposit').value=j.deposit;
+  if(j.area!=null&&j.area!=='') document.getElementById('f_area').value=j.area;
+  if(j.memo) document.getElementById('f_memo').value=j.memo;
+  if(j._auto) tempChecks=Object.assign(tempChecks||{},j._auto);
+}
+document.getElementById('fillBtn').onclick=async()=>{
+  const txt=document.getElementById('pasteBox').value.trim();
+  if(!txt){document.getElementById('pasteBox').focus();return;}
+  const btn=document.getElementById('fillBtn'); const old=btn.textContent;
+  const j=parseNaver(txt);
+  const got=(j.name||j.deposit!=null||j.area!=null);
+  if(got){
+    applyFill(j);
+    const auto=Object.keys(j._auto||{}).length;
+    btn.textContent='✓ 채웠어요'+(auto?` (체크 ${auto}개 자동확인)`:'');
+    setTimeout(()=>{btn.textContent=old;},2000);
+    return;
+  }
+  btn.disabled=true; btn.textContent='읽는 중…';
+  try{
+    const out=await claudeAPI([{role:"user",content:
+      `다음 한국 부동산(전세) 매물 글에서 핵심만 JSON으로. 설명·마크다운 금지.\n`+
+      `형식:{"name":"단지명","loc":"구·동/역","deposit":보증금억숫자,"area":전용면적㎡숫자,"memo":"한줄"}\n`+
+      `보증금 '2억7천'→2.7. 모르면 null.\n\n${txt}`}]);
+    const aj=parseJSON(out);
+    if(aj){ applyFill(aj); btn.textContent='✓ 채웠어요'; }
+    else { btn.textContent='못 읽었어요 — 직접 입력'; }
+  }catch(e){ btn.textContent='못 읽었어요 — 직접 입력'; }
+  setTimeout(()=>{btn.disabled=false;btn.textContent=old;},2000);
+};
+
+document.getElementById('findBtn').onclick=async()=>{
+  const q=(document.getElementById('f_name').value+' '+document.getElementById('f_loc').value).trim();
+  if(!q){document.getElementById('f_name').focus();return;}
+  const btn=document.getElementById('findBtn'); btn.disabled=true; const old=btn.textContent; btn.textContent='찾는 중…';
+  try{
+    const j=await geocode(q);
+    if(j.found){ setFormPin(j.lat,j.lng,true); btn.textContent='✓ 찾았어요'; }
+    else { btn.textContent='못 찾음 — 지도 탭'; }
+  }catch(e){ btn.textContent='검색 실패 — 지도 직접 탭'; }
+  setTimeout(()=>{btn.disabled=false;btn.textContent=old;},1600);
+};
+
+function renderStats(){const p=state.properties;document.getElementById('stats').innerHTML=
+  `총 <b>${p.length}</b>곳 · 후보확정 <b>${p.filter(x=>x.status==='후보확정').length}</b> · 방문예정 <b>${p.filter(x=>x.status==='방문예정').length}</b>`;}
+function renderTabs(){
+  const tabs=['전체','관심','방문예정','검토중','후보확정','보류','탈락'];
+  const cnt={전체:state.properties.length}; tabs.slice(1).forEach(s=>cnt[s]=state.properties.filter(p=>p.status===s).length);
+  document.getElementById('tabs').innerHTML=tabs.map(t=>`<button class="tab" data-on="${activeTab===t?1:0}" data-tab="${t}">${t}<span class="ct tnum">${cnt[t]}</span></button>`).join('');
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;renderList();renderTabs();});
+}
+function areaChip(a){if(a==null||a==='')return'';const n=parseFloat(a);if(isNaN(n))return'';return n<=85?`<span class="chip ok tnum">전용 ${n}㎡ · 청약 OK</span>`:`<span class="chip warn tnum">전용 ${n}㎡ · 청약 영향 ⚠</span>`;}
+function depositChip(d){if(d==null||d==='')return'';const n=parseFloat(d);if(isNaN(n))return'';return `<span class="chip deposit tnum">보증금 ${n}억${n>5?' · 예산↑?':''}</span>`;}
+let propSearchQuery='';
+function renderList(){
+  let items=[...state.properties];
+  if(activeTab!=='전체') items=items.filter(p=>p.status===activeTab);
+  const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
+  if(pq) items=items.filter(p=>(p.name||'').toLowerCase().includes(pq)||(p.loc||'').toLowerCase().includes(pq)||(p.memo||'').toLowerCase().includes(pq));
+  if(sortMode==='score') items.sort((a,b)=>((b.aiScore??-1)-(a.aiScore??-1))||(ORDER[a.status]-ORDER[b.status]));
+  else items.sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||(b.created-a.created));
+  const el=document.getElementById('list');
+  if(!items.length){el.innerHTML=`<div class="empty"><div class="big">${activeTab==='전체'?'아직 등록된 매물이 없어요':'이 상태의 매물이 없어요'}</div>${activeTab==='전체'?'＋ 매물 추가로 첫 후보를 올려보세요.':'다른 탭을 눌러보세요.'}</div>`;return;}
+  el.innerHTML=items.map(p=>`<div class="card ${(p.status==='탈락'||p.status==='보류')?'dim':''}" data-st="${p.status}">
+    <div class="c-top"><div><div class="c-name">${esc(p.name||'(이름 없음)')}</div>${p.loc?`<div class="c-loc">🚇 ${esc(p.loc)}</div>`:''}</div>
+    <span class="pill" style="background:var(${SC[p.status]})">${p.status}</span></div>
+    <div class="c-meta">${depositChip(p.deposit)}${areaChip(p.area)}${p.households?`<span class="chip tnum">🏢 ${p.households}세대</span>`:''}${p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}${p.lat?'<span class="chip geo">📍 위치 저장됨</span>':''}</div>
+    ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy">`:''}    ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
+    <div class="c-actions">
+      ${p.lat?`<button data-locate="${p.id}">🗺️ 지도에서 보기</button>`:''}
+      <a class="naver" href="${naverUrl(p)}" target="_blank">📍 네이버지도</a>
+      <a class="hogang" href="${siteUrl('hogang',p.name)}" target="_blank">🏠 호갱노노</a>
+      <a class="rt" href="${siteUrl('rt',p.name)}" target="_blank">📊 실거래가</a>
+      <button data-ai="${p.id}">✨ AI 분석</button>
+      <button data-edit="${p.id}">수정</button><button data-del="${p.id}">삭제</button>
+    </div>
+    ${aiBlock(p)}${checklistHTML(p)}</div>`).join('');
+  el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEdit(b.dataset.edit));
+  el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delProp(b.dataset.del));
+  el.querySelectorAll('[data-locate]').forEach(b=>b.onclick=()=>locate(b.dataset.locate));
+  el.querySelectorAll('[data-ai]').forEach(b=>b.onclick=()=>aiAnalyze(b.dataset.ai));
+}
+function aiBlock(p){
+  if(p._aiLoading) return `<div class="aiload">✨ AI가 분석 중…</div>`;
+  if(!p.aiReport && !p.aiComment) return '';
+  let h='<div class="airep"><div class="arh">✨ AI 분석</div>';
+  if(p.aiReport){ h+=`<div>${esc(p.aiReport.summary||'')}</div>`; if(p.aiReport.risk) h+=`<div class="risk">⚠ ${esc(p.aiReport.risk)}</div>`; }
+  if(p.aiComment) h+=`<div class="cmt">“${esc(p.aiComment)}”</div>`;
+  return h+'</div>';
+}
+async function aiAnalyze(id){
+  const p=state.properties.find(x=>x.id===id); if(!p)return;
+  p._aiLoading=true; renderList();
+  try{
+    const out=await claudeAPI([{role:"user",content:
+      `우리 부부 전세 매물을 분석해줘. 설명·마크다운 금지, JSON만.\n`+
+      `형식:{"score":0~100정수,"summary":"우리 조건 대비 장단점·적합도 3~4문장","risk":"재건축·이주 등 핵심 리스크 한 줄(없으면 빈 문자열)"}\n`+
+      `[우리 조건] ${profileLine()}\n`+
+      `[매물] 이름:${p.name||'?'} / 위치:${p.loc||'?'} / 보증금:${p.deposit||'?'}억 / 전용:${p.area||'?'}㎡ / 메모:${p.memo||'없음'}\n`+
+      `시세·평판·재건축 단계는 web_search로 확인.`}],
+      [{type:"web_search_20250305",name:"web_search"}]);
+    const j=parseJSON(out);
+    if(j){ p.aiReport={summary:j.summary||'',risk:j.risk||''}; if(j.score!=null) p.aiScore=Math.max(0,Math.min(100,Math.round(j.score))); }
+    else { p.aiReport={summary:'분석 결과를 읽지 못했어요. 다시 시도해 주세요.',risk:''}; }
+  }catch(e){ p.aiReport={summary:e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 응답을 받지 못했어요.',risk:''}; }
+  p._aiLoading=false; save(); renderList();
+}
+function locate(id){
+  const p=state.properties.find(x=>x.id===id); if(!p||!p.lat)return;
+  document.getElementById('mapcard').classList.remove('collapsed');
+  document.getElementById('mapToggle').textContent='접기';
+  waitLeaflet(()=>{overview.setView([p.lat,p.lng],16);overview.invalidateSize();
+    const m=ovMarkers.find(mk=>{const ll=mk.getLatLng();return ll.lat===p.lat&&ll.lng===p.lng;}); if(m)m.openPopup();});
+  document.getElementById('mapcard').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+const form=document.getElementById('form');
+let propImgData=null;
+function clearForm(){
+  ['editId','f_name','f_loc','f_deposit','f_area','f_households','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
+  tempChecks=null;clearFormPin();
+  propImgData=null;
+  document.getElementById('f_img').value='';
+  document.getElementById('f_imgLabel').textContent='📷 사진 추가';
+  document.getElementById('f_imgPreview').style.display='none';
+  document.getElementById('f_imgClear').style.display='none';
+}
+function openForm(){form.classList.add('open');initFormMap();document.getElementById('f_name').focus();}
+function closeForm(){form.classList.remove('open');clearForm();}
+document.getElementById('toggleForm').onclick=()=>{ if(form.classList.contains('open'))closeForm(); else {clearForm();openForm();} };
+document.getElementById('cancelBtn').onclick=closeForm;
+
+function openEdit(id){
+  const p=state.properties.find(x=>x.id===id); if(!p)return;
+  document.getElementById('editId').value=p.id;
+  document.getElementById('f_name').value=p.name||'';
+  document.getElementById('f_loc').value=p.loc||'';
+  document.getElementById('f_deposit').value=p.deposit??'';
+  document.getElementById('f_area').value=p.area??'';
+  document.getElementById('f_households').value=p.households??'';
+  document.getElementById('f_memo').value=p.memo||'';
+  // 이미지
+  propImgData=null;
+  const fPrev=document.getElementById('f_imgPreview');
+  const fClr=document.getElementById('f_imgClear');
+  if(p.img){fPrev.src=p.img;fPrev.style.display='';fClr.style.display='';}
+  else{fPrev.style.display='none';fClr.style.display='none';}
+  document.getElementById('f_imgLabel').textContent=p.img?'📷 사진 변경':'📷 사진 추가';
+  document.getElementById('f_img').value='';
+  openForm();
+  if(p.lat&&p.lng) setFormPin(p.lat,p.lng,true); else clearFormPin();
+  document.getElementById('panel-props').scrollIntoView({behavior:'smooth',block:'start'});
+}
+document.getElementById('f_img').onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  compressImage(f,dataUrl=>{
+    propImgData=dataUrl;
+    const prev=document.getElementById('f_imgPreview');
+    prev.src=dataUrl; prev.style.display='';
+    document.getElementById('f_imgLabel').textContent='📷 '+f.name;
+    document.getElementById('f_imgClear').style.display='';
+  });
+};
+document.getElementById('f_imgClear').onclick=()=>{
+  propImgData='';
+  document.getElementById('f_img').value='';
+  document.getElementById('f_imgPreview').style.display='none';
+  document.getElementById('f_imgLabel').textContent='📷 사진 추가';
+  document.getElementById('f_imgClear').style.display='none';
+};
+document.getElementById('saveBtn').onclick=()=>{
+  const name=document.getElementById('f_name').value.trim();
+  if(!name){const f=document.getElementById('f_name');f.focus();f.style.borderColor='var(--s-drop)';return;}
+  const cur=document.getElementById('editId').value;
+  const existing=cur?state.properties.find(x=>x.id===cur):null;
+  const data={
+    name, loc:document.getElementById('f_loc').value.trim(),
+    deposit:document.getElementById('f_deposit').value, area:document.getElementById('f_area').value,
+    households:document.getElementById('f_households').value,
+    memo:document.getElementById('f_memo').value.trim(),
+    img:propImgData===null?((existing&&existing.img)||''):(propImgData||''),
+    status:existing?existing.status:'관심',
+    lat:tempLatLng?tempLatLng.lat:(existing?existing.lat:null),
+    lng:tempLatLng?tempLatLng.lng:(existing?existing.lng:null),
+    checks:Object.assign({}, existing?existing.checks:{}, tempChecks||{}),
+  };
+  if(existing) Object.assign(existing,data);
+  else state.properties.push({id:'m'+Date.now(),created:Date.now(),...data});
+  closeForm(); save(); renderProps(); refreshOverview();
+};
+function delProp(id){if(!confirm('이 매물을 삭제할까요?'))return;state.properties=state.properties.filter(x=>x.id!==id);save();renderProps();refreshOverview();}
+
+document.getElementById('list').addEventListener('click',e=>{
+  const tog=e.target.closest('[data-cktoggle]');
+  if(tog){ tog.closest('.ck').classList.toggle('open'); return; }
+  const item=e.target.closest('.ck-item');
+  if(item){
+    if(e.target.closest('a')) return;
+    const [pid,cid]=item.dataset.ck.split('|');
+    const p=state.properties.find(x=>x.id===pid); if(!p)return;
+    p.checks=p.checks||{}; p.checks[cid]=!p.checks[cid];
+    item.dataset.on=p.checks[cid]?'1':'0';
+    const ck=item.closest('.ck');
+    const done=CHECKLIST.filter(c=>p.checks[c.id]).length;
+    ck.querySelector('.cnt').textContent=done+'/'+CHECKLIST.length;
+    ck.querySelector('.bar i').style.width=Math.round(done/CHECKLIST.length*100)+'%';
+    save(); return;
+  }
+  const pill=e.target.closest('.pill'); if(!pill)return;
+  const card=pill.closest('.card');
+  const p=state.properties.find(x=>x.id===card.querySelector('[data-edit]').dataset.edit); if(!p)return;
+  const opts=['관심','방문예정','검토중','후보확정','보류','탈락'];
+  p.status=opts[(opts.indexOf(p.status)+1)%opts.length];
+  save(); renderProps(); refreshOverview();
+});
+
+function runSiteSearch(site){
+  const q=document.getElementById('siteSearch').value.trim();
+  if(!q){document.getElementById('siteSearch').focus();return;}
+  window.open(siteUrl(site,q),'_blank');
+}
+document.querySelectorAll('.searchbar .site').forEach(b=>b.onclick=()=>runSiteSearch(b.dataset.site));
+document.getElementById('siteSearch').addEventListener('keydown',e=>{ if(e.key==='Enter') runSiteSearch('land'); });
+
+function renderPrep(){
+  document.getElementById('prep').innerHTML=state.prep.map(t=>`<div class="task" data-done="${t.done?1:0}" data-id="${t.id}"><div class="box">${CHECK}</div><div class="tx">${esc(t.tx)}${t.sub?`<small>${esc(t.sub)}</small>`:''}</div></div>`).join('');
+  document.querySelectorAll('#prep .task').forEach(el=>el.onclick=()=>{const t=state.prep.find(x=>x.id===el.dataset.id);t.done=!t.done;save();renderPrep();});
+}
+function renderSteps(){
+  document.getElementById('steps').innerHTML=state.steps.map((s,i)=>`<div class="step" data-done="${s.done?1:0}" data-id="${s.id}"><div class="num tnum">${s.done?'✓':i+1}</div><div class="stx">${esc(s.tx)}${s.sub?`<small>${esc(s.sub)}</small>`:''}</div></div>`).join('');
+  document.querySelectorAll('#steps .step').forEach(el=>el.onclick=()=>{const s=state.steps.find(x=>x.id===el.dataset.id);s.done=!s.done;save();renderSteps();});
+}
+function renderProps(){renderStats();renderTabs();renderList();renderPrep();renderSteps();renderWeights();}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const ps=document.getElementById('prop_search');
+  if(ps) ps.addEventListener('input',()=>renderList());
+});
+// prop_search 즉시 바인딩 (DOMContentLoaded 이미 지났을 때)
+(()=>{ const ps=document.getElementById('prop_search'); if(ps) ps.addEventListener('input',()=>renderList()); })();
+
+
+/* ============ v2: 가중치 · 자동 평가 · 정렬 ============ */
+const WEIGHTS=[['commute','통근'],['budget','예산'],['area','면적'],['complex','단지조건'],['risk','리스크']];
+let sortMode='status';
+function renderWeights(){
+  const w=state.settings.weights||{};
+  const el=document.getElementById('weights'); if(!el)return;
+  el.innerHTML=WEIGHTS.map(([k,ko])=>`<div class="wrow"><label>${ko}</label><input type="range" min="1" max="5" step="1" data-w="${k}" value="${w[k]||3}"><span class="wv tnum">${w[k]||3}</span></div>`).join('');
+  el.querySelectorAll('input[data-w]').forEach(inp=>{
+    inp.oninput=()=>{ state.settings.weights[inp.dataset.w]=+inp.value; inp.nextElementSibling.textContent=inp.value; save(); };
+  });
+}
+function weightLine(){const w=state.settings.weights||{};return WEIGHTS.map(([k,ko])=>`${ko} ${w[k]||3}`).join(', ');}
+document.getElementById('evalBtn').onclick=async()=>{
+  const list=state.properties.filter(p=>p.status!=='탈락');
+  if(!list.length){alert('평가할 매물이 없어요. 먼저 매물을 추가하세요.');return;}
+  const btn=document.getElementById('evalBtn'); btn.disabled=true; const old=btn.textContent;
+  let done=0;
+  for(const p of list){
+    btn.textContent=`평가 중 ${++done}/${list.length}…`;
+    try{
+      const out=await claudeAPI([{role:"user",content:
+        `우리 부부 전세 매물을 0~100점으로 채점하고 한 줄 코멘트. 설명·마크다운 금지, JSON만.\n`+
+        `형식:{"score":정수,"comment":"한 줄"}\n`+
+        `[우리 조건] ${profileLine()}\n`+
+        `[가중치 1~5] ${weightLine()}.\n`+
+        `[매물] 이름:${p.name||'?'} / 위치:${p.loc||'?'} / 보증금:${p.deposit||'?'}억 / 전용:${p.area||'?'}㎡ / 메모:${p.memo||'없음'}\n`+
+        `재건축 이주 리스크가 크면 감점.`}],
+        [{type:"web_search_20250305",name:"web_search"}]);
+      const j=parseJSON(out);
+      if(j&&j.score!=null){ p.aiScore=Math.max(0,Math.min(100,Math.round(j.score))); p.aiComment=j.comment||''; save(); renderList(); }
+    }catch(e){ btn.textContent=e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 연결 실패'; setTimeout(()=>{btn.disabled=false;btn.textContent=old;},1800); return; }
+  }
+  sortMode='score';
+  const sb=document.getElementById('sortBtn'); sb.dataset.on='1'; sb.textContent='정렬: AI점수순';
+  save(); renderList();
+  btn.disabled=false; btn.textContent=old;
+};
+document.getElementById('sortBtn').onclick=()=>{
+  sortMode=sortMode==='score'?'status':'score';
+  const sb=document.getElementById('sortBtn'); sb.dataset.on=sortMode==='score'?'1':'0';
+  sb.textContent=sortMode==='score'?'정렬: AI점수순':'정렬: 상태순';
+  renderList();
+};
+
+
+/* ============ 내보내기 / 가져오기 ============ */
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+function makeBackup(){
+  const payload={v:3, savedAt:new Date().toISOString(), state};
+  return '스위티홈::'+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+}
+function readBackup(code){
+  try{
+    let c=code.trim();
+    if(c.startsWith('스위티홈::')) c=c.slice('스위티홈::'.length);
+    else if(c.startsWith('집구하기맵::')) c=c.slice('집구하기맵::'.length);
+    const json=decodeURIComponent(escape(atob(c.trim())));
+    const o=JSON.parse(json);
+    if(o&&o.state) return {kind:'full',state:o.state};
+    if(o&&Array.isArray(o.properties)) return {kind:'legacy',properties:o.properties,prep:o.prep,steps:o.steps};
+    return null;
+  }catch(e){return null;}
+}
