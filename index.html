@@ -357,7 +357,11 @@
   .act-suggest-card .btn-adopt{font-size:12px;font-weight:700;color:#fff;background:var(--line9-deep);border-radius:8px;padding:6px 12px;white-space:nowrap;}
 
   /* ===== 스크랩 탭 ===== */
-  .sc-form{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow);}
+  .sc-add-bar{display:flex;gap:8px;margin-bottom:14px;}
+  .sc-add-btn{flex:1;padding:12px;background:var(--money);color:#fff;font-size:14px;font-weight:800;border-radius:12px;letter-spacing:-.01em;}
+  .sc-add-btn:hover{background:var(--money-deep);}
+  .sc-form{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow);display:none;}
+  .sc-form.open{display:block;}
   .sc-form h3{font-size:14px;font-weight:800;margin-bottom:12px;}
   .sc-field{margin-bottom:10px;}
   .sc-field label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;}
@@ -925,11 +929,17 @@
       <div class="ah"><h2>📋 스크랩</h2></div>
       <div class="adesc">청약·전세·매물·뉴스 정보를 빠르게 저장하세요. AI 없이도 수동으로 분류·관리할 수 있어요.</div>
 
-      <!-- 입력 폼 -->
+      <!-- 추가 버튼 바 -->
+      <div class="sc-add-bar">
+        <button class="sc-add-btn" id="sc_addToggle">➕ 스크랩 추가</button>
+        <button class="sc-import-trigger" id="sc_importTrigger">📋 붙여넣기 임포트</button>
+      </div>
+
+      <!-- 입력 폼 (기본 접힘) -->
       <div class="sc-form" id="sc_form">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
           <h3 id="sc_formTitle" style="margin-bottom:0;">➕ 스크랩 추가</h3>
-          <button class="sc-import-trigger" id="sc_importTrigger">📋 붙여넣기 임포트</button>
+          <button type="button" class="sc-import-trigger" id="sc_formClose" style="font-size:16px;border:none;background:none;color:var(--ink-faint);padding:4px 6px;">✕</button>
         </div>
 
         <div class="sc-field">
@@ -1810,7 +1820,7 @@ document.getElementById('sc_saveBtn').onclick=()=>{
       createdAt:Date.now(),status:'new',parsed:null,...fields
     });
   }
-  scClearForm();save();renderScraps();
+  scCloseForm();save();renderScraps();
 };
 
 function scClearForm(){
@@ -1834,7 +1844,11 @@ function scClearForm(){
   document.querySelectorAll('.sc-type-chip').forEach((c,i)=>c.classList.toggle('on',i===0));
 }
 
-document.getElementById('sc_cancelBtn').onclick=()=>{scClearForm();renderScraps();};
+function scOpenForm(){ document.getElementById('sc_form').classList.add('open'); document.getElementById('sc_addToggle').textContent='▲ 접기'; document.getElementById('sc_form').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function scCloseForm(){ scClearForm(); document.getElementById('sc_form').classList.remove('open'); document.getElementById('sc_addToggle').textContent='➕ 스크랩 추가'; }
+document.getElementById('sc_addToggle').onclick=()=>{ const isOpen=document.getElementById('sc_form').classList.contains('open'); isOpen?scCloseForm():scOpenForm(); };
+document.getElementById('sc_formClose').onclick=scCloseForm;
+document.getElementById('sc_cancelBtn').onclick=()=>{scCloseForm();renderScraps();};
 document.getElementById('sc_analyzeBtn').onclick=()=>{};
 
 function openScEdit(id){
@@ -1855,7 +1869,7 @@ function openScEdit(id){
   document.querySelectorAll('.sc-type-chip').forEach(c=>c.classList.toggle('on',c.dataset.type===s.type));
   document.getElementById('sc_moreFields').classList.add('open');
   document.getElementById('sc_moreArrow').textContent='▼';
-  document.getElementById('sc_form').scrollIntoView({behavior:'smooth'});
+  scOpenForm();
 }
 
 function renderScraps(){
