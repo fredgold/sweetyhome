@@ -1098,7 +1098,7 @@
       <h3>📋 붙여넣기 임포트</h3>
       <div class="mdesc">마크다운 표(<code>| 제목 | 유형 | ... |</code>) 또는 <b>'항목: 값'</b> 블록을 붙여넣으세요. 파싱 후 확인하고 등록합니다.</div>
       <div id="sc_importTextArea">
-        <textarea id="sc_importInput" style="width:100%;min-height:130px;border:1px solid var(--hairline);border-radius:9px;padding:10px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box;margin-top:8px;" placeholder="마크다운 표 예시:&#10;| 제목 | 유형 | 위치 | 가격 |&#10;|------|------|------|------|&#10;| 이수역 신축 전세 | 전세 | 동작구 | 4.2억 |&#10;&#10;블록 예시 (빈 줄로 구분):&#10;제목: 이수역 신축&#10;유형: 전세&#10;위치: 동작구 이수역&#10;가격: 4.2억"></textarea>
+        <textarea id="sc_importInput" style="width:100%;min-height:130px;border:1px solid var(--hairline);border-radius:9px;padding:10px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box;margin-top:8px;" placeholder="--- 형식 (권장)&#10;---&#10;제목: 가양역 59㎡ 전세&#10;유형: 전세&#10;위치: 강서구 가양동&#10;가격: 3.6억&#10;면적: 59㎡&#10;일정: 2026-09 입주&#10;조건자격: 보증보험 필수&#10;태그: 9호선, 3억대&#10;적합도: 높음&#10;---&#10;## 본문 메모&#10;- 실거래 확인 필요&#10;&#10;또는 GPT 응답·자유 텍스트 그대로 붙여넣기도 가능합니다."></textarea>
       </div>
       <div id="sc_importParseRow" class="macts" style="margin-top:10px;">
         <button class="btn-ghost" data-close="scImportModal">취소</button>
@@ -1950,17 +1950,17 @@ async function checkFit(id){
 
 /* ============ 스크랩 임포트 ============ */
 const SC_FIELD_MAP={
-  '제목':'title','타이틀':'title','title':'title',
-  '유형':'type','분류':'type','type':'type',
-  '위치':'location','동네':'location','지역':'location','location':'location',
-  '가격':'price','전세가':'price','분양가':'price','price':'price',
-  '면적':'area','평형':'area','크기':'area','area':'area',
-  '일정':'schedule','청약일':'schedule','입주':'schedule','schedule':'schedule',
-  '조건':'condition','자격':'condition','자격요건':'condition','condition':'condition',
-  '출처':'source','링크':'source','url':'source','source':'source',
-  '태그':'tags','tags':'tags',
-  '메모':'raw','원문':'raw','내용':'raw',
-  '적합도':'fit','fit':'fit',
+  '제목':'title','타이틀':'title','단지명':'title','물건':'title','title':'title',
+  '유형':'type','분류':'type','종류':'type','type':'type',
+  '위치':'location','동네':'location','지역':'location','주소':'location','소재지':'location','location':'location',
+  '가격':'price','전세가':'price','분양가':'price','보증금':'price','매매가':'price','호가':'price','실거래가':'price','price':'price',
+  '면적':'area','평형':'area','크기':'area','전용면적':'area','전용':'area','area':'area',
+  '일정':'schedule','청약일':'schedule','입주':'schedule','입주예정':'schedule','모집공고일':'schedule','청약일정':'schedule','schedule':'schedule',
+  '조건':'condition','자격':'condition','자격요건':'condition','조건자격':'condition','신청자격':'condition','청약자격':'condition','condition':'condition',
+  '출처':'source','링크':'source','url':'source','참고':'source','source':'source',
+  '태그':'tags','키워드':'tags','tags':'tags',
+  '메모':'raw','원문':'raw','내용':'raw','본문':'raw',
+  '적합도':'fit','판단':'fit','fit':'fit',
 };
 const SC_TYPE_MAP={
   '청약공고':'subscription','청약':'subscription',
@@ -1970,10 +1970,43 @@ const SC_TYPE_MAP={
   '정책·뉴스':'policy','정책':'policy','뉴스':'policy',
   '임장후기':'review','임장':'review',
 };
+const SC_FIT_MAP={
+  '높음':'high','고':'high','가능':'high','적합':'high','high':'high',
+  '중간':'mid','보통':'mid','중':'mid','mid':'mid',
+  '낮음':'low','저':'low','불가':'low','부적합':'low','low':'low',
+};
 
-function scMapField(h){ return SC_FIELD_MAP[h.toLowerCase().trim()]||SC_FIELD_MAP[h.trim()]||null; }
+function scMapField(h){
+  const k=h.trim();
+  return SC_FIELD_MAP[k]||SC_FIELD_MAP[k.toLowerCase()]||null;
+}
 function scMapType(v){ return SC_TYPE_MAP[v.trim()]||null; }
+function scMapFit(v){ return SC_FIT_MAP[v.trim()]||SC_FIT_MAP[v.trim().toLowerCase()]||null; }
 
+/* ── 프론트매터 파서 ---\nkey: val\n---\nbody ── */
+function scParseFrontmatter(text){
+  const m=text.match(/^---[ \t]*\r?\n([\s\S]*?)\n---[ \t]*(\r?\n|$)([\s\S]*)/);
+  if(!m) return null;
+  const fmBlock=m[1], body=(m[3]||'').trim();
+  const item={};
+  for(const line of fmBlock.split('\n')){
+    const ci=line.indexOf(':');
+    if(ci<=0) continue;
+    const key=line.slice(0,ci).trim();
+    const val=line.slice(ci+1).trim();
+    if(!val) continue;
+    const field=scMapField(key);
+    if(!field) continue;
+    if(field==='type'){ const t=scMapType(val); if(t) item.type=t; }
+    else if(field==='fit'){ const f=scMapFit(val); if(f) item.fit=f; }
+    else if(field==='tags') item.tags=val.split(/[,、·]+/).map(t=>t.trim()).filter(Boolean);
+    else item[field]=val;
+  }
+  if(body) item.raw=(item.raw?item.raw+'\n':'')+body;
+  return (item.title||item.raw)?[item]:null;
+}
+
+/* ── 마크다운 표 파서 ── */
 function scParseMdTable(text){
   const lines=text.split('\n').map(l=>l.trim()).filter(l=>l.startsWith('|'));
   if(lines.length<2) return null;
@@ -1984,52 +2017,64 @@ function scParseMdTable(text){
   const items=[];
   for(const line of dataLines){
     const cells=line.split('|').slice(1,-1).map(c=>c.trim());
-    const item={extraParts:[]};
+    const item={extra:[]};
     fieldKeys.forEach((field,i)=>{
-      const val=cells[i]||'';
-      if(!val) return;
-      if(field==='type') item.type=scMapType(val)||'area';
-      else if(field==='tags') item.tags=val.split(/[,、]+/).map(t=>t.trim()).filter(Boolean);
+      const val=cells[i]||''; if(!val) return;
+      if(field==='type'){ const t=scMapType(val); if(t) item.type=t; }
+      else if(field==='fit'){ const f=scMapFit(val); if(f) item.fit=f; }
+      else if(field==='tags') item.tags=val.split(/[,、·]+/).map(t=>t.trim()).filter(Boolean);
       else if(field) item[field]=val;
-      else item.extraParts.push(headers[i]+': '+val);
+      else item.extra.push(headers[i]+': '+val);
     });
-    if(item.extraParts.length) item.raw=(item.raw?item.raw+'\n':'')+item.extraParts.join('\n');
-    delete item.extraParts;
+    if(item.extra.length) item.raw=(item.raw?item.raw+'\n':'')+item.extra.join('\n');
+    delete item.extra;
     if(item.title||item.raw) items.push(item);
   }
   return items.length?items:null;
 }
 
+/* ── key: val 블록 파서 (빈 줄로 구분) ── */
 function scParseBlocks(text){
   const blocks=text.trim().split(/\n[ \t]*\n/);
   const items=[];
   for(const block of blocks){
     if(!block.trim()) continue;
     const lines=block.trim().split('\n');
-    const item={extraParts:[]};
+    const item={extra:[]};
     for(const line of lines){
-      const colonIdx=line.indexOf(':');
-      if(colonIdx>0){
-        const key=line.slice(0,colonIdx).trim();
-        const val=line.slice(colonIdx+1).trim();
+      const ci=line.indexOf(':');
+      if(ci>0){
+        const key=line.slice(0,ci).trim(), val=line.slice(ci+1).trim();
         const field=scMapField(key);
-        if(field==='type') item.type=scMapType(val)||'area';
-        else if(field==='tags') item.tags=val.split(/[,、]+/).map(t=>t.trim()).filter(Boolean);
+        if(field==='type'){ const t=scMapType(val); if(t) item.type=t; }
+        else if(field==='fit'){ const f=scMapFit(val); if(f) item.fit=f; }
+        else if(field==='tags') item.tags=val.split(/[,、·]+/).map(t=>t.trim()).filter(Boolean);
         else if(field) item[field]=val;
-        else item.extraParts.push(line);
-      } else { item.extraParts.push(line); }
+        else item.extra.push(line);
+      } else { item.extra.push(line); }
     }
-    if(item.extraParts.length) item.raw=(item.raw?item.raw+'\n':'')+item.extraParts.join('\n');
-    delete item.extraParts;
+    if(item.extra.length) item.raw=(item.raw?item.raw+'\n':'')+item.extra.join('\n');
+    delete item.extra;
     if(item.title||item.raw) items.push(item);
   }
   return items.length?items:null;
 }
 
+/* ── 자유 텍스트 폴백 — 첫 제목줄 추출, 전체를 raw ── */
+function scFreeText(text){
+  const t=text.trim(); if(!t) return null;
+  const headingM=t.match(/^#{1,3}\s+(.+)/m);
+  const firstLine=t.split('\n').find(l=>l.trim());
+  const title=headingM?headingM[1].trim():(firstLine||'').replace(/^[#\-*>\s]+/,'').slice(0,60).trim();
+  return [{ title, raw: t }];
+}
+
+/* ── 자동 감지 ── */
 function scAutoDetect(text){
+  const fm=scParseFrontmatter(text); if(fm) return fm;
   if(/^\|.+\|/m.test(text)) return scParseMdTable(text);
-  if(/^[가-힣a-zA-Z\w·\s]{1,12}:/m.test(text)) return scParseBlocks(text);
-  return null;
+  if(/^[가-힣a-zA-Z\w·\s]{1,15}:/m.test(text)) return scParseBlocks(text);
+  return scFreeText(text);
 }
 
 let scImportItems=[];
@@ -2085,7 +2130,7 @@ document.getElementById('sc_importParseBtn').onclick=()=>{
   if(!text){err.textContent='텍스트를 붙여넣어 주세요.';return;}
   const items=scAutoDetect(text);
   if(!items||!items.length){
-    err.textContent="표(| 컬럼 | 형식) 또는 '항목: 값' 블록 형식으로 붙여넣어 주세요.";
+    err.textContent="텍스트를 인식하지 못했어요. GPT 응답이나 자유 텍스트도 괜찮아요.";
     return;
   }
   scShowImportPreview(items);
