@@ -694,8 +694,7 @@
     <button class="atab" data-panel="dash" data-on="1">🏠 대시보드</button>
     <button class="atab" data-panel="assets">💰 자산</button>
     <button class="atab" data-panel="props">🏘️ 매물</button>
-    <button class="atab" data-panel="chat">💬 AI 상담</button>
-    <button class="atab" data-panel="regnews">📰 규제·뉴스</button>
+
     <button class="atab" data-panel="actions">✅ 액션</button>
     <button class="atab" data-panel="scraps">📋 스크랩</button>
   </nav>
@@ -730,9 +729,9 @@
     </div>
 
     <div class="regline" id="d_regline">
-      <span class="ic">📰</span>
-      <span>규제·뉴스 탭에서 <b>최신 규제 확인</b>을 눌러보세요.</span>
-      <em data-goto="regnews" style="cursor:pointer">바로가기</em>
+      <span class="ic">📋</span>
+      <span>정책·규제 정보는 <b>스크랩 탭</b>에서 직접 수집·관리하세요.</span>
+      <em data-goto="scraps" style="cursor:pointer">바로가기</em>
     </div>
   </section>
 
@@ -889,8 +888,8 @@
     </div>
   </section>
 
-  <!-- ===================== AI 상담 ===================== -->
-  <section class="panel" id="panel-chat">
+  <!-- ===================== AI 상담 (비활성 — 크레딧 필요) ===================== -->
+  <section class="panel" id="panel-chat" style="display:none">
     <div class="chatwrap">
       <div class="chathead">
         <h2>💬 AI 상담</h2>
@@ -911,7 +910,7 @@
     <div class="asec">
       <div class="ah">
         <h2>✅ 액션</h2>
-        <button class="btn-ai" id="act_suggestBtn">✨ 새 액션 제안</button>
+        <button class="btn-ai" id="act_suggestBtn" disabled title="AI 크레딧 충전 시 활성화">✨ 새 액션 제안</button>
       </div>
       <div class="adesc">해야 할 일을 관리하세요. ★을 누르면 맨 위로, 체크하면 완료. AI가 우리 상황에 맞는 다음 액션을 제안해줘요.</div>
       <div id="act_list"></div>
@@ -1052,8 +1051,8 @@
     </div>
   </section>
 
-  <!-- ===================== 규제·뉴스 ===================== -->
-  <section class="panel" id="panel-regnews">
+  <!-- ===================== 규제·뉴스 (비활성 — 크레딧 필요) ===================== -->
+  <section class="panel" id="panel-regnews" style="display:none">
     <div class="asec">
       <div class="ah">
         <h2>📰 규제·뉴스</h2>
@@ -1471,8 +1470,6 @@ function switchPanel(name){
   if(name==='dash') renderDash();
   if(name==='assets') renderAssets();
   if(name==='props'){ initOverview(); setTimeout(()=>{overview&&overview.invalidateSize();autoGeocode();},80); }
-  if(name==='chat') renderChat();
-  if(name==='regnews') renderRegNews();
   if(name==='actions') renderActions();
   if(name==='scraps') renderScraps();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -2141,15 +2138,7 @@ function renderRegNews(){
     if(n&&n.source) el.onclick=()=>window.open(n.source,'_blank');
   });
 }
-function updateDashRegline(){
-  const el=document.getElementById('d_regline');
-  if(!el)return;
-  const latest=state.regNews[0];
-  if(latest){
-    el.innerHTML=`<span class="ic">📰</span><span><b>${esc(latest.title||'')}</b> — ${esc((latest.summary||'').slice(0,60))}${(latest.summary||'').length>60?'…':''}</span><em data-goto="regnews" style="cursor:pointer">더보기</em>`;
-    el.querySelector('[data-goto]').onclick=()=>switchPanel('regnews');
-  }
-}
+function updateDashRegline(){}
 document.getElementById('rn_fetchBtn').onclick=async()=>{
   const btn=document.getElementById('rn_fetchBtn');
   btn.disabled=true; const old=btn.textContent; btn.textContent='검색 중…';
