@@ -1,3 +1,35 @@
+/*
+ * ── STATE SCHEMA ──────────────────────────────────────────────
+ * state.profile   : { names, birthYear, employment, housing, city,
+ *                     maxArea, depositRange, transport,
+ *                     milestones: [{label, date}] }
+ *
+ * state.assets    : { items: [{id, owner, name, amount, type,
+ *                               liquidity, mobilizable, memo}],
+ *                     notes, reserve (만원), updatedAt }
+ *
+ * state.settings  : { targetDeposit (억), weights:{commute,budget,
+ *                     area,complex,risk} }
+ *
+ * state.properties: [{id, created, name, loc, deposit (억), area (㎡),
+ *                     households, memo, img (base64), status, lat, lng,
+ *                     checks:{k1..k9}, aiScore, aiComment}]
+ *
+ * state.scraps    : [{id, createdAt, title, type (SC_TYPE key),
+ *                     raw, img (base64), location, price, area,
+ *                     schedule, condition, source, status (SC_STATUS key),
+ *                     tags:[], fit, parsed}]
+ *
+ * state.actions   : [{id, text, priority, done}]
+ * state.chatHistory: [{role:'user'|'assistant', text, think?}]
+ * state.regNews   : [{id, title, summary, date, source}]
+ * state.prep      : [{id, tx, sub, done}]   ← 체크리스트 항목
+ * state.steps     : [{id, tx, sub, done}]   ← 계약 단계
+ *
+ * applyGuards()가 필드 누락을 보정하므로 새 필드 추가 시 여기에 기록.
+ * ──────────────────────────────────────────────────────────────
+ */
+
 /* ===== 동기화 상태 칩 ===== */
 const SYNC_LABELS={ok:'☁ 동기화됨',local:'⚠ 로컬만',offline:'✗ 오프라인'};
 const SYNC_MSGS={
