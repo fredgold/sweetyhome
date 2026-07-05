@@ -663,6 +663,42 @@
     .sortbtn{font-size:11px;padding:6px 9px;}
     .btn-eval{font-size:11px;padding:7px 11px;}
   }
+
+  /* ── 세대수 chip ── */
+  .chip.tnum{background:var(--hairline);color:var(--ink-soft);}
+
+  /* ── 수집함 뷰 토글 ── */
+  .sc-view-toggle{display:flex;border:1px solid var(--hairline);border-radius:8px;overflow:hidden;flex-shrink:0;}
+  .sc-view-btn{border:none;background:none;padding:5px 10px;font-size:16px;cursor:pointer;color:var(--ink-soft);line-height:1;transition:background .15s;}
+  .sc-view-btn[data-on="1"]{background:var(--money-wash);color:var(--money-deep);}
+
+  /* ── 갤러리 그리드 ── */
+  .sc-gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding-bottom:6px;}
+  .sc-gallery-card{background:var(--surface);border:1px solid var(--hairline);border-radius:12px;overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .1s;}
+  .sc-gallery-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.1);transform:translateY(-1px);}
+  .sc-gallery-img{width:100%;height:130px;object-fit:cover;display:block;}
+  .sc-gallery-no-img{height:52px;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:6px;}
+  .sc-gallery-body{padding:10px 12px 12px;}
+  .sc-gallery-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .sc-gallery-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .sc-gallery-date{font-size:10px;color:var(--ink-faint);margin-left:auto;}
+
+  /* ── 에디터 split view ── */
+  .sc-md-split{position:relative;display:flex;gap:10px;align-items:flex-start;}
+  .sc-md-split>.sc-md-textarea{flex:1;min-height:120px;}
+  .sc-md-split>.sc-md-preview{flex:1;min-height:120px;max-height:400px;overflow-y:auto;border:1px solid var(--hairline);border-radius:9px;padding:10px 14px;box-sizing:border-box;}
+  .sc-md-split.preview-hidden>.sc-md-preview{display:none!important;}
+  .split-placeholder{color:var(--ink-faint);font-size:12px;}
+  @media(max-width:640px){.sc-md-split{flex-direction:column;}.sc-md-split>.sc-md-preview{width:100%;box-sizing:border-box;}}
+
+  /* ── 슬래시 커맨드 메뉴 ── */
+  .slash-menu{position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:var(--surface);border:1px solid var(--hairline);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.13);min-width:220px;max-height:250px;overflow-y:auto;display:none;}
+  .slash-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;font-size:13px;transition:background .1s;}
+  .slash-item:hover,.slash-item.active{background:var(--money-wash);}
+  .slash-icon{width:26px;text-align:center;font-weight:700;color:var(--ink-soft);font-size:12px;flex-shrink:0;}
+  .slash-label{color:var(--ink);}
+  .slash-desc{font-size:11px;color:var(--ink-faint);margin-left:auto;}
+  .slash-none{color:var(--ink-faint);cursor:default;padding:10px 14px;font-size:12px;}
 </style>
 
 <div class="login-overlay" id="loginOverlay">
@@ -897,6 +933,10 @@
             <div class="field"><label>전세 보증금 (억)</label><input id="f_deposit" type="number" step="0.1" placeholder="예: 4.5"></div>
             <div class="field"><label>전용면적 (㎡)</label><input id="f_area" type="number" step="0.1" placeholder="예: 59.9"></div>
           </div>
+          <div class="row">
+            <div class="field"><label>세대수</label><input id="f_households" type="number" min="1" placeholder="예: 350"></div>
+            <div class="field"></div>
+          </div>
           <div class="fmaprow">
             <div class="fm-head">
               <label>위치 (지도)</label>
@@ -1015,7 +1055,7 @@
         <div class="sc-field">
           <div class="sc-md-header">
             <label>원문·메모 (필수)</label>
-            <button type="button" class="sc-preview-toggle" id="sc_previewToggle">👁 미리보기</button>
+            <button type="button" class="sc-preview-toggle" id="sc_previewToggle">◀ 숨기기</button>
           </div>
           <div class="sc-md-toolbar" id="sc_mdToolbar">
             <button type="button" data-mdwrap="**||**" title="굵게 (Ctrl+B)"><b>B</b></button>
@@ -1030,8 +1070,11 @@
             <button type="button" data-mdwrap="`||`" title="인라인 코드">{ }</button>
             <button type="button" data-mdline="---" title="구분선">—</button>
           </div>
-          <textarea id="sc_text" class="sc-md-textarea" placeholder="인스타·블로그 캡션을 붙여넣거나 직접 메모하세요.&#10;&#10;마크다운 지원: **굵게**, *기울임*, ## 제목, - 목록&#10;Ctrl+B / Ctrl+I 단축키 사용 가능"></textarea>
-          <div id="sc_mdPreview" class="sc-md-preview sc-md-content" style="display:none;"></div>
+          <div class="sc-md-split" id="sc_mdSplit">
+            <textarea id="sc_text" class="sc-md-textarea" placeholder="인스타·블로그 캡션을 붙여넣거나 직접 메모하세요.&#10;&#10;마크다운 지원: **굵게**, *기울임*, ## 제목, - 목록&#10;Ctrl+B / Ctrl+I 단축키 사용 가능&#10;줄 처음에 /를 입력하면 블록 메뉴가 나타납니다."></textarea>
+            <div id="sc_mdPreview" class="sc-md-preview sc-md-content"><span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span></div>
+            <div id="sc_slashMenu" class="slash-menu"></div>
+          </div>
           <div id="sc_ogPreview" style="display:none;margin-top:6px;"></div>
         </div>
 
@@ -1086,6 +1129,10 @@
           <option value="status">상태순</option>
           <option value="type">유형순</option>
         </select>
+        <div class="sc-view-toggle">
+          <button class="sc-view-btn" id="sc_viewList" data-on="1" title="목록">≡</button>
+          <button class="sc-view-btn" id="sc_viewGallery" data-on="0" title="갤러리">⊞</button>
+        </div>
       </div>
 
       <!-- 필터 바 -->
@@ -1891,20 +1938,38 @@ function autoResizeTa(ta){
 document.getElementById('sc_text').addEventListener('input',e=>{
   autoResizeTa(e.target);
   const v=e.target.value.trim();
-  const preview=document.getElementById('sc_ogPreview');
+  const ogPrev=document.getElementById('sc_ogPreview');
   if(/instagram\.com\/(p|reel)\//.test(v)){
-    preview.style.display='block';
-    preview.innerHTML='<div class="og-card"><span class="og-loading">💡 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
-  } else { preview.style.display='none'; }
+    ogPrev.style.display='block';
+    ogPrev.innerHTML='<div class="og-card"><span class="og-loading">💡 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
+  } else { ogPrev.style.display='none'; }
+  // 실시간 미리보기
+  const mdPrev=document.getElementById('sc_mdPreview');
+  if(mdPrev&&!document.getElementById('sc_mdSplit')?.classList.contains('preview-hidden')){
+    mdPrev.innerHTML=e.target.value?renderMd(e.target.value):'<span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span>';
+  }
+  // 슬래시 커맨드 감지
+  scDetectSlash(e.target);
 });
 
 // ── 키보드 단축키 ──
 document.getElementById('sc_text').addEventListener('keydown',e=>{
   const ta=e.target;
+  if(scSlashActive){
+    if(e.key==='Escape'){e.preventDefault();scCloseSlash();return;}
+    if(e.key==='ArrowDown'){e.preventDefault();scSlashMove(1);return;}
+    if(e.key==='ArrowUp'){e.preventDefault();scSlashMove(-1);return;}
+    if(e.key==='Enter'){
+      e.preventDefault();
+      const items=[...document.querySelectorAll('#sc_slashMenu .slash-item')];
+      if(items[scSlashIdx]) scApplySlash(ta,items[scSlashIdx].dataset.key);
+      return;
+    }
+  }
   const mod=e.ctrlKey||e.metaKey;
   if(mod&&e.key==='b'){e.preventDefault();mdWrap(ta,'**','**');return;}
   if(mod&&e.key==='i'){e.preventDefault();mdWrap(ta,'*','*');return;}
-  if(e.key==='Enter'){
+  if(e.key==='Enter'&&!scSlashActive){
     const s=ta.selectionStart;
     const ls=ta.value.lastIndexOf('\n',s-1)+1;
     const curLine=ta.value.slice(ls,s);
@@ -1930,19 +1995,103 @@ document.getElementById('sc_mdToolbar').onclick=e=>{
   } else if(btn.dataset.mdline){
     mdLine(ta,btn.dataset.mdline);
   }
+  // 툴바 조작 후 미리보기 갱신
+  const mdPrev=document.getElementById('sc_mdPreview');
+  if(mdPrev&&!document.getElementById('sc_mdSplit')?.classList.contains('preview-hidden')){
+    mdPrev.innerHTML=ta.value?renderMd(ta.value):'<span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span>';
+  }
 };
 
-// ── 미리보기 토글 ──
-document.getElementById('sc_previewToggle').onclick=function(){
-  const ta=document.getElementById('sc_text');
+// ── 슬래시 커맨드 ──
+const SC_SLASH=[
+  {key:'h2',icon:'H2',label:'제목 (H2)',desc:'## ',type:'line'},
+  {key:'h3',icon:'H3',label:'소제목 (H3)',desc:'### ',type:'line'},
+  {key:'ul',icon:'•',label:'목록 항목',desc:'- ',type:'line'},
+  {key:'ol',icon:'1.',label:'번호 목록',desc:'1. ',type:'line'},
+  {key:'quote',icon:'❝',label:'인용',desc:'> ',type:'line'},
+  {key:'hr',icon:'—',label:'구분선',desc:'---\n',type:'text'},
+  {key:'bold',icon:'B',label:'굵게',desc:'**||**',type:'wrap'},
+  {key:'italic',icon:'I',label:'기울임',desc:'*||*',type:'wrap'},
+  {key:'code',icon:'{}',label:'인라인 코드',desc:'`||`',type:'wrap'},
+  {key:'codeblock',icon:'```',label:'코드 블록',desc:'```\n||\n```\n',type:'wrap'},
+];
+let scSlashActive=false,scSlashStart=-1,scSlashIdx=0;
+
+function scDetectSlash(ta){
+  const s=ta.selectionStart;
+  const before=ta.value.slice(0,s);
+  const lineStart=before.lastIndexOf('\n')+1;
+  const lineText=before.slice(lineStart);
+  if(lineText.startsWith('/')){
+    const q=lineText.slice(1).toLowerCase();
+    scSlashStart=lineStart;
+    const filtered=SC_SLASH.filter(c=>!q||c.key.startsWith(q)||c.label.includes(q));
+    if(filtered.length) scShowSlash(filtered);
+    else scCloseSlash();
+  } else {
+    scCloseSlash();
+  }
+}
+
+function scShowSlash(items){
+  scSlashActive=true; scSlashIdx=0;
+  const menu=document.getElementById('sc_slashMenu');
+  if(!menu) return;
+  menu.innerHTML=items.map((c,i)=>`<div class="slash-item${i===0?' active':''}" data-key="${c.key}"><span class="slash-icon">${c.icon}</span><span class="slash-label">${c.label}</span></div>`).join('');
+  menu.style.display='';
+  menu.querySelectorAll('.slash-item').forEach(item=>{
+    item.onclick=()=>scApplySlash(document.getElementById('sc_text'),item.dataset.key);
+  });
+}
+
+function scCloseSlash(){
+  scSlashActive=false; scSlashStart=-1; scSlashIdx=0;
+  const menu=document.getElementById('sc_slashMenu');
+  if(menu) menu.style.display='none';
+}
+
+function scSlashMove(dir){
+  const items=[...document.querySelectorAll('#sc_slashMenu .slash-item')];
+  if(!items.length) return;
+  scSlashIdx=Math.max(0,Math.min(items.length-1,scSlashIdx+dir));
+  items.forEach((el,i)=>el.classList.toggle('active',i===scSlashIdx));
+  items[scSlashIdx].scrollIntoView({block:'nearest'});
+}
+
+function scApplySlash(ta,key){
+  const cmd=SC_SLASH.find(c=>c.key===key); if(!cmd) return;
+  const cur=ta.selectionStart;
+  const before=ta.value.slice(0,scSlashStart);
+  const after=ta.value.slice(cur);
+  let newVal,pos;
+  if(cmd.type==='line'){
+    newVal=before+cmd.desc+after;
+    pos=before.length+cmd.desc.length;
+  } else if(cmd.type==='text'){
+    newVal=before+cmd.desc+after;
+    pos=before.length+cmd.desc.length;
+  } else if(cmd.type==='wrap'){
+    const parts=cmd.desc.split('||');
+    newVal=before+parts[0]+parts[1]+after;
+    pos=before.length+parts[0].length;
+  }
+  ta.value=newVal;
+  ta.selectionStart=ta.selectionEnd=pos;
+  scCloseSlash();
+  autoResizeTa(ta);
+  // 미리보기 갱신
   const prev=document.getElementById('sc_mdPreview');
-  const on=prev.style.display==='none';
-  prev.style.display=on?'':'none';
-  ta.style.display=on?'none':'';
-  document.getElementById('sc_mdToolbar').style.display=on?'none':'';
-  this.classList.toggle('on',on);
-  this.textContent=on?'✏️ 편집':'👁 미리보기';
-  if(on) prev.innerHTML=renderMd(ta.value)||'<span style="color:var(--ink-faint);font-size:12px;">내용을 입력하면 미리보기가 표시됩니다.</span>';
+  if(prev&&!document.getElementById('sc_mdSplit')?.classList.contains('preview-hidden')){
+    prev.innerHTML=ta.value?renderMd(ta.value):'<span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span>';
+  }
+  ta.focus();
+}
+
+// ── 미리보기 토글 (split view) ──
+document.getElementById('sc_previewToggle').onclick=function(){
+  const split=document.getElementById('sc_mdSplit');
+  const hiding=split.classList.toggle('preview-hidden');
+  this.textContent=hiding?'👁 미리보기':'◀ 숨기기';
 };
 
 document.getElementById('sc_file').onchange=e=>{
@@ -2013,10 +2162,13 @@ function scClearForm(){
   const scTa=document.getElementById('sc_text');
   const scPrev=document.getElementById('sc_mdPreview');
   scTa.style.display=''; scTa.style.height='auto';
-  scPrev.style.display='none'; scPrev.innerHTML='';
+  scPrev.innerHTML='<span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span>';
+  const scSplit=document.getElementById('sc_mdSplit');
+  if(scSplit) scSplit.classList.remove('preview-hidden');
   document.getElementById('sc_mdToolbar').style.display='';
   const scPToggle=document.getElementById('sc_previewToggle');
-  scPToggle.classList.remove('on'); scPToggle.textContent='👁 미리보기';
+  scPToggle.textContent='◀ 숨기기';
+  scCloseSlash();
   scrapImgData=null; scEditId=null;
   document.getElementById('sc_formTitle').textContent='➕ 추가';
   document.getElementById('sc_cancelBtn').style.display='none';
@@ -2099,6 +2251,29 @@ function renderScraps(){
     el.innerHTML=`<div class="sc-empty">${state.scraps.length?'조건에 맞는 항목이 없어요.':'아직 항목이 없어요.<br>위 버튼으로 첫 번째 항목을 추가해보세요!'}</div>`;
     return;
   }
+  // 갤러리 뷰
+  if(scViewMode==='gallery'){
+    el.innerHTML='<div class="sc-gallery-grid">'+list.map(s=>{
+      const tLabel=SC_TYPE[s.type]||s.type||'';
+      const tCls='type-'+(s.type||'subscription');
+      const stLabel=SC_STATUS[s.status]||s.status||'신규';
+      const stCls='st-'+(s.status||'new');
+      const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
+      return `<div class="sc-gallery-card" data-scid="${s.id}">
+        ${s.img?`<img src="${s.img}" class="sc-gallery-img" loading="lazy">`:`<div class="sc-gallery-no-img"><span class="sc-badge ${tCls}">${tLabel}</span></div>`}
+        <div class="sc-gallery-body">
+          <div class="sc-gallery-title">${esc(s.title||'(제목 없음)')}</div>
+          <div class="sc-gallery-meta">
+            <span class="sc-badge ${stCls}">${stLabel}</span>
+            ${dateStr?`<span class="sc-gallery-date">${dateStr}</span>`:''}
+          </div>
+          ${(s.tags||[]).length?`<div class="sc-card-tags" style="margin-top:5px;">${s.tags.slice(0,3).map(t=>`<span class="sc-card-tag">${esc(t)}</span>`).join('')}</div>`:''}
+        </div>
+      </div>`;
+    }).join('')+'</div>';
+    el.querySelectorAll('.sc-gallery-card').forEach(c=>c.onclick=()=>openScEdit(c.dataset.scid));
+    return;
+  }
   el.innerHTML='<div class="sc-list">'+list.map(s=>{
     const tLabel=SC_TYPE[s.type]||s.type||'';
     const stLabel=SC_STATUS[s.status]||s.status||'신규';
@@ -2154,6 +2329,19 @@ document.getElementById('sc_statusFilter').onclick=e=>{
 };
 document.getElementById('sc_search').addEventListener('input',e=>{scSearchQuery=e.target.value.trim();renderScraps();});
 document.getElementById('sc_sort').addEventListener('change',()=>renderScraps());
+let scViewMode='list';
+document.getElementById('sc_viewList').addEventListener('click',()=>{
+  scViewMode='list';
+  document.getElementById('sc_viewList').dataset.on='1';
+  document.getElementById('sc_viewGallery').dataset.on='0';
+  renderScraps();
+});
+document.getElementById('sc_viewGallery').addEventListener('click',()=>{
+  scViewMode='gallery';
+  document.getElementById('sc_viewList').dataset.on='0';
+  document.getElementById('sc_viewGallery').dataset.on='1';
+  renderScraps();
+});
 
 /* ── 수정 모달 이벤트 ── */
 document.getElementById('sem_typeChips').onclick=e=>{
@@ -2947,7 +3135,7 @@ function renderList(){
   el.innerHTML=items.map(p=>`<div class="card ${(p.status==='탈락'||p.status==='보류')?'dim':''}" data-st="${p.status}">
     <div class="c-top"><div><div class="c-name">${esc(p.name||'(이름 없음)')}</div>${p.loc?`<div class="c-loc">🚇 ${esc(p.loc)}</div>`:''}</div>
     <span class="pill" style="background:var(${SC[p.status]})">${p.status}</span></div>
-    <div class="c-meta">${depositChip(p.deposit)}${areaChip(p.area)}${p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}${p.lat?'<span class="chip geo">📍 위치 저장됨</span>':''}</div>
+    <div class="c-meta">${depositChip(p.deposit)}${areaChip(p.area)}${p.households?`<span class="chip tnum">🏢 ${p.households}세대</span>`:''}${p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}${p.lat?'<span class="chip geo">📍 위치 저장됨</span>':''}</div>
     ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy">`:''}    ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
     <div class="c-actions">
       ${p.lat?`<button data-locate="${p.id}">🗺️ 지도에서 보기</button>`:''}
@@ -3000,7 +3188,7 @@ function locate(id){
 const form=document.getElementById('form');
 let propImgData=null;
 function clearForm(){
-  ['editId','f_name','f_loc','f_deposit','f_area','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
+  ['editId','f_name','f_loc','f_deposit','f_area','f_households','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
   tempChecks=null;clearFormPin();
   propImgData=null;
   document.getElementById('f_img').value='';
@@ -3020,6 +3208,7 @@ function openEdit(id){
   document.getElementById('f_loc').value=p.loc||'';
   document.getElementById('f_deposit').value=p.deposit??'';
   document.getElementById('f_area').value=p.area??'';
+  document.getElementById('f_households').value=p.households??'';
   document.getElementById('f_memo').value=p.memo||'';
   // 이미지
   propImgData=null;
@@ -3058,6 +3247,7 @@ document.getElementById('saveBtn').onclick=()=>{
   const data={
     name, loc:document.getElementById('f_loc').value.trim(),
     deposit:document.getElementById('f_deposit').value, area:document.getElementById('f_area').value,
+    households:document.getElementById('f_households').value,
     memo:document.getElementById('f_memo').value.trim(),
     img:propImgData===null?((existing&&existing.img)||''):(propImgData||''),
     status:existing?existing.status:'관심',
