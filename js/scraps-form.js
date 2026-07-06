@@ -30,14 +30,14 @@ document.getElementById('sc_text').addEventListener('input',e=>{
     ogPrev.style.display='block';
     ogPrev.innerHTML='<div class="og-card"><span class="og-loading">💡 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
   } else { ogPrev.style.display='none'; }
-  scDetectSlash(el);
+  scDetectSlash(el,'sc_slashMenu');
 });
 
 document.getElementById('sc_text').addEventListener('compositionend',e=>{
   const el=e.target;
   const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
-  ceRender(el); scDetectSlash(el);
+  ceRender(el); scDetectSlash(el,'sc_slashMenu');
 });
 document.getElementById('sc_text').addEventListener('paste',e=>{
   e.preventDefault();
@@ -57,7 +57,7 @@ document.getElementById('sc_text').addEventListener('keydown',e=>{
     if(e.key==='Escape'){e.preventDefault();scCloseSlash();return;}
     if(e.key==='ArrowDown'){e.preventDefault();scSlashMove(1);return;}
     if(e.key==='ArrowUp'){e.preventDefault();scSlashMove(-1);return;}
-    if(e.key==='Enter'){e.preventDefault();const items=[...document.querySelectorAll('#sc_slashMenu .slash-item')];if(items[scSlashIdx])scApplySlash(el,items[scSlashIdx].dataset.key);return;}
+    if(e.key==='Enter'){e.preventDefault();const menu=document.getElementById(scSlashMenuId);const items=menu?[...menu.querySelectorAll('.slash-item')]:[];if(items[scSlashIdx])scApplySlash(el,items[scSlashIdx].dataset.key);return;}
   }
   const mod=e.ctrlKey||e.metaKey;
   if(mod&&e.key==='b'){e.preventDefault();ceWrap(el,'**','**');return;}
@@ -98,9 +98,10 @@ const SC_SLASH=[
   {key:'code',icon:'{}',label:'코드',hint:'인라인 코드 서식',desc:'`||`',type:'wrap'},
   {key:'codeblock',icon:'```',label:'코드 블록',hint:'여러 줄 코드 블록',desc:'```\n||\n```\n',type:'wrap'},
 ];
-let scSlashActive=false,scSlashStart=-1,scSlashIdx=0;
+let scSlashActive=false,scSlashStart=-1,scSlashIdx=0,scSlashMenuId='sc_slashMenu';
 
-function scDetectSlash(el){
+function scDetectSlash(el,menuId){
+  if(menuId)scSlashMenuId=menuId;
   const s=ceGetOffset(el);
   const before=el.innerText.slice(0,s);
   const lineStart=before.lastIndexOf('\n')+1;
@@ -109,31 +110,33 @@ function scDetectSlash(el){
     const q=lineText.slice(1).toLowerCase();
     scSlashStart=lineStart;
     const filtered=SC_SLASH.filter(c=>!q||c.key.startsWith(q)||c.label.includes(q)||c.hint.includes(q));
-    if(filtered.length) scShowSlash(filtered);
+    if(filtered.length) scShowSlash(filtered,el);
     else scCloseSlash();
   } else { scCloseSlash(); }
 }
 
-function scShowSlash(items){
+function scShowSlash(items,el){
   scSlashActive=true; scSlashIdx=0;
-  const menu=document.getElementById('sc_slashMenu');
+  const menu=document.getElementById(scSlashMenuId);
   if(!menu) return;
   menu.innerHTML=items.map((c,i)=>`<div class="slash-item${i===0?' active':''}" data-key="${c.key}"><span class="slash-icon">${c.icon}</span><span class="slash-info"><span class="slash-label">${c.label}</span><span class="slash-hint">${c.hint}</span></span></div>`).join('');
   menu.style.display='block';
   menu.querySelectorAll('.slash-item').forEach(item=>{
     item.addEventListener('mousedown',e=>e.preventDefault());
-    item.onclick=()=>scApplySlash(document.getElementById('sc_text'),item.dataset.key);
+    item.onclick=()=>scApplySlash(el,item.dataset.key);
   });
 }
 
 function scCloseSlash(){
   scSlashActive=false; scSlashStart=-1; scSlashIdx=0;
-  const menu=document.getElementById('sc_slashMenu');
+  const menu=document.getElementById(scSlashMenuId);
   if(menu) menu.style.display='none';
 }
 
 function scSlashMove(dir){
-  const items=[...document.querySelectorAll('#sc_slashMenu .slash-item')];
+  const menu=document.getElementById(scSlashMenuId);
+  if(!menu) return;
+  const items=[...menu.querySelectorAll('.slash-item')];
   if(!items.length) return;
   scSlashIdx=Math.max(0,Math.min(items.length-1,scSlashIdx+dir));
   items.forEach((el,i)=>el.classList.toggle('active',i===scSlashIdx));
@@ -322,11 +325,13 @@ document.getElementById('sem_text').addEventListener('input',e=>{
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
   if(e.isComposing)return;
   ceRender(el);
+  scDetectSlash(el,'sem_slashMenu');
 });
 document.getElementById('sem_text').addEventListener('compositionend',e=>{
   const el=e.target;
   const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim()); ceRender(el);
+  scDetectSlash(el,'sem_slashMenu');
 });
 document.getElementById('sem_text').addEventListener('paste',e=>{
   e.preventDefault();
@@ -358,7 +363,14 @@ document.getElementById('sem_mdToolbar').onclick=e=>{
   else if(btn.dataset.semline){ceLine(el,btn.dataset.semline);}
 };
 document.getElementById('sem_text').addEventListener('keydown',e=>{
-  const el=e.target, mod=e.ctrlKey||e.metaKey;
+  const el=e.target;
+  if(scSlashActive){
+    if(e.key==='Escape'){e.preventDefault();scCloseSlash();return;}
+    if(e.key==='ArrowDown'){e.preventDefault();scSlashMove(1);return;}
+    if(e.key==='ArrowUp'){e.preventDefault();scSlashMove(-1);return;}
+    if(e.key==='Enter'){e.preventDefault();const menu=document.getElementById(scSlashMenuId);const items=menu?[...menu.querySelectorAll('.slash-item')]:[];if(items[scSlashIdx])scApplySlash(el,items[scSlashIdx].dataset.key);return;}
+  }
+  const mod=e.ctrlKey||e.metaKey;
   if(mod&&e.key==='b'){e.preventDefault();ceWrap(el,'**','**');return;}
   if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
   if(e.key==='Enter'){
