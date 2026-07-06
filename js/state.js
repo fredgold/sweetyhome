@@ -187,7 +187,28 @@ function applyGuards(raw){
   state.settings.weights=Object.assign(structuredClone(DEFAULT.settings.weights), state.settings.weights||{});
   state.chatHistory=state.chatHistory||[];
   state.actions=state.actions||structuredClone(DEFAULT.actions);
-  state.properties=state.properties||[];
+  state.properties=(state.properties||[]).map(p=>{
+    // C) deposit 타입 보호: 계산용 depositNum 보정
+    const dn=p.depositNum!=null?p.depositNum:(typeof p.deposit==='number'?p.deposit:(typeof p.deposit==='string'&&p.deposit?parseEok(p.deposit):null));
+    const hh=p.households!=null?(parseInt(p.households)||null):null;
+    // householdGrade 인라인 계산
+    const calcG=n=>{if(!n)return'';const v=+n;if(v>=1000)return'1000세대+';if(v>=500)return'500세대+';if(v>=300)return'300세대+';if(v>=150)return'소규모조건부';return'소규모주의';};
+    const hg=p.householdGrade||(hh!=null?calcG(hh):'');
+    const jr=p.jeonseRatio!=null?p.jeonseRatio:(p.saleReal&&(p.jeonseReal!=null||dn!=null)?Math.round((p.jeonseReal!=null?p.jeonseReal:dn)/p.saleReal*100):null);
+    return {
+      bucket:'',station:'',line:'',yearBuilt:null,
+      householdGrade:'',jeonseReal:null,saleReal:null,jeonseRatio:null,
+      commuteGangnam:null,commuteSinsa:null,url:'',
+      depositNum:null,geocodePending:false,
+      importSource:'',importedAt:'',importBatchId:'',
+      ...p,
+      checks:p.checks||{},
+      households:hh,
+      depositNum:dn,
+      householdGrade:hg,
+      jeonseRatio:jr,
+    };
+  });
   state.regNews=state.regNews||[];
   state.scraps=(state.scraps||[]).map(s=>{
     const p=s.parsed||{};
@@ -212,7 +233,6 @@ function applyGuards(raw){
   });
   state.prep=state.prep||structuredClone(DEFAULT.prep);
   state.steps=state.steps||structuredClone(DEFAULT.steps);
-  state.properties.forEach(p=>{ if(!p.checks)p.checks={}; });
 }
 async function load(){
   if(isGuestMode){

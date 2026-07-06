@@ -168,3 +168,31 @@ function autoResizeTa(ta){
 function parseJSON(t){try{return JSON.parse((t||'').replace(/```json|```/g,'').trim());}catch(e){return null;}}
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+/* ── 금액 단위 파싱 (억 숫자로 통일) ── */
+function parseEok(text){
+  if(text==null)return null;
+  const t=String(text).replace(/[,\s]/g,'').trim();
+  if(!t||t==='-'||t==='—'||t==='--')return null;
+  // 범위 a~b → 평균
+  const rm=t.match(/^(.+)[~–](.+)$/);
+  if(rm){const a=parseEok(rm[1]),b=parseEok(rm[2]);if(a!=null&&b!=null)return+((a+b)/2).toFixed(2);}
+  // N억M천 (예: 3억3천 → 3.3)
+  const eokc=t.match(/^(\d+(?:\.\d+)?)억(\d+)천/);
+  if(eokc)return+(parseFloat(eokc[1])+parseInt(eokc[2])/10).toFixed(2);
+  // N억M만 (예: 3억3000만 → 3.3)
+  const eokm=t.match(/^(\d+(?:\.\d+)?)억(\d+)만/);
+  if(eokm)return+(parseFloat(eokm[1])+parseInt(eokm[2])/10000).toFixed(4);
+  // N억 (예: 3억, 3.3억)
+  const eok=t.match(/^(\d+(?:\.\d+)?)억$/);
+  if(eok)return parseFloat(eok[1]);
+  // N만원/만 (예: 33000만원 → 3.3)
+  const man=t.match(/^(\d+(?:\.\d+)?)만원?$/);
+  if(man)return+(parseFloat(man[1])/10000).toFixed(4);
+  // 맨숫자 안전망
+  const n=parseFloat(t);
+  if(isNaN(n))return null;
+  if(n>=1000)return+(n/10000).toFixed(4); // 만원 단위
+  if(n<100)return n;                       // 억 단위
+  return null;                             // 100~999 애매 → null
+}

@@ -694,3 +694,17 @@
   .slash-label{color:var(--ink);}
   .slash-desc{font-size:11px;color:var(--ink-faint);margin-left:auto;}
   .slash-none{color:var(--ink-faint);cursor:default;padding:10px 14px;font-size:12px;}
+/* ── v4 벌크 임포트 ── */
+.prop-filter-sel{font-size:12px;padding:5px 8px;border-radius:9px;border:1px solid var(--hairline);background:var(--surface);color:var(--ink);cursor:pointer;}
+.import-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.import-tbl th,.import-tbl td{padding:6px 8px;border-bottom:1px solid var(--hairline);text-align:left;white-space:nowrap;}
+.import-tbl th{font-weight:700;background:var(--bg);position:sticky;top:0;}
+.import-tbl .dup-r{opacity:.45;}
+.dup-badge{padding:1px 7px;border-radius:10px;font-size:10px;font-weight:800;}
+.dup-badge.dup-중복{background:var(--s-drop);color:#fff;}
+.dup-badge.dup-이름유사{background:#C7853A;color:#fff;}
+.dup-badge.dup-신규{background:var(--s-final);color:#fff;}
+.prop-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--ink);color:var(--paper);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:9999;}
+.prop-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.c-bucket{font-size:10px;font-weight:800;color:var(--money);letter-spacing:.5px;margin-bottom:2px;}
+.chip.chip-warn{background:#fff3cd;color:#856404;}

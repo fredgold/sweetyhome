@@ -223,6 +223,7 @@
           <div><h2>매물 트래커</h2><div class="stats" id="stats"></div></div>
           <div class="ph-actions">
             <button class="sortbtn" id="sortBtn" data-on="0">정렬: 상태순</button>
+            <button class="addbtn" id="propBulkBtn">시트에서 승격 📋</button>
             <button class="addbtn" id="toggleForm">＋ 매물 추가</button>
           </div>
         </div>
@@ -275,6 +276,16 @@
 
         <div class="prop-search-bar">
           <input class="prop-search-input" id="prop_search" placeholder="🔍 단지명·위치·메모 검색...">
+          <select id="propBucketFilter" class="prop-filter-sel">
+            <option value="">전체 버킷</option>
+            <option>G1</option><option>G2</option><option>G3</option>
+            <option>G4</option><option>G5</option><option>G6</option>
+          </select>
+          <select id="propGradeFilter" class="prop-filter-sel">
+            <option value="">전체 세대수</option>
+            <option>1000세대+</option><option>500세대+</option><option>300세대+</option>
+            <option>소규모조건부</option><option>소규모주의</option>
+          </select>
         </div>
         <div class="tabs" id="tabs"></div>
         <div class="rail" id="list"></div>
@@ -652,6 +663,35 @@
       <div class="macts">
         <button class="btn-ghost" data-close="profileModal">취소</button>
         <button class="btn-save" id="pf_save">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 매물 시트 승격 임포트 모달 ============ -->
+  <div class="modal" id="propImportModal">
+    <div class="box" style="max-width:960px;width:96vw;max-height:90vh;overflow-y:auto">
+      <h3>시트에서 승격 📋</h3>
+      <p class="mdesc">구글시트 단지 비교표에서 행 선택 후 복사(Ctrl+C) → 아래에 붙여넣기.<br>
+        열 순서: 버킷 · 단지명 · 지역 · 역/도보 · 노선 · 준공연도 · 세대수 · 전용면적 · 전세호가 · 전세실거래 · 매매실거래 · 강남역 · 신사역 · 상태 · 링크 · 메모</p>
+      <div id="propImportInputArea">
+        <textarea id="propImportTa" rows="8" style="width:100%;font-size:12px;font-family:monospace;box-sizing:border-box" placeholder="구글시트에서 행 복사해 붙여넣기 (헤더 포함 가능)"></textarea>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+          <button class="btn-save" id="propImportPreviewBtn">미리보기</button>
+          <span id="propImportErr" style="color:var(--s-drop);font-size:12px;font-weight:700"></span>
+        </div>
+      </div>
+      <div id="propImportPreview" style="display:none;margin-top:14px">
+        <div id="propImportTable"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px">
+          <span id="propImportSummary" style="font-size:12px;color:var(--ink-soft)"></span>
+          <div style="display:flex;gap:8px">
+            <button class="btn-ghost" id="propImportBackBtn">← 다시 입력</button>
+            <button class="btn-save" id="propImportSubmitBtn" disabled>선택 0개 등록</button>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:12px">
+        <button class="btn-ghost" data-close="propImportModal">닫기</button>
       </div>
     </div>
   </div>

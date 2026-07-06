@@ -211,26 +211,49 @@ let propSearchQuery='';
 function renderList(){
   let items=[...state.properties];
   if(activeTab!=='전체') items=items.filter(p=>p.status===activeTab);
+  if(propBucketFilter) items=items.filter(p=>p.bucket===propBucketFilter);
+  if(propGradeFilter) items=items.filter(p=>p.householdGrade===propGradeFilter);
   const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
   if(pq) items=items.filter(p=>(p.name||'').toLowerCase().includes(pq)||(p.loc||'').toLowerCase().includes(pq)||(p.memo||'').toLowerCase().includes(pq));
   if(sortMode==='score') items.sort((a,b)=>((b.aiScore??-1)-(a.aiScore??-1))||(ORDER[a.status]-ORDER[b.status]));
   else items.sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||(b.created-a.created));
   const el=document.getElementById('list');
   if(!items.length){el.innerHTML=`<div class="empty"><div class="big">${activeTab==='전체'?'아직 등록된 매물이 없어요':'이 상태의 매물이 없어요'}</div>${activeTab==='전체'?'＋ 매물 추가로 첫 후보를 올려보세요.':'다른 탭을 눌러보세요.'}</div>`;return;}
-  el.innerHTML=items.map(p=>`<div class="card ${(p.status==='탈락'||p.status==='보류')?'dim':''}" data-st="${p.status}">
-    <div class="c-top"><div><div class="c-name">${esc(p.name||'(이름 없음)')}</div>${p.loc?`<div class="c-loc">🚇 ${esc(p.loc)}</div>`:''}</div>
-    <span class="pill" style="background:var(${SC[p.status]})">${p.status}</span></div>
-    <div class="c-meta">${depositChip(p.deposit)}${areaChip(p.area)}${p.households?`<span class="chip tnum">🏢 ${p.households}세대</span>`:''}${p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}${p.lat?'<span class="chip geo">📍 위치 저장됨</span>':''}</div>
-    ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy">`:''}    ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
+  el.innerHTML=items.map(p=>{
+    const depDisplay=p.depositNum!=null?`<span class="chip deposit tnum">보증금 ${p.depositNum}억${p.depositNum>5?' · 예산↑?':''}</span>`:depositChip(p.deposit);
+    const urlSafe=p.url?safeUrl(p.url):'';
+    return `<div class="card ${(p.status==='탈락'||p.status==='보류')?'dim':''}" data-st="${p.status}">
+    <div class="c-top">
+      <div>
+        ${p.bucket?`<div class="c-bucket">${esc(p.bucket)}</div>`:''}
+        <div class="c-name">${esc(p.name||'(이름 없음)')}</div>
+        ${(p.station||p.loc)?`<div class="c-loc">🚇 ${esc(p.station||p.loc)}</div>`:''}
+      </div>
+      <span class="pill" style="background:var(${SC[p.status]})">${p.status}</span>
+    </div>
+    <div class="c-meta">
+      ${depDisplay}${areaChip(p.area)}
+      ${p.householdGrade?`<span class="chip">${esc(p.householdGrade)}</span>`:(p.households?`<span class="chip tnum">🏢 ${p.households}세대</span>`:'')}
+      ${p.jeonseRatio!=null?`<span class="chip tnum">전세가율 ${p.jeonseRatio}%</span>`:''}
+      ${p.commuteGangnam?`<span class="chip tnum">강남 ${esc(p.commuteGangnam)}</span>`:''}
+      ${p.commuteSinsa?`<span class="chip tnum">신사 ${esc(p.commuteSinsa)}</span>`:''}
+      ${p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}
+      ${p.geocodePending&&!p.lat?'<span class="chip chip-warn">좌표확인필요</span>':''}
+      ${p.lat?'<span class="chip geo">📍 위치 저장됨</span>':''}
+    </div>
+    ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy">`:''}
+    ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
     <div class="c-actions">
       ${p.lat?`<button data-locate="${p.id}">🗺️ 지도에서 보기</button>`:''}
+      ${urlSafe?`<a class="naver" href="${esc(urlSafe)}" target="_blank" rel="noopener">🔗 네이버 열기 ↗</a>`:''}
       <a class="naver" href="${naverUrl(p)}" target="_blank">📍 네이버지도</a>
       <a class="hogang" href="${siteUrl('hogang',p.name)}" target="_blank">🏠 호갱노노</a>
       <a class="rt" href="${siteUrl('rt',p.name)}" target="_blank">📊 실거래가</a>
       <button data-ai="${p.id}">✨ AI 분석</button>
       <button data-edit="${p.id}">수정</button><button data-del="${p.id}">삭제</button>
     </div>
-    ${aiBlock(p)}${checklistHTML(p)}</div>`).join('');
+    ${aiBlock(p)}${checklistHTML(p)}</div>`;
+  }).join('');
   el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEdit(b.dataset.edit));
   el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delProp(b.dataset.del));
   el.querySelectorAll('[data-locate]').forEach(b=>b.onclick=()=>locate(b.dataset.locate));
@@ -461,3 +484,175 @@ function readBackup(code){
     return null;
   }catch(e){return null;}
 }
+
+
+/* ============ v4: 시트 승격 벌크 임포트 ============ */
+let propBucketFilter='',propGradeFilter='';
+
+function safeUrl(u){
+  try{const url=new URL(u);if(!['http:','https:'].includes(url.protocol))return'';return url.href;}catch(e){return'';}
+}
+function calcHouseholdGrade(n){
+  if(n==null)return'';const v=parseInt(n);if(isNaN(v))return'';
+  if(v>=1000)return'1000세대+';if(v>=500)return'500세대+';if(v>=300)return'300세대+';
+  if(v>=150)return'소규모조건부';return'소규모주의';
+}
+function normalizeStr(s){return String(s||'').trim().replace(/\s+/g,' ').toLowerCase();}
+function mapImportStatus(s){
+  const m={'후보':'후보확정','제외':'탈락','문의예정':'방문예정'};
+  const valid=['관심','방문예정','검토중','후보확정','보류','탈락'];
+  const v=m[s]||s;return valid.includes(v)?v:'관심';
+}
+
+function parseTSV(text){
+  const rows=text.trim().split(/\r?\n/).map(r=>r.split('\t'));
+  let data=rows;
+  const firstCell=(rows[0]&&rows[0][0]||'').trim();
+  if(firstCell==='버킷'||firstCell==='단지명') data=rows.slice(1);
+  return data.filter(r=>r.some(c=>c.trim())).map(cols=>{
+    const c=i=>(cols[i]||'').trim();
+    const deposit=c(8);
+    const depositNum=parseEok(deposit);
+    const jeonseReal=parseEok(c(9));
+    const saleReal=parseEok(c(10));
+    const jeonseRatio=saleReal?Math.round(((jeonseReal!=null?jeonseReal:depositNum)??0)/saleReal*100)||null:null;
+    const hh=parseInt(c(6))||null;
+    const area=parseFloat(c(7))||null;
+    return {
+      bucket:c(0),name:c(1),loc:c(2),station:c(3),line:c(4),
+      yearBuilt:parseInt(c(5))||null,
+      households:hh,householdGrade:hh?calcHouseholdGrade(hh):'',
+      area,deposit,depositNum,jeonseReal,saleReal,jeonseRatio,
+      commuteGangnam:c(11)||null,commuteSinsa:c(12)||null,
+      status:mapImportStatus(c(13)),
+      url:safeUrl(c(14)),memo:c(15),
+    };
+  });
+}
+
+function calcDupStatus(parsed){
+  const existKeys=new Set(state.properties.map(p=>normalizeStr(p.name)+'|'+normalizeStr(p.loc||p.station||'')));
+  const existNames=new Set(state.properties.map(p=>normalizeStr(p.name)));
+  return parsed.map(row=>{
+    const key=normalizeStr(row.name)+'|'+normalizeStr(row.loc||row.station||'');
+    if(existKeys.has(key)) return{...row,_dup:'중복'};
+    if(normalizeStr(row.name)&&existNames.has(normalizeStr(row.name))) return{...row,_dup:'이름유사'};
+    return{...row,_dup:'신규'};
+  });
+}
+
+let importParsedRows=[];
+function renderImportPreview(rows){
+  if(!rows.length){
+    document.getElementById('propImportErr').textContent='파싱된 행이 없어요. 데이터를 확인해주세요.';
+    return;
+  }
+  document.getElementById('propImportErr').textContent='';
+  const dupCount=rows.filter(r=>r._dup==='중복').length;
+  const html=`<div style="overflow-x:auto"><table class="import-tbl">
+    <thead><tr>
+      <th><input type="checkbox" id="piChkAll" checked></th>
+      <th>단지명</th><th>지역/역</th><th>전세호가</th><th>억값</th>
+      <th>전세가율</th><th>세대수등급</th><th>상태</th><th>중복여부</th>
+    </tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr class="${r._dup==='중복'?'dup-r':''}">
+      <td><input type="checkbox" class="pi-chk" data-idx="${i}"${r._dup!=='중복'?' checked':''}></td>
+      <td>${esc(r.name||'—')}</td>
+      <td>${esc(r.loc||r.station||'—')}</td>
+      <td>${esc(r.deposit||'—')}</td>
+      <td class="tnum">${r.depositNum!=null?r.depositNum+'억':'—'}</td>
+      <td class="tnum">${r.jeonseRatio!=null?r.jeonseRatio+'%':'—'}</td>
+      <td>${esc(r.householdGrade||'—')}</td>
+      <td>${esc(r.status)}</td>
+      <td><span class="dup-badge dup-${r._dup}">${r._dup}</span></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+  document.getElementById('propImportTable').innerHTML=html;
+  const updateCount=()=>{
+    const n=[...document.querySelectorAll('.pi-chk:checked')].length;
+    const btn=document.getElementById('propImportSubmitBtn');
+    btn.textContent=`선택 ${n}개 등록`;btn.disabled=n===0;
+  };
+  document.getElementById('piChkAll').onchange=e=>{
+    document.querySelectorAll('.pi-chk').forEach(cb=>{if(!cb.closest('tr').classList.contains('dup-r'))cb.checked=e.target.checked;});
+    updateCount();
+  };
+  document.querySelectorAll('.pi-chk').forEach(cb=>cb.onchange=updateCount);
+  updateCount();
+  document.getElementById('propImportSummary').textContent=`총 ${rows.length}행 · 중복 ${dupCount}행 자동 해제`;
+  document.getElementById('propImportPreview').style.display='';
+}
+
+document.getElementById('propImportPreviewBtn').onclick=()=>{
+  const text=document.getElementById('propImportTa').value;
+  if(!text.trim()){document.getElementById('propImportErr').textContent='데이터를 붙여넣어 주세요.';return;}
+  importParsedRows=calcDupStatus(parseTSV(text));
+  renderImportPreview(importParsedRows);
+};
+document.getElementById('propImportBackBtn').onclick=()=>{
+  document.getElementById('propImportPreview').style.display='none';importParsedRows=[];
+};
+document.getElementById('propImportSubmitBtn').onclick=async()=>{
+  const chkEls=[...document.querySelectorAll('.pi-chk:checked')];
+  const toImport=chkEls.map(cb=>importParsedRows[+cb.dataset.idx]).filter(r=>r&&r._dup!=='중복'&&r.name);
+  if(!toImport.length)return;
+  const batchId='b'+Date.now().toString(36);
+  const now=new Date().toISOString();
+  const newIds=[];
+  toImport.forEach(row=>{
+    const id='m'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    newIds.push(id);
+    state.properties.push({
+      id,created:Date.now(),
+      name:row.name,loc:row.loc,station:row.station,line:row.line,bucket:row.bucket,
+      yearBuilt:row.yearBuilt,households:row.households,householdGrade:row.householdGrade,
+      area:row.area,deposit:row.deposit,depositNum:row.depositNum,
+      jeonseReal:row.jeonseReal,saleReal:row.saleReal,jeonseRatio:row.jeonseRatio,
+      commuteGangnam:row.commuteGangnam,commuteSinsa:row.commuteSinsa,
+      url:row.url,memo:row.memo,status:row.status,
+      lat:null,lng:null,geocodePending:true,
+      checks:{},aiScore:null,aiComment:'',img:'',
+      importSource:'sheet',importedAt:now,importBatchId:batchId,
+    });
+  });
+  const dupSkip=importParsedRows.filter(r=>r._dup==='중복').length;
+  closeModal('propImportModal');
+  save();renderProps();refreshOverview();
+  showPropToast(`${toImport.length}개 등록 완료 / 중복 ${dupSkip}개 건너뜀`);
+  geocodeBatch(newIds);
+};
+
+async function geocodeBatch(ids){
+  const props=ids.map(id=>state.properties.find(p=>p.id===id)).filter(Boolean);
+  for(const p of props){
+    const q=((p.name||'')+' '+(p.loc||p.station||'')).trim();
+    if(!q)continue;
+    try{
+      const j=await geocode(q);
+      if(j.found){p.lat=j.lat;p.lng=j.lng;p.geocodePending=false;}
+    }catch(e){/* geocodePending stays true */}
+  }
+  save();renderList();refreshOverview();
+}
+
+function showPropToast(msg){
+  let t=document.getElementById('propToast');
+  if(!t){t=document.createElement('div');t.id='propToast';t.className='prop-toast';document.body.appendChild(t);}
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+document.getElementById('propBulkBtn').onclick=()=>{
+  document.getElementById('propImportTa').value='';
+  document.getElementById('propImportErr').textContent='';
+  document.getElementById('propImportPreview').style.display='none';
+  importParsedRows=[];
+  openModal('propImportModal');
+};
+
+(()=>{
+  const bf=document.getElementById('propBucketFilter');
+  const gf=document.getElementById('propGradeFilter');
+  if(bf) bf.onchange=()=>{propBucketFilter=bf.value;renderList();};
+  if(gf) gf.onchange=()=>{propGradeFilter=gf.value;renderList();};
+})();
