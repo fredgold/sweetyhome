@@ -297,7 +297,7 @@ function locate(id){
 const form=document.getElementById('form');
 let propImgData=null;
 function clearForm(){
-  ['editId','f_name','f_loc','f_deposit','f_area','f_households','f_url','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
+  ['editId','f_name','f_loc','f_station','f_line','f_deposit','f_area','f_households','f_url','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
   tempChecks=null;clearFormPin();
   propImgData=null;
   document.getElementById('f_img').value='';
@@ -326,7 +326,7 @@ function openEdit(id){
   const p=state.properties.find(x=>x.id===id); if(!p)return;
   propEditId=id; editTempLatLng=null; editImgData=null;
   document.getElementById('propEditTitle').textContent=p.name?p.name+' 수정':'매물 수정';
-  ['em_name','em_loc','em_deposit','em_area','em_households','em_url','em_memo'].forEach(k=>{
+  ['em_name','em_loc','em_station','em_line','em_deposit','em_area','em_households','em_url','em_memo'].forEach(k=>{
     const field=k.replace('em_','');
     document.getElementById(k).value=p[field]??'';
   });
@@ -384,6 +384,8 @@ document.getElementById('em_saveBtn').onclick=()=>{
   const p=state.properties.find(x=>x.id===propEditId); if(!p)return;
   Object.assign(p,{
     name, loc:document.getElementById('em_loc').value.trim(),
+    station:document.getElementById('em_station').value.trim(),
+    line:document.getElementById('em_line').value.trim(),
     deposit:document.getElementById('em_deposit').value,
     area:document.getElementById('em_area').value,
     households:document.getElementById('em_households').value,
@@ -442,6 +444,8 @@ document.getElementById('saveBtn').onclick=()=>{
   const existing=cur?state.properties.find(x=>x.id===cur):null;
   const data={
     name, loc:document.getElementById('f_loc').value.trim(),
+    station:document.getElementById('f_station').value.trim(),
+    line:document.getElementById('f_line').value.trim(),
     deposit:document.getElementById('f_deposit').value, area:document.getElementById('f_area').value,
     households:document.getElementById('f_households').value,
     url:safeUrl(document.getElementById('f_url').value.trim()),
