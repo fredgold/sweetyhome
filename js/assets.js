@@ -95,11 +95,16 @@ document.getElementById('asset_ownerFilter').addEventListener('change',()=>rende
 document.getElementById('asset_search').addEventListener('input',()=>renderAssets());
 
 document.getElementById('a_notes').addEventListener('input',e=>{
-  state.assets.notes=e.target.value;
-  state.assets.updatedAt=Date.now();
   autoResizeTa(e.target);
-  save();
 });
+document.getElementById('an_saveBtn').onclick=function(){
+  state.assets.notes=document.getElementById('a_notes').value;
+  state.assets.updatedAt=Date.now();
+  save();
+  const btn=this; const old=btn.textContent;
+  btn.textContent='저장됨'; btn.disabled=true;
+  setTimeout(()=>{btn.textContent=old; btn.disabled=false;},1200);
+};
 
 /* ── 자산 메모 마크다운 툴바 ── */
 document.getElementById('an_mdToolbar').onclick=e=>{
