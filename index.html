@@ -377,8 +377,7 @@
             <button type="button" data-mdline="---" title="구분선">—</button>
           </div>
           <div class="sc-md-split" id="sc_mdSplit">
-            <textarea id="sc_text" class="sc-md-textarea" placeholder="인스타·블로그 캡션을 붙여넣거나 직접 메모하세요.&#10;&#10;마크다운 지원: **굵게**, *기울임*, ## 제목, - 목록&#10;Ctrl+B / Ctrl+I 단축키 사용 가능&#10;줄 처음에 /를 입력하면 블록 메뉴가 나타납니다."></textarea>
-            <div id="sc_mdPreview" class="sc-md-preview sc-md-content"><span class="split-placeholder">입력하면 여기에 미리보기가 표시됩니다.</span></div>
+            <div id="sc_text" contenteditable="true" class="sc-md-editor sc-md-content is-empty" data-placeholder="인스타·블로그 캡션을 붙여넣거나 직접 메모하세요.&#10;&#10;마크다운: **굵게**, *기울임*, ## 제목, - 목록&#10;Ctrl+B / Ctrl+I · 줄 처음 /로 블록 삽입"></div>
             <div id="sc_slashMenu" class="slash-menu"></div>
           </div>
           <div id="sc_ogPreview" style="display:none;margin-top:6px;"></div>
@@ -549,10 +548,7 @@
           <button type="button" data-semline="- " title="목록">•</button>
           <button type="button" data-semline="> " title="인용">❝</button>
         </div>
-        <div class="sc-md-split" id="sem_mdSplit">
-          <textarea id="sem_text" class="sc-md-textarea" style="min-height:120px;" placeholder="원문·메모"></textarea>
-          <div id="sem_mdPreview" class="sc-md-preview sc-md-content"></div>
-        </div>
+        <div id="sem_text" contenteditable="true" class="sc-md-editor sc-md-content" style="min-height:120px;" data-placeholder="원문·메모"></div>
       </div>
       <div class="sc-more-toggle" id="sem_moreToggle" style="margin-top:8px;">
         <span id="sem_moreArrow">▶</span><span id="sem_moreLabel"> 위치·가격·일정 등</span>

@@ -39,6 +39,103 @@ function compressImage(file,cb){
   };
   reader.readAsDataURL(file);
 }
+// ── Contenteditable 커서 유틸 ──
+function _ceIsBlock(n){return n.nodeType===1&&/^(DIV|P|H[1-6]|LI|BLOCKQUOTE)$/.test(n.tagName);}
+function ceGetOffset(el){
+  const sel=window.getSelection();
+  if(!sel||!sel.rangeCount)return 0;
+  const range=sel.getRangeAt(0);
+  if(!el.contains(range.startContainer)&&el!==range.startContainer)return 0;
+  let chars=0,found=false;
+  function walk(node,firstBlock){
+    if(found)return;
+    if(!firstBlock&&_ceIsBlock(node)){
+      if(node===range.startContainer&&range.startOffset===0){found=true;return;}
+      chars++;
+    }
+    if(node===range.startContainer&&node.nodeType!==1){chars+=range.startOffset;found=true;return;}
+    if(node.nodeType===3){chars+=node.length;return;}
+    if(node.nodeName==='BR'){chars++;return;}
+    let f=true;
+    for(const c of node.childNodes){walk(c,firstBlock&&f);f=false;if(found)return;}
+    if(node===range.startContainer)found=true;
+  }
+  walk(el,true);
+  return chars;
+}
+function ceSetOffset(el,offset){
+  const sel=window.getSelection();const range=document.createRange();
+  let chars=0,done=false;
+  function walk(node,firstBlock){
+    if(done)return;
+    if(!firstBlock&&_ceIsBlock(node)){
+      if(chars===offset){range.setStart(node,0);range.collapse(true);done=true;return;}
+      chars++;
+    }
+    if(node.nodeType===3){
+      if(chars+node.length>=offset){range.setStart(node,offset-chars);range.collapse(true);done=true;}
+      else chars+=node.length;
+      return;
+    }
+    if(node.nodeName==='BR'){
+      if(chars===offset){const idx=[...node.parentNode.childNodes].indexOf(node);range.setStart(node.parentNode,idx);range.collapse(true);done=true;}
+      else chars++;
+      return;
+    }
+    let f=true;
+    for(const c of node.childNodes){walk(c,firstBlock&&f);f=false;if(done)return;}
+  }
+  walk(el,true);
+  if(!done){range.selectNodeContents(el);range.collapse(false);}
+  sel.removeAllRanges();sel.addRange(range);
+}
+// ── 라이브 마크다운 렌더 (마커 보존) ──
+function ceInline(text){
+  return esc(text)
+    .replace(/\*\*(.+?)\*\*/g,'<strong><span class="mk">**</span>$1<span class="mk">**</span></strong>')
+    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g,'<em><span class="mk">*</span>$1<span class="mk">*</span></em>')
+    .replace(/~~(.+?)~~/g,'<del><span class="mk">~~</span>$1<span class="mk">~~</span></del>')
+    .replace(/`(.+?)`/g,'<code><span class="mk">`</span>$1<span class="mk">`</span></code>');
+}
+function ceRenderLine(line){
+  const hm=line.match(/^(#{1,3}) (.*)/);
+  if(hm)return`<div class="md-h${hm[1].length}"><span class="mk">${esc(hm[1])} </span>${ceInline(hm[2])}</div>`;
+  const lim=line.match(/^([-*+]) (.*)/);
+  if(lim)return`<div class="md-li"><span class="mk">${lim[1]} </span>${ceInline(lim[2])}</div>`;
+  const olm=line.match(/^(\d+\.) (.*)/);
+  if(olm)return`<div class="md-ol"><span class="mk">${olm[1]} </span>${ceInline(olm[2])}</div>`;
+  const qm=line.match(/^> (.*)/);
+  if(qm)return`<div class="md-bq"><span class="mk">&gt; </span>${ceInline(qm[1])}</div>`;
+  if(/^-{3,}$/.test(line.trim()))return'<div class="md-hr"><span class="mk">---</span></div>';
+  if(!line)return'<div class="md-p"><br></div>';
+  return`<div class="md-p">${ceInline(line)}</div>`;
+}
+function ceRender(el){
+  const raw=el.innerText.replace(/\r\n?/g,'\n');
+  const isActive=document.activeElement===el;
+  const off=isActive?ceGetOffset(el):0;
+  el.innerHTML=raw.split('\n').map(ceRenderLine).join('');
+  if(isActive)ceSetOffset(el,off);
+}
+function ceWrap(el,open,close){
+  const s=ceGetOffset(el);
+  const sel=window.getSelection();
+  const selected=sel.rangeCount?sel.getRangeAt(0).toString():'';
+  const raw=el.innerText; const e=s+selected.length;
+  const word=selected||'텍스트';
+  el.innerText=raw.slice(0,s)+open+word+close+raw.slice(e);
+  ceRender(el); ceSetOffset(el,s+open.length+word.length+close.length);
+}
+function ceLine(el,prefix){
+  const s=ceGetOffset(el); const raw=el.innerText;
+  const ls=raw.lastIndexOf('\n',s-1)+1;
+  const le=raw.indexOf('\n',s);
+  const line=raw.slice(ls,le===-1?undefined:le);
+  const stripped=line.replace(/^(#{1,3}|[-*+]|\d+\.|>)\s/,'');
+  const newLine=prefix+stripped;
+  el.innerText=raw.slice(0,ls)+newLine+(le===-1?'':raw.slice(le));
+  ceRender(el); ceSetOffset(el,ls+newLine.length);
+}
 // ── 마크다운 렌더 ──
 function renderMd(text){
   if(!text) return '';

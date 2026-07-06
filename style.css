@@ -434,9 +434,15 @@
   .sc-md-toolbar button{font-size:12px;font-weight:700;padding:4px 8px;border-radius:5px;color:var(--ink-soft);font-family:monospace;line-height:1;}
   .sc-md-toolbar button:hover{background:var(--surface);color:var(--ink);}
   .sc-md-toolbar .tb-sep{width:1px;background:var(--hairline);margin:2px 3px;align-self:stretch;}
-  .sc-md-textarea{border-radius:0 0 9px 9px !important;min-height:100px;overflow-y:auto !important;}
-  .sc-md-preview{border:1px solid var(--money);border-radius:0 0 9px 9px;padding:11px 13px;min-height:80px;background:var(--surface);font-size:13px;line-height:1.7;overflow-y:auto;max-height:340px;cursor:pointer;position:relative;}
-  .sc-md-preview:hover::after{content:'✏️ 편집';position:absolute;top:8px;right:10px;font-size:11px;color:var(--ink-faint);}
+  .sc-md-editor{outline:none;border-radius:0 0 9px 9px;border:1px solid var(--money);padding:11px 13px;min-height:100px;max-height:340px;overflow-y:auto;font-size:13px;line-height:1.7;word-break:break-word;cursor:text;background:var(--surface);}
+  .sc-md-editor:not(:focus):not(.is-empty){cursor:pointer;}
+  .sc-md-editor:not(:focus):not(.is-empty)::after{content:'✏️ 편집';display:block;text-align:right;font-size:11px;color:var(--ink-faint);margin-top:4px;}
+  .sc-md-editor.is-empty::before{content:attr(data-placeholder);color:var(--ink-faint);font-size:12.5px;white-space:pre-wrap;pointer-events:none;line-height:1.6;}
+  .sc-md-editor .mk{font-size:10px;color:var(--ink-faint);font-weight:normal;font-style:normal;font-family:monospace;letter-spacing:0;}
+  .sc-md-editor .md-h1{font-size:17px;font-weight:800;} .sc-md-editor .md-h2{font-size:15px;font-weight:800;} .sc-md-editor .md-h3{font-size:13.5px;font-weight:700;}
+  .sc-md-editor .md-li{padding-left:10px;} .sc-md-editor .md-ol{padding-left:10px;}
+  .sc-md-editor .md-bq{border-left:3px solid var(--money);padding-left:8px;color:var(--ink-soft);font-style:italic;}
+  .sc-md-editor .md-hr{border-top:1px solid var(--hairline);margin:.3em 0;} .sc-md-editor .md-hr .mk{display:none;}
   /* 마크다운 콘텐츠 공통 스타일 */
   .sc-md-content h1,.sc-md-content h2,.sc-md-content h3{font-weight:800;letter-spacing:-.02em;margin:.6em 0 .2em;}
   .sc-md-content h1{font-size:16px;} .sc-md-content h2{font-size:14.5px;} .sc-md-content h3{font-size:13px;}
@@ -673,17 +679,17 @@
   .sc-gallery-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
   .sc-gallery-date{font-size:10px;color:var(--ink-faint);margin-left:auto;}
 
-  /* ── 에디터 click-to-edit ── */
+  /* ── 에디터 컨테이너 ── */
   .sc-md-split{position:relative;}
-  .sc-md-split .sc-md-preview{display:none;}
-  .sc-md-split.sc-view-mode .sc-md-textarea{display:none!important;}
-  .sc-md-split.sc-view-mode .sc-md-preview{display:block!important;border-radius:9px!important;}
   .split-placeholder{color:var(--ink-faint);font-size:12px;}
 
   /* ── 슬래시 커맨드 메뉴 ── */
-  .slash-menu{position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:var(--surface);border:1px solid var(--hairline);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.13);min-width:220px;max-height:250px;overflow-y:auto;display:none;}
-  .slash-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;font-size:13px;transition:background .1s;}
+  .slash-menu{position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:var(--surface);border:1px solid var(--hairline);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.13);min-width:240px;max-height:280px;overflow-y:auto;display:none;}
+  .slash-item{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;transition:background .1s;}
   .slash-item:hover,.slash-item.active{background:var(--money-wash);}
+  .slash-info{display:flex;flex-direction:column;gap:1px;}
+  .slash-label{font-size:13px;font-weight:600;color:var(--ink);}
+  .slash-hint{font-size:11px;color:var(--ink-faint);}
   .slash-icon{width:26px;text-align:center;font-weight:700;color:var(--ink-soft);font-size:12px;flex-shrink:0;}
   .slash-label{color:var(--ink);}
   .slash-desc{font-size:11px;color:var(--ink-faint);margin-left:auto;}
