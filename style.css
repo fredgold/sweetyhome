@@ -708,3 +708,8 @@
 .prop-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .c-bucket{font-size:10px;font-weight:800;color:var(--money);letter-spacing:.5px;margin-bottom:2px;}
 .chip.chip-warn{background:#fff3cd;color:#856404;}
+.pam-header{font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer;padding:6px 2px;display:flex;align-items:center;gap:4px;margin-bottom:2px;}
+.pam-arrow{font-size:10px;}
+.pam-list{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:4px;}
+.pam-item{font-size:12px;color:var(--ink);padding:5px 10px;background:var(--surface);border-radius:8px;border-left:3px solid var(--hairline);}
+.pam-item.pam-high{border-left-color:var(--money);}

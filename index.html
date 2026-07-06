@@ -223,7 +223,15 @@
         <div class="panel-head">
           <div><h2>매물 트래커</h2><div class="stats" id="stats"></div></div>
           <div class="ph-actions">
-            <button class="sortbtn" id="sortBtn" data-on="0">정렬: 상태순</button>
+            <select id="propSortSel" class="prop-filter-sel">
+              <option value="status">정렬: 상태순</option>
+              <option value="score">정렬: AI점수순</option>
+              <option value="jeonse">정렬: 전세호가순</option>
+              <option value="households">정렬: 세대수순</option>
+              <option value="ratio">정렬: 전세가율순</option>
+            </select>
+            <button class="sortbtn" id="propAiHideBtn" data-on="0">AI평가 숨김</button>
+            <button class="addbtn" id="propExportBtn">내보내기 ↓</button>
             <button class="addbtn" id="propBulkBtn">시트에서 승격 📋</button>
             <button class="addbtn" id="toggleForm">＋ 매물 추가</button>
           </div>
@@ -288,6 +296,7 @@
             <option>소규모조건부</option><option>소규모주의</option>
           </select>
         </div>
+        <div id="propActionMirror"></div>
         <div class="tabs" id="tabs"></div>
         <div class="rail" id="list"></div>
       </section>

@@ -216,6 +216,9 @@ function renderList(){
   const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
   if(pq) items=items.filter(p=>(p.name||'').toLowerCase().includes(pq)||(p.loc||'').toLowerCase().includes(pq)||(p.memo||'').toLowerCase().includes(pq));
   if(sortMode==='score') items.sort((a,b)=>((b.aiScore??-1)-(a.aiScore??-1))||(ORDER[a.status]-ORDER[b.status]));
+  else if(sortMode==='jeonse') items.sort((a,b)=>(a.jeonseReal??a.depositNum??999)-(b.jeonseReal??b.depositNum??999));
+  else if(sortMode==='households') items.sort((a,b)=>(b.households??0)-(a.households??0));
+  else if(sortMode==='ratio') items.sort((a,b)=>(a.jeonseRatio??999)-(b.jeonseRatio??999));
   else items.sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||(b.created-a.created));
   const el=document.getElementById('list');
   if(!items.length){el.innerHTML=`<div class="empty"><div class="big">${activeTab==='전체'?'아직 등록된 매물이 없어요':'이 상태의 매물이 없어요'}</div>${activeTab==='전체'?'＋ 매물 추가로 첫 후보를 올려보세요.':'다른 탭을 눌러보세요.'}</div>`;return;}
@@ -237,7 +240,7 @@ function renderList(){
       ${p.jeonseRatio!=null?`<span class="chip tnum">전세가율 ${p.jeonseRatio}%</span>`:''}
       ${p.commuteGangnam?`<span class="chip tnum">강남 ${esc(p.commuteGangnam)}</span>`:''}
       ${p.commuteSinsa?`<span class="chip tnum">신사 ${esc(p.commuteSinsa)}</span>`:''}
-      ${p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}
+      ${!propAiHide&&p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}
       ${p.geocodePending&&!p.lat?'<span class="chip chip-warn">좌표확인필요</span>':''}
       ${p.lat?'<span class="chip geo">📍 위치 저장됨</span>':''}
     </div>
@@ -249,15 +252,16 @@ function renderList(){
       <a class="naver" href="${naverUrl(p)}" target="_blank">📍 네이버지도</a>
       <a class="hogang" href="${siteUrl('hogang',p.name)}" target="_blank">🏠 호갱노노</a>
       <a class="rt" href="${siteUrl('rt',p.name)}" target="_blank">📊 실거래가</a>
-      <button data-ai="${p.id}">✨ AI 분석</button>
+      ${!propAiHide?`<button data-ai="${p.id}">✨ AI 분석</button>`:''}
       <button data-edit="${p.id}">수정</button><button data-del="${p.id}">삭제</button>
     </div>
-    ${aiBlock(p)}${checklistHTML(p)}</div>`;
+    ${propAiHide?'':aiBlock(p)}${checklistHTML(p)}</div>`;
   }).join('');
   el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEdit(b.dataset.edit));
   el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delProp(b.dataset.del));
   el.querySelectorAll('[data-locate]').forEach(b=>b.onclick=()=>locate(b.dataset.locate));
   el.querySelectorAll('[data-ai]').forEach(b=>b.onclick=()=>aiAnalyze(b.dataset.ai));
+  renderActionMirror();
 }
 function aiBlock(p){
   if(p._aiLoading) return `<div class="aiload">✨ AI가 분석 중…</div>`;
@@ -452,16 +456,51 @@ document.getElementById('evalBtn').onclick=async()=>{
     }catch(e){ btn.textContent=e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 연결 실패'; setTimeout(()=>{btn.disabled=false;btn.textContent=old;},1800); return; }
   }
   sortMode='score';
-  const sb=document.getElementById('sortBtn'); sb.dataset.on='1'; sb.textContent='정렬: AI점수순';
+  const ss=document.getElementById('propSortSel'); if(ss) ss.value='score';
   save(); renderList();
   btn.disabled=false; btn.textContent=old;
 };
-document.getElementById('sortBtn').onclick=()=>{
-  sortMode=sortMode==='score'?'status':'score';
-  const sb=document.getElementById('sortBtn'); sb.dataset.on=sortMode==='score'?'1':'0';
-  sb.textContent=sortMode==='score'?'정렬: AI점수순':'정렬: 상태순';
+document.getElementById('propSortSel').onchange=function(){sortMode=this.value;renderList();};
+let propAiHide=false;
+document.getElementById('propAiHideBtn').onclick=function(){
+  propAiHide=!propAiHide;
+  this.dataset.on=propAiHide?'1':'0';
+  this.textContent=propAiHide?'AI평가 표시':'AI평가 숨김';
   renderList();
 };
+function exportProps(){
+  const COLS=['버킷','단지명','위치','역','호선','전세호가','매매호가','전용면적','세대수','준공년도','강남출퇴근','신사출퇴근','상태','URL','메모','메모2'];
+  function cell(v){
+    const s=String(v==null?'':v);
+    if(/[\t\n"]/.test(s)||/^[=+\-@]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+    return s;
+  }
+  const rows=state.properties.map(p=>[
+    p.bucket||'',p.name||'',p.loc||'',p.station||'',p.line||'',
+    p.jeonseReal!=null?p.jeonseReal:'',p.saleReal!=null?p.saleReal:'',
+    p.area!=null?p.area:'',p.households!=null?p.households:'',p.yearBuilt||'',
+    p.commuteGangnam||'',p.commuteSinsa||'',p.status||'',p.url||'',p.memo||'',''
+  ].map(cell).join('\t'));
+  const tsv=[COLS.join('\t'),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+tsv],{type:'text/tab-separated-values;charset=utf-8'}));
+  a.download='매물목록_'+new Date().toISOString().slice(0,10)+'.tsv';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+document.getElementById('propExportBtn').onclick=exportProps;
+function renderActionMirror(){
+  const el=document.getElementById('propActionMirror'); if(!el) return;
+  const pending=(state.actions||[]).filter(a=>!a.done);
+  if(!pending.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="pam-header" id="pamToggle">📋 액션 미러 (${pending.length}건) <span class="pam-arrow">▾</span></div>
+    <ul class="pam-list" id="pamList">${pending.map(a=>`<li class="pam-item${a.priority==='high'?' pam-high':''}">${esc(a.text)}</li>`).join('')}</ul>`;
+  document.getElementById('pamToggle').onclick=()=>{
+    const list=document.getElementById('pamList');
+    const hide=list.style.display==='none';
+    list.style.display=hide?'':'none';
+    document.querySelector('#pamToggle .pam-arrow').textContent=hide?'▾':'▸';
+  };
+}
 
 
 /* ============ 내보내기 / 가져오기 ============ */
