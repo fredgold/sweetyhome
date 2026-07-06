@@ -23,6 +23,7 @@ document.getElementById('sc_text').addEventListener('input',e=>{
   const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   el.dataset.raw=raw;
   el.classList.toggle('is-empty',!raw.trim());
+  if(e.isComposing)return;
   ceRender(el);
   const ogPrev=document.getElementById('sc_ogPreview');
   if(/instagram\.com\/(p|reel)\//.test(raw)){
@@ -32,6 +33,12 @@ document.getElementById('sc_text').addEventListener('input',e=>{
   scDetectSlash(el);
 });
 
+document.getElementById('sc_text').addEventListener('compositionend',e=>{
+  const el=e.target;
+  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
+  el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
+  ceRender(el); scDetectSlash(el);
+});
 document.getElementById('sc_text').addEventListener('paste',e=>{
   e.preventDefault();
   const text=(e.clipboardData||window.clipboardData).getData('text/plain');
@@ -312,6 +319,13 @@ document.getElementById('sem_moreToggle').onclick=()=>{
 document.getElementById('sem_mdToolbar').addEventListener('mousedown',e=>e.preventDefault());
 document.getElementById('sem_text').addEventListener('input',e=>{
   const el=e.target; const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
+  el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
+  if(e.isComposing)return;
+  ceRender(el);
+});
+document.getElementById('sem_text').addEventListener('compositionend',e=>{
+  const el=e.target;
+  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim()); ceRender(el);
 });
 document.getElementById('sem_text').addEventListener('paste',e=>{
