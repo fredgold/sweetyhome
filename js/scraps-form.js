@@ -43,7 +43,7 @@ document.getElementById('sc_text').addEventListener('paste',e=>{
   e.preventDefault();
   const text=(e.clipboardData||window.clipboardData).getData('text/plain');
   const el=e.target, s=ceGetOffset(el);
-  const raw=el.innerText.replace(/\r\n?/g,'\n');
+  const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
   el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
   el.innerHTML=newRaw.split('\n').map(ceRenderLine).join('');
@@ -70,7 +70,7 @@ document.getElementById('sc_text').addEventListener('keydown',e=>{
     const m=curLine.match(/^([-*+]|\d+\.)\s/);
     const pfx=m?m[0]:'';
     const newRaw=raw.slice(0,s)+'\n'+pfx+raw.slice(s);
-    el.innerText=newRaw; el.dataset.raw=newRaw;
+    el.dataset.raw=newRaw;
     ceRender(el); ceSetOffset(el,s+1+pfx.length);
   }
 });
@@ -146,12 +146,12 @@ function scSlashMove(dir){
 function scApplySlash(el,key){
   const cmd=SC_SLASH.find(c=>c.key===key); if(!cmd) return;
   const cur=ceGetOffset(el);
-  const raw=el.innerText;
+  const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   const before=raw.slice(0,scSlashStart), after=raw.slice(cur);
   let newRaw,pos;
   if(cmd.type==='line'||cmd.type==='text'){newRaw=before+cmd.desc+after;pos=before.length+cmd.desc.length;}
   else{const p=cmd.desc.split('||');newRaw=before+p[0]+p[1]+after;pos=before.length+p[0].length;}
-  el.innerText=newRaw; el.dataset.raw=newRaw;
+  el.dataset.raw=newRaw;
   ceRender(el); ceSetOffset(el,pos); scCloseSlash();
 }
 
@@ -337,7 +337,7 @@ document.getElementById('sem_text').addEventListener('paste',e=>{
   e.preventDefault();
   const text=(e.clipboardData||window.clipboardData).getData('text/plain');
   const el=e.target, s=ceGetOffset(el);
-  const raw=el.innerText.replace(/\r\n?/g,'\n');
+  const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
   el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
   el.innerHTML=newRaw.split('\n').map(ceRenderLine).join(''); ceSetOffset(el,s+text.length);
@@ -380,7 +380,7 @@ document.getElementById('sem_text').addEventListener('keydown',e=>{
     const m=raw.slice(ls,s).match(/^([-*+]|\d+\.)\s/);
     const pfx=m?m[0]:'';
     const newRaw=raw.slice(0,s)+'\n'+pfx+raw.slice(s);
-    el.innerText=newRaw; el.dataset.raw=newRaw; ceRender(el); ceSetOffset(el,s+1+pfx.length);
+    el.dataset.raw=newRaw; ceRender(el); ceSetOffset(el,s+1+pfx.length);
   }
 });
 document.getElementById('sem_img').onchange=e=>{
