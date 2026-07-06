@@ -184,7 +184,7 @@
   .mapcard.expanded #overviewMap{height:70vh;}
   .mapcard.collapsed #overviewMap{display:none;}
 
-  .grid{display:grid;grid-template-columns:1fr 296px;gap:22px;align-items:start;}
+  .grid{display:grid;grid-template-columns:1fr;gap:22px;align-items:start;}
   .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap;}
   .panel-head h2{font-size:15px;font-weight:800;letter-spacing:-.02em;}
   .ph-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
