@@ -114,8 +114,8 @@ function ceRender(el){
   const raw=el.dataset.raw!=null?el.dataset.raw:el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   const isActive=document.activeElement===el;
   const off=isActive?ceGetOffset(el):0;
-  el.innerHTML=raw.split('\n').map(ceRenderLine).join('');
-  if(isActive)ceSetOffset(el,off);
+  el.innerHTML=raw?raw.split('\n').map(ceRenderLine).join(''):'';
+  if(isActive&&raw)ceSetOffset(el,off);
 }
 function ceWrap(el,open,close){
   const s=ceGetOffset(el);
