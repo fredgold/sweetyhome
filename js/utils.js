@@ -144,7 +144,7 @@ function renderMd(text){
   try{
     marked.setOptions({breaks:true,gfm:true});
     const html=marked.parse(text);
-    return html.replace(/<script[\s\S]*?<\/script>/gi,'');
+    return DOMPurify.sanitize(html,{USE_PROFILES:{html:true}});
   }catch(e){ return '<pre>'+esc(text)+'</pre>'; }
 }
 function mdWrap(ta,open,close){
