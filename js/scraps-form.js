@@ -20,7 +20,7 @@ function scUpdatePropFields(type){
 // ── sc_text: 라이브 렌더 + 인스타 감지 ──
 document.getElementById('sc_text').addEventListener('input',e=>{
   const el=e.target;
-  const raw=el.innerText.replace(/\r\n?/g,'\n');
+  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   el.dataset.raw=raw;
   el.classList.toggle('is-empty',!raw.trim());
   ceRender(el);
@@ -57,7 +57,7 @@ document.getElementById('sc_text').addEventListener('keydown',e=>{
   if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
   if(e.key==='Enter'&&!scSlashActive){
     e.preventDefault();
-    const s=ceGetOffset(el); const raw=el.innerText;
+    const s=ceGetOffset(el); const raw=el.dataset.raw||'';
     const ls=raw.lastIndexOf('\n',s-1)+1;
     const curLine=raw.slice(ls,s);
     const m=curLine.match(/^([-*+]|\d+\.)\s/);
@@ -112,7 +112,7 @@ function scShowSlash(items){
   const menu=document.getElementById('sc_slashMenu');
   if(!menu) return;
   menu.innerHTML=items.map((c,i)=>`<div class="slash-item${i===0?' active':''}" data-key="${c.key}"><span class="slash-icon">${c.icon}</span><span class="slash-info"><span class="slash-label">${c.label}</span><span class="slash-hint">${c.hint}</span></span></div>`).join('');
-  menu.style.display='';
+  menu.style.display='block';
   menu.querySelectorAll('.slash-item').forEach(item=>{
     item.addEventListener('mousedown',e=>e.preventDefault());
     item.onclick=()=>scApplySlash(document.getElementById('sc_text'),item.dataset.key);
@@ -311,7 +311,7 @@ document.getElementById('sem_moreToggle').onclick=()=>{
 // ── 수정 모달 에디터 ──
 document.getElementById('sem_mdToolbar').addEventListener('mousedown',e=>e.preventDefault());
 document.getElementById('sem_text').addEventListener('input',e=>{
-  const el=e.target; const raw=el.innerText.replace(/\r\n?/g,'\n');
+  const el=e.target; const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim()); ceRender(el);
 });
 document.getElementById('sem_text').addEventListener('paste',e=>{
@@ -349,7 +349,7 @@ document.getElementById('sem_text').addEventListener('keydown',e=>{
   if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
   if(e.key==='Enter'){
     e.preventDefault();
-    const s=ceGetOffset(el); const raw=el.innerText;
+    const s=ceGetOffset(el); const raw=el.dataset.raw||'';
     const ls=raw.lastIndexOf('\n',s-1)+1;
     const m=raw.slice(ls,s).match(/^([-*+]|\d+\.)\s/);
     const pfx=m?m[0]:'';

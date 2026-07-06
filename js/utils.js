@@ -111,7 +111,7 @@ function ceRenderLine(line){
   return`<div class="md-p">${ceInline(line)}</div>`;
 }
 function ceRender(el){
-  const raw=el.innerText.replace(/\r\n?/g,'\n');
+  const raw=el.dataset.raw!=null?el.dataset.raw:el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   const isActive=document.activeElement===el;
   const off=isActive?ceGetOffset(el):0;
   el.innerHTML=raw.split('\n').map(ceRenderLine).join('');
@@ -121,19 +121,21 @@ function ceWrap(el,open,close){
   const s=ceGetOffset(el);
   const sel=window.getSelection();
   const selected=sel.rangeCount?sel.getRangeAt(0).toString():'';
-  const raw=el.innerText; const e=s+selected.length;
+  const raw=el.dataset.raw!=null?el.dataset.raw:el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
+  const e=s+selected.length;
   const word=selected||'텍스트';
-  el.innerText=raw.slice(0,s)+open+word+close+raw.slice(e);
+  el.dataset.raw=raw.slice(0,s)+open+word+close+raw.slice(e);
   ceRender(el); ceSetOffset(el,s+open.length+word.length+close.length);
 }
 function ceLine(el,prefix){
-  const s=ceGetOffset(el); const raw=el.innerText;
+  const s=ceGetOffset(el);
+  const raw=el.dataset.raw!=null?el.dataset.raw:el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   const ls=raw.lastIndexOf('\n',s-1)+1;
   const le=raw.indexOf('\n',s);
   const line=raw.slice(ls,le===-1?undefined:le);
   const stripped=line.replace(/^(#{1,3}|[-*+]|\d+\.|>)\s/,'');
   const newLine=prefix+stripped;
-  el.innerText=raw.slice(0,ls)+newLine+(le===-1?'':raw.slice(le));
+  el.dataset.raw=raw.slice(0,ls)+newLine+(le===-1?'':raw.slice(le));
   ceRender(el); ceSetOffset(el,ls+newLine.length);
 }
 // ── 마크다운 렌더 ──
