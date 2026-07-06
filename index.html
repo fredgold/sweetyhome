@@ -305,8 +305,6 @@
       </section>
 
       <aside class="side">
-        <div class="scard"><h3>먼저 준비할 것</h3><div class="desc">매물 찾기 전에 깔아둘 것들</div><div id="prep"></div></div>
-        <div class="scard"><h3>계약 진행 순서</h3><div class="desc">후보 확정 후 이 순서대로</div><div id="steps"></div></div>
       </aside>
     </div>
   </section>
@@ -339,9 +337,15 @@
       <div class="act-search-bar">
         <input class="act-search-input" id="act_search" placeholder="🔍 액션 검색...">
       </div>
+      <div id="act_cat_chips" class="act-cat-chips"></div>
       <div id="act_list"></div>
       <div class="addact">
-        <input id="act_input" placeholder="할 일을 적고 Enter (예: HUG 보증보험 조건 확인)">
+        <select id="act_catSel" class="prop-filter-sel">
+          <option value="">일반</option>
+          <option value="매물준비">매물준비</option>
+          <option value="계약">계약</option>
+        </select>
+        <input id="act_input" placeholder="할 일을 적고 Enter">
         <button id="act_addBtn">＋ 추가</button>
       </div>
       <div id="act_suggestions" style="margin-top:14px"></div>

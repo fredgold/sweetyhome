@@ -1,10 +1,30 @@
 /* ============ 액션 (전체) ============ */
-let actSearchQuery='';
+let actSearchQuery='', actCategoryFilter='';
+const ACT_CATS=['매물준비','계약'];
+function renderCatChips(){
+  const el=document.getElementById('act_cat_chips'); if(!el)return;
+  const hasCats=state.actions.some(a=>ACT_CATS.includes(a.category));
+  if(!hasCats){el.innerHTML='';return;}
+  const all=['전체','일반',...ACT_CATS];
+  el.innerHTML=all.map(c=>{
+    const val=c==='전체'?'':c==='일반'?'__none__':c;
+    const on=actCategoryFilter===val;
+    return `<button class="sc-chip act-cat-chip${on?' on':''}" data-actcat="${val}">${esc(c)}</button>`;
+  }).join('');
+  el.querySelectorAll('[data-actcat]').forEach(b=>b.onclick=()=>{actCategoryFilter=b.dataset.actcat;renderCatChips();renderActions();});
+}
 function renderActions(){
   const aq=(document.getElementById('act_search')?.value||'').trim().toLowerCase();
   const sorted=[...state.actions].sort((a,b)=>(a.done-b.done)||(a.priority-b.priority));
   let live=sorted.filter(a=>!a.done);
   let done=sorted.filter(a=>a.done);
+  if(actCategoryFilter==='__none__'){
+    live=live.filter(a=>!a.category||a.category==='');
+    done=done.filter(a=>!a.category||a.category==='');
+  } else if(actCategoryFilter){
+    live=live.filter(a=>a.category===actCategoryFilter);
+    done=done.filter(a=>a.category===actCategoryFilter);
+  }
   if(aq){ live=live.filter(a=>(a.text||'').toLowerCase().includes(aq)); done=done.filter(a=>(a.text||'').toLowerCase().includes(aq)); }
   const el=document.getElementById('act_list');
   if(!state.actions.length){
@@ -17,7 +37,7 @@ function renderActions(){
       <div class="actrow" data-done="0" data-id="${a.id}">
         <span class="rank tnum">${i+1}</span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
-        <span class="atx">${esc(a.text)}</span>
+        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}</span>
         <button class="star ${a.priority<=Math.min(...live.map(x=>x.priority))?'on':''}" data-actf-top="${a.id}" title="맨 위로">★</button>
         <button class="xx" data-actf-del="${a.id}">✕</button>
       </div>`).join('');
@@ -30,7 +50,7 @@ function renderActions(){
       <div class="actrow" data-done="1" data-id="${a.id}">
         <span class="rank tnum"></span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
-        <span class="atx">${esc(a.text)}</span>
+        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}</span>
         <button class="xx" data-actf-del="${a.id}">✕</button>
       </div>`).join('');
     html+='</div></div>';
@@ -51,11 +71,13 @@ function renderActions(){
   });
   const dt=document.getElementById('act_doneToggle');
   if(dt) dt.onclick=()=>dt.parentElement.classList.toggle('collapsed');
+  renderCatChips();
 }
 function addActionFull(){
   const inp=document.getElementById('act_input'); const t=inp.value.trim(); if(!t){inp.focus();return;}
+  const cat=document.getElementById('act_catSel')?.value||'';
   const max=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;
-  state.actions.push({id:'a'+Date.now(),text:t,priority:max+1,done:false});
+  state.actions.push({id:'a'+Date.now(),text:t,priority:max+1,done:false,category:cat});
   inp.value=''; save(); renderActions(); renderTop3();
 }
 document.getElementById('act_addBtn').onclick=addActionFull;
@@ -84,7 +106,8 @@ document.getElementById('act_suggestBtn').onclick=async()=>{
         </div>`).join('');
       box.querySelectorAll('[data-suggest]').forEach(b=>b.onclick=()=>{
         const max=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;
-        state.actions.push({id:'a'+Date.now(),text:b.dataset.suggest,priority:max+1,done:false});
+        const cat=document.getElementById('act_catSel')?.value||'';
+        state.actions.push({id:'a'+Date.now(),text:b.dataset.suggest,priority:max+1,done:false,category:cat});
         b.closest('.act-suggest-card').remove();
         save(); renderActions(); renderTop3();
       });

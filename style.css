@@ -715,6 +715,10 @@
 .pam-list{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:4px;}
 .pam-item{font-size:12px;color:var(--ink);padding:5px 10px;background:var(--surface);border-radius:8px;border-left:3px solid var(--hairline);}
 .pam-item.pam-high{border-left-color:var(--money);}
+.act-cat-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.act-cat-chip{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;border:1.5px solid var(--hairline);background:var(--surface);color:var(--ink-soft);cursor:pointer;}
+.act-cat-chip.on{background:var(--money);color:#fff;border-color:var(--money);}
+.act-cat-badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:8px;background:var(--hairline-soft);color:var(--ink-soft);margin-left:6px;vertical-align:middle;}
 @media (max-width:480px){
   .ph-actions{gap:4px;}
   .ph-actions .prop-filter-sel,.ph-actions .addbtn,.ph-actions .sortbtn{font-size:11px;padding:5px 8px;}

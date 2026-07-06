@@ -20,11 +20,11 @@
  *                     schedule, condition, source, status (SC_STATUS key),
  *                     tags:[], fit, parsed}]
  *
- * state.actions   : [{id, text, priority, done}]
+ * state.actions   : [{id, text, priority, done, category}]  category: ''|'매물준비'|'계약'
  * state.chatHistory: [{role:'user'|'assistant', text, think?}]
  * state.regNews   : [{id, title, summary, date, source}]
- * state.prep      : [{id, tx, sub, done}]   ← 체크리스트 항목
- * state.steps     : [{id, tx, sub, done}]   ← 계약 단계
+ * state.prep      : (deprecated — migrated to actions with category:'매물준비')
+ * state.steps     : (deprecated — migrated to actions with category:'계약')
  *
  * applyGuards()가 필드 누락을 보정하므로 새 필드 추가 시 여기에 기록.
  * ──────────────────────────────────────────────────────────────
@@ -187,6 +187,14 @@ function applyGuards(raw){
   state.settings.weights=Object.assign(structuredClone(DEFAULT.settings.weights), state.settings.weights||{});
   state.chatHistory=state.chatHistory||[];
   state.actions=state.actions||structuredClone(DEFAULT.actions);
+  state.actions=state.actions.map(a=>({category:'',...a}));
+  if(!state._prepMigrated){
+    const ids=new Set(state.actions.map(a=>a.id));
+    let p=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;
+    (state.prep||[]).forEach(t=>{if(!ids.has(t.id))state.actions.push({id:t.id,text:t.tx+(t.sub?` (${t.sub})`:''),priority:++p,done:t.done||false,category:'매물준비'});});
+    (state.steps||[]).forEach(t=>{if(!ids.has(t.id))state.actions.push({id:t.id,text:t.tx+(t.sub?` (${t.sub})`:''),priority:++p,done:t.done||false,category:'계약'});});
+    state._prepMigrated=true;
+  }
   state.properties=(state.properties||[]).map(p=>{
     // C) deposit 타입 보호: 계산용 depositNum 보정
     const dn=p.depositNum!=null?p.depositNum:(typeof p.deposit==='number'?p.deposit:(typeof p.deposit==='string'&&p.deposit?parseEok(p.deposit):null));
