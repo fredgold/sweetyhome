@@ -3,7 +3,7 @@
     --line9:#C7A14A; --line9-deep:#9A7B2E; --line9-wash:#F4ECD8;
     --money:#4F7A63; --money-deep:#356049; --money-wash:#E7F0EA;
     --hairline:#E2E3DD; --hairline-soft:#ECEDE7;
-    --s-interest:#6B7C93; --s-visit:#C7853A; --s-review:#B89233; --s-final:#4F8A5B; --s-hold:#8A8F8A; --s-drop:#B16A63;
+    --s-interest:#6B7C93; --s-visit:#C7853A; --s-review:#B89233; --s-final:#4F8A5B; --s-hold:#8A8F8A; --s-drop:#B16A63; --s-inquiry:#4B88CC;
     --shadow:0 1px 2px rgba(30,37,34,.04), 0 6px 20px rgba(30,37,34,.05);
     font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   }
@@ -231,7 +231,8 @@
   .card{position:relative;background:var(--surface);border:1px solid var(--hairline);border-radius:13px;padding:14px 15px;margin-bottom:12px;box-shadow:var(--shadow);transition:transform .12s;}
   .card:hover{transform:translateX(2px);}
   .card::before{content:"";position:absolute;left:-25px;top:20px;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--line9);box-shadow:0 0 0 3px var(--bg);}
-  .card[data-st="후보확정"]::before{border-color:var(--s-final);}
+  .card[data-st="후보"]::before{border-color:var(--s-final);}
+  .card[data-st="문의예정"]::before{border-color:var(--s-inquiry);}
   .card[data-st="탈락"]::before{border-color:var(--s-drop);opacity:.6;}
   .card[data-st="보류"]::before{border-color:var(--s-hold);}
   .card.dim{opacity:.62;}
@@ -719,6 +720,7 @@
 .act-cat-chip{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;border:1.5px solid var(--hairline);background:var(--surface);color:var(--ink-soft);cursor:pointer;}
 .act-cat-chip.on{background:var(--money);color:#fff;border-color:var(--money);}
 .act-cat-badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:8px;background:var(--hairline-soft);color:var(--ink-soft);margin-left:6px;vertical-align:middle;}
+.c-line{font-size:10px;font-weight:700;color:var(--s-inquiry);background:#EBF3FD;border-radius:5px;padding:1px 5px;margin-left:4px;vertical-align:middle;}
 .act-edit{font-size:12px;padding:2px 6px;border:none;background:none;color:var(--ink-faint);cursor:pointer;border-radius:6px;flex-shrink:0;}
 .act-edit:hover{color:var(--money);background:var(--money-wash);}
 .status-picker{position:absolute;z-index:2000;background:var(--paper);border:1px solid var(--hairline);border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.13);padding:6px;display:flex;flex-direction:column;gap:3px;min-width:120px;}

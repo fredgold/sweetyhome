@@ -198,9 +198,9 @@ document.getElementById('findBtn').onclick=async()=>{
 };
 
 function renderStats(){const p=state.properties;document.getElementById('stats').innerHTML=
-  `총 <b>${p.length}</b>곳 · 후보확정 <b>${p.filter(x=>x.status==='후보확정').length}</b> · 방문예정 <b>${p.filter(x=>x.status==='방문예정').length}</b>`;}
+  `총 <b>${p.length}</b>곳 · 후보 <b>${p.filter(x=>x.status==='후보').length}</b> · 방문예정 <b>${p.filter(x=>x.status==='방문예정').length}</b>`;}
 function renderTabs(){
-  const tabs=['전체','관심','방문예정','검토중','후보확정','보류','탈락'];
+  const tabs=['전체','관심','검토중','문의예정','방문예정','후보','보류','탈락'];
   const cnt={전체:state.properties.length}; tabs.slice(1).forEach(s=>cnt[s]=state.properties.filter(p=>p.status===s).length);
   document.getElementById('tabs').innerHTML=tabs.map(t=>`<button class="tab" data-on="${activeTab===t?1:0}" data-tab="${t}">${t}<span class="ct tnum">${cnt[t]}</span></button>`).join('');
   document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;renderList();renderTabs();});
@@ -213,6 +213,7 @@ function renderList(){
   if(activeTab!=='전체') items=items.filter(p=>p.status===activeTab);
   if(propBucketFilter) items=items.filter(p=>p.bucket===propBucketFilter);
   if(propGradeFilter) items=items.filter(p=>p.householdGrade===propGradeFilter);
+  if(propLineFilter) items=items.filter(p=>p.line===propLineFilter);
   const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
   if(pq) items=items.filter(p=>(p.name||'').toLowerCase().includes(pq)||(p.loc||'').toLowerCase().includes(pq)||(p.memo||'').toLowerCase().includes(pq));
   if(sortMode==='jeonse') items.sort((a,b)=>(a.jeonseReal??a.depositNum??999)-(b.jeonseReal??b.depositNum??999));
@@ -229,7 +230,7 @@ function renderList(){
       <div>
         ${p.bucket?`<div class="c-bucket">${esc(p.bucket)}</div>`:''}
         <div class="c-name">${esc(p.name||'(이름 없음)')}</div>
-        ${(p.station||p.loc)?`<div class="c-loc">🚇 ${esc(p.station||p.loc)}</div>`:''}
+        ${(p.station||p.loc)?`<div class="c-loc">🚇 ${esc(p.station||p.loc)}${p.line?` <span class="c-line">${esc(p.line)}</span>`:''}</div>`:''}
       </div>
       <span class="pill" style="background:var(${SC[p.status]})">${p.status}</span>
     </div>
@@ -482,7 +483,7 @@ document.getElementById('list').addEventListener('click',e=>{
 let _statusPicker=null;
 function showStatusPicker(pill, p){
   if(_statusPicker){ _statusPicker.remove(); _statusPicker=null; }
-  const opts=['관심','방문예정','검토중','후보확정','보류','탈락'];
+  const opts=['관심','검토중','문의예정','방문예정','후보','보류','탈락'];
   const picker=document.createElement('div');
   picker.className='status-picker';
   picker.innerHTML=opts.map(s=>`<button class="sp-opt${p.status===s?' on':''}" data-sp="${esc(s)}" style="border-left:3px solid var(${SC[s]||'--hairline'})">${esc(s)}</button>`).join('');
@@ -516,7 +517,15 @@ function renderSteps(){
   document.getElementById('steps').innerHTML=state.steps.map((s,i)=>`<div class="step" data-done="${s.done?1:0}" data-id="${s.id}"><div class="num tnum">${s.done?'✓':i+1}</div><div class="stx">${esc(s.tx)}${s.sub?`<small>${esc(s.sub)}</small>`:''}</div></div>`).join('');
   document.querySelectorAll('#steps .step').forEach(el=>el.onclick=()=>{const s=state.steps.find(x=>x.id===el.dataset.id);s.done=!s.done;save();renderSteps();});
 }
-function renderProps(){renderStats();renderTabs();renderList();renderPrep();renderSteps();renderWeights();}
+function renderLineFilter(){
+  const sel=document.getElementById('propLineFilter'); if(!sel)return;
+  const lines=[...new Set(state.properties.map(p=>p.line).filter(Boolean))].sort();
+  const cur=sel.value;
+  sel.innerHTML=`<option value="">전체 노선</option>`+lines.map(l=>`<option${cur===l?' selected':''}>${esc(l)}</option>`).join('');
+  sel.value=lines.includes(cur)?cur:'';
+  if(sel.value!==cur) propLineFilter='';
+}
+function renderProps(){renderStats();renderTabs();renderList();renderPrep();renderSteps();renderWeights();renderLineFilter();}
 
 document.addEventListener('DOMContentLoaded',()=>{
   const ps=document.getElementById('prop_search');
@@ -622,7 +631,7 @@ function readBackup(code){
 
 
 /* ============ v4: 시트 승격 벌크 임포트 ============ */
-let propBucketFilter='',propGradeFilter='';
+let propBucketFilter='',propGradeFilter='',propLineFilter='';
 
 function safeUrl(u){
   try{const url=new URL(u);if(!['http:','https:'].includes(url.protocol))return'';return url.href;}catch(e){return'';}
@@ -634,9 +643,10 @@ function calcHouseholdGrade(n){
 }
 function normalizeStr(s){return String(s||'').trim().replace(/\s+/g,' ').toLowerCase();}
 function mapImportStatus(s){
-  const m={'후보':'후보확정','제외':'탈락','문의예정':'방문예정'};
-  const valid=['관심','방문예정','검토중','후보확정','보류','탈락'];
-  const v=m[s]||s;return valid.includes(v)?v:'관심';
+  const m={'후보확정':'후보','제외':'탈락'};
+  const valid=['관심','검토중','문의예정','방문예정','후보','보류','탈락'];
+  const v=m[s]||s;
+  return valid.includes(v)?v:'관심';
 }
 
 function parseTSV(text){
@@ -687,7 +697,7 @@ function renderImportPreview(rows){
   const html=`<div style="overflow-x:auto"><table class="import-tbl">
     <thead><tr>
       <th><input type="checkbox" id="piChkAll" checked></th>
-      <th>단지명</th><th>지역/역</th><th>전세호가</th><th>억값</th>
+      <th>단지명</th><th>지역/역</th><th>전세보증금(호가)</th><th>억값</th>
       <th>전세가율</th><th>세대수등급</th><th>상태</th><th>중복여부</th>
     </tr></thead>
     <tbody>${rows.map((r,i)=>`<tr class="${r._dup==='중복'?'dup-r':''}">
@@ -788,6 +798,8 @@ document.getElementById('propBulkBtn').onclick=()=>{
 (()=>{
   const bf=document.getElementById('propBucketFilter');
   const gf=document.getElementById('propGradeFilter');
+  const lf=document.getElementById('propLineFilter');
   if(bf) bf.onchange=()=>{propBucketFilter=bf.value;renderList();};
   if(gf) gf.onchange=()=>{propGradeFilter=gf.value;renderList();};
+  if(lf) lf.onchange=()=>{propLineFilter=lf.value;renderList();};
 })();

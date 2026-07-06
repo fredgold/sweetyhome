@@ -70,9 +70,9 @@ document.getElementById('syncRetry').addEventListener('click',async function(){
 });
 
 const CHECK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-const SC={관심:'--s-interest',방문예정:'--s-visit',검토중:'--s-review',후보확정:'--s-final',보류:'--s-hold',탈락:'--s-drop'};
-const HEX={관심:'#6B7C93',방문예정:'#C7853A',검토중:'#B89233',후보확정:'#4F8A5B',보류:'#8A8F8A',탈락:'#B16A63'};
-const ORDER={후보확정:0,검토중:1,방문예정:2,관심:3,보류:4,탈락:5};
+const SC={관심:'--s-interest',방문예정:'--s-visit',검토중:'--s-review',후보:'--s-final',문의예정:'--s-inquiry',보류:'--s-hold',탈락:'--s-drop'};
+const HEX={관심:'#6B7C93',방문예정:'#C7853A',검토중:'#B89233',후보:'#4F8A5B',문의예정:'#4B88CC',보류:'#8A8F8A',탈락:'#B16A63'};
+const ORDER={후보:0,검토중:1,문의예정:2,방문예정:3,관심:4,보류:5,탈락:6};
 const CENTER=[37.512,126.942];
 const CHECKLIST=[
   {id:'k1',t:'동·층 / 일조',s:'로얄동·층 vs 저층, 햇빛',vl:'호갱노노',vu:n=>gUrl(n+' 호갱노노 일조량')},
@@ -150,7 +150,7 @@ const GUEST_STATE={
   properties:[
     {id:'gp1',created:1,name:'(예시) 샘플 아파트 A',loc:'서울 OO구 · 지하철 도보 5분',deposit:4.0,area:59.9,status:'검토중',lat:37.5665,lng:126.978,memo:'데모 매물 · 500세대 · 계단식',checks:{k1:true,k3:true},aiScore:75,aiComment:'데모용 AI 평가입니다'},
     {id:'gp2',created:2,name:'(예시) 샘플 아파트 B',loc:'서울 OO구 · 지하철 도보 10분',deposit:3.5,area:84.5,status:'관심',lat:37.55,lng:126.95,memo:'데모 매물 · 800세대',checks:{},aiScore:null,aiComment:''},
-    {id:'gp3',created:3,name:'(예시) 샘플 아파트 C',loc:'서울 OO구 · 역세권',deposit:4.5,area:74.2,status:'후보확정',lat:37.54,lng:126.99,memo:'데모 매물 · 1000세대 대단지',checks:{k1:true,k2:true,k3:true,k4:true},aiScore:85,aiComment:'데모용 AI 평가입니다'},
+    {id:'gp3',created:3,name:'(예시) 샘플 아파트 C',loc:'서울 OO구 · 역세권',deposit:4.5,area:74.2,status:'후보',lat:37.54,lng:126.99,memo:'데모 매물 · 1000세대 대단지',checks:{k1:true,k2:true,k3:true,k4:true},aiScore:85,aiComment:'데모용 AI 평가입니다'},
   ],
   regNews:[{id:'grn1',title:'(예시) 샘플 뉴스 제목',summary:'이것은 데모용 뉴스 요약입니다. 실제 뉴스가 아닙니다.',date:'2026-01',source:''}],
   scraps:[],
@@ -203,6 +203,9 @@ function applyGuards(raw){
     const calcG=n=>{if(!n)return'';const v=+n;if(v>=1000)return'1000세대+';if(v>=500)return'500세대+';if(v>=300)return'300세대+';if(v>=150)return'소규모조건부';return'소규모주의';};
     const hg=p.householdGrade||(hh!=null?calcG(hh):'');
     const jr=p.jeonseRatio!=null?p.jeonseRatio:(p.saleReal&&(p.jeonseReal!=null||dn!=null)?Math.round((p.jeonseReal!=null?p.jeonseReal:dn)/p.saleReal*100):null);
+    const VALID_ST=['관심','검토중','후보','문의예정','방문예정','보류','탈락'];
+    const rawSt=p.status==='후보확정'?'후보':(p.status||'관심');
+    const st=VALID_ST.includes(rawSt)?rawSt:'관심';
     return {
       bucket:'',station:'',line:'',yearBuilt:null,
       householdGrade:'',jeonseReal:null,saleReal:null,jeonseRatio:null,
@@ -210,6 +213,7 @@ function applyGuards(raw){
       depositNum:null,geocodePending:false,
       importSource:'',importedAt:'',importBatchId:'',
       ...p,
+      status:st,
       checks:p.checks||{},
       households:hh,
       depositNum:dn,
