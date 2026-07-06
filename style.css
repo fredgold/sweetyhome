@@ -660,6 +660,30 @@
     .ph-actions{display:flex;gap:6px;flex-wrap:wrap;}
     .sortbtn{font-size:11px;padding:6px 9px;}
     .btn-eval{font-size:11px;padding:7px 11px;}
+    /* 모달 내 row도 1컬럼 접힘 */
+    .modal .box .row{grid-template-columns:1fr;}
+    /* 탭 가로 스크롤 (8개 상태탭 줄바꿈 방지) */
+    .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{flex-shrink:0;}
+    /* prop-search-bar: 검색창 전체폭, 필터 wrap */
+    .prop-search-bar .prop-search-input{flex:0 0 100%;order:-1;}
+    .prop-search-bar .prop-filter-sel{flex:1;min-width:80px;}
+    /* ph-actions 필터 wrap */
+    .ph-actions .prop-filter-sel{flex:1;min-width:80px;}
+    /* 마크다운 툴바 터치 타겟 확대 */
+    .sc-md-toolbar button{padding:8px 12px;min-height:40px;font-size:14px;}
+    .sc-md-toolbar .tb-sep{align-self:stretch;margin:4px 3px;}
+    /* actrow 인라인 편집 줄바꿈 허용 */
+    .actrow{flex-wrap:wrap;}
+    .actfull .actrow{padding:10px 0;}
+    /* 자산 테이블 입력박스 */
+    .regrow input,.regrow select{font-size:14px;}
+    .regcardlab{font-size:10.5px;font-weight:800;margin-bottom:4px;}
+    /* 에디터 textarea 최소 높이 */
+    .sc-md-textarea,.field textarea{min-height:80px;font-size:14px;}
+    /* 수집함 add form textarea */
+    #sc_text{min-height:72px;font-size:14px;}
   }
 
   /* ── 세대수 chip ── */
@@ -729,9 +753,23 @@
 @media (max-width:480px){
   .ph-actions{gap:4px;}
   .ph-actions .prop-filter-sel,.ph-actions .addbtn,.ph-actions .sortbtn{font-size:11px;padding:5px 8px;}
-  .c-actions button,.c-actions a{font-size:10px;padding:4px 6px;}
+  .c-actions button,.c-actions a{font-size:10px;padding:5px 7px;}
   .chip{font-size:10.5px;padding:3px 6px;}
   .card{padding:10px 11px;}
   .c-name{font-size:13px;}
   .modal .box{padding:12px;}
+  /* 자산 테이블: 소규모 화면에서 1컬럼 */
+  .regrow{grid-template-columns:1fr;gap:6px;}
+  .regrow .del{position:absolute;top:8px;right:8px;}
+  /* sc-md-toolbar 좁은 화면 */
+  .sc-md-toolbar{gap:2px;padding:4px 5px;}
+  .sc-md-toolbar button{padding:7px 10px;min-height:38px;}
+  /* tabs: 더 작은 탭 */
+  .tab{font-size:11px;padding:5px 8px;}
+  /* addact 줄바꿈 */
+  .addact{flex-wrap:wrap;}
+  /* prop-search-bar 필터 50% 분배 */
+  .prop-search-bar .prop-filter-sel{min-width:calc(50% - 4px);flex:0 0 calc(50% - 4px);}
+  /* 매물 카드 c-actions 줄바꿈 */
+  .c-actions{flex-wrap:wrap;gap:4px;}
 }
