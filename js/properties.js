@@ -240,7 +240,7 @@ function renderList(){
       ${p.jeonseRatio!=null?`<span class="chip tnum">전세가율 ${p.jeonseRatio}%</span>`:''}
       ${p.commuteGangnam?`<span class="chip tnum">강남 ${esc(p.commuteGangnam)}</span>`:''}
       ${p.commuteSinsa?`<span class="chip tnum">신사 ${esc(p.commuteSinsa)}</span>`:''}
-      ${!propAiHide&&p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}
+      ${p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}
       ${p.geocodePending&&!p.lat?'<span class="chip chip-warn">좌표확인필요</span>':''}
       ${p.lat?'<span class="chip geo">📍 위치 저장됨</span>':''}
     </div>
@@ -577,13 +577,6 @@ document.getElementById('evalBtn').onclick=async()=>{
   btn.disabled=false; btn.textContent=old;
 };
 document.getElementById('propSortSel').onchange=function(){sortMode=this.value;renderList();};
-let propAiHide=false;
-document.getElementById('propAiHideBtn').onclick=function(){
-  propAiHide=!propAiHide;
-  this.dataset.on=propAiHide?'1':'0';
-  this.textContent=propAiHide?'AI평가 표시':'AI평가 숨김';
-  renderList();
-};
 function exportProps(){
   const fmt=document.getElementById('propExportFmt').value;
   const sep=fmt==='csv'?',':'\t';
