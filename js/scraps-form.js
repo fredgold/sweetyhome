@@ -24,7 +24,8 @@ document.getElementById('sc_text').addEventListener('input',e=>{
   el.dataset.raw=raw;
   el.classList.toggle('is-empty',!raw.trim());
   if(e.isComposing)return;
-  ceRender(el);
+  clearTimeout(scRenderTimer);
+  scRenderTimer=setTimeout(()=>ceRender(el),200);
   const ogPrev=document.getElementById('sc_ogPreview');
   if(/instagram\.com\/(p|reel)\//.test(raw)){
     ogPrev.style.display='block';
@@ -99,6 +100,7 @@ const SC_SLASH=[
   {key:'codeblock',icon:'```',label:'코드 블록',hint:'여러 줄 코드 블록',desc:'```\n||\n```\n',type:'wrap'},
 ];
 let scSlashActive=false,scSlashStart=-1,scSlashIdx=0,scSlashMenuId='sc_slashMenu';
+let scRenderTimer,semRenderTimer;
 
 function scDetectSlash(el,menuId){
   if(menuId)scSlashMenuId=menuId;
@@ -294,6 +296,8 @@ function openScEdit(id){
   semEl.classList.toggle('is-empty',!s.raw);
   document.getElementById('sem_mdToolbar').style.display='';
   document.getElementById('sem_err').textContent='';
+  const sn=document.getElementById('savedNote');
+  if(sn){sn.textContent='저장 버튼으로 반영됩니다';sn.style.color='var(--ink-soft)';}
   // 이미지 초기화
   semImgData=null;
   const semPrev=document.getElementById('sem_imgPreview');
@@ -324,7 +328,8 @@ document.getElementById('sem_text').addEventListener('input',e=>{
   const el=e.target; const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
   if(e.isComposing)return;
-  ceRender(el);
+  clearTimeout(semRenderTimer);
+  semRenderTimer=setTimeout(()=>ceRender(el),200);
   scDetectSlash(el,'sem_slashMenu');
 });
 document.getElementById('sem_text').addEventListener('compositionend',e=>{
@@ -400,7 +405,16 @@ document.getElementById('sem_imgClear').onclick=()=>{
   document.getElementById('sem_imgLabel').textContent='📷 첨부/변경';
   document.getElementById('sem_imgClear').style.display='none';
 };
-document.getElementById('sem_cancel').onclick=()=>{semImgData=null;closeModal('scEditModal');};
+function semResetSavedNote(){
+  const sn=document.getElementById('savedNote');
+  if(sn){sn.textContent='변경사항은 자동 저장됩니다';sn.style.color='';}
+}
+document.getElementById('scEditModal').addEventListener('click',e=>{if(e.target===document.getElementById('scEditModal'))semResetSavedNote();});
+document.getElementById('sem_cancel').onclick=()=>{
+  semImgData=null;
+  semResetSavedNote();
+  closeModal('scEditModal');
+};
 document.getElementById('sem_save').onclick=()=>{
   const s=state.scraps.find(x=>x.id===scModalEditId);
   if(!s){closeModal('scEditModal');return;}
