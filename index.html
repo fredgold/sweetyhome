@@ -225,7 +225,6 @@
           <div class="ph-actions">
             <select id="propSortSel" class="prop-filter-sel">
               <option value="status">정렬: 상태순</option>
-              <option value="score">정렬: AI점수순</option>
               <option value="jeonse">정렬: 전세호가순</option>
               <option value="households">정렬: 세대수순</option>
               <option value="ratio">정렬: 전세가율순</option>
@@ -269,7 +268,18 @@
             <div id="formMap"></div>
             <div class="fm-hint">단지명 넣고 ‘위치 자동 찾기’를 누르거나, 지도를 직접 탭해서 핀을 놓으세요.</div>
           </div>
-          <div class="field" style="margin-bottom:10px"><label>메모</label><textarea id="f_memo" placeholder="채광, 곰팡이, 보증보험 가능 여부, 집주인 융자 등"></textarea></div>
+          <div class="field" style="margin-bottom:10px">
+            <label>메모</label>
+            <div class="sc-md-toolbar" id="f_mdToolbar">
+              <button type="button" data-fmtgt="wrap" data-open="**" data-close="**" title="굵게 (Ctrl+B)"><b>B</b></button>
+              <button type="button" data-fmtgt="wrap" data-open="*" data-close="*" title="기울임 (Ctrl+I)"><i>I</i></button>
+              <span class="tb-sep"></span>
+              <button type="button" data-fmtgt="line" data-prefix="## " title="제목">H</button>
+              <button type="button" data-fmtgt="line" data-prefix="- " title="목록">•</button>
+              <button type="button" data-fmtgt="line" data-prefix="> " title="인용">❝</button>
+            </div>
+            <textarea id="f_memo" placeholder="채광, 곰팡이, 보증보험 가능 여부, 집주인 융자 등"></textarea>
+          </div>
           <div class="field" style="margin-bottom:10px">
             <label>사진 첨부 (선택)</label>
             <div style="display:flex;align-items:center;gap:10px;">
@@ -303,9 +313,6 @@
         <div class="tabs" id="tabs"></div>
         <div class="rail" id="list"></div>
       </section>
-
-      <aside class="side">
-      </aside>
     </div>
   </section>
 
@@ -708,7 +715,18 @@
         <div id="propEditMap"></div>
         <div class="fm-hint">단지명 넣고 '위치 자동 찾기'를 누르거나, 지도를 직접 탭해서 핀을 놓으세요.</div>
       </div>
-      <div class="field" style="margin-bottom:10px"><label>메모</label><textarea id="em_memo" placeholder="채광, 곰팡이, 보증보험 가능 여부, 집주인 융자 등"></textarea></div>
+      <div class="field" style="margin-bottom:10px">
+        <label>메모</label>
+        <div class="sc-md-toolbar" id="em_mdToolbar">
+          <button type="button" data-emtgt="wrap" data-open="**" data-close="**" title="굵게 (Ctrl+B)"><b>B</b></button>
+          <button type="button" data-emtgt="wrap" data-open="*" data-close="*" title="기울임 (Ctrl+I)"><i>I</i></button>
+          <span class="tb-sep"></span>
+          <button type="button" data-emtgt="line" data-prefix="## " title="제목">H</button>
+          <button type="button" data-emtgt="line" data-prefix="- " title="목록">•</button>
+          <button type="button" data-emtgt="line" data-prefix="> " title="인용">❝</button>
+        </div>
+        <textarea id="em_memo" placeholder="채광, 곰팡이, 보증보험 가능 여부, 집주인 융자 등"></textarea>
+      </div>
       <div class="field" style="margin-bottom:10px">
         <label>사진 첨부 (선택)</label>
         <div style="display:flex;align-items:center;gap:10px;">
