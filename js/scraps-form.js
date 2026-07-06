@@ -20,12 +20,11 @@ function scUpdatePropFields(type){
 // ── sc_text: 라이브 렌더 + 인스타 감지 ──
 document.getElementById('sc_text').addEventListener('input',e=>{
   const el=e.target;
-  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
+  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
   el.dataset.raw=raw;
   el.classList.toggle('is-empty',!raw.trim());
   if(e.isComposing)return;
-  clearTimeout(scRenderTimer);
-  scRenderTimer=setTimeout(()=>ceRender(el),200);
+  ceRender(el);
   const ogPrev=document.getElementById('sc_ogPreview');
   if(/instagram\.com\/(p|reel)\//.test(raw)){
     ogPrev.style.display='block';
@@ -36,7 +35,7 @@ document.getElementById('sc_text').addEventListener('input',e=>{
 
 document.getElementById('sc_text').addEventListener('compositionend',e=>{
   const el=e.target;
-  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
+  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
   ceRender(el); scDetectSlash(el,'sc_slashMenu');
 });
@@ -100,7 +99,6 @@ const SC_SLASH=[
   {key:'codeblock',icon:'```',label:'코드 블록',hint:'여러 줄 코드 블록',desc:'```\n||\n```\n',type:'wrap'},
 ];
 let scSlashActive=false,scSlashStart=-1,scSlashIdx=0,scSlashMenuId='sc_slashMenu';
-let scRenderTimer,semRenderTimer;
 
 function scDetectSlash(el,menuId){
   if(menuId)scSlashMenuId=menuId;
@@ -325,16 +323,15 @@ document.getElementById('sem_moreToggle').onclick=()=>{
 // ── 수정 모달 에디터 ──
 document.getElementById('sem_mdToolbar').addEventListener('mousedown',e=>e.preventDefault());
 document.getElementById('sem_text').addEventListener('input',e=>{
-  const el=e.target; const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
+  const el=e.target; const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
   if(e.isComposing)return;
-  clearTimeout(semRenderTimer);
-  semRenderTimer=setTimeout(()=>ceRender(el),200);
+  ceRender(el);
   scDetectSlash(el,'sem_slashMenu');
 });
 document.getElementById('sem_text').addEventListener('compositionend',e=>{
   const el=e.target;
-  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
+  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim()); ceRender(el);
   scDetectSlash(el,'sem_slashMenu');
 });
