@@ -218,7 +218,7 @@
   .fmaprow label{font-size:11px;font-weight:700;color:var(--ink-soft);}
   .btn-find{font-size:11.5px;font-weight:700;color:var(--line9-deep);border:1px solid var(--line9);border-radius:8px;padding:5px 10px;display:inline-flex;gap:4px;align-items:center;}
   .btn-find:disabled{opacity:.55;cursor:default;}
-  #formMap{height:170px;width:100%;border-radius:10px;border:1px solid var(--hairline);background:#dfe3df;}
+  #formMap,#propEditMap{height:170px;width:100%;border-radius:10px;border:1px solid var(--hairline);background:#dfe3df;}
   .fm-hint{font-size:10.5px;color:var(--ink-faint);margin-top:5px;}
   .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;}
   .btn-ghost{font-size:13px;font-weight:600;color:var(--ink-soft);padding:8px 13px;border-radius:9px;}

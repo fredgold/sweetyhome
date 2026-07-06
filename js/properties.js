@@ -261,7 +261,6 @@ function renderList(){
   el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delProp(b.dataset.del));
   el.querySelectorAll('[data-locate]').forEach(b=>b.onclick=()=>locate(b.dataset.locate));
   el.querySelectorAll('[data-ai]').forEach(b=>b.onclick=()=>aiAnalyze(b.dataset.ai));
-  renderActionMirror();
 }
 function aiBlock(p){
   if(p._aiLoading) return `<div class="aiload">✨ AI가 분석 중…</div>`;
@@ -300,7 +299,7 @@ function locate(id){
 const form=document.getElementById('form');
 let propImgData=null;
 function clearForm(){
-  ['editId','f_name','f_loc','f_deposit','f_area','f_households','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
+  ['editId','f_name','f_loc','f_deposit','f_area','f_households','f_url','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
   tempChecks=null;clearFormPin();
   propImgData=null;
   document.getElementById('f_img').value='';
@@ -313,27 +312,92 @@ function closeForm(){form.classList.remove('open');clearForm();}
 document.getElementById('toggleForm').onclick=()=>{ if(form.classList.contains('open'))closeForm(); else {clearForm();openForm();} };
 document.getElementById('cancelBtn').onclick=closeForm;
 
+let propEditId='', editMapObj=null, editMapMarker=null, editTempLatLng=null, editImgData=null;
+function initEditMap(){
+  const el=document.getElementById('propEditMap'); if(!el)return;
+  if(editMapObj){editMapObj.invalidateSize();return;}
+  editMapObj=L.map('propEditMap',{zoomControl:true}).setView([37.5665,126.9780],12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(editMapObj);
+  editMapObj.on('click',e=>{
+    editTempLatLng={lat:e.latlng.lat,lng:e.latlng.lng};
+    if(editMapMarker) editMapObj.removeLayer(editMapMarker);
+    editMapMarker=L.marker([e.latlng.lat,e.latlng.lng]).addTo(editMapObj);
+  });
+}
 function openEdit(id){
   const p=state.properties.find(x=>x.id===id); if(!p)return;
-  document.getElementById('editId').value=p.id;
-  document.getElementById('f_name').value=p.name||'';
-  document.getElementById('f_loc').value=p.loc||'';
-  document.getElementById('f_deposit').value=p.deposit??'';
-  document.getElementById('f_area').value=p.area??'';
-  document.getElementById('f_households').value=p.households??'';
-  document.getElementById('f_memo').value=p.memo||'';
-  // 이미지
-  propImgData=null;
-  const fPrev=document.getElementById('f_imgPreview');
-  const fClr=document.getElementById('f_imgClear');
-  if(p.img){fPrev.src=p.img;fPrev.style.display='';fClr.style.display='';}
-  else{fPrev.style.display='none';fClr.style.display='none';}
-  document.getElementById('f_imgLabel').textContent=p.img?'📷 사진 변경':'📷 사진 추가';
-  document.getElementById('f_img').value='';
-  openForm();
-  if(p.lat&&p.lng) setFormPin(p.lat,p.lng,true); else clearFormPin();
-  document.getElementById('panel-props').scrollIntoView({behavior:'smooth',block:'start'});
+  propEditId=id; editTempLatLng=null; editImgData=null;
+  document.getElementById('propEditTitle').textContent=p.name?p.name+' 수정':'매물 수정';
+  ['em_name','em_loc','em_deposit','em_area','em_households','em_url','em_memo'].forEach(k=>{
+    const field=k.replace('em_','');
+    document.getElementById(k).value=p[field]??'';
+  });
+  const prev=document.getElementById('em_imgPreview'), clr=document.getElementById('em_imgClear');
+  if(p.img){prev.src=p.img;prev.style.display='';clr.style.display='';}
+  else{prev.style.display='none';clr.style.display='none';}
+  document.getElementById('em_imgLabel').textContent=p.img?'📷 사진 변경':'📷 사진 추가';
+  document.getElementById('em_img').value='';
+  openModal('propEditModal');
+  setTimeout(()=>{
+    initEditMap(); editMapObj.invalidateSize();
+    if(p.lat&&p.lng){
+      editMapObj.setView([p.lat,p.lng],15);
+      if(editMapMarker) editMapObj.removeLayer(editMapMarker);
+      editMapMarker=L.marker([p.lat,p.lng]).addTo(editMapObj);
+    }
+  },120);
 }
+document.getElementById('em_findBtn').onclick=async function(){
+  const name=(document.getElementById('em_name').value+' '+document.getElementById('em_loc').value).trim();
+  if(!name)return;
+  this.disabled=true; this.textContent='찾는 중…';
+  try{
+    const r=await fetch('/api/geocode?q='+encodeURIComponent(name),{headers:authHeaders()});
+    const d=await r.json();
+    if(d.lat){
+      editTempLatLng={lat:d.lat,lng:d.lng};
+      initEditMap(); editMapObj.invalidateSize();
+      editMapObj.setView([d.lat,d.lng],15);
+      if(editMapMarker) editMapObj.removeLayer(editMapMarker);
+      editMapMarker=L.marker([d.lat,d.lng]).addTo(editMapObj);
+    }
+  }catch(e){}
+  this.disabled=false; this.textContent='📍 위치 자동 찾기';
+};
+document.getElementById('em_img').onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  compressImage(f,dataUrl=>{
+    editImgData=dataUrl;
+    const prev=document.getElementById('em_imgPreview');
+    prev.src=dataUrl; prev.style.display='';
+    document.getElementById('em_imgLabel').textContent='📷 '+f.name;
+    document.getElementById('em_imgClear').style.display='';
+  });
+};
+document.getElementById('em_imgClear').onclick=()=>{
+  editImgData=''; document.getElementById('em_img').value='';
+  document.getElementById('em_imgPreview').style.display='none';
+  document.getElementById('em_imgLabel').textContent='📷 사진 추가';
+  document.getElementById('em_imgClear').style.display='none';
+};
+document.getElementById('em_saveBtn').onclick=()=>{
+  const name=document.getElementById('em_name').value.trim();
+  if(!name){const f=document.getElementById('em_name');f.focus();f.style.borderColor='var(--s-drop)';return;}
+  const p=state.properties.find(x=>x.id===propEditId); if(!p)return;
+  Object.assign(p,{
+    name, loc:document.getElementById('em_loc').value.trim(),
+    deposit:document.getElementById('em_deposit').value,
+    area:document.getElementById('em_area').value,
+    households:document.getElementById('em_households').value,
+    url:safeUrl(document.getElementById('em_url').value.trim()),
+    memo:document.getElementById('em_memo').value.trim(),
+    img:editImgData===null?(p.img||''):(editImgData||''),
+    lat:editTempLatLng?editTempLatLng.lat:p.lat,
+    lng:editTempLatLng?editTempLatLng.lng:p.lng,
+  });
+  closeModal('propEditModal'); save(); renderProps(); refreshOverview();
+};
+document.getElementById('em_cancelBtn').onclick=()=>closeModal('propEditModal');
 document.getElementById('f_img').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
   compressImage(f,dataUrl=>{
@@ -360,6 +424,7 @@ document.getElementById('saveBtn').onclick=()=>{
     name, loc:document.getElementById('f_loc').value.trim(),
     deposit:document.getElementById('f_deposit').value, area:document.getElementById('f_area').value,
     households:document.getElementById('f_households').value,
+    url:safeUrl(document.getElementById('f_url').value.trim()),
     memo:document.getElementById('f_memo').value.trim(),
     img:propImgData===null?((existing&&existing.img)||''):(propImgData||''),
     status:existing?existing.status:'관심',
@@ -469,10 +534,13 @@ document.getElementById('propAiHideBtn').onclick=function(){
   renderList();
 };
 function exportProps(){
+  const fmt=document.getElementById('propExportFmt').value;
+  const sep=fmt==='csv'?',':'\t';
   const COLS=['버킷','단지명','위치','역','호선','전세호가','매매호가','전용면적','세대수','준공년도','강남출퇴근','신사출퇴근','상태','URL','메모','메모2'];
   function cell(v){
     const s=String(v==null?'':v);
-    if(/[\t\n"]/.test(s)||/^[=+\-@]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+    const danger=fmt==='csv'?/[,\n"]/.test(s):(/[\t\n"]/.test(s));
+    if(danger||/^[=+\-@]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
     return s;
   }
   const rows=state.properties.map(p=>[
@@ -480,27 +548,15 @@ function exportProps(){
     p.jeonseReal!=null?p.jeonseReal:'',p.saleReal!=null?p.saleReal:'',
     p.area!=null?p.area:'',p.households!=null?p.households:'',p.yearBuilt||'',
     p.commuteGangnam||'',p.commuteSinsa||'',p.status||'',p.url||'',p.memo||'',''
-  ].map(cell).join('\t'));
-  const tsv=[COLS.join('\t'),...rows].join('\n');
+  ].map(cell).join(sep));
+  const content=[COLS.join(sep),...rows].join('\n');
+  const mime=fmt==='csv'?'text/csv':'text/tab-separated-values';
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['﻿'+tsv],{type:'text/tab-separated-values;charset=utf-8'}));
-  a.download='매물목록_'+new Date().toISOString().slice(0,10)+'.tsv';
+  a.href=URL.createObjectURL(new Blob(['﻿'+content],{type:mime+';charset=utf-8'}));
+  a.download='매물목록_'+new Date().toISOString().slice(0,10)+(fmt==='csv'?'.csv':'.tsv');
   a.click(); URL.revokeObjectURL(a.href);
 }
 document.getElementById('propExportBtn').onclick=exportProps;
-function renderActionMirror(){
-  const el=document.getElementById('propActionMirror'); if(!el) return;
-  const pending=(state.actions||[]).filter(a=>!a.done);
-  if(!pending.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="pam-header" id="pamToggle">📋 액션 미러 (${pending.length}건) <span class="pam-arrow">▾</span></div>
-    <ul class="pam-list" id="pamList">${pending.map(a=>`<li class="pam-item${a.priority==='high'?' pam-high':''}">${esc(a.text)}</li>`).join('')}</ul>`;
-  document.getElementById('pamToggle').onclick=()=>{
-    const list=document.getElementById('pamList');
-    const hide=list.style.display==='none';
-    list.style.display=hide?'':'none';
-    document.querySelector('#pamToggle .pam-arrow').textContent=hide?'▾':'▸';
-  };
-}
 
 
 /* ============ 내보내기 / 가져오기 ============ */
