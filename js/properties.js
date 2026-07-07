@@ -69,18 +69,32 @@ function haversineM(a,b){
   return 2*R*Math.asin(Math.sqrt(h));
 }
 function walkMinutes(m){ return Math.round(m/1000/4*60); }
+function legsForOrder(pts){
+  return pts.map((p,i)=>{
+    if(i===0) return {property:p,legDistanceM:0,legMinutes:0};
+    const d=haversineM(pts[i-1],p);
+    return {property:p,legDistanceM:d,legMinutes:walkMinutes(d)};
+  });
+}
 function computeRoute(ids){
   const pts=ids.map(id=>state.properties.find(p=>p.id===id)).filter(p=>p&&p.lat&&p.lng);
   if(pts.length<2) return [];
   const remaining=pts.slice(1); let current=pts[0];
-  const ordered=[{property:current,legDistanceM:0,legMinutes:0}];
+  const order=[current];
   while(remaining.length){
     let bestIdx=0,bestDist=Infinity;
     remaining.forEach((p,i)=>{const d=haversineM(current,p); if(d<bestDist){bestDist=d;bestIdx=i;}});
     current=remaining.splice(bestIdx,1)[0];
-    ordered.push({property:current,legDistanceM:bestDist,legMinutes:walkMinutes(bestDist)});
+    order.push(current);
   }
-  return ordered;
+  return legsForOrder(order);
+}
+function reorderRoute(fromIdx,toIdx){
+  const pts=routeStops.map(s=>s.property);
+  const [moved]=pts.splice(fromIdx,1);
+  pts.splice(toIdx,0,moved);
+  routeStops=legsForOrder(pts);
+  renderRouteBar(); waitLeaflet(()=>drawRoute());
 }
 function clearRouteLayer(){ if(routeLayerGroup&&overview) overview.removeLayer(routeLayerGroup); routeLayerGroup=null; }
 function dimRouteStatusMarkers(on){
@@ -120,12 +134,13 @@ function renderRouteBar(){
   }
   const totalMin=routeStops.reduce((s,x)=>s+x.legMinutes,0);
   const totalM=routeStops.reduce((s,x)=>s+x.legDistanceM,0);
-  const summary=routeStops.map((s,i)=>
-    (i>0?` <span class="rb-leg">→ 도보 약 ${s.legMinutes}분(${Math.round(s.legDistanceM)}m) →</span> `:'')
-    +`<b>${i+1}. ${esc(s.property.name||'(이름 없음)')}</b>`).join('');
+  const rows=routeStops.map((s,i)=>
+    (i>0?`<div class="rb-leg-row">→ 도보 약 ${s.legMinutes}분(${Math.round(s.legDistanceM)}m) →</div>`:'')
+    +`<div class="rb-stop" data-idx="${i}"><span class="rb-drag">⠿</span><span class="rb-num">${i+1}</span><span class="rb-name">${esc(s.property.name||'(이름 없음)')}</span></div>`
+  ).join('');
   bar.innerHTML=`<div class="rb-route">
-      <div class="rb-route-summary">${summary}</div>
-      <div class="rb-route-total">총 도보 약 ${totalMin}분 · ${(totalM/1000).toFixed(1)}km · ${routeStops.length}곳 (직선거리 추정)</div>
+      <div class="rb-route-list" id="rbRouteList">${rows}</div>
+      <div class="rb-route-total">총 도보 약 ${totalMin}분 · ${(totalM/1000).toFixed(1)}km · ${routeStops.length}곳 (직선거리 추정, 드래그로 순서 변경 가능)</div>
     </div>
     <div class="rb-actions">
       <button class="btn-ghost" id="routeRefreshBtn">🔄 새로고침</button>
@@ -135,6 +150,34 @@ function renderRouteBar(){
   document.getElementById('routeRefreshBtn').onclick=refreshRoute;
   document.getElementById('routeReselectBtn').onclick=()=>enterRouteSelectMode(true);
   document.getElementById('routeCloseBtn').onclick=exitRouteMode;
+  bindRouteDrag();
+}
+function bindRouteDrag(){
+  document.querySelectorAll('#rbRouteList .rb-stop').forEach(row=>{
+    const handle=row.querySelector('.rb-drag');
+    handle.onpointerdown=(e)=>{
+      e.preventDefault();
+      const fromIdx=+row.dataset.idx;
+      row.classList.add('dragging');
+      const onMove=(ev)=>{
+        const el=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('.rb-stop');
+        document.querySelectorAll('#rbRouteList .rb-stop').forEach(r=>r.classList.remove('drop-target'));
+        if(el && el!==row) el.classList.add('drop-target');
+      };
+      const onUp=(ev)=>{
+        const el=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('.rb-stop');
+        document.removeEventListener('pointermove',onMove);
+        document.removeEventListener('pointerup',onUp);
+        if(el){
+          const toIdx=+el.dataset.idx;
+          if(toIdx!==fromIdx){ reorderRoute(fromIdx,toIdx); return; }
+        }
+        document.querySelectorAll('#rbRouteList .rb-stop').forEach(r=>r.classList.remove('dragging','drop-target'));
+      };
+      document.addEventListener('pointermove',onMove);
+      document.addEventListener('pointerup',onUp);
+    };
+  });
 }
 function enterRouteSelectMode(preserveSelection){
   if(!preserveSelection) routeSelected=new Set();
@@ -155,13 +198,14 @@ function makeRoute(){
   renderList(); renderRouteBar(); waitLeaflet(()=>drawRoute());
 }
 function refreshRoute(){
-  routeSelected=new Set([...routeSelected].filter(id=>state.properties.some(p=>p.id===id&&p.lat&&p.lng)));
-  routeStops=computeRoute([...routeSelected]);
-  if(routeStops.length<2){
+  const pts=routeStops.map(s=>s.property.id).map(id=>state.properties.find(p=>p.id===id)).filter(p=>p&&p.lat&&p.lng);
+  routeSelected=new Set(pts.map(p=>p.id));
+  if(pts.length<2){
     alert('선택된 매물이 삭제되었거나 부족해 루트를 유지할 수 없어요. 다시 선택해주세요.');
     enterRouteSelectMode(true);
     return;
   }
+  routeStops=legsForOrder(pts);
   renderRouteBar(); waitLeaflet(()=>drawRoute());
 }
 document.getElementById('propRouteBtn').onclick=()=>{
