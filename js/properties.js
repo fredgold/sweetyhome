@@ -33,7 +33,8 @@ function refreshOverview(){
   ovMarkers.forEach(m=>overview.removeLayer(m)); ovMarkers=[];
   const pts=[];
   state.properties.filter(p=>p.lat&&p.lng).forEach(p=>{
-    const m=L.circleMarker([p.lat,p.lng],{radius:8,color:'#fff',weight:2,fillColor:HEX[p.status]||'#6B7C93',fillOpacity:1});
+    const icon=L.divIcon({className:'prop-pin',html:`<span style="background:${HEX[p.status]||'#6B7C93'}"></span>`,iconSize:[20,20],iconAnchor:[10,10]});
+    const m=L.marker([p.lat,p.lng],{icon});
     m.bindPopup(`<b>${esc(p.name||'')}</b><br>${esc(p.status)}${p.deposit?' · '+p.deposit+'억':''}${p.area?' · '+p.area+'㎡':''}<br><a href="${naverUrl(p)}" target="_blank">네이버에서 열기 →</a>`);
     m._pid=p.id;
     m.addTo(overview); ovMarkers.push(m); pts.push([p.lat,p.lng]);
@@ -84,7 +85,7 @@ function computeRoute(ids){
 function clearRouteLayer(){ if(routeLayerGroup&&overview) overview.removeLayer(routeLayerGroup); routeLayerGroup=null; }
 function dimRouteStatusMarkers(on){
   const ids=new Set(routeStops.map(s=>s.property.id));
-  ovMarkers.forEach(m=>{ const dim=on&&ids.has(m._pid); m.setStyle({opacity:dim?.15:1,fillOpacity:dim?.15:1}); });
+  ovMarkers.forEach(m=>{ const dim=on&&ids.has(m._pid); m.setOpacity(dim?.15:1); });
 }
 function drawRoute(){
   clearRouteLayer();

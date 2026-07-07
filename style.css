@@ -270,6 +270,9 @@
   .route-pin{background:none;border:none;}
   .route-pin span{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;color:#fff;font-size:12px;font-weight:800;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);}
 
+  .prop-pin{background:none;border:none;}
+  .prop-pin span{display:block;width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4),0 0 0 1px rgba(0,0,0,.15);}
+
   .searchbar{background:var(--surface);border:1px solid var(--hairline);border-radius:13px;padding:11px 13px;margin-bottom:18px;box-shadow:var(--shadow);}
   .searchbar .sh{font-size:11px;font-weight:700;color:var(--line9-deep);margin-bottom:8px;letter-spacing:.02em;}
   .searchbar .sb-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
