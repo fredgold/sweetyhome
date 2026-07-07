@@ -35,6 +35,7 @@ function refreshOverview(){
   state.properties.filter(p=>p.lat&&p.lng).forEach(p=>{
     const m=L.circleMarker([p.lat,p.lng],{radius:8,color:'#fff',weight:2,fillColor:HEX[p.status]||'#6B7C93',fillOpacity:1});
     m.bindPopup(`<b>${esc(p.name||'')}</b><br>${esc(p.status)}${p.deposit?' · '+p.deposit+'억':''}${p.area?' · '+p.area+'㎡':''}<br><a href="${naverUrl(p)}" target="_blank">네이버에서 열기 →</a>`);
+    m._pid=p.id;
     m.addTo(overview); ovMarkers.push(m); pts.push([p.lat,p.lng]);
   });
   if(pts.length===1) overview.setView(pts[0],15);
@@ -52,6 +53,124 @@ document.getElementById('mapExpand').onclick=()=>{
   document.getElementById('mapExpand').textContent=c.classList.contains('expanded')?'작게 보기':'크게 보기';
   setTimeout(()=>overview&&overview.invalidateSize(),300);
 };
+
+/* ============ 임장 루트 (client-only, non-persisted) ============ */
+let routeMode='off';
+let routeSelected=new Set();
+let routeStops=[];
+let routeLayerGroup=null;
+
+function haversineM(a,b){
+  const R=6371000, toRad=d=>d*Math.PI/180;
+  const dLat=toRad(b.lat-a.lat), dLng=toRad(b.lng-a.lng);
+  const la1=toRad(a.lat), la2=toRad(b.lat);
+  const h=Math.sin(dLat/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function walkMinutes(m){ return Math.round(m/1000/4*60); }
+function computeRoute(ids){
+  const pts=ids.map(id=>state.properties.find(p=>p.id===id)).filter(p=>p&&p.lat&&p.lng);
+  if(pts.length<2) return [];
+  const remaining=pts.slice(1); let current=pts[0];
+  const ordered=[{property:current,legDistanceM:0,legMinutes:0}];
+  while(remaining.length){
+    let bestIdx=0,bestDist=Infinity;
+    remaining.forEach((p,i)=>{const d=haversineM(current,p); if(d<bestDist){bestDist=d;bestIdx=i;}});
+    current=remaining.splice(bestIdx,1)[0];
+    ordered.push({property:current,legDistanceM:bestDist,legMinutes:walkMinutes(bestDist)});
+  }
+  return ordered;
+}
+function clearRouteLayer(){ if(routeLayerGroup&&overview) overview.removeLayer(routeLayerGroup); routeLayerGroup=null; }
+function dimRouteStatusMarkers(on){
+  const ids=new Set(routeStops.map(s=>s.property.id));
+  ovMarkers.forEach(m=>{ const dim=on&&ids.has(m._pid); m.setStyle({opacity:dim?.15:1,fillOpacity:dim?.15:1}); });
+}
+function drawRoute(){
+  clearRouteLayer();
+  if(!overview||routeStops.length<2) return;
+  routeLayerGroup=L.layerGroup().addTo(overview);
+  const latlngs=[];
+  routeStops.forEach((s,i)=>{
+    const p=s.property; latlngs.push([p.lat,p.lng]);
+    const icon=L.divIcon({className:'route-pin',html:`<span style="background:${HEX[p.status]||'#6B7C93'}">${i+1}</span>`,iconSize:[24,24],iconAnchor:[12,12]});
+    const mk=L.marker([p.lat,p.lng],{icon});
+    mk.bindPopup(`<b>${i+1}. ${esc(p.name||'')}</b>`+(i>0?`<br>이전 정류점에서 도보 약 ${s.legMinutes}분 (${Math.round(s.legDistanceM)}m)`:''));
+    mk.addTo(routeLayerGroup);
+  });
+  L.polyline(latlngs,{color:'#4B88CC',weight:3,dashArray:'6 6',opacity:.85}).addTo(routeLayerGroup);
+  overview.fitBounds(latlngs,{padding:[50,50],maxZoom:16});
+  dimRouteStatusMarkers(true);
+}
+function renderRouteBar(){
+  const bar=document.getElementById('routeBar');
+  if(routeMode==='off'){ bar.style.display='none'; bar.innerHTML=''; return; }
+  bar.style.display='flex';
+  if(routeMode==='select'){
+    const n=routeSelected.size;
+    bar.innerHTML=`<div class="rb-info">🚶 임장 루트 — <b>${n}곳</b> 선택됨</div>
+      <div class="rb-actions">
+        <button class="addbtn" id="routeMakeBtn"${n<2?' disabled':''}>루트 만들기</button>
+        <button class="btn-ghost" id="routeCancelBtn">취소</button>
+      </div>`;
+    document.getElementById('routeMakeBtn').onclick=makeRoute;
+    document.getElementById('routeCancelBtn').onclick=exitRouteMode;
+    return;
+  }
+  const totalMin=routeStops.reduce((s,x)=>s+x.legMinutes,0);
+  const totalM=routeStops.reduce((s,x)=>s+x.legDistanceM,0);
+  const summary=routeStops.map((s,i)=>
+    (i>0?` <span class="rb-leg">→ 도보 약 ${s.legMinutes}분(${Math.round(s.legDistanceM)}m) →</span> `:'')
+    +`<b>${i+1}. ${esc(s.property.name||'(이름 없음)')}</b>`).join('');
+  bar.innerHTML=`<div class="rb-route">
+      <div class="rb-route-summary">${summary}</div>
+      <div class="rb-route-total">총 도보 약 ${totalMin}분 · ${(totalM/1000).toFixed(1)}km · ${routeStops.length}곳 (직선거리 추정)</div>
+    </div>
+    <div class="rb-actions">
+      <button class="btn-ghost" id="routeRefreshBtn">🔄 새로고침</button>
+      <button class="btn-ghost" id="routeReselectBtn">다시 선택</button>
+      <button class="btn-ghost" id="routeCloseBtn">닫기</button>
+    </div>`;
+  document.getElementById('routeRefreshBtn').onclick=refreshRoute;
+  document.getElementById('routeReselectBtn').onclick=()=>enterRouteSelectMode(true);
+  document.getElementById('routeCloseBtn').onclick=exitRouteMode;
+}
+function enterRouteSelectMode(preserveSelection){
+  if(!preserveSelection) routeSelected=new Set();
+  routeMode='select'; clearRouteLayer(); dimRouteStatusMarkers(false);
+  renderList(); renderRouteBar();
+}
+function exitRouteMode(){
+  routeMode='off'; routeSelected=new Set(); routeStops=[];
+  clearRouteLayer(); renderList(); renderRouteBar(); refreshOverview();
+}
+function makeRoute(){
+  if(routeSelected.size<2) return;
+  routeStops=computeRoute([...routeSelected]);
+  if(routeStops.length<2){ alert('좌표가 저장된 매물이 2곳 이상 필요해요.'); return; }
+  routeMode='result';
+  document.getElementById('mapcard').classList.remove('collapsed');
+  document.getElementById('mapToggle').textContent='접기';
+  renderList(); renderRouteBar(); waitLeaflet(()=>drawRoute());
+}
+function refreshRoute(){
+  routeSelected=new Set([...routeSelected].filter(id=>state.properties.some(p=>p.id===id&&p.lat&&p.lng)));
+  routeStops=computeRoute([...routeSelected]);
+  if(routeStops.length<2){
+    alert('선택된 매물이 삭제되었거나 부족해 루트를 유지할 수 없어요. 다시 선택해주세요.');
+    enterRouteSelectMode(true);
+    return;
+  }
+  renderRouteBar(); waitLeaflet(()=>drawRoute());
+}
+document.getElementById('propRouteBtn').onclick=()=>{
+  routeMode==='off' ? enterRouteSelectMode(false) : exitRouteMode();
+};
+document.getElementById('list').addEventListener('change', e=>{
+  const rc=e.target.closest('[data-routecheck]'); if(!rc) return;
+  rc.checked ? routeSelected.add(rc.dataset.routecheck) : routeSelected.delete(rc.dataset.routecheck);
+  renderRouteBar();
+});
 
 async function geocode(q){
   try{
@@ -225,12 +344,19 @@ function renderList(){
   el.innerHTML=items.map(p=>{
     const depDisplay=p.depositNum!=null?`<span class="chip deposit tnum">보증금 ${p.depositNum}억${p.depositNum>5?' · 예산↑?':''}</span>`:depositChip(p.deposit);
     const urlSafe=p.url?safeUrl(p.url):'';
+    const routeCheckHTML = routeMode!=='select' ? '' :
+      (p.lat&&p.lng
+        ? `<label class="c-routecheck-wrap"><input type="checkbox" class="c-routecheck" data-routecheck="${p.id}"${routeSelected.has(p.id)?' checked':''}></label>`
+        : `<span class="c-routecheck-disabled" title="좌표가 없어 루트에 포함할 수 없어요">📍 위치없음</span>`);
     return `<div class="card ${(p.status==='탈락'||p.status==='보류')?'dim':''}" data-st="${p.status}">
     <div class="c-top">
-      <div>
-        ${p.bucket?`<div class="c-bucket">${esc(p.bucket)}</div>`:''}
-        <div class="c-name">${esc(p.name||'(이름 없음)')}</div>
-        ${(p.station||p.loc)?`<div class="c-loc">🚇 ${esc(p.station||p.loc)}${p.line?` <span class="c-line">${esc(p.line)}</span>`:''}</div>`:''}
+      <div class="c-top-left">
+        ${routeCheckHTML}
+        <div>
+          ${p.bucket?`<div class="c-bucket">${esc(p.bucket)}</div>`:''}
+          <div class="c-name">${esc(p.name||'(이름 없음)')}</div>
+          ${(p.station||p.loc)?`<div class="c-loc">🚇 ${esc(p.station||p.loc)}${p.line?` <span class="c-line">${esc(p.line)}</span>`:''}</div>`:''}
+        </div>
       </div>
       <span class="pill" style="background:var(${SC[p.status]})">${p.status}</span>
     </div>

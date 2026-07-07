@@ -1,6 +1,7 @@
 /* ============ tab switching ============ */
 function switchPanel(name){
   activePanel=name;
+  if(name!=='props' && typeof exitRouteMode==='function' && routeMode!=='off') exitRouteMode();
   document.querySelectorAll('.atab[data-panel]').forEach(b=>b.dataset.on=b.dataset.panel===name?'1':'0');
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+name));
   if(name==='dash') renderDash();
