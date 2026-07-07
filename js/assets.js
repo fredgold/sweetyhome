@@ -3,6 +3,13 @@ function ownerSel(v){return OWNERS.map(o=>`<option ${o===v?'selected':''}>${o}</
 function typeSel(v){return ATYPES.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
 function liqSel(v){return LIQUIDITY.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
 function renderAssets(){
+  const ownerFilterSel=document.getElementById('asset_ownerFilter');
+  if(ownerFilterSel && ownerFilterSel.dataset.owners!==OWNERS.join(',')){
+    const prev=ownerFilterSel.value;
+    ownerFilterSel.innerHTML='<option value="">전체 소유자</option>'+OWNERS.map(o=>`<option>${o}</option>`).join('');
+    ownerFilterSel.dataset.owners=OWNERS.join(',');
+    if(OWNERS.includes(prev)) ownerFilterSel.value=prev;
+  }
   const ownerF=(document.getElementById('asset_ownerFilter')?.value)||'';
   const assetQ=(document.getElementById('asset_search')?.value||'').trim().toLowerCase();
   let items=assetItems();

@@ -140,6 +140,20 @@ const GUEST_STATE={
     {id:'g3',owner:'배우자',name:'샘플 예금',amount:30000000,type:'예금',liquidity:'즉시',mobilizable:30000000,memo:'데모용 예시'},
     {id:'g4',owner:'공동',name:'샘플 공동자금',amount:50000000,type:'기타',liquidity:'즉시',mobilizable:50000000,memo:'데모용 예시'},
   ],notes:'이것은 데모 데이터입니다. 실제 데이터가 아닙니다.',reserve:1000},
+  profile:{
+    names:'(예시) OO ♥ XX',
+    birthYear:1994,
+    employment:'(예시) 맞벌이',
+    housing:'(예시) 무주택',
+    city:'(예시) 서울 OO구',
+    maxArea:85,
+    depositRange:'4~5',
+    transport:'(예시) OO호선',
+    milestones:[
+      {label:'(예시) 결혼',date:'2027-01-01'},
+      {label:'(예시) 매수 목표',date:'2028-01-01'},
+    ],
+  },
   settings:{targetDeposit:4.0,weights:{commute:3,budget:3,area:3,complex:3,risk:3}},
   chatHistory:[],
   actions:[
