@@ -1,6 +1,7 @@
 /* ============ PROPERTIES (흡수) ============ */
 /* 인라인 SVG 아이콘 — docs/style-guide.html 원본 path */
 const ICSVG={
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/>',
   map:'<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/>',
   link:'<path d="M10 14a4 4 0 0 0 5.66 0l2.83-2.83a4 4 0 1 0-5.66-5.66l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.66 0l-2.83 2.83a4 4 0 1 0 5.66 5.66l1.5-1.5"/>',
   pin:'<path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/>',
@@ -9,6 +10,7 @@ const ICSVG={
   paste:'<rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/>',
   search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
   price:'<path d="M4 11.5 11.5 4H18a2 2 0 0 1 2 2v6.5L12.5 20a2 2 0 0 1-2.83 0l-5.67-5.67a2 2 0 0 1 0-2.83z"/><circle cx="15.5" cy="8.5" r="1.2"/>',
+  export:'<path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/>',
 };
 function ic(name,cls){ return `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" aria-hidden="true">${ICSVG[name]}</svg>`; }
 function checklistHTML(p){

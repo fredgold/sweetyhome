@@ -32,7 +32,7 @@
  */
 
 /* ===== 동기화 상태 칩 ===== */
-const SYNC_LABELS={ok:'☁ 동기화됨',local:'⚠ 로컬만',offline:'✗ 오프라인'};
+const SYNC_LABELS={ok:'☁ 동기화됨',local:'⚠ 로컬만',offline:'✕ 오프라인'};
 const SYNC_MSGS={
   ok:'클라우드에 동기화되었습니다.',
   local:'클라우드 저장 실패 — 이 기기에만 저장됨.\n잠시 후 다시 시도하세요.',

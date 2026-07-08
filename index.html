@@ -41,14 +41,14 @@
         </div>
       </div>
       <button class="btn-mini" id="profileBtn">👤 프로필</button>
-      <button class="btn-mini" id="exportBtn">⬆ 내보내기</button>
+      <button class="btn-mini" id="exportBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg> 내보내기</button>
       <button class="btn-mini" id="importBtn">⬇ 가져오기</button>
       <button class="btn-mini" id="logoutBtn">🔒 잠금</button>
     </div>
   </header>
 
   <nav class="apptabs" id="apptabs">
-    <button class="atab" data-panel="dash" data-on="1">🏠 대시보드</button>
+    <button class="atab" data-panel="dash" data-on="1"><svg class="ic ic-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg> 대시보드</button>
     <button class="atab" data-panel="assets">💰 자산</button>
     <button class="atab" data-panel="props">🏘️ 매물</button>
 
@@ -181,7 +181,7 @@
 
     <div class="mapcard" id="mapcard">
       <div class="mh">
-        <h3>📍 매물 한눈에 보기</h3>
+        <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/></svg> 매물 한눈에 보기</h3>
         <div class="legend">
           <span><i style="background:#4F8A5B"></i>후보</span>
           <span><i style="background:#B89233"></i>검토</span>
@@ -195,7 +195,7 @@
     </div>
 
     <div class="searchbar">
-      <div class="sh">🔍 동·단지·역 바로 검색</div>
+      <div class="sh"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg> 동·단지·역 바로 검색</div>
       <div class="sb-row">
         <input id="siteSearch" placeholder="예: 노량진동 전세 / 상도두산위브 / 신길역">
         <button class="site" data-site="land">네이버 부동산</button>
@@ -266,7 +266,7 @@
           <div class="fmaprow">
             <div class="fm-head">
               <label>위치 (지도)</label>
-              <button class="btn-find" id="findBtn">📍 위치 자동 찾기</button>
+              <button class="btn-find" id="findBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/></svg> 위치 자동 찾기</button>
             </div>
             <div id="formMap"></div>
             <div class="fm-hint">단지명 넣고 ‘위치 자동 찾기’를 누르거나, 지도를 직접 탭해서 핀을 놓으세요.</div>
@@ -440,9 +440,9 @@
             <div class="sc-field"><label>태그 (쉼표 구분)</label><input type="text" id="sc_tags" placeholder="예: 역세권, 신혼, 59㎡"></div>
             <div class="sc-field"><label>적합도</label><select id="sc_fit">
               <option value="">미설정</option>
-              <option value="high">✅ 적합</option>
+              <option value="high">✓ 적합</option>
               <option value="mid">⚠️ 검토필요</option>
-              <option value="low">❌ 부적합</option>
+              <option value="low">✕ 부적합</option>
             </select></div>
           </div>
         </div>
@@ -525,12 +525,12 @@
   <!-- 백업 모달 -->
   <div class="modal" id="exportModal">
     <div class="box">
-      <h3>⬆ 전체 내보내기 (백업)</h3>
+      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg> 전체 내보내기 (백업)</h3>
       <div class="mdesc">아래 백업 코드를 복사해서 <b>메모장·카톡 나에게·구글 문서</b> 등에 보관하세요. 대화가 사라져도 이 코드만 있으면 <b>자산·매물·액션</b> 전부 그대로 복원됩니다.</div>
       <textarea id="exportText" readonly></textarea>
       <div class="macts">
         <button class="btn-ghost" data-close="exportModal">닫기</button>
-        <button class="btn-save" id="copyExport">📋 복사하기</button>
+        <button class="btn-save" id="copyExport"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg> 복사하기</button>
       </div>
       <div class="ok" id="exportOk"></div>
     </div>
@@ -610,9 +610,9 @@
           <div class="sc-field"><label>태그 (쉼표 구분)</label><input type="text" id="sem_tags" placeholder="예: 역세권, 신혼"></div>
           <div class="sc-field"><label>적합도</label><select id="sem_fit">
             <option value="">미설정</option>
-            <option value="high">✅ 적합</option>
+            <option value="high">✓ 적합</option>
             <option value="mid">⚠️ 검토필요</option>
-            <option value="low">❌ 부적합</option>
+            <option value="low">✕ 부적합</option>
           </select></div>
         </div>
       </div>
@@ -715,7 +715,7 @@
       <div class="fmaprow">
         <div class="fm-head">
           <label>위치 (지도)</label>
-          <button class="btn-find" id="em_findBtn">📍 위치 자동 찾기</button>
+          <button class="btn-find" id="em_findBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/></svg> 위치 자동 찾기</button>
         </div>
         <div id="propEditMap"></div>
         <div class="fm-hint">단지명 넣고 '위치 자동 찾기'를 누르거나, 지도를 직접 탭해서 핀을 놓으세요.</div>
