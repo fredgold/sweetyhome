@@ -48,11 +48,11 @@ function renderScraps(){
     const tCls='type-'+(s.type||'subscription');
     const stCls='st-'+(s.status||'new');
     let fitCls='', fitLbl='';
-    if(s.fit==='high'||s.fit==='가능'){fitCls='high';fitLbl='✅ 적합';}
-    else if(s.fit==='low'||s.fit==='불가'){fitCls='low';fitLbl='❌ 부적합';}
+    if(s.fit==='high'||s.fit==='가능'){fitCls='high';fitLbl='✓ 적합';}
+    else if(s.fit==='low'||s.fit==='불가'){fitCls='low';fitLbl='✕ 부적합';}
     else if(s.fit){fitCls='mid';fitLbl='⚠️ '+esc(s.fit);}
     const isPropLess=SC_PROPLESS.has(s.type);
-    const metaParts=[s.location&&`📍 ${esc(s.location)}`,!isPropLess&&s.price&&`💰 ${esc(s.price)}`,!isPropLess&&s.area&&`📐 ${esc(s.area)}`,!isPropLess&&s.schedule&&`📅 ${esc(s.schedule)}`].filter(Boolean);
+    const metaParts=[s.location&&`${ic('pin','ic-muted')} ${esc(s.location)}`,!isPropLess&&s.price&&`${ic('price','ic-muted')} ${esc(s.price)}`,!isPropLess&&s.area&&`📐 ${esc(s.area)}`,!isPropLess&&s.schedule&&`📅 ${esc(s.schedule)}`].filter(Boolean);
     const rawText=s.raw||'';
     const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
     return `<div class="sc-card" data-scid="${s.id}">
@@ -71,7 +71,7 @@ function renderScraps(){
           ${Object.entries(SC_STATUS).map(([v,l])=>`<option value="${v}"${s.status===v?' selected':''}>${l}</option>`).join('')}
         </select>
         <button data-sc-edit="${s.id}">수정</button>
-        <button data-sc-fit="${s.id}" disabled title="AI 자격확인 — 크레딧 필요">🔍 자격확인</button>
+        <button data-sc-fit="${s.id}" disabled title="AI 자격확인 — 크레딧 필요">${ic('search')} 자격확인</button>
         <button data-sc-del="${s.id}" style="color:var(--s-drop)">삭제</button>
       </div>
     </div>`;

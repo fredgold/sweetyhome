@@ -245,14 +245,14 @@ function scClearForm(){
   document.getElementById('sc_mdToolbar').style.display='';
   scCloseSlash();
   scrapImgData=null; scEditId=null;
-  document.getElementById('sc_formTitle').textContent='➕ 추가';
+  document.getElementById('sc_formTitle').textContent='＋ 추가';
   document.getElementById('sc_cancelBtn').style.display='none';
   document.querySelectorAll('.sc-type-chip').forEach((c,i)=>c.classList.toggle('on',i===0));
   scUpdatePropFields('subscription');
 }
 
 function scOpenForm(){ document.getElementById('sc_form').classList.add('open'); document.getElementById('sc_addToggle').textContent='▲ 접기'; document.getElementById('sc_form').scrollIntoView({behavior:'smooth',block:'nearest'}); }
-function scCloseForm(){ scClearForm(); document.getElementById('sc_form').classList.remove('open'); document.getElementById('sc_addToggle').textContent='➕ 추가'; }
+function scCloseForm(){ scClearForm(); document.getElementById('sc_form').classList.remove('open'); document.getElementById('sc_addToggle').textContent='＋ 추가'; }
 document.getElementById('sc_addToggle').onclick=()=>{ const isOpen=document.getElementById('sc_form').classList.contains('open'); isOpen?scCloseForm():scOpenForm(); };
 document.getElementById('sc_formClose').onclick=scCloseForm;
 document.getElementById('sc_cancelBtn').onclick=()=>{scCloseForm();renderScraps();};
