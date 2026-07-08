@@ -1,10 +1,18 @@
 :root{
+    /* 뉴트럴 */
     --bg:#EDEBE4; --surface:#FFFFFF; --ink:#1E2522; --ink-soft:#5C645F; --ink-faint:#9AA09B;
+    --hairline:#E2E3DD; --hairline-soft:#ECEDE7;
+    /* 브랜드 · 시맨틱 */
     --line9:#C7A14A; --line9-deep:#9A7B2E; --line9-wash:#F4ECD8;
     --money:#4F7A63; --money-deep:#356049; --money-wash:#E7F0EA;
-    --hairline:#E2E3DD; --hairline-soft:#ECEDE7;
+    --ai:#6B4FA0; --ai-wash:#EDE7F4;
+    /* 매물 상태 */
     --s-interest:#6B7C93; --s-visit:#C7853A; --s-review:#B89233; --s-final:#4F8A5B; --s-hold:#8A8F8A; --s-drop:#B16A63; --s-inquiry:#4B88CC;
     --shadow:0 1px 2px rgba(30,37,34,.04), 0 6px 20px rgba(30,37,34,.05);
+    /* 반경 스케일 — 새 컴포넌트는 이 4개 중에서 고를 것 (아이콘형 버튼=sm, 일반 버튼=md, 칩/토글=pill, 카드/패널=card) */
+    --radius-sm:8px; --radius-md:10px; --radius-pill:999px; --radius-card:13px;
+    /* 여백 스케일 — 툴바·액션열 gap은 sm/md 중 선택 */
+    --gap-sm:6px; --gap-md:8px;
     font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -151,17 +159,6 @@
   .btn-paste{background:var(--money-wash);color:var(--money-deep);border:1px solid var(--money);}
   .regempty{padding:26px 16px;text-align:center;color:var(--ink-faint);font-size:13px;line-height:1.6;}
   .regcardlab{display:none;}
-
-  @media (max-width:760px){
-    .asum{grid-template-columns:1fr;}
-    .reghead{display:none;}
-    .regrow{grid-template-columns:1fr 1fr;gap:7px 8px;padding:12px;border-top:8px solid var(--bg);position:relative;}
-    .regrow>*{min-width:0;}
-    .regrow .rc-name,.regrow .rc-memo{grid-column:1 / -1;}
-    .regrow .del{position:absolute;top:8px;right:8px;}
-    .regcardlab{display:block;font-size:9.5px;font-weight:800;color:var(--ink-faint);margin-bottom:3px;}
-    .rcell{display:flex;flex-direction:column;}
-  }
 
   /* ================= PROPERTIES (흡수) ================= */
   .gates{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:13px 15px;margin-bottom:18px;box-shadow:var(--shadow);}
@@ -425,7 +422,7 @@
   .sc-filter-label{font-size:10.5px;font-weight:700;color:var(--ink-faint);margin-bottom:5px;margin-top:9px;}
   .sc-filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
   .sc-filter-row::-webkit-scrollbar{display:none;}
-  .sc-filter-chip{font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:20px;border:1.5px solid var(--hairline);color:var(--ink-soft);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:.1s;user-select:none;}
+  .sc-filter-chip{font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);color:var(--ink-soft);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:.1s;user-select:none;}
   .sc-filter-chip.on{border-color:var(--money);background:var(--money-wash);color:var(--money-deep);}
   /* 카드 */
   .sc-list{display:flex;flex-direction:column;gap:10px;}
@@ -547,12 +544,12 @@
   .og-card .og-loading{font-size:11px;color:var(--ink-faint);font-weight:600;}
 
   /* ===== v2: AI ===== */
-  .chip.score{background:#EDE7F4;color:#6B4FA0;}
+  .chip.score{background:var(--ai-wash);color:var(--ai);}
   .airep{margin-top:10px;border-top:1px dashed var(--hairline);padding-top:9px;font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
-  .airep .arh{font-size:11px;font-weight:800;color:#6B4FA0;margin-bottom:4px;letter-spacing:.02em;}
+  .airep .arh{font-size:11px;font-weight:800;color:var(--ai);margin-bottom:4px;letter-spacing:.02em;}
   .airep .risk{margin-top:6px;color:#B5602F;font-weight:600;}
   .airep .cmt{color:var(--ink);font-weight:600;margin-top:5px;}
-  .aiload{font-size:12px;color:#6B4FA0;font-weight:700;margin-top:9px;}
+  .aiload{font-size:12px;color:var(--ai);font-weight:700;margin-top:9px;}
 
   .wcard{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:14px 15px;margin-bottom:16px;box-shadow:var(--shadow);}
   .wcard .wh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
@@ -561,12 +558,10 @@
   .wgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;}
   .wrow{display:flex;align-items:center;gap:10px;}
   .wrow label{flex:none;width:62px;font-size:12px;font-weight:700;color:var(--ink-soft);}
-  .wrow input[type=range]{flex:1;accent-color:#6B4FA0;}
-  .wrow .wv{flex:none;width:18px;text-align:right;font-size:12px;font-weight:800;color:#6B4FA0;font-variant-numeric:tabular-nums;}
-  .btn-eval{background:#6B4FA0;color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:10px;white-space:nowrap;}
+  .wrow input[type=range]{flex:1;accent-color:var(--ai);}
+  .wrow .wv{flex:none;width:18px;text-align:right;font-size:12px;font-weight:800;color:var(--ai);font-variant-numeric:tabular-nums;}
+  .btn-eval{background:var(--ai);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:var(--radius-md);white-space:nowrap;}
   .btn-eval:disabled{opacity:.6;cursor:default;}
-  .sortbtn{font-size:12px;font-weight:700;color:var(--ink-soft);padding:7px 11px;border-radius:9px;border:1px solid var(--hairline);background:var(--surface);}
-  .sortbtn[data-on="1"]{background:#EDE7F4;color:#6B4FA0;border-color:#D6C8EC;}
 
   .chatwrap{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:62vh;}
   .chathead{padding:14px 16px;border-bottom:1px solid var(--hairline);}
@@ -582,8 +577,8 @@
   .chatchips button:hover{background:var(--hairline-soft);}
   .chatbar{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--hairline);}
   .chatbar input{flex:1;border:1px solid var(--hairline);border-radius:11px;padding:10px 12px;background:#fff;}
-  .chatbar input:focus{outline:none;border-color:#6B4FA0;}
-  .chatbar button{background:#6B4FA0;color:#fff;font-size:13px;font-weight:700;padding:0 18px;border-radius:11px;}
+  .chatbar input:focus{outline:none;border-color:var(--ai);}
+  .chatbar button{background:var(--ai);color:#fff;font-size:13px;font-weight:700;padding:0 18px;border-radius:11px;}
   .chatbar button:disabled{opacity:.6;}
   .chatempty{text-align:center;color:var(--ink-faint);font-size:13px;padding:30px 16px;line-height:1.6;}
 
@@ -686,7 +681,6 @@
     .sync-panel{min-width:180px;}
     .side{gap:12px;}
     .ph-actions{display:flex;gap:6px;flex-wrap:wrap;}
-    .sortbtn{font-size:11px;padding:6px 9px;}
     .btn-eval{font-size:11px;padding:7px 11px;}
     /* 모달 내 row도 1컬럼 접힘 */
     .modal .box .row{grid-template-columns:1fr;}
@@ -768,7 +762,7 @@
 .pam-item{font-size:12px;color:var(--ink);padding:5px 10px;background:var(--surface);border-radius:8px;border-left:3px solid var(--hairline);}
 .pam-item.pam-high{border-left-color:var(--money);}
 .act-cat-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
-.act-cat-chip{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;border:1.5px solid var(--hairline);background:var(--surface);color:var(--ink-soft);cursor:pointer;}
+.act-cat-chip{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);background:var(--surface);color:var(--ink-soft);cursor:pointer;}
 .act-cat-chip.on{background:var(--money);color:#fff;border-color:var(--money);}
 .act-cat-badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:8px;background:var(--hairline-soft);color:var(--ink-soft);margin-left:6px;vertical-align:middle;}
 .c-line{font-size:10px;font-weight:700;color:var(--s-inquiry);background:#EBF3FD;border-radius:5px;padding:1px 5px;margin-left:4px;vertical-align:middle;}
@@ -787,7 +781,7 @@
 @media (max-width:480px){
   .route-bar{flex-direction:column;align-items:stretch;}
   .ph-actions{gap:4px;}
-  .ph-actions .prop-filter-sel,.ph-actions .addbtn,.ph-actions .sortbtn{font-size:11px;padding:5px 8px;}
+  .ph-actions .prop-filter-sel,.ph-actions .addbtn{font-size:11px;padding:5px 8px;}
   .c-actions button,.c-actions a{font-size:10px;padding:5px 7px;}
   .chip{font-size:10.5px;padding:3px 6px;}
   .card{padding:10px 11px;}
@@ -805,6 +799,4 @@
   .addact{flex-wrap:wrap;}
   /* prop-search-bar 필터 50% 분배 */
   .prop-search-bar .prop-filter-sel{min-width:calc(50% - 4px);flex:0 0 calc(50% - 4px);}
-  /* 매물 카드 c-actions 줄바꿈 */
-  .c-actions{flex-wrap:wrap;gap:4px;}
 }
