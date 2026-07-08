@@ -1,4 +1,12 @@
 /* ============ PROPERTIES (흡수) ============ */
+/* 인라인 SVG 아이콘 — docs/style-guide.html 원본 path */
+const ICSVG={
+  map:'<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/>',
+  link:'<path d="M10 14a4 4 0 0 0 5.66 0l2.83-2.83a4 4 0 1 0-5.66-5.66l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.66 0l-2.83 2.83a4 4 0 1 0 5.66 5.66l1.5-1.5"/>',
+  pin:'<path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/>',
+  transit:'<rect x="5" y="3" width="14" height="14" rx="3.5"/><path d="M5 11h14"/><path d="M8.5 20l-1.5 1.5M15.5 20l1.5 1.5"/>',
+};
+function ic(name,cls){ return `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" aria-hidden="true">${ICSVG[name]}</svg>`; }
 function checklistHTML(p){
   const ch=p.checks||{};
   const done=CHECKLIST.filter(c=>ch[c.id]).length;
@@ -447,36 +455,36 @@ function renderList(){
     const routeCheckHTML = routeMode!=='select' ? '' :
       (p.lat&&p.lng
         ? `<label class="c-routecheck-wrap"><input type="checkbox" class="c-routecheck" data-routecheck="${p.id}"${routeSelected.has(p.id)?' checked':''}></label>`
-        : `<span class="c-routecheck-disabled" title="좌표가 없어 루트에 포함할 수 없어요">📍 위치없음</span>`);
+        : `<span class="c-routecheck-disabled" title="좌표가 없어 루트에 포함할 수 없어요">${ic('pin','ic-muted')} 위치없음</span>`);
     return `<div class="card ${(p.status==='탈락'||p.status==='보류')?'dim':''}" data-st="${p.status}">
     <div class="c-top">
       <div class="c-top-left">
         ${routeCheckHTML}
         <div>
           <div class="c-name">${esc(p.name||'(이름 없음)')}</div>
-          ${(p.station||p.loc)?`<div class="c-loc">🚇 ${esc(p.station||p.loc)}${p.line?` <span class="c-line">${esc(p.line)}</span>`:''}</div>`:''}
+          ${(p.station||p.loc)?`<div class="c-loc">${ic('transit','ic-muted')} ${esc(p.station||p.loc)}${p.line?` <span class="c-line">${esc(p.line)}</span>`:''}</div>`:''}
         </div>
       </div>
-      <span class="pill" style="background:var(${SC[p.status]})">${p.status}</span>
+      <span class="pill" style="border-left-color:var(${SC[p.status]})"><i class="pill-dot" style="background:var(${SC[p.status]})"></i>${p.status}</span>
     </div>
     <div class="c-meta">
       ${depDisplay}${areaChip(p.area)}
-      ${p.householdGrade?`<span class="chip">${esc(p.householdGrade)}</span>`:(p.households?`<span class="chip tnum">🏢 ${p.households}세대</span>`:'')}
+      ${p.householdGrade?`<span class="chip">${esc(p.householdGrade)}</span>`:(p.households?`<span class="chip tnum">${p.households}세대</span>`:'')}
       ${p.jeonseRatio!=null?`<span class="chip tnum">전세가율 ${p.jeonseRatio}%</span>`:''}
       ${p.commuteGangnam?`<span class="chip tnum">강남 ${esc(p.commuteGangnam)}</span>`:''}
       ${p.commuteSinsa?`<span class="chip tnum">신사 ${esc(p.commuteSinsa)}</span>`:''}
-      ${p.aiScore!=null?`<span class="chip score">✨ AI ${p.aiScore}점</span>`:''}
+      ${p.aiScore!=null?`<span class="chip score">AI ${p.aiScore}점</span>`:''}
       ${p.geocodePending&&!p.lat?'<span class="chip chip-warn">좌표확인필요</span>':''}
-      ${p.lat?'<span class="chip geo">📍 위치 저장됨</span>':''}
+      ${p.lat?`<span class="chip geo">${ic('pin','ic-muted')} 위치 저장됨</span>`:''}
     </div>
     ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy">`:''}
     ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
     <div class="c-actions">
-      ${p.lat?`<button data-locate="${p.id}">🗺️ 지도에서 보기</button>`:''}
-      ${urlSafe?`<a class="naver" href="${esc(urlSafe)}" target="_blank" rel="noopener">🔗 네이버 열기 ↗</a>`:''}
-      <a class="naver" href="${naverUrl(p)}" target="_blank">📍 네이버지도</a>
-      <a class="hogang" href="${siteUrl('hogang',p.name)}" target="_blank">🏠 호갱노노</a>
-      <a class="rt" href="${siteUrl('rt',p.name)}" target="_blank">📊 실거래가</a>
+      ${p.lat?`<button data-locate="${p.id}">${ic('map')} 지도에서 보기</button>`:''}
+      ${urlSafe?`<a class="naver" href="${esc(urlSafe)}" target="_blank" rel="noopener">${ic('link')} 네이버 열기 ↗</a>`:''}
+      <a class="naver" href="${naverUrl(p)}" target="_blank">${ic('map')} 네이버지도</a>
+      <a class="hogang" href="${siteUrl('hogang',p.name)}" target="_blank">호갱노노</a>
+      <a class="rt" href="${siteUrl('rt',p.name)}" target="_blank">실거래가</a>
       <button data-edit="${p.id}">수정</button><button data-del="${p.id}">삭제</button>
     </div>
     ${aiBlock(p)}${checklistHTML(p)}</div>`;
@@ -486,9 +494,9 @@ function renderList(){
   el.querySelectorAll('[data-locate]').forEach(b=>b.onclick=()=>locate(b.dataset.locate));
 }
 function aiBlock(p){
-  if(p._aiLoading) return `<div class="aiload">✨ AI가 분석 중…</div>`;
+  if(p._aiLoading) return `<div class="aiload">AI가 분석 중…</div>`;
   if(!p.aiReport && !p.aiComment) return '';
-  let h='<div class="airep"><div class="arh">✨ AI 분석</div>';
+  let h='<div class="airep"><div class="arh">AI 분석</div>';
   if(p.aiReport){ h+=`<div>${esc(p.aiReport.summary||'')}</div>`; if(p.aiReport.risk) h+=`<div class="risk">⚠ ${esc(p.aiReport.risk)}</div>`; }
   if(p.aiComment) h+=`<div class="cmt">“${esc(p.aiComment)}”</div>`;
   return h+'</div>';
