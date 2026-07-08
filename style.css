@@ -823,3 +823,9 @@
   /* prop-search-bar 필터 50% 분배 */
   .prop-search-bar .prop-filter-sel{min-width:calc(50% - 4px);flex:0 0 calc(50% - 4px);}
 }
+
+/* ===== 인라인 SVG 아이콘 ===== */
+.ic{width:1.15em;height:1.15em;vertical-align:-.15em;
+  stroke:currentColor;fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-lg{width:20px;height:20px} /* 탭바 등 크기 오버라이드용 */
