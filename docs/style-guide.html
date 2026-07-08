@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  body{margin:0;background:#EDEBE4;font-family:"Pretendard",system-ui,sans-serif;color:#1E2522;-webkit-font-smoothing:antialiased;}
+  a{color:#9A7B2E;text-decoration:none;}
+  a:hover{color:#1E2522;}
+</style>
+</helmet>
+<div style="max-width:960px;margin:0 auto;padding:40px 24px 80px;">
+
+  <!-- header -->
+  <header style="margin-bottom:40px;border-bottom:1px solid #E2E3DD;padding-bottom:24px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#F4ECD8;color:#C7A14A;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg></span>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#9A7B2E;">스위티홈 · Design System</span>
+    </div>
+    <h1 style="margin:0 0 6px;font-size:28px;font-weight:700;letter-spacing:-.01em;">비주얼 스타일 가이드</h1>
+    <p style="margin:0;font-size:14px;line-height:1.55;color:#5C645F;max-width:620px;">기존 팔레트·반경·여백 값을 유지한 채 사용 규칙만 정리한 참조 문서. 새 UI를 만들 때 이 페이지를 기준으로 삼는다. 값은 바꾸지 않는다.</p>
+  </header>
+
+  <!-- 1. 색상 -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">01</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">색상 · Palette</h2>
+    </div>
+
+    <h3 style="margin:0 0 10px;font-size:13px;font-weight:600;color:#5C645F;">중립 (배경·텍스트)</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px;">
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#EDEBE4;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">bg</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#EDEBE4</div></div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#FFFFFF;border-bottom:1px solid #ECEDE7;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">surface</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#FFFFFF</div></div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#1E2522;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">ink</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#1E2522</div></div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#5C645F;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">ink-soft</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#5C645F</div></div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#9AA09B;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">ink-faint</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#9AA09B</div><div style="font-size:10px;color:#B16A63;margin-top:2px;">라벨/placeholder 전용</div></div>
+      </div>
+    </div>
+
+    <h3 style="margin:0 0 10px;font-size:13px;font-weight:600;color:#5C645F;">브랜드 & 기능색</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;">
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#C7A14A;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">골드 line9</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#C7A14A</div><div style="font-size:10px;color:#5C645F;margin-top:2px;">아이콘·배지·하이라이트 / 텍스트 금지</div></div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#9A7B2E;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">line9-deep</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#9A7B2E</div><div style="font-size:10px;color:#5C645F;margin-top:2px;">골드 텍스트용(큰/굵은 라벨만)</div></div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#F4ECD8;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">line9-wash</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#F4ECD8</div></div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#4F7A63;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">money 그린</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#4F7A63</div><div style="font-size:10px;color:#5C645F;margin-top:2px;">자산·성공</div></div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#356049;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">money-deep</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#356049</div></div>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+        <div style="height:56px;background:#6B4FA0;"></div>
+        <div style="padding:8px 10px;"><div style="font-size:13px;font-weight:600;">ai 퍼플</div><div style="font-size:11px;color:#9AA09B;font-family:monospace;">#6B4FA0</div></div>
+      </div>
+    </div>
+
+    <h3 style="margin:0 0 10px;font-size:13px;font-weight:600;color:#5C645F;">매물 상태 7색 <span style="font-weight:400;color:#9AA09B;">— 색만으로 의미 전달 금지, 항상 라벨 병기</span></h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #E2E3DD;border-left:3px solid #6B7C93;border-radius:8px;padding:5px 10px;font-size:12px;"><span style="width:7px;height:7px;border-radius:999px;background:#6B7C93;"></span>관심</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #E2E3DD;border-left:3px solid #C7853A;border-radius:8px;padding:5px 10px;font-size:12px;"><span style="width:7px;height:7px;border-radius:999px;background:#C7853A;"></span>방문예정</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #E2E3DD;border-left:3px solid #B89233;border-radius:8px;padding:5px 10px;font-size:12px;"><span style="width:7px;height:7px;border-radius:999px;background:#B89233;"></span>검토중</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #E2E3DD;border-left:3px solid #4F8A5B;border-radius:8px;padding:5px 10px;font-size:12px;"><span style="width:7px;height:7px;border-radius:999px;background:#4F8A5B;"></span>후보</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #E2E3DD;border-left:3px solid #8A8F8A;border-radius:8px;padding:5px 10px;font-size:12px;"><span style="width:7px;height:7px;border-radius:999px;background:#8A8F8A;"></span>보류</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #E2E3DD;border-left:3px solid #B16A63;border-radius:8px;padding:5px 10px;font-size:12px;"><span style="width:7px;height:7px;border-radius:999px;background:#B16A63;"></span>탈락</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #E2E3DD;border-left:3px solid #4B88CC;border-radius:8px;padding:5px 10px;font-size:12px;"><span style="width:7px;height:7px;border-radius:999px;background:#4B88CC;"></span>문의예정</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px;">
+      <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;color:#5C645F;background:#F4ECD8;border-radius:10px;padding:10px 12px;">
+        <span>⚠</span><span><strong style="color:#1E2522;">검토중 #B89233 ≈ 골드 #C7A14A.</strong> 상태칩과 골드 브랜드 요소를 같은 시야에 붙여 두지 않는다.</span>
+      </div>
+      <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;color:#5C645F;background:#F4ECD8;border-radius:10px;padding:10px 12px;">
+        <span>⚠</span><span><strong style="color:#1E2522;">관심 #6B7C93 · 문의예정 #4B88CC 모두 블루.</strong> 파이프라인에서 인접 배치 시 라벨·dot 병기 필수.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 타이포/반경/여백 -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">02</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">토큰 · Scale</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;">
+        <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:#5C645F;">타이포</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:24px;font-weight:700;">Display 24</span><code style="font-size:11px;color:#9AA09B;">--fs-display</code></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:20px;font-weight:700;">Head 20</span><code style="font-size:11px;color:#9AA09B;">--fs-head</code></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:17px;font-weight:600;">Title 17</span><code style="font-size:11px;color:#9AA09B;">--fs-title</code></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:14px;">Body 14</span><code style="font-size:11px;color:#9AA09B;">--fs-body</code></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:12px;color:#5C645F;">Label 12</span><code style="font-size:11px;color:#9AA09B;">--fs-label</code></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:11px;color:#5C645F;">Micro 11</span><code style="font-size:11px;color:#9AA09B;">--fs-micro</code></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;">
+          <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:#5C645F;">반경</h3>
+          <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div style="text-align:center;"><div style="width:44px;height:44px;background:#F4ECD8;border-radius:8px;"></div><div style="font-size:10px;color:#9AA09B;margin-top:4px;">sm 8</div></div>
+            <div style="text-align:center;"><div style="width:44px;height:44px;background:#F4ECD8;border-radius:10px;"></div><div style="font-size:10px;color:#9AA09B;margin-top:4px;">md 10</div></div>
+            <div style="text-align:center;"><div style="width:44px;height:44px;background:#F4ECD8;border-radius:13px;"></div><div style="font-size:10px;color:#9AA09B;margin-top:4px;">card 13</div></div>
+            <div style="text-align:center;"><div style="width:44px;height:44px;background:#F4ECD8;border-radius:999px;"></div><div style="font-size:10px;color:#9AA09B;margin-top:4px;">pill</div></div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;">
+          <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:#5C645F;">여백</h3>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:8px;"><div style="height:10px;width:6px;background:#4F7A63;border-radius:2px;"></div><span style="font-size:11px;color:#5C645F;">sm 6 · md 8 <span style="color:#9AA09B;">(기존)</span></span></div>
+            <div style="display:flex;align-items:center;gap:8px;"><div style="height:10px;width:12px;background:#4F7A63;border-radius:2px;"></div><span style="font-size:11px;color:#5C645F;">lg 12 · xl 16 · 2xl 24 <span style="color:#9AA09B;">(신규)</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 버튼 티어 -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">03</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">버튼 & 칩 티어</h2>
+    </div>
+    <p style="margin:0 0 16px;font-size:13px;color:#5C645F;line-height:1.55;">신규 버튼은 이 4티어 참조. 골드 배경 위 텍스트는 항상 <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">#1E2522</code>(흰 글씨 금지).</p>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="min-width:200px;">
+          <div style="font-size:14px;font-weight:600;">T1 · 마이크로버튼</div>
+          <div style="font-size:11px;color:#5C645F;">14px 아이콘 / pad 6 / radius 8 / 44px 터치</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button style="width:32px;height:32px;border:1px solid #E2E3DD;border-radius:8px;background:#fff;color:#5C645F;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></button>
+          <button style="width:32px;height:32px;border:1px solid #E2E3DD;border-radius:8px;background:#fff;color:#5C645F;font-size:14px;cursor:pointer;">↻</button>
+          <button style="width:32px;height:32px;border:1px solid #E2E3DD;border-radius:8px;background:#fff;color:#5C645F;font-size:14px;cursor:pointer;">⋯</button>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="min-width:200px;">
+          <div style="font-size:14px;font-weight:600;">T2 · 일반버튼</div>
+          <div style="font-size:11px;color:#5C645F;">14px / pad 8·14 / radius 10 / 보조 액션</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button style="border:1px solid #E2E3DD;border-radius:10px;background:#fff;color:#1E2522;font-size:14px;padding:8px 14px;cursor:pointer;font-family:inherit;">내보내기</button>
+          <button style="border:1px solid #E2E3DD;border-radius:10px;background:#fff;color:#1E2522;font-size:14px;padding:8px 14px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg>붙여넣기</button>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="min-width:200px;">
+          <div style="font-size:14px;font-weight:600;">T3 · 1차 CTA</div>
+          <div style="font-size:11px;color:#5C645F;">15px·600 / pad 10·18 / 화면당 1개</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button style="border:none;border-radius:10px;background:#C7A14A;color:#1E2522;font-size:15px;font-weight:600;padding:10px 18px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;">＋ 매물 추가</button>
+          <button style="border:none;border-radius:10px;background:#4F7A63;color:#fff;font-size:15px;font-weight:600;padding:10px 18px;cursor:pointer;font-family:inherit;">저장</button>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="min-width:200px;">
+          <div style="font-size:14px;font-weight:600;">T4 · 칩 / 상태칩</div>
+          <div style="font-size:11px;color:#5C645F;">11px / pad 4·10 / pill / dot+테두리, 텍스트 --ink</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid #C7A14A;background:#fff;color:#1E2522;border-radius:999px;padding:4px 12px;font-size:11px;">전체</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid #E2E3DD;border-left:3px solid #4F8A5B;background:#fff;color:#1E2522;border-radius:999px;padding:4px 12px;font-size:11px;"><span style="width:7px;height:7px;border-radius:999px;background:#4F8A5B;"></span>후보</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 아이콘 글로서리 -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">04</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">아이콘 글로서리</h2>
+    </div>
+    <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;gap:0;font-size:12px;font-weight:600;color:#9AA09B;background:#F7F6F1;padding:10px 16px;border-bottom:1px solid #ECEDE7;">
+        <span>개념</span><span>확정</span><span>이유 · 폐기</span>
+      </div>
+      <div style="display:flex;flex-direction:column;font-size:13px;">
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;border-bottom:1px solid #ECEDE7;align-items:center;"><span>완료·체크</span><span style="font-size:16px;">✓</span><span style="color:#5C645F;">✔ ✅ 폐기 · 색은 CSS</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;border-bottom:1px solid #ECEDE7;align-items:center;"><span>삭제·닫기</span><span style="font-size:16px;">✕</span><span style="color:#5C645F;">✗ ❌ 폐기 · 텍스트기호(편차 없음)</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;border-bottom:1px solid #ECEDE7;align-items:center;"><span>검색</span><span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></span><span style="color:#5C645F;">🔎 폐기 · SVG(ic-search)</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;border-bottom:1px solid #ECEDE7;align-items:center;"><span>추가</span><span style="font-size:16px;">＋</span><span style="color:#5C645F;">➕ 폐기 · 다수관례 통일</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;border-bottom:1px solid #ECEDE7;align-items:center;"><span>새로고침</span><span style="font-size:16px;">↻</span><span style="color:#5C645F;">🔄 폐기 · 텍스트기호</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;border-bottom:1px solid #ECEDE7;align-items:center;background:#F4ECD8;"><span>복사하기</span><span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></span><span style="color:#5C645F;"><strong>충돌해소</strong> · 복사 아이콘 분리(ic-copy)</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;border-bottom:1px solid #ECEDE7;align-items:center;background:#F4ECD8;"><span>붙여넣기</span><span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg></span><span style="color:#5C645F;"><strong>충돌해소</strong> · ic-paste (📋에서 분리)</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;border-bottom:1px solid #ECEDE7;align-items:center;background:#F4ECD8;"><span>대시보드(탭)</span><span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg></span><span style="color:#5C645F;"><strong>충돌해소</strong> · 탭 전용(ic-home)</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;border-bottom:1px solid #ECEDE7;align-items:center;background:#F4ECD8;"><span>외부링크</span><span style="font-size:16px;">↗</span><span style="color:#5C645F;"><strong>충돌해소</strong> · 🏠에서 분리(호갱노노 등)</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;border-bottom:1px solid #ECEDE7;align-items:center;"><span>위치·주소</span><span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/></svg></span><span style="color:#5C645F;">카드당 1회 (ic-pin)</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr .8fr 2fr;padding:10px 16px;align-items:center;"><span>지도·루트 / 링크</span><span style="display:flex;gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.66 0l2.83-2.83a4 4 0 1 0-5.66-5.66l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.66 0l-2.83 2.83a4 4 0 1 0 5.66 5.66l1.5-1.5"/></svg></span><span style="color:#5C645F;">클릭 액션일 때만 (ic-map / ic-link)</span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;color:#5C645F;background:#E7F0EA;border-radius:10px;padding:10px 12px;margin-top:12px;">
+      <span>💡</span><span><strong style="color:#356049;">OS 렌더링 편차 대체:</strong> ✅→✓, ❌→✕, ➕→＋, 🔄→↻ (텍스트 기호, 색은 CSS). 🚇🏢📊✨ 는 제거로 해결.</span>
+    </div>
+  </section>
+
+  <!-- 5. 매물 카드 Before/After -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">05</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">매물 카드 · Before / After</h2>
+    </div>
+    <p style="margin:0 0 16px;font-size:13px;color:#5C645F;line-height:1.55;">텍스트 라벨로 이미 명확한 정보의 장식 아이콘을 제거. 카드당 이모지 9개 → 2~3개.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+      <!-- BEFORE -->
+      <div>
+        <div style="display:inline-block;font-size:11px;font-weight:700;color:#B16A63;background:#fff;border:1px solid #E2E3DD;border-radius:999px;padding:3px 10px;margin-bottom:8px;">BEFORE · 이모지 9개</div>
+        <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div style="font-size:16px;font-weight:600;">✨ 래미안 강변 아파트</div>
+            <span style="font-size:11px;background:#B89233;color:#fff;border-radius:999px;padding:3px 9px;">검토중</span>
+          </div>
+          <div style="font-size:12px;color:#5C645F;line-height:1.9;margin-top:8px;">
+            🏢 아파트 · 84㎡<br>
+            🚇 지하철 5분 · 🏠 3룸<br>
+            📍 서울 광진구 자양동<br>
+            📊 시세 9.2억 · 전세 5.5억
+          </div>
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <span style="font-size:12px;color:#C7A14A;">🗺️ 지도</span>
+            <span style="font-size:12px;color:#C7A14A;">🔗 링크</span>
+            <span style="font-size:12px;color:#C7A14A;">📍 임장</span>
+          </div>
+          <div style="font-size:12px;color:#5C645F;margin-top:8px;border-top:1px solid #ECEDE7;padding-top:8px;">✔ 등기부 확인 · 🔎 실거래가 조회</div>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div>
+        <div style="display:inline-block;font-size:11px;font-weight:700;color:#356049;background:#fff;border:1px solid #E2E3DD;border-radius:999px;padding:3px 10px;margin-bottom:8px;">AFTER · 이모지 3개</div>
+        <div style="background:#fff;border:1px solid #E2E3DD;border-left:3px solid #B89233;border-radius:13px;padding:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div style="font-size:16px;font-weight:600;">래미안 강변 아파트</div>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;background:#fff;border:1px solid #E2E3DD;border-left:3px solid #B89233;color:#1E2522;border-radius:999px;padding:3px 9px;"><span style="width:6px;height:6px;border-radius:999px;background:#B89233;"></span>검토중</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:#5C645F;margin-top:8px;">
+            <div style="display:flex;align-items:center;gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA09B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 8h.01M13 8h.01M9 12h.01M13 12h.01M9 16h.01M13 16h.01"/></svg>아파트 · 84㎡ · 3룸</div>
+            <div style="display:flex;align-items:center;gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA09B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><rect x="5" y="3" width="14" height="14" rx="3.5"/><path d="M5 11h14"/><path d="M8.5 20l-1.5 1.5M15.5 20l1.5 1.5"/></svg>지하철 5분</div>
+            <div style="display:flex;align-items:center;gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA09B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/></svg>서울 광진구 자양동</div>
+            <div style="display:flex;align-items:center;gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA09B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M4 11.5 11.5 4H18a2 2 0 0 1 2 2v6.5L12.5 20a2 2 0 0 1-2.83 0l-5.67-5.67a2 2 0 0 1 0-2.83z"/><circle cx="15.5" cy="8.5" r="1.2"/></svg>시세 9.2억 · 전세 5.5억</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button style="border:1px solid #E2E3DD;border-radius:10px;background:#fff;color:#1E2522;font-size:12px;padding:6px 12px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>지도</button>
+            <button style="border:1px solid #E2E3DD;border-radius:10px;background:#fff;color:#1E2522;font-size:12px;padding:6px 12px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.66 0l2.83-2.83a4 4 0 1 0-5.66-5.66l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.66 0l-2.83 2.83a4 4 0 1 0 5.66 5.66l1.5-1.5"/></svg>링크</button>
+          </div>
+          <div style="font-size:12px;color:#5C645F;margin-top:8px;border-top:1px solid #ECEDE7;padding-top:8px;"><span style="color:#4F8A5B;">✓</span> 등기부 확인 · 실거래가 조회</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#5C645F;line-height:1.6;margin-top:12px;background:#fff;border:1px solid #E2E3DD;border-radius:10px;padding:12px 14px;">
+      <div>· <strong style="color:#1E2522;">제거:</strong> ✨(제목장식) 🏢🚇🏠📊(텍스트로 자명) 🔎(항목텍스트로 충분) → 순수 장식</div>
+      <div>· <strong style="color:#1E2522;">유지:</strong> 📍 주소 1회, 🗺️🔗 는 클릭 액션이라 존치, ✓ 완료표시</div>
+      <div>· <strong style="color:#1E2522;">상태칩:</strong> 채운 배경 → dot+좌측테두리, 텍스트 --ink (골드 유사색 혼동·대비 문제 회피)</div>
+    </div>
+  </section>
+
+  <!-- 6. 모바일 툴바 -->
+  <section style="margin-bottom:24px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">06</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">모바일 툴바 (매물탭 375px)</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+      <div>
+        <div style="display:inline-block;font-size:11px;font-weight:700;color:#B16A63;background:#fff;border:1px solid #E2E3DD;border-radius:999px;padding:3px 10px;margin-bottom:8px;">BEFORE · 6개 wrap</div>
+        <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:12px;max-width:300px;">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span style="font-size:12px;border:1px solid #E2E3DD;border-radius:10px;padding:6px 10px;">정렬 ▾</span>
+            <span style="font-size:12px;border:1px solid #E2E3DD;border-radius:10px;padding:6px 10px;">형식 ▾</span>
+            <span style="font-size:12px;border:1px solid #E2E3DD;border-radius:10px;padding:6px 10px;">내보내기</span>
+            <span style="font-size:12px;border:1px solid #E2E3DD;border-radius:10px;padding:6px 10px;">시트붙여넣기</span>
+            <span style="font-size:12px;border:1px solid #E2E3DD;border-radius:10px;padding:6px 10px;">임장루트</span>
+            <span style="font-size:12px;border:1px solid #E2E3DD;border-radius:10px;padding:6px 10px;">매물추가</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="display:inline-block;font-size:11px;font-weight:700;color:#356049;background:#fff;border:1px solid #E2E3DD;border-radius:999px;padding:3px 10px;margin-bottom:8px;">AFTER · 상시 2 + ⋯</div>
+        <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:12px;max-width:300px;">
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="font-size:12px;border:1px solid #E2E3DD;border-radius:10px;padding:6px 10px;">정렬 ▾</span>
+            <button style="border:none;border-radius:10px;background:#C7A14A;color:#1E2522;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;font-family:inherit;">＋ 매물추가</button>
+            <button style="margin-left:auto;width:32px;height:32px;border:1px solid #E2E3DD;border-radius:8px;background:#fff;font-size:14px;cursor:pointer;">⋯</button>
+          </div>
+          <div style="margin-top:8px;border:1px solid #E2E3DD;border-radius:13px;box-shadow:0 6px 18px rgba(30,37,34,.1);padding:6px;font-size:13px;">
+            <div style="padding:8px 10px;border-radius:8px;display:flex;align-items:center;gap:7px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg>시트 붙여넣기</div>
+            <div style="padding:8px 10px;border-radius:8px;display:flex;align-items:center;gap:7px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg>내보내기 <span style="color:#9AA09B;font-size:11px;">(형식 + 실행)</span></div>
+            <div style="padding:8px 10px;border-radius:8px;display:flex;align-items:center;gap:7px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>임장 루트</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#5C645F;line-height:1.6;margin-top:12px;background:#fff;border:1px solid #E2E3DD;border-radius:10px;padding:12px 14px;">
+      <div>· <strong style="color:#1E2522;">가로 스크롤:</strong> 항목이 동등·빈번 → 수집함 에디터 9개(overflow-x:auto)</div>
+      <div>· <strong style="color:#1E2522;">⋯ 더보기:</strong> 주요 1~2개만 노출 → 매물탭(정렬+추가), 헤더(프로필+잠금)</div>
+      <div>· <strong style="color:#1E2522;">줄바꿈 유지:</strong> 2~3개 → 액션탭 추가폼</div>
+    </div>
+  </section>
+
+  <!-- 7. 인라인 SVG 아이콘 세트 -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">07</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">인라인 SVG 아이콘 세트</h2>
+    </div>
+    <p style="margin:0 0 16px;font-size:13px;color:#5C645F;line-height:1.55;">OS 편차가 남는 컬러 이모지(🏠📍🗺️🔗🔍📋📥)를 대체하는 <strong style="color:#1E2522;">액션 아이콘 7종</strong>과, 매물카드 정보 행 앞에 붙는 <strong style="color:#1E2522;">행 표식 4종</strong>. 모두 가는 선·<code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">currentColor</code> 상속(색은 CSS가 결정) — 텍스트 기호(✓ ＋ ↗)와 같은 톤. 24×24 뷰박스, 선 두께 1.7.</p>
+
+    <!-- 크기 프리뷰 -->
+    <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:#5C645F;">권장 크기 (모바일)</h3>
+      <div style="display:flex;gap:24px;align-items:flex-end;flex-wrap:wrap;color:#1E2522;">
+        <div style="text-align:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg>
+          <div style="font-size:10px;color:#9AA09B;margin-top:6px;">본문 16</div>
+        </div>
+        <div style="text-align:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg>
+          <div style="font-size:10px;color:#9AA09B;margin-top:6px;">버튼·툴바 18</div>
+        </div>
+        <div style="text-align:center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg>
+          <div style="font-size:10px;color:#9AA09B;margin-top:6px;">탭 20 (44 터치)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 세트 그리드 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:16px;">
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#1E2522;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;">집 / 대시보드</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-home</code>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#1E2522;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;">위치·주소</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-pin</code>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#1E2522;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;">지도·루트</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-map</code>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#1E2522;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.66 0l2.83-2.83a4 4 0 1 0-5.66-5.66l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.66 0l-2.83 2.83a4 4 0 1 0 5.66 5.66l1.5-1.5"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;">링크</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-link</code>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#1E2522;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;">검색</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-search</code>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#1E2522;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;">복사</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-copy</code>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#1E2522;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;">붙여넣기</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-paste</code>
+      </div>
+    </div>
+
+    <!-- 행 표식 4종 (무채색) -->
+    <h3 style="margin:0 0 10px;font-size:13px;font-weight:600;color:#5C645F;">행 표식 아이콘 <span style="font-weight:400;color:#9AA09B;">— 정보 행 앞, 항상 #9AA09B 무채색(컬러 금지)</span></h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:16px;">
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#9AA09B;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 8h.01M13 8h.01M9 12h.01M13 12h.01M9 16h.01M13 16h.01"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;color:#1E2522;">건물 유형</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-building</code>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#9AA09B;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="3.5"/><path d="M5 11h14"/><path d="M8.5 20l-1.5 1.5M15.5 20l1.5 1.5"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;color:#1E2522;">지하철·교통</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-transit</code>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#9AA09B;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 11.5 4H18a2 2 0 0 1 2 2v6.5L12.5 20a2 2 0 0 1-2.83 0l-5.67-5.67a2 2 0 0 1 0-2.83z"/><circle cx="15.5" cy="8.5" r="1.2"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;color:#1E2522;">시세·가격</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-price</code>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:14px;text-align:center;color:#9AA09B;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg>
+        <div style="font-size:12px;font-weight:600;margin-top:8px;color:#1E2522;">내보내기</div>
+        <code style="font-size:10px;color:#9AA09B;">.ic-export</code>
+      </div>
+    </div>
+
+    <!-- 색 상속 데모 -->
+    <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:#5C645F;">색은 CSS가 결정 (currentColor 상속)</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <button style="border:none;border-radius:10px;background:#C7A14A;color:#1E2522;font-size:15px;font-weight:600;padding:10px 16px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:7px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>검색
+        </button>
+        <button style="border:1px solid #E2E3DD;border-radius:10px;background:#fff;color:#1E2522;font-size:14px;padding:8px 14px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg>붙여넣기
+        </button>
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:#5C645F;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/></svg>서울 광진구 자양동
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:#C7A14A;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg>골드 아이콘
+        </span>
+      </div>
+    </div>
+
+    <!-- 붙여넣기용 CSS/HTML -->
+    <div style="background:#1E2522;border-radius:13px;padding:16px;overflow-x:auto;">
+      <div style="font-size:11px;color:#9AA09B;margin-bottom:10px;">style.css 하단에 추가 — <code style="color:#C7A14A;">.ic</code> 공통 클래스 + 인라인 SVG는 마크업에 직접 삽입</div>
+      <pre style="margin:0;font-size:12px;line-height:1.7;color:#E7F0EA;font-family:ui-monospace,monospace;white-space:pre;">.ic{width:1.15em;height:1.15em;vertical-align:-.15em;
+    stroke:currentColor;fill:none;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* 크기 오버라이드가 필요할 때만: */
+.ic-lg{width:20px;height:20px}   /* 탭바 */
+
+&lt;!-- 사용 예: 색은 부모 텍스트색을 그대로 따라감 --&gt;
+&lt;svg class="ic" viewBox="0 0 24 24"&gt;&lt;path d="M3 11l9-8 9 8"/&gt;
+  &lt;path d="M5 9.5V20h14V9.5"/&gt;&lt;/svg&gt; 대시보드</pre>
+    </div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;color:#5C645F;background:#E7F0EA;border-radius:10px;padding:10px 12px;margin-top:12px;">
+      <span>💡</span><span><strong style="color:#356049;">교체 매핑:</strong> 🏠→ic-home · 📍→ic-pin · 🗺️→ic-map · 🔗→ic-link · 🔍→ic-search · 📋→ic-copy · 📥→ic-paste. 완료 ✓·추가 ＋·외부 ↗·삭제 ✕ 는 텍스트 기호 유지.</span>
+    </div>
+  </section>
+
+  <!-- 8. 상호작용 상태 -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">08</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">상호작용 상태 & 포커스</h2>
+    </div>
+    <p style="margin:0 0 16px;font-size:13px;color:#5C645F;line-height:1.55;">맥·윈도(마우스+키보드)와 아이폰(터치)을 함께 쓰므로 상태를 명시. <strong style="color:#1E2522;">키보드 포커스 링은 필수</strong> — 골드 반투명 링 <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">--focus-ring</code>.</p>
+    <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;">
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="text-align:center;"><button style="border:1px solid #E2E3DD;border-radius:10px;background:#fff;color:#1E2522;font-size:14px;padding:8px 14px;font-family:inherit;">기본</button><div style="font-size:10px;color:#9AA09B;margin-top:6px;">default</div></div>
+        <div style="text-align:center;"><button style="border:1px solid #C9CBC3;border-radius:10px;background:#F3F2EC;color:#1E2522;font-size:14px;padding:8px 14px;font-family:inherit;">호버</button><div style="font-size:10px;color:#9AA09B;margin-top:6px;">hover · bg 살짝 진하게</div></div>
+        <div style="text-align:center;"><button style="border:1px solid #C9CBC3;border-radius:10px;background:#EAE8E1;color:#1E2522;font-size:14px;padding:8px 14px;font-family:inherit;transform:translateY(1px);">눌림</button><div style="font-size:10px;color:#9AA09B;margin-top:6px;">active · 1px down</div></div>
+        <div style="text-align:center;"><button style="border:1px solid #E2E3DD;border-radius:10px;background:#fff;color:#1E2522;font-size:14px;padding:8px 14px;font-family:inherit;box-shadow:0 0 0 3px rgba(199,161,74,.38);">포커스</button><div style="font-size:10px;color:#9AA09B;margin-top:6px;">focus-visible · 링</div></div>
+        <div style="text-align:center;"><button style="border:1px solid #ECEDE7;border-radius:10px;background:#F7F6F1;color:#9AA09B;font-size:14px;padding:8px 14px;font-family:inherit;cursor:not-allowed;">비활성</button><div style="font-size:10px;color:#9AA09B;margin-top:6px;">disabled · opacity/회색</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#5C645F;line-height:1.6;margin-top:16px;border-top:1px solid #ECEDE7;padding-top:14px;">
+        <div>· <strong style="color:#1E2522;">hover:</strong> 배경 한 단계 진하게(테두리 버튼) / CTA는 밝기 -6%. 터치 기기에선 무시됨 — hover에 필수 정보 두지 말 것</div>
+        <div>· <strong style="color:#1E2522;">active:</strong> <code style="background:#F4ECD8;padding:1px 4px;border-radius:4px;">transform:translateY(1px)</code> 로 눌림감</div>
+        <div>· <strong style="color:#1E2522;">focus-visible:</strong> <code style="background:#F4ECD8;padding:1px 4px;border-radius:4px;">box-shadow:var(--focus-ring)</code> — <code style="background:#F4ECD8;padding:1px 4px;border-radius:4px;">:focus</code> 아닌 <code style="background:#F4ECD8;padding:1px 4px;border-radius:4px;">:focus-visible</code>로 걸어 마우스 클릭엔 안 뜨게</div>
+        <div>· <strong style="color:#1E2522;">disabled:</strong> 회색 배경 + ink-faint 텍스트 + <code style="background:#F4ECD8;padding:1px 4px;border-radius:4px;">cursor:not-allowed</code>. 색만으로 구분 금지 → 클릭 불가 시각 신호 병행</div>
+      </div>
+    </div>
+    <div style="background:#1E2522;border-radius:13px;padding:16px;overflow-x:auto;margin-top:12px;">
+      <pre style="margin:0;font-size:12px;line-height:1.7;color:#E7F0EA;font-family:ui-monospace,monospace;white-space:pre;">.btn:hover{background:#F3F2EC;border-color:#C9CBC3}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.btn:disabled{background:#F7F6F1;color:var(--ink-faint);
+    border-color:var(--hairline-soft);cursor:not-allowed}</pre>
+    </div>
+  </section>
+
+  <!-- 9. 폼 입력 -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">09</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">폼 입력 (input · select)</h2>
+    </div>
+    <p style="margin:0 0 16px;font-size:13px;color:#5C645F;line-height:1.55;">높이 36px · radius <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">--radius-md</code> · 테두리 <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">--hairline</code> · 포커스 시 골드 링. placeholder는 <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">--ink-faint</code>.</p>
+    <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div><div style="font-size:11px;color:#5C645F;margin-bottom:6px;">텍스트 입력</div><input placeholder="매물 이름 입력" style="height:36px;box-sizing:border-box;border:1px solid #E2E3DD;border-radius:10px;padding:0 12px;font-size:14px;font-family:inherit;color:#1E2522;width:200px;"></div>
+      <div><div style="font-size:11px;color:#5C645F;margin-bottom:6px;">포커스 상태</div><input value="자양동" style="height:36px;box-sizing:border-box;border:1px solid #C7A14A;border-radius:10px;padding:0 12px;font-size:14px;font-family:inherit;color:#1E2522;width:200px;box-shadow:0 0 0 3px rgba(199,161,74,.38);"></div>
+      <div><div style="font-size:11px;color:#5C645F;margin-bottom:6px;">select</div><select style="height:36px;box-sizing:border-box;border:1px solid #E2E3DD;border-radius:10px;padding:0 12px;font-size:14px;font-family:inherit;color:#1E2522;background:#fff;"><option>최신순</option><option>가격순</option></select></div>
+    </div>
+  </section>
+
+  <!-- 10. 그림자 -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">10</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">그림자 · Elevation</h2>
+    </div>
+    <p style="margin:0 0 16px;font-size:13px;color:#5C645F;line-height:1.55;">3단만. 따뜻한 톤 유지 위해 그림자는 잉크색 저투명(<code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">rgba(30,37,34,…)</code>) — 순수 검정 금지.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:20px;background:#EDEBE4;border-radius:13px;padding:24px;">
+      <div><div style="height:80px;background:#fff;border-radius:13px;box-shadow:0 1px 2px rgba(30,37,34,.05);"></div><div style="font-size:12px;font-weight:600;margin-top:10px;">--shadow-card</div><div style="font-size:11px;color:#5C645F;">카드</div></div>
+      <div><div style="height:80px;background:#fff;border-radius:13px;box-shadow:0 6px 18px rgba(30,37,34,.10);"></div><div style="font-size:12px;font-weight:600;margin-top:10px;">--shadow-pop</div><div style="font-size:11px;color:#5C645F;">드롭다운·팝오버</div></div>
+      <div><div style="height:80px;background:#fff;border-radius:13px;box-shadow:0 16px 40px rgba(30,37,34,.16);"></div><div style="font-size:12px;font-weight:600;margin-top:10px;">--shadow-modal</div><div style="font-size:11px;color:#5C645F;">모달·시트</div></div>
+    </div>
+  </section>
+
+  <!-- 11. 상태 파이프라인 -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">11</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">상태 파이프라인 (실사용)</h2>
+    </div>
+    <p style="margin:0 0 16px;font-size:13px;color:#5C645F;line-height:1.55;">각 컬럼은 색 dot + <strong style="color:#1E2522;">라벨 텍스트 필수</strong>. 관심·문의예정(둘 다 블루)이 인접해도 라벨로 구분됨.</p>
+    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;">
+      <div style="flex:none;width:150px;background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:12px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;margin-bottom:10px;"><span style="width:8px;height:8px;border-radius:999px;background:#6B7C93;"></span>관심 <span style="color:#9AA09B;font-weight:400;">2</span></div>
+        <div style="border-left:3px solid #6B7C93;background:#F7F6F1;border-radius:8px;padding:8px 10px;font-size:12px;">힐스테이트</div>
+      </div>
+      <div style="flex:none;width:150px;background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:12px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;margin-bottom:10px;"><span style="width:8px;height:8px;border-radius:999px;background:#4B88CC;"></span>문의예정 <span style="color:#9AA09B;font-weight:400;">1</span></div>
+        <div style="border-left:3px solid #4B88CC;background:#F7F6F1;border-radius:8px;padding:8px 10px;font-size:12px;">래미안 강변</div>
+      </div>
+      <div style="flex:none;width:150px;background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:12px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;margin-bottom:10px;"><span style="width:8px;height:8px;border-radius:999px;background:#4F8A5B;"></span>후보 <span style="color:#9AA09B;font-weight:400;">1</span></div>
+        <div style="border-left:3px solid #4F8A5B;background:#F7F6F1;border-radius:8px;padding:8px 10px;font-size:12px;">자이 프레스티지</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;color:#5C645F;background:#F4ECD8;border-radius:10px;padding:10px 12px;margin-top:12px;">
+      <span>⚠</span><span>이 파이프라인 근처에는 <strong style="color:#1E2522;">골드 브랜드 요소(배지·CTA)를 두지 않는다</strong> — 검토중 #B89233과 혼동 방지.</span>
+    </div>
+  </section>
+
+  <!-- 12. AI 퍼플 -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">12</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">AI 퍼플 사용</h2>
+    </div>
+    <p style="margin:0 0 16px;font-size:13px;color:#5C645F;line-height:1.55;">AI 상담 전용 색. 골드(브랜드)·그린(자산)과 <strong style="color:#1E2522;">역할이 겹치지 않게</strong> AI 기능에만. 배경은 <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">--ai-wash</code>, 강조는 <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">--ai</code>.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <button style="border:none;border-radius:10px;background:#6B4FA0;color:#fff;font-size:15px;font-weight:600;padding:10px 18px;cursor:pointer;font-family:inherit;">AI에게 물어보기</button>
+      <div style="background:#EDE7F4;border-radius:13px;padding:12px 14px;max-width:320px;">
+        <div style="font-size:11px;font-weight:600;color:#6B4FA0;margin-bottom:4px;">AI 상담</div>
+        <div style="font-size:13px;color:#1E2522;line-height:1.5;">이 매물, 지금 시세면 무리한 편일까요?</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13. Do / Don't -->
+  <section style="margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">13</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">Do / Don't — 골드 텍스트</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;">
+        <div style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#B16A63;margin-bottom:12px;"><span>✕</span>DON'T</div>
+        <p style="margin:0 0 8px;font-size:15px;color:#C7A14A;">골드 #C7A14A 본문 텍스트</p>
+        <p style="margin:0;font-size:12px;color:#5C645F;line-height:1.5;">흰 배경 대비 2.43:1 — 작은 글씨·링크에서 안 읽힘.</p>
+      </div>
+      <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:16px;">
+        <div style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#356049;margin-bottom:12px;"><span>✓</span>DO</div>
+        <p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#9A7B2E;">line9-deep #9A7B2E — 큰/굵은 라벨</p>
+        <p style="margin:0;font-size:12px;color:#5C645F;line-height:1.5;">골드는 아이콘·배지 배경에, 텍스트는 line9-deep. 작은 본문은 ink/ink-soft.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14. 마이그레이션 체크리스트 -->
+  <section style="margin-bottom:24px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px;">
+      <span style="font-size:12px;font-weight:700;color:#C7A14A;">14</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;">Claude Code 반영 순서</h2>
+    </div>
+    <div style="background:#fff;border:1px solid #E2E3DD;border-radius:13px;padding:20px;">
+      <ol style="margin:0;padding-left:22px;font-size:13px;color:#1E2522;line-height:1.9;">
+        <li><strong>토큰 먼저:</strong> <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">:root</code>에 여백(lg/xl/2xl)·타이포·그림자·포커스링 토큰 추가. 색·기존 반경 값은 그대로.</li>
+        <li><strong>반경 정리:</strong> <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">border-radius:9px~12px</code> 잔여 → 역할 토큰으로 치환(버튼 md / 칩 sm / 카드 card / pill).</li>
+        <li><strong>골드 텍스트 감사:</strong> <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">color:#C7A14A</code> 텍스트 용례 → line9-deep 또는 ink로. 골드는 아이콘·배경만.</li>
+        <li><strong>아이콘 교체:</strong> <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">.ic</code> 클래스 + 7종 SVG 삽입, 매핑표대로 이모지 치환. ✅❌➕🔄 → 텍스트 기호.</li>
+        <li><strong>매물 카드:</strong> 장식 아이콘 제거, 정보 행에 무채색 행 표식만. 상태칩 dot+테두리로.</li>
+        <li><strong>상태/포커스:</strong> <code style="background:#F4ECD8;padding:1px 5px;border-radius:5px;">:hover / :active / :focus-visible / :disabled</code> 규칙을 버튼·입력에 적용.</li>
+        <li><strong>모바일 툴바:</strong> 매물탭 6개 → 상시 2개(정렬·추가) + ⋯ 더보기 드롭다운(기존 컴포넌트 재사용).</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid #E2E3DD;padding-top:20px;font-size:11px;color:#9AA09B;text-align:center;">스위티홈 디자인 시스템 · 값 변경 없음 · 사용 규칙 정리본</footer>
+
+  <template id="__bundler_thumbnail" data-bg-color="#EDEBE4">
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1200" height="800" fill="#EDEBE4"/>
+      <rect x="470" y="300" width="260" height="200" rx="28" fill="#F4ECD8"/>
+      <g fill="none" stroke="#C7A14A" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M520 410l80-70 80 70"/>
+        <path d="M540 395v90h120v-90"/>
+      </g>
+    </svg>
+  </template>
+
+</div>
+</x-dc>
+</body>
+</html>
