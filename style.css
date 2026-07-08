@@ -11,8 +11,22 @@
     --shadow:0 1px 2px rgba(30,37,34,.04), 0 6px 20px rgba(30,37,34,.05);
     /* 반경 스케일 — 새 컴포넌트는 이 4개 중에서 고를 것 (아이콘형 버튼=sm, 일반 버튼=md, 칩/토글=pill, 카드/패널=card) */
     --radius-sm:8px; --radius-md:10px; --radius-pill:999px; --radius-card:13px;
-    /* 여백 스케일 — 툴바·액션열 gap은 sm/md 중 선택 */
-    --gap-sm:6px; --gap-md:8px;
+    /* 여백 — 기존 sm/md 유지 + 상위 3단 신규 */
+    --gap-sm:6px; --gap-md:8px; --gap-lg:12px; --gap-xl:16px; --gap-2xl:24px;
+
+    /* 타이포 스케일 (Pretendard) — 신규 */
+    --fs-micro:11px; --fs-label:12px; --fs-body:14px; --fs-body-lg:15px;
+    --fs-title:17px; --fs-head:20px; --fs-display:24px;
+    --lh-tight:1.3; --lh-body:1.55;
+
+    /* 그림자 — 잉크 저투명(순수 검정 금지), 신규 */
+    --shadow-card:0 1px 2px rgba(30,37,34,.05);
+    --shadow-pop:0 6px 18px rgba(30,37,34,.10);
+    --shadow-modal:0 16px 40px rgba(30,37,34,.16);
+
+    /* 포커스 링 — 신규 */
+    --focus-ring:0 0 0 3px rgba(199,161,74,.38);
+
     font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
