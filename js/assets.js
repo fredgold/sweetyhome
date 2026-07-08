@@ -17,7 +17,7 @@ function renderAssets(){
   if(assetQ) items=items.filter(it=>(it.name||'').toLowerCase().includes(assetQ));
   const box=document.getElementById('a_rows');
   if(!items.length){
-    box.innerHTML=`<div class="regempty">아직 자산 항목이 없어요.<br><b>＋ 항목 추가</b>로 한 줄씩 넣거나, <b>📋 시트 붙여넣기</b>로 한 번에 가져오세요.</div>`;
+    box.innerHTML=`<div class="regempty">아직 자산 항목이 없어요.<br><b>＋ 항목 추가</b>로 한 줄씩 넣거나, <b>${ic('paste')} 시트 붙여넣기</b>로 한 번에 가져오세요.</div>`;
   } else {
     box.innerHTML=items.map(it=>`
       <div class="regrow ${it.liquidity==='즉시'?'imm':'lng'}" data-id="${it.id}">

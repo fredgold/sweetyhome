@@ -27,10 +27,10 @@ function assetTotal(){return sumMobImmediate();} // 실제 동원 가능(즉시)
 function renderGates(){
   const p=state.profile;
   document.getElementById('gateList').innerHTML=
-    `<div class="gate"><span class="ic">📍</span><div><div class="gt">${esc(p.city)}시 內 <em>필수</em></div><div class="gd">이자지원 자격</div></div></div>`+
+    `<div class="gate">${ic('pin')}<div><div class="gt">${esc(p.city)}시 內 <em>필수</em></div><div class="gd">이자지원 자격</div></div></div>`+
     `<div class="gate"><span class="ic">📐</span><div><div class="gt">전용 ${p.maxArea}㎡ 이하 <em>필수</em></div><div class="gd">청약 자격 보존</div></div></div>`+
     `<div class="gate"><span class="ic">💰</span><div><div class="gt">전세 ${esc(p.depositRange)}억 <em>필수</em></div><div class="gd">보증금 예산</div></div></div>`+
-    `<div class="gate"><span class="ic">🚇</span><div><div class="gt">교통·단지 조건 <em class="pref">선호</em></div><div class="gd">${esc(p.transport)} 우선 + 좋은 단지면 OK</div></div></div>`;
+    `<div class="gate">${ic('transit')}<div><div class="gt">교통·단지 조건 <em class="pref">선호</em></div><div class="gd">${esc(p.transport)} 우선 + 좋은 단지면 OK</div></div></div>`;
 }
 function renderJourney(){
   const now=new Date();
@@ -46,7 +46,7 @@ function renderJourney(){
   el.style.gridTemplateColumns=`repeat(${cols},minmax(68px,1fr))`;
   el.innerHTML=steps.map(s=>`
     <div class="jstop ${s.now?'now':''}">
-      <div class="dot">${s.now?'📍':'◆'}</div>
+      <div class="dot">${s.now?ic('pin'):'◆'}</div>
       <div class="jt">${s.t}</div>
       <div class="jd">${s.d}</div>
       ${s.date?`<div class="jdday tnum">${dday(s.date)}</div>`:''}
