@@ -23,6 +23,7 @@
  * state.actions   : [{id, text, priority, done, category}]  category: ''|'매물준비'|'계약'
  * state.chatHistory: [{role:'user'|'assistant', text, think?}]
  * state.regNews   : [{id, title, summary, date, source}]
+ * state.savedRoutes: [{id, name, propertyIds:[], createdAt}]  임장 루트(방문 순서) 저장 목록
  * state.prep      : (deprecated — migrated to actions with category:'매물준비')
  * state.steps     : (deprecated — migrated to actions with category:'계약')
  *
@@ -167,6 +168,7 @@ const GUEST_STATE={
     {id:'gp3',created:3,name:'(예시) 샘플 아파트 C',loc:'서울 OO구 · 역세권',deposit:4.5,area:74.2,status:'후보',lat:37.54,lng:126.99,memo:'데모 매물 · 1000세대 대단지',checks:{k1:true,k2:true,k3:true,k4:true},aiScore:85,aiComment:'데모용 AI 평가입니다'},
   ],
   regNews:[{id:'grn1',title:'(예시) 샘플 뉴스 제목',summary:'이것은 데모용 뉴스 요약입니다. 실제 뉴스가 아닙니다.',date:'2026-01',source:''}],
+  savedRoutes:[{id:'groute1',name:'(예시) 주말 임장 루트',propertyIds:['gp1','gp2','gp3'],createdAt:Date.now()}],
   scraps:[],
   prep:[
     {id:'gpr1',tx:'(예시) 대출 자격 확인',sub:'데모용 항목',done:true},
@@ -236,6 +238,7 @@ function applyGuards(raw){
     };
   });
   state.regNews=state.regNews||[];
+  state.savedRoutes=state.savedRoutes||[];
   state.scraps=(state.scraps||[]).map(s=>{
     const p=s.parsed||{};
     return {

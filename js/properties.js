@@ -143,10 +143,12 @@ function renderRouteBar(){
       <div class="rb-route-total">총 도보 약 ${totalMin}분 · ${(totalM/1000).toFixed(1)}km · ${routeStops.length}곳 (직선거리 추정, 드래그로 순서 변경 가능)</div>
     </div>
     <div class="rb-actions">
+      <button class="btn-ghost" id="routeSaveBtn">💾 저장</button>
       <button class="btn-ghost" id="routeRefreshBtn">🔄 새로고침</button>
       <button class="btn-ghost" id="routeReselectBtn">다시 선택</button>
       <button class="btn-ghost" id="routeCloseBtn">닫기</button>
     </div>`;
+  document.getElementById('routeSaveBtn').onclick=saveCurrentRoute;
   document.getElementById('routeRefreshBtn').onclick=refreshRoute;
   document.getElementById('routeReselectBtn').onclick=()=>enterRouteSelectMode(true);
   document.getElementById('routeCloseBtn').onclick=exitRouteMode;
@@ -188,13 +190,16 @@ function exitRouteMode(){
   routeMode='off'; routeSelected=new Set(); routeStops=[];
   clearRouteLayer(); renderList(); renderRouteBar(); refreshOverview();
 }
+function expandMapCard(){
+  document.getElementById('mapcard').classList.remove('collapsed');
+  document.getElementById('mapToggle').textContent='접기';
+}
 function makeRoute(){
   if(routeSelected.size<2) return;
   routeStops=computeRoute([...routeSelected]);
   if(routeStops.length<2){ alert('좌표가 저장된 매물이 2곳 이상 필요해요.'); return; }
   routeMode='result';
-  document.getElementById('mapcard').classList.remove('collapsed');
-  document.getElementById('mapToggle').textContent='접기';
+  expandMapCard();
   renderList(); renderRouteBar(); waitLeaflet(()=>drawRoute());
 }
 function refreshRoute(){
@@ -208,8 +213,59 @@ function refreshRoute(){
   routeStops=legsForOrder(pts);
   renderRouteBar(); waitLeaflet(()=>drawRoute());
 }
-document.getElementById('propRouteBtn').onclick=()=>{
-  routeMode==='off' ? enterRouteSelectMode(false) : exitRouteMode();
+function saveCurrentRoute(){
+  const name=(prompt('루트 이름을 입력하세요 (예: 강남권 · 7월말)')||'').trim();
+  if(!name) return;
+  state.savedRoutes=state.savedRoutes||[];
+  state.savedRoutes.push({id:'route'+Date.now(),name,propertyIds:routeStops.map(s=>s.property.id),createdAt:Date.now()});
+  save();
+  alert(`"${name}" 루트를 저장했어요.`);
+}
+function loadSavedRoute(id){
+  const r=(state.savedRoutes||[]).find(x=>x.id===id);
+  if(!r) return;
+  const pts=r.propertyIds.map(pid=>state.properties.find(p=>p.id===pid)).filter(p=>p&&p.lat&&p.lng);
+  if(pts.length<2){ alert('저장된 매물이 삭제되었거나 좌표가 없어 루트를 불러올 수 없어요.'); return; }
+  routeSelected=new Set(pts.map(p=>p.id));
+  routeStops=legsForOrder(pts);
+  routeMode='result';
+  expandMapCard();
+  renderList(); renderRouteBar(); waitLeaflet(()=>drawRoute());
+}
+let _routeMenu=null;
+function closeRouteMenu(){ if(_routeMenu){ _routeMenu.remove(); _routeMenu=null; } }
+function showRouteMenu(btn){
+  if(_routeMenu){ closeRouteMenu(); return; }
+  const saved=state.savedRoutes||[];
+  const menu=document.createElement('div');
+  menu.className='status-picker route-menu';
+  menu.innerHTML=`<button class="sp-opt" data-newroute="1">+ 새 루트 만들기</button>`
+    +(saved.length?`<div class="rm-sep"></div>`:'')
+    +saved.map(r=>`<div class="rm-item">
+        <button class="sp-opt" data-loadroute="${r.id}">${esc(r.name)} <small>(${r.propertyIds.length}곳)</small></button>
+        <button class="rm-del" data-delroute="${r.id}" title="삭제">✕</button>
+      </div>`).join('');
+  document.body.appendChild(menu);
+  _routeMenu=menu;
+  const rect=btn.getBoundingClientRect();
+  const top=rect.bottom+window.scrollY+4;
+  const left=Math.min(rect.left+window.scrollX, window.innerWidth-240);
+  menu.style.top=top+'px'; menu.style.left=Math.max(8,left)+'px';
+  menu.querySelector('[data-newroute]').onclick=e=>{ e.stopPropagation(); closeRouteMenu(); enterRouteSelectMode(false); };
+  menu.querySelectorAll('[data-loadroute]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); closeRouteMenu(); loadSavedRoute(b.dataset.loadroute); });
+  menu.querySelectorAll('[data-delroute]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    if(!confirm('이 저장된 루트를 삭제할까요?')) return;
+    state.savedRoutes=state.savedRoutes.filter(r=>r.id!==b.dataset.delroute);
+    save(); closeRouteMenu(); showRouteMenu(btn);
+  });
+  const close=ev=>{ if(!menu.contains(ev.target)){ closeRouteMenu(); document.removeEventListener('click',close,true); } };
+  setTimeout(()=>document.addEventListener('click',close,true),0);
+}
+document.getElementById('propRouteBtn').onclick=(e)=>{
+  if(routeMode!=='off'){ exitRouteMode(); return; }
+  if(!(state.savedRoutes&&state.savedRoutes.length)){ enterRouteSelectMode(false); return; }
+  showRouteMenu(e.currentTarget);
 };
 document.getElementById('list').addEventListener('change', e=>{
   const rc=e.target.closest('[data-routecheck]'); if(!rc) return;
