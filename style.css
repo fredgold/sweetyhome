@@ -53,6 +53,7 @@
   .brand h1{font-size:23px;font-weight:800;letter-spacing:-.03em;}
   .brand .sub{display:block;font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-top:1px;}
   .topacts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+  .header-more-btn{display:none;}
   .btn-mini{font-size:12px;font-weight:700;color:var(--ink-soft);padding:7px 11px;border-radius:var(--radius-md);border:1px solid var(--hairline);background:var(--surface);transition:.12s;}
   .btn-mini:hover{background:var(--hairline-soft);color:var(--ink);}
 
@@ -208,6 +209,8 @@
   .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap;}
   .panel-head h2{font-size:15px;font-weight:800;letter-spacing:-.02em;}
   .ph-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .ph-export-row{display:flex;gap:6px;}
+  .ph-more-btn{display:none;}
   .stats{font-size:12px;color:var(--ink-soft);font-weight:600;}
   .stats b{color:var(--line9-deep);}
   .addbtn{background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:8px 14px;border-radius:var(--radius-md);transition:transform .12s,opacity .12s;}
@@ -806,6 +809,19 @@
   .route-bar{flex-direction:column;align-items:stretch;}
   .ph-actions{gap:4px;}
   .ph-actions .prop-filter-sel,.ph-actions .addbtn{font-size:11px;padding:5px 8px;}
+  /* 매물탭 툴바 더보기 접기 — 정렬/매물추가만 상시 노출, 나머지는 ⋯ 메뉴로 */
+  .ph-more-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px 12px;}
+  .ph-actions>#phExportRow,.ph-actions>#propBulkBtn,.ph-actions>#propRouteBtn{display:none;}
+  .ph-more-menu{min-width:210px;}
+  .ph-more-menu #phExportRow{width:100%;}
+  .ph-more-menu #propExportFmt{flex:1;}
+  .ph-more-menu #propBulkBtn,.ph-more-menu #propRouteBtn{width:100%;justify-content:center;}
+  /* 헤더 더보기 접기 — 프로필/잠금만 상시 노출, 나머지는 ⋯ 메뉴로 */
+  .header-more-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px 12px;}
+  .topacts>.sync-wrap,.topacts>#exportBtn,.topacts>#importBtn{display:none;}
+  .header-more-menu{min-width:180px;}
+  .header-more-menu .sync-wrap,.header-more-menu #exportBtn,.header-more-menu #importBtn{width:100%;justify-content:center;}
+  .header-more-menu .sync-chip{width:100%;justify-content:center;}
   .c-actions button,.c-actions a{font-size:10px;padding:5px 7px;}
   .chip{font-size:10.5px;padding:3px 6px;}
   .card{padding:10px 11px;}
@@ -814,9 +830,11 @@
   /* 자산 테이블: 소규모 화면에서 1컬럼 */
   .regrow{grid-template-columns:1fr;gap:6px;}
   .regrow .del{position:absolute;top:8px;right:8px;}
-  /* sc-md-toolbar 좁은 화면 */
-  .sc-md-toolbar{gap:2px;padding:4px 5px;}
-  .sc-md-toolbar button{padding:7px 10px;min-height:38px;}
+  /* sc-md-toolbar 좁은 화면 — 줄바꿈 대신 가로 스크롤 스트립 */
+  .sc-md-toolbar{gap:2px;padding:4px 5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .sc-md-toolbar::-webkit-scrollbar{display:none;}
+  .sc-md-toolbar button{padding:7px 10px;min-height:38px;flex-shrink:0;}
+  .sc-md-toolbar .tb-sep{flex-shrink:0;}
   /* tabs: 더 작은 탭 */
   .tab{font-size:11px;padding:5px 8px;}
   /* addact 줄바꿈 */

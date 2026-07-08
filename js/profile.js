@@ -92,3 +92,30 @@ document.getElementById('doImport').onclick=()=>{
   }
   setTimeout(()=>closeModal('importModal'),1300);
 };
+
+/* 헤더 "⋯ 더보기" — 480px 이하에서 숨겨진 동기화칩·내보내기·가져오기를
+   기존 .status-picker 플로팅 메뉴로 옮겼다가 닫으면 원래 자리로 되돌림 */
+let _hMoreMenu=null, _hMoreHome=null, _hMoreHomeNext=null;
+function closeHeaderMoreMenu(){
+  if(!_hMoreMenu) return;
+  [..._hMoreMenu.children].forEach(el=>_hMoreHome.insertBefore(el,_hMoreHomeNext));
+  _hMoreMenu.remove(); _hMoreMenu=null;
+}
+function showHeaderMoreMenu(btn){
+  if(_hMoreMenu){ closeHeaderMoreMenu(); return; }
+  const ids=['.sync-wrap','#exportBtn','#importBtn'];
+  const els=ids.map(sel=>document.querySelector(sel));
+  _hMoreHome=els[0].parentElement;
+  _hMoreHomeNext=els[0].nextSibling;
+  const menu=document.createElement('div');
+  menu.className='status-picker header-more-menu';
+  els.forEach(el=>menu.appendChild(el));
+  document.body.appendChild(menu);
+  _hMoreMenu=menu;
+  const rect=btn.getBoundingClientRect();
+  menu.style.top=(rect.bottom+window.scrollY+4)+'px';
+  menu.style.left=Math.max(8,Math.min(rect.left+window.scrollX, window.innerWidth-200))+'px';
+  const close=ev=>{ if(!menu.contains(ev.target)&&ev.target!==btn){ closeHeaderMoreMenu(); document.removeEventListener('click',close,true); } };
+  setTimeout(()=>document.addEventListener('click',close,true),0);
+}
+document.getElementById('headerMoreBtn').onclick=(e)=>showHeaderMoreMenu(e.currentTarget);

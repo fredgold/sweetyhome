@@ -287,6 +287,34 @@ document.getElementById('list').addEventListener('change', e=>{
   renderRouteBar();
 });
 
+/* 매물탭 툴바 "⋯ 더보기" — 480px 이하에서 숨겨진 실제 컨트롤을 기존
+   .status-picker 플로팅 메뉴 안으로 옮겼다가 닫으면 원래 자리로 되돌림
+   (컨트롤을 복제하지 않고 그대로 이동해 이벤트 핸들러도 그대로 유지) */
+let _moreMenu=null, _moreHome=null, _moreHomeNext=null;
+function closeMoreMenu(){
+  if(!_moreMenu) return;
+  [..._moreMenu.children].forEach(el=>_moreHome.insertBefore(el,_moreHomeNext));
+  _moreMenu.remove(); _moreMenu=null;
+}
+function showMoreMenu(btn){
+  if(_moreMenu){ closeMoreMenu(); return; }
+  const ids=['phExportRow','propBulkBtn','propRouteBtn'];
+  const els=ids.map(id=>document.getElementById(id));
+  _moreHome=els[0].parentElement;
+  _moreHomeNext=els[0].nextSibling;
+  const menu=document.createElement('div');
+  menu.className='status-picker ph-more-menu';
+  els.forEach(el=>menu.appendChild(el));
+  document.body.appendChild(menu);
+  _moreMenu=menu;
+  const rect=btn.getBoundingClientRect();
+  menu.style.top=(rect.bottom+window.scrollY+4)+'px';
+  menu.style.left=Math.max(8,Math.min(rect.left+window.scrollX, window.innerWidth-230))+'px';
+  const close=ev=>{ if(!menu.contains(ev.target)&&ev.target!==btn){ closeMoreMenu(); document.removeEventListener('click',close,true); } };
+  setTimeout(()=>document.addEventListener('click',close,true),0);
+}
+document.getElementById('propMoreBtn').onclick=(e)=>showMoreMenu(e.currentTarget);
+
 async function geocode(q){
   try{
     const res=await fetch('/api/geocode?'+new URLSearchParams({q}),{headers:authHeaders()});
