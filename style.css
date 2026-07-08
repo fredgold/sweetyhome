@@ -36,6 +36,15 @@
   input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);}
   .tnum{font-variant-numeric:tabular-nums;}
 
+  /* 상호작용 상태 — 클래스별 자체 스타일이 없는 버튼/입력에 적용되는 기본값
+     (기존 클래스 지정 스타일은 특이도가 더 높아 그대로 우선 적용됨) */
+  button:hover{background:#F3F2EC;border-color:#C9CBC3}
+  button:active{transform:translateY(1px)}
+  button:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+  button:disabled{background:#F7F6F1;color:var(--ink-faint);
+    border-color:var(--hairline-soft);cursor:not-allowed}
+  input:focus-visible, select:focus-visible{outline:none;box-shadow:var(--focus-ring);border-color:var(--line9)}
+
   /* ---- app header ---- */
   header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
   .brand{display:flex;align-items:center;gap:11px;}
