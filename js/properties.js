@@ -431,7 +431,6 @@ let propSearchQuery='';
 function renderList(){
   let items=[...state.properties];
   if(activeTab!=='전체') items=items.filter(p=>p.status===activeTab);
-  if(propBucketFilter) items=items.filter(p=>p.bucket===propBucketFilter);
   if(propGradeFilter) items=items.filter(p=>p.householdGrade===propGradeFilter);
   if(propLineFilter) items=items.filter(p=>p.line===propLineFilter);
   const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
@@ -454,7 +453,6 @@ function renderList(){
       <div class="c-top-left">
         ${routeCheckHTML}
         <div>
-          ${p.bucket?`<div class="c-bucket">${esc(p.bucket)}</div>`:''}
           <div class="c-name">${esc(p.name||'(이름 없음)')}</div>
           ${(p.station||p.loc)?`<div class="c-loc">🚇 ${esc(p.station||p.loc)}${p.line?` <span class="c-line">${esc(p.line)}</span>`:''}</div>`:''}
         </div>
@@ -807,7 +805,7 @@ document.getElementById('propSortSel').onchange=function(){sortMode=this.value;r
 function exportProps(){
   const fmt=document.getElementById('propExportFmt').value;
   const sep=fmt==='csv'?',':'\t';
-  const COLS=['버킷','단지명','위치','역','호선','전세호가(억)','전세호가숫자','매매호가','전용면적','세대수','세대수등급','준공년도','전세가율(%)','강남출퇴근','신사출퇴근','상태','URL','메모','메모2'];
+  const COLS=['단지명','위치','역','호선','전세호가(억)','전세호가숫자','매매호가','전용면적','세대수','세대수등급','준공년도','전세가율(%)','강남출퇴근','신사출퇴근','상태','URL','메모','메모2'];
   function cell(v){
     const s=String(v==null?'':v);
     const danger=fmt==='csv'?/[,\n"]/.test(s):(/[\t\n"]/.test(s));
@@ -815,7 +813,7 @@ function exportProps(){
     return s;
   }
   const rows=state.properties.map(p=>[
-    p.bucket||'',p.name||'',p.loc||'',p.station||'',p.line||'',
+    p.name||'',p.loc||'',p.station||'',p.line||'',
     p.jeonseReal!=null?p.jeonseReal:'',p.depositNum!=null?p.depositNum:'',
     p.saleReal!=null?p.saleReal:'',
     p.area!=null?p.area:'',p.households!=null?p.households:'',p.householdGrade||'',p.yearBuilt||'',
@@ -855,7 +853,7 @@ function readBackup(code){
 
 
 /* ============ v4: 시트 승격 벌크 임포트 ============ */
-let propBucketFilter='',propGradeFilter='',propLineFilter='';
+let propGradeFilter='',propLineFilter='';
 
 function safeUrl(u){
   try{const url=new URL(u);if(!['http:','https:'].includes(url.protocol))return'';return url.href;}catch(e){return'';}
@@ -877,24 +875,24 @@ function parseTSV(text){
   const rows=text.trim().split(/\r?\n/).map(r=>r.split('\t'));
   let data=rows;
   const firstCell=(rows[0]&&rows[0][0]||'').trim();
-  if(firstCell==='버킷'||firstCell==='단지명') data=rows.slice(1);
+  if(firstCell==='단지명') data=rows.slice(1);
   return data.filter(r=>r.some(c=>c.trim())).map(cols=>{
     const c=i=>(cols[i]||'').trim();
-    const deposit=c(8);
+    const deposit=c(7);
     const depositNum=parseEok(deposit);
-    const jeonseReal=parseEok(c(9));
-    const saleReal=parseEok(c(10));
+    const jeonseReal=parseEok(c(8));
+    const saleReal=parseEok(c(9));
     const jeonseRatio=saleReal?Math.round(((jeonseReal!=null?jeonseReal:depositNum)??0)/saleReal*100)||null:null;
-    const hh=parseInt(c(6))||null;
-    const area=parseFloat(c(7))||null;
+    const hh=parseInt(c(5))||null;
+    const area=parseFloat(c(6))||null;
     return {
-      bucket:c(0),name:c(1),loc:c(2),station:c(3),line:c(4),
-      yearBuilt:parseInt(c(5))||null,
+      name:c(0),loc:c(1),station:c(2),line:c(3),
+      yearBuilt:parseInt(c(4))||null,
       households:hh,householdGrade:hh?calcHouseholdGrade(hh):'',
       area,deposit,depositNum,jeonseReal,saleReal,jeonseRatio,
-      commuteGangnam:c(11)||null,commuteSinsa:c(12)||null,
-      status:mapImportStatus(c(13)),
-      url:safeUrl(c(14)),memo:c(15),
+      commuteGangnam:c(10)||null,commuteSinsa:c(11)||null,
+      status:mapImportStatus(c(12)),
+      url:safeUrl(c(13)),memo:c(14),
     };
   });
 }
@@ -973,7 +971,7 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
     newIds.push(id);
     state.properties.push({
       id,created:Date.now(),
-      name:row.name,loc:row.loc,station:row.station,line:row.line,bucket:row.bucket,
+      name:row.name,loc:row.loc,station:row.station,line:row.line,
       yearBuilt:row.yearBuilt,households:row.households,householdGrade:row.householdGrade,
       area:row.area,deposit:row.deposit,depositNum:row.depositNum,
       jeonseReal:row.jeonseReal,saleReal:row.saleReal,jeonseRatio:row.jeonseRatio,
@@ -1020,10 +1018,8 @@ document.getElementById('propBulkBtn').onclick=()=>{
 };
 
 (()=>{
-  const bf=document.getElementById('propBucketFilter');
   const gf=document.getElementById('propGradeFilter');
   const lf=document.getElementById('propLineFilter');
-  if(bf) bf.onchange=()=>{propBucketFilter=bf.value;renderList();};
   if(gf) gf.onchange=()=>{propGradeFilter=gf.value;renderList();};
   if(lf) lf.onchange=()=>{propLineFilter=lf.value;renderList();};
 })();

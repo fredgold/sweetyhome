@@ -761,7 +761,6 @@
 .dup-badge.dup-신규{background:var(--s-final);color:#fff;}
 .prop-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--ink);color:var(--surface);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:9999;}
 .prop-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-.c-bucket{font-size:10px;font-weight:800;color:var(--money);letter-spacing:.5px;margin-bottom:2px;}
 .chip.chip-warn{background:#fff3cd;color:#856404;}
 .pam-header{font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer;padding:6px 2px;display:flex;align-items:center;gap:4px;margin-bottom:2px;}
 .pam-arrow{font-size:10px;}

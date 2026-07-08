@@ -223,7 +223,7 @@ function applyGuards(raw){
     const rawSt=p.status==='후보확정'?'후보':(p.status||'관심');
     const st=VALID_ST.includes(rawSt)?rawSt:'관심';
     return {
-      bucket:'',station:'',line:'',yearBuilt:null,
+      station:'',line:'',yearBuilt:null,
       householdGrade:'',jeonseReal:null,saleReal:null,jeonseRatio:null,
       commuteGangnam:null,commuteSinsa:null,url:'',
       depositNum:null,geocodePending:false,
