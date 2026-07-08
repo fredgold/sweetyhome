@@ -19,7 +19,7 @@ function checklistHTML(p){
   const pct=Math.round(done/CHECKLIST.length*100);
   return `<div class="ck" data-pid="${p.id}">
     <button class="ck-toggle" data-cktoggle="${p.id}">
-      <span>✔ 실사 체크</span>
+      <span>✓ 실사 체크</span>
       <span class="bar"><i style="width:${pct}%"></i></span>
       <span class="cnt">${done}/${CHECKLIST.length}</span>
       <span class="arw">▾</span>
@@ -28,7 +28,7 @@ function checklistHTML(p){
       ${CHECKLIST.map(c=>`<div class="ck-item" data-ck="${p.id}|${c.id}" data-on="${ch[c.id]?1:0}">
         <span class="cb">${CHECK}</span>
         <span class="ct">${c.t}<small>${c.s}</small></span>
-        <a class="ck-verify" href="${c.vu(((p.name||'')+' '+(p.loc||'')).trim())}" target="_blank">🔎 ${c.vl}</a>
+        <a class="ck-verify" href="${c.vu(((p.name||'')+' '+(p.loc||'')).trim())}" target="_blank">${ic('search')} ${c.vl}</a>
       </div>`).join('')}
     </div></div>`;
 }
@@ -158,7 +158,7 @@ function renderRouteBar(){
     </div>
     <div class="rb-actions">
       <button class="btn-ghost" id="routeSaveBtn">💾 저장</button>
-      <button class="btn-ghost" id="routeRefreshBtn">🔄 새로고침</button>
+      <button class="btn-ghost" id="routeRefreshBtn">↻ 새로고침</button>
       <button class="btn-ghost" id="routeReselectBtn">다시 선택</button>
       <button class="btn-ghost" id="routeCloseBtn">닫기</button>
     </div>`;
