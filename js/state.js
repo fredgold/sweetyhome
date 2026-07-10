@@ -32,6 +32,8 @@
  */
 
 /* ===== 동기화 상태 칩 ===== */
+/* setSyncState는 UI 갱신이지만 state.js 자체의 save/sync 흐름에서만 호출되므로
+   (다른 파일에서 호출 없음) 정의부·호출부를 붙여두기 위해 의도적으로 여기 둠 */
 const SYNC_LABELS={ok:'동기화됨',local:'⚠ 로컬만',offline:'✕ 오프라인'};
 const SYNC_MSGS={
   ok:'클라우드에 동기화되었습니다.',

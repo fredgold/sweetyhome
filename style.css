@@ -28,6 +28,10 @@
     /* 포커스 링 — 신규 */
     --focus-ring:0 0 0 3px rgba(199,161,74,.38);
 
+    /* 가로 스크롤 우측 페이드 마스크 — #000→transparent는 브랜드 컬러가 아니라
+       mask 전용 불투명도 값(어디든 검정 고정), 토큰화해 4곳 중복 제거 */
+    --fade-mask-r:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%);
+
     font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -74,7 +78,7 @@
   /* ================= DASHBOARD ================= */
   .hero{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;padding:18px 18px 20px;margin-bottom:16px;box-shadow:var(--shadow);}
   .hero .hh{font-size:11.5px;font-weight:800;color:var(--line9-deep);letter-spacing:.07em;margin-bottom:14px;}
-  .journey{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;overflow-x:auto;mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%);-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%);}
+  .journey{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;overflow-x:auto;mask-image:var(--fade-mask-r);-webkit-mask-image:var(--fade-mask-r);}
   .journey::before{content:"";position:absolute;left:6%;right:6%;top:13px;height:3px;background:linear-gradient(90deg,var(--line9),var(--line9-wash));border-radius:3px;z-index:0;}
   .jstop{position:relative;z-index:1;text-align:center;}
   .jstop .dot{width:28px;height:28px;border-radius:50%;background:var(--surface);border:3px solid var(--line9);margin:0 auto 9px;display:flex;align-items:center;justify-content:center;font-size:13px;}
@@ -454,7 +458,7 @@
   .sc-sort-select{font-size:12px;font-weight:700;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px;color:var(--ink-soft);background:var(--surface);}
   .sc-filter-bar{margin-bottom:14px;}
   .sc-filter-label{font-size:10.5px;font-weight:700;color:var(--ink-faint);margin-bottom:5px;margin-top:9px;}
-  .sc-filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%);-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%);}
+  .sc-filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;mask-image:var(--fade-mask-r);-webkit-mask-image:var(--fade-mask-r);}
   .sc-filter-row::-webkit-scrollbar{display:none;}
   .sc-filter-chip{font-size:var(--fs-micro);font-weight:700;padding:5px 12px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);color:var(--ink-soft);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:.1s;user-select:none;}
   .sc-filter-chip.on{border-color:var(--money);background:var(--money-wash);color:var(--money-deep);}
@@ -624,7 +628,7 @@
     .brand .mark{width:34px;height:34px;font-size:15px;border-radius:9px;}
     .topacts{gap:4px;}
     .btn-mini{font-size:11px;padding:6px 9px;}
-    .apptabs{gap:4px;padding-bottom:10px;margin-bottom:14px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%);-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%);}
+    .apptabs{gap:4px;padding-bottom:10px;margin-bottom:14px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;mask-image:var(--fade-mask-r);-webkit-mask-image:var(--fade-mask-r);}
     .apptabs::-webkit-scrollbar{display:none;}
     .atab{font-size:12.5px;padding:8px 11px;white-space:nowrap;flex-shrink:0;border-radius:9px;}
     .hero{padding:14px 14px 16px;}
@@ -718,7 +722,7 @@
     /* 모달 내 row도 1컬럼 접힘 */
     .modal .box .row{grid-template-columns:1fr;}
     /* 탭 가로 스크롤 (8개 상태탭 줄바꿈 방지) */
-    .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none;mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%);-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent 100%);}
+    .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none;mask-image:var(--fade-mask-r);-webkit-mask-image:var(--fade-mask-r);}
     .tabs::-webkit-scrollbar{display:none;}
     .tab{flex-shrink:0;}
     /* prop-search-bar: 검색창 전체폭, 필터 wrap */
