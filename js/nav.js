@@ -28,8 +28,8 @@ function renderGates(){
   const p=state.profile;
   document.getElementById('gateList').innerHTML=
     `<div class="gate">${ic('pin')}<div><div class="gt">${esc(p.city)}시 內 <em>필수</em></div><div class="gd">이자지원 자격</div></div></div>`+
-    `<div class="gate"><span class="ic">📐</span><div><div class="gt">전용 ${p.maxArea}㎡ 이하 <em>필수</em></div><div class="gd">청약 자격 보존</div></div></div>`+
-    `<div class="gate"><span class="ic">💰</span><div><div class="gt">전세 ${esc(p.depositRange)}억 <em>필수</em></div><div class="gd">보증금 예산</div></div></div>`+
+    `<div class="gate">${ic('area')}<div><div class="gt">전용 ${p.maxArea}㎡ 이하 <em>필수</em></div><div class="gd">청약 자격 보존</div></div></div>`+
+    `<div class="gate">${ic('wallet')}<div><div class="gt">전세 ${esc(p.depositRange)}억 <em>필수</em></div><div class="gd">보증금 예산</div></div></div>`+
     `<div class="gate">${ic('transit')}<div><div class="gt">교통·단지 조건 <em class="pref">선호</em></div><div class="gd">${esc(p.transport)} 우선 + 좋은 단지면 OK</div></div></div>`;
 }
 function renderJourney(){
@@ -83,7 +83,7 @@ function renderTop3(){
       <span class="atx">${esc(a.text)}</span>
       <button class="star ${a.priority<=1?'on':''}" data-act-top="${a.id}" title="맨 위로">${ic('star')}</button>
       <button class="xx" data-act-del="${a.id}">✕</button>
-    </div>`).join('') || `<div class="empty"><div class="big">🎉 우선순위 액션 완료!</div>새 할 일을 추가하거나 다른 탭을 채워보세요.</div>`;
+    </div>`).join('') || `<div class="empty"><div class="big">우선순위 액션 완료!</div>새 할 일을 추가하거나 다른 탭을 채워보세요.</div>`;
   const doneCnt=state.actions.filter(a=>a.done).length;
   const moreLive=Math.max(0,live.length-3);
   document.getElementById('d_actMore').textContent=

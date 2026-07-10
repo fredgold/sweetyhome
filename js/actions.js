@@ -112,7 +112,7 @@ document.getElementById('act_input').addEventListener('keydown',e=>{if(e.key==='
 document.getElementById('act_suggestBtn').onclick=async()=>{
   const btn=document.getElementById('act_suggestBtn');
   const box=document.getElementById('act_suggestions');
-  btn.disabled=true; const old=btn.textContent; btn.textContent='생각 중…';
+  btn.disabled=true; const old=btn.innerHTML; btn.textContent='생각 중…';
   box.innerHTML='';
   try{
     const out=await claudeAPI([{role:'user',content:
@@ -139,5 +139,5 @@ document.getElementById('act_suggestBtn').onclick=async()=>{
       btn.textContent='✓ 제안 완료';
     } else { btn.textContent='제안을 파싱하지 못했어요'; }
   }catch(e){ btn.textContent=e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 응답 실패'; }
-  setTimeout(()=>{btn.disabled=false;btn.textContent=old;},2000);
+  setTimeout(()=>{btn.disabled=false;btn.innerHTML=old;},2000);
 };

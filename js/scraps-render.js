@@ -50,9 +50,9 @@ function renderScraps(){
     let fitCls='', fitLbl='';
     if(s.fit==='high'||s.fit==='가능'){fitCls='high';fitLbl='✓ 적합';}
     else if(s.fit==='low'||s.fit==='불가'){fitCls='low';fitLbl='✕ 부적합';}
-    else if(s.fit){fitCls='mid';fitLbl='⚠️ '+esc(s.fit);}
+    else if(s.fit){fitCls='mid';fitLbl='⚠ '+esc(s.fit);}
     const isPropLess=SC_PROPLESS.has(s.type);
-    const metaParts=[s.location&&`${ic('pin','ic-muted')} ${esc(s.location)}`,!isPropLess&&s.price&&`${ic('price','ic-muted')} ${esc(s.price)}`,!isPropLess&&s.area&&`📐 ${esc(s.area)}`,!isPropLess&&s.schedule&&`📅 ${esc(s.schedule)}`].filter(Boolean);
+    const metaParts=[s.location&&`${ic('pin','ic-muted')} ${esc(s.location)}`,!isPropLess&&s.price&&`${ic('price','ic-muted')} ${esc(s.price)}`,!isPropLess&&s.area&&`${ic('area','ic-muted')} ${esc(s.area)}`,!isPropLess&&s.schedule&&`${ic('calendar','ic-muted')} ${esc(s.schedule)}`].filter(Boolean);
     const rawText=s.raw||'';
     const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
     return `<div class="sc-card" data-scid="${s.id}">

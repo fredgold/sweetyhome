@@ -26,6 +26,10 @@ const ICSVG={
   tip:'<path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.15 1 1.9v.2h5v-.2c0-.75.4-1.45 1-1.9A6 6 0 0 0 12 3z"/>',
   quote:'<path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/>',
   import:'<path d="M12 4v11"/><path d="M8.5 11.5 12 15l3.5-3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/>',
+  /* 3라운드 — 정보 영역 이모지 마저 정리 */
+  sparkle:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
+  area:'<rect x="3" y="9" width="18" height="6" rx="1"/><path d="M7 9v2"/><path d="M11 9v2"/><path d="M15 9v2"/><path d="M19 9v2"/>',
 };
 function ic(name,cls){ return `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" aria-hidden="true">${ICSVG[name]}</svg>`; }
 function checklistHTML(p){
@@ -439,14 +443,14 @@ function applyFill(j){
 document.getElementById('fillBtn').onclick=async()=>{
   const txt=document.getElementById('pasteBox').value.trim();
   if(!txt){document.getElementById('pasteBox').focus();return;}
-  const btn=document.getElementById('fillBtn'); const old=btn.textContent;
+  const btn=document.getElementById('fillBtn'); const old=btn.innerHTML;
   const j=parseNaver(txt);
   const got=(j.name||j.deposit!=null||j.area!=null);
   if(got){
     applyFill(j);
     const auto=Object.keys(j._auto||{}).length;
     btn.textContent='✓ 채웠어요'+(auto?` (체크 ${auto}개 자동확인)`:'');
-    setTimeout(()=>{btn.textContent=old;},2000);
+    setTimeout(()=>{btn.innerHTML=old;},2000);
     return;
   }
   btn.disabled=true; btn.textContent='읽는 중…';
@@ -459,7 +463,7 @@ document.getElementById('fillBtn').onclick=async()=>{
     if(aj){ applyFill(aj); btn.textContent='✓ 채웠어요'; }
     else { btn.textContent='못 읽었어요 — 직접 입력'; }
   }catch(e){ btn.textContent='못 읽었어요 — 직접 입력'; }
-  setTimeout(()=>{btn.disabled=false;btn.textContent=old;},2000);
+  setTimeout(()=>{btn.disabled=false;btn.innerHTML=old;},2000);
 };
 
 document.getElementById('findBtn').onclick=async()=>{

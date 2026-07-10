@@ -66,17 +66,17 @@
 
     <div class="dcards">
       <div class="dcard">
-        <div class="dt">💰 예상 실탄 <a data-goto="assets">자산 관리 →</a></div>
+        <div class="dt"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10.5h18"/><circle cx="16.5" cy="14.5" r="1"/></svg> 예상 실탄 <a data-goto="assets">자산 관리 →</a></div>
         <div id="d_assetSummary"></div>
       </div>
       <div class="dcard">
-        <div class="dt">🏘️ 매물 현황 <a data-goto="props">매물 보기 →</a></div>
+        <div class="dt"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg> 매물 현황 <a data-goto="props">매물 보기 →</a></div>
         <div id="d_propSummary"></div>
       </div>
     </div>
 
     <div class="top3">
-      <div class="dt">✅ 지금 우선순위 액션 Top 3</div>
+      <div class="dt"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 12l2.5 2.5L16 9"/></svg> 지금 우선순위 액션 Top 3</div>
       <div class="ddesc">제일 먼저 할 일을 직접 적어두세요. 나중에 AI 상담이 여기에 새 액션을 제안해줘요.</div>
       <div id="d_top3"></div>
       <div class="addact">
@@ -87,7 +87,7 @@
     </div>
 
     <div class="regline" id="d_regline">
-      <span class="ic">📋</span>
+      <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h4l2 3h4l2-3h4"/><path d="M4 12 5.5 5.2a1 1 0 0 1 1-.8h11a1 1 0 0 1 1 .8L20 12"/><path d="M4 12v5.5A1.5 1.5 0 0 0 5.5 19h13a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>
       <span>정책·규제 정보는 <b>수집함</b>에서 직접 수집·관리하세요.</span>
       <em data-goto="scraps" style="cursor:pointer">바로가기</em>
     </div>
@@ -97,8 +97,8 @@
   <section class="panel" id="panel-assets">
     <div class="asec">
       <div class="ah">
-        <h2>💰 우리 자산</h2>
-        <button class="btn-ai" id="a_aiBtn">✨ AI / 시트 붙여넣기</button>
+        <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10.5h18"/><circle cx="16.5" cy="14.5" r="1"/></svg> 우리 자산</h2>
+        <button class="btn-ai" id="a_aiBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg> AI / 시트 붙여넣기</button>
       </div>
       <div class="adesc">스프레드시트처럼 <b>소유자·항목·금액·형태·유동성·동원 가능액</b>으로 관리해요. 단위는 <b>원</b>. 시트에서 행을 복사해 붙여넣으면 한 번에 들어옵니다.</div>
 
@@ -169,7 +169,7 @@
         </div>
       </div>
 
-      <div class="privacy">🔒 입력값은 외부 서버로 전송되지 않고 이 브라우저(localStorage)에만 보관돼요. 더 안심하고 싶으면 정확한 금액 대신 <b>대략값</b>으로 적고, 실제 숫자는 따로 메모해두세요.</div>
+      <div class="privacy"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg> 입력값은 외부 서버로 전송되지 않고 이 브라우저(localStorage)에만 보관돼요. 더 안심하고 싶으면 정확한 금액 대신 <b>대략값</b>으로 적고, 실제 숫자는 따로 메모해두세요.</div>
     </div>
   </section>
 
@@ -246,10 +246,10 @@
         <div class="form" id="form">
           <input type="hidden" id="editId">
           <div class="paste">
-            <label>⚡ 붙여넣기만 하면 자동으로 채워져요</label>
+            <label>붙여넣기만 하면 자동으로 채워져요</label>
             <div class="steps3">① 네이버 부동산에서 매물 열기 → ② 설명 글 전체 복사 → ③ 아래 칸에 붙여넣고 버튼</div>
             <textarea id="pasteBox" placeholder="여기에 네이버 매물 글을 그대로 붙여넣으세요 (Ctrl+V / Cmd+V).&#10;단지명·보증금·면적·세대수·난방·주차까지 알아서 읽어드려요."></textarea>
-            <div class="pa"><button class="btn-fill" id="fillBtn">✨ 정보 자동 채우기</button></div>
+            <div class="pa"><button class="btn-fill" id="fillBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg> 정보 자동 채우기</button></div>
           </div>
           <div class="row">
             <div class="field"><label>단지명 / 주소</label><input id="f_name" placeholder="예: 상도두산위브트레지움"></div>
@@ -342,8 +342,8 @@
   <section class="panel" id="panel-actions">
     <div class="asec">
       <div class="ah">
-        <h2>✅ 액션</h2>
-        <button class="btn-ai" id="act_suggestBtn" disabled title="AI 크레딧 충전 시 활성화">✨ 새 액션 제안</button>
+        <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 12l2.5 2.5L16 9"/></svg> 액션</h2>
+        <button class="btn-ai" id="act_suggestBtn" disabled title="AI 크레딧 충전 시 활성화"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg> 새 액션 제안</button>
       </div>
       <div class="adesc">해야 할 일을 관리하세요. ★을 누르면 맨 위로, 체크하면 완료. AI가 우리 상황에 맞는 다음 액션을 제안해줘요.</div>
       <div class="act-search-bar">
@@ -367,7 +367,7 @@
   <!-- ===================== 스크랩 ===================== -->
   <section class="panel" id="panel-scraps">
     <div class="asec">
-      <div class="ah"><h2>📋 수집함</h2></div>
+      <div class="ah"><h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h4l2 3h4l2-3h4"/><path d="M4 12 5.5 5.2a1 1 0 0 1 1-.8h11a1 1 0 0 1 1 .8L20 12"/><path d="M4 12v5.5A1.5 1.5 0 0 0 5.5 19h13a1.5 1.5 0 0 0 1.5-1.5V12"/></svg> 수집함</h2></div>
       <div class="adesc">청약·매물·뉴스·메모·AI 대화까지 빠르게 모아두세요. AI 없이도 수동으로 분류·관리할 수 있어요.</div>
 
       <!-- 추가 버튼 바 -->
@@ -445,7 +445,7 @@
             <div class="sc-field"><label>적합도</label><select id="sc_fit">
               <option value="">미설정</option>
               <option value="high">✓ 적합</option>
-              <option value="mid">⚠️ 검토필요</option>
+              <option value="mid">⚠ 검토필요</option>
               <option value="low">✕ 부적합</option>
             </select></div>
           </div>
@@ -462,9 +462,9 @@
         <div class="sc-form-acts">
           <button class="sc-save-btn" id="sc_saveBtn">저장</button>
           <button class="sc-cancel-btn" id="sc_cancelBtn" style="display:none">취소</button>
-          <button class="sc-ai-form-btn" id="sc_analyzeBtn" disabled title="AI 자동채움 — Anthropic 크레딧 필요">✨ AI 자동채움</button>
+          <button class="sc-ai-form-btn" id="sc_analyzeBtn" disabled title="AI 자동채움 — Anthropic 크레딧 필요"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg> AI 자동채움</button>
         </div>
-        <div class="sc-ai-note">✨ AI 자동채움은 Anthropic 크레딧 충전 시 활성화됩니다. 수동 저장은 지금 바로 사용 가능해요.</div>
+        <div class="sc-ai-note"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg> AI 자동채움은 Anthropic 크레딧 충전 시 활성화됩니다. 수동 저장은 지금 바로 사용 가능해요.</div>
         <div id="sc_formErr" style="font-size:12px;color:var(--s-drop);min-height:16px;font-weight:700;margin-top:4px;"></div>
       </div>
 
@@ -615,7 +615,7 @@
           <div class="sc-field"><label>적합도</label><select id="sem_fit">
             <option value="">미설정</option>
             <option value="high">✓ 적합</option>
-            <option value="mid">⚠️ 검토필요</option>
+            <option value="mid">⚠ 검토필요</option>
             <option value="low">✕ 부적합</option>
           </select></div>
         </div>
@@ -661,7 +661,7 @@
 
   <div class="modal" id="assetAiModal">
     <div class="box">
-      <h3>✨ 자산 채우기 — AI 또는 시트 붙여넣기</h3>
+      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg> 자산 채우기 — AI 또는 시트 붙여넣기</h3>
       <div class="mdesc"><b>① 시트 붙여넣기:</b> 구글시트/엑셀에서 행을 복사해 그대로 붙여넣으면(소유자·항목·금액·형태·유동성·동원가능액·메모 순) 자동 인식돼요.<br><b>② 자유 입력:</b> "본인 국민은행 1485만 현금 즉시, 배우자 청약통장 280만…"처럼 적어도 AI가 정리해줍니다.</div>
       <textarea id="assetAiText" placeholder="여기에 시트 행을 붙여넣거나 자유롭게 적으세요…"></textarea>
       <div class="macts">
@@ -674,7 +674,7 @@
 
   <div class="modal" id="profileModal">
     <div class="box">
-      <h3>👤 프로필 & 일정 설정</h3>
+      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg> 프로필 & 일정 설정</h3>
       <div class="mdesc">여기서 바꾸면 타임라인·게이트·AI 상담에 자동 반영돼요.</div>
       <div class="pf-grid">
         <label>이름<input id="pf_names" placeholder="예: OO ♥ XX"></label>
@@ -686,7 +686,7 @@
         <label>보증금 범위(억)<input id="pf_depositRange" placeholder="4~5"></label>
         <label>선호 교통<input id="pf_transport" placeholder="9호선"></label>
       </div>
-      <h4 style="font-size:13px;font-weight:800;margin:16px 0 8px;">📅 마일스톤 (타임라인)</h4>
+      <h4 style="font-size:13px;font-weight:800;margin:16px 0 8px;"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></svg> 마일스톤 (타임라인)</h4>
       <div id="pf_milestones"></div>
       <button class="btn-ghost" id="pf_addMs" style="font-size:12px;margin-top:6px;">＋ 마일스톤 추가</button>
       <div class="macts">
