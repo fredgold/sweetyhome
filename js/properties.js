@@ -488,6 +488,22 @@ function renderTabs(){
 }
 function areaChip(a){if(a==null||a==='')return'';const n=parseFloat(a);if(isNaN(n))return'';return n<=85?`<span class="chip ok tnum">전용 ${n}㎡ · 청약 OK</span>`:`<span class="chip warn tnum">전용 ${n}㎡ · 청약 영향 ⚠</span>`;}
 function depositChip(d){if(d==null||d==='')return'';const n=parseFloat(d);if(isNaN(n))return'';return `<span class="chip deposit tnum">보증금 ${n}억${n>5?' · 예산↑?':''}</span>`;}
+/* R4: 카드 액션 링크 — 우선순위 앞 2개(지도에서 보기·네이버 열기)만 상시 노출,
+   나머지는 '⋯ 더보기'로 접기. 480px 이하에서만 접힘(desktop은 display:contents로 한 줄 wrap) */
+function actionsHTML(p, urlSafe){
+  const _acts=[];
+  if(p.lat) _acts.push(`<button class="c-act" data-locate="${p.id}">${ic('map')} 지도에서 보기</button>`);
+  if(urlSafe) _acts.push(`<a class="c-act naver" href="${esc(urlSafe)}" target="_blank" rel="noopener">${ic('link')} 네이버 열기 ↗</a>`);
+  _acts.push(`<a class="c-act naver" href="${naverUrl(p)}" target="_blank">${ic('map')} 네이버지도</a>`);
+  _acts.push(`<a class="c-act hogang" href="${siteUrl('hogang',p.name)}" target="_blank">호갱노노</a>`);
+  _acts.push(`<a class="c-act rt" href="${siteUrl('rt',p.name)}" target="_blank">실거래가</a>`);
+  _acts.push(`<button class="c-act" data-edit="${p.id}">${ic('edit')} 수정</button>`);
+  _acts.push(`<button class="c-act c-act-del" data-del="${p.id}">삭제</button>`);
+  return `<div class="c-actions">
+      <div class="c-actions-row">${_acts.slice(0,2).join('')}<button class="c-more-btn" data-cmore="${p.id}" aria-label="추가 옵션 더보기" aria-expanded="false">⋯ 더보기</button></div>
+      <div class="c-actions-more">${_acts.slice(2).join('')}</div>
+    </div>`;
+}
 let propSearchQuery='';
 function renderList(){
   let items=[...state.properties];
@@ -532,14 +548,7 @@ function renderList(){
     </div>
     ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy" alt="${esc(p.name||'매물')} 사진">`:''}
     ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
-    <div class="c-actions">
-      ${p.lat?`<button data-locate="${p.id}">${ic('map')} 지도에서 보기</button>`:''}
-      ${urlSafe?`<a class="naver" href="${esc(urlSafe)}" target="_blank" rel="noopener">${ic('link')} 네이버 열기 ↗</a>`:''}
-      <a class="naver" href="${naverUrl(p)}" target="_blank">${ic('map')} 네이버지도</a>
-      <a class="hogang" href="${siteUrl('hogang',p.name)}" target="_blank">호갱노노</a>
-      <a class="rt" href="${siteUrl('rt',p.name)}" target="_blank">실거래가</a>
-      <button data-edit="${p.id}">수정</button><button data-del="${p.id}">삭제</button>
-    </div>
+    ${actionsHTML(p, urlSafe)}
     ${aiBlock(p)}${checklistHTML(p)}</div>`;
   }).join('');
   el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEdit(b.dataset.edit));
@@ -749,6 +758,13 @@ document.getElementById('saveBtn').onclick=()=>{
 function delProp(id){if(!confirm('이 매물을 삭제할까요?'))return;state.properties=state.properties.filter(x=>x.id!==id);save();renderProps();refreshOverview();}
 
 document.getElementById('list').addEventListener('click',e=>{
+  const moreBtn=e.target.closest('[data-cmore]');
+  if(moreBtn){
+    const card=moreBtn.closest('.card');
+    const open=card.classList.toggle('more-open');
+    moreBtn.setAttribute('aria-expanded',open?'true':'false');
+    return;
+  }
   const tog=e.target.closest('[data-cktoggle]');
   if(tog){ tog.closest('.ck').classList.toggle('open'); return; }
   const item=e.target.closest('.ck-item');
