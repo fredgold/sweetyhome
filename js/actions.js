@@ -38,8 +38,8 @@ function renderActions(){
         <span class="rank tnum">${i+1}</span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
         <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}</span>
-        <button class="act-edit" data-actf-edit="${a.id}" title="수정">✏</button>
-        <button class="star ${a.priority<=Math.min(...live.map(x=>x.priority))?'on':''}" data-actf-top="${a.id}" title="맨 위로">★</button>
+        <button class="act-edit" data-actf-edit="${a.id}" title="수정">${ic('edit')}</button>
+        <button class="star ${a.priority<=Math.min(...live.map(x=>x.priority))?'on':''}" data-actf-top="${a.id}" title="맨 위로">${ic('star')}</button>
         <button class="xx" data-actf-del="${a.id}">✕</button>
       </div>`).join('');
   } else {
@@ -52,7 +52,7 @@ function renderActions(){
         <span class="rank tnum"></span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
         <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}</span>
-        <button class="act-edit" data-actf-edit="${a.id}" title="수정">✏</button>
+        <button class="act-edit" data-actf-edit="${a.id}" title="수정">${ic('edit')}</button>
         <button class="xx" data-actf-del="${a.id}">✕</button>
       </div>`).join('');
     html+='</div></div>';

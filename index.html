@@ -11,7 +11,7 @@
 
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
-    <div class="login-mark">🏡</div>
+    <div class="login-mark"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg></div>
     <h1>스위티홈</h1>
     <div class="login-sub">결혼 & 내집마련 준비 보드</div>
     <div class="login-q" id="loginQ">비밀번호를 입력해주세요</div>
@@ -26,7 +26,7 @@
 <div class="wrap">
   <header>
     <div class="brand" id="goHome" style="cursor:pointer">
-      <span class="mark">🏡</span>
+      <span class="mark"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg></span>
       <div>
         <h1>스위티홈 <span class="guest-badge" id="guestBadge">게스트</span></h1>
         <span class="sub" id="brandSub">결혼 & 내집마련 준비 보드</span>
@@ -34,27 +34,27 @@
     </div>
     <div class="topacts">
       <div class="sync-wrap">
-        <button class="sync-chip" id="syncChip" data-sync="ok">☁ 동기화됨</button>
+        <button class="sync-chip" id="syncChip" data-sync="ok"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 18a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17.4 9.2h.3a3.3 3.3 0 0 1 0 6.6H15"/><path d="M9.3 14.6l1.8 1.8 3.3-3.8"/></svg> 동기화됨</button>
         <div class="sync-panel" id="syncPanel">
           <div class="sp-msg" id="syncMsg">클라우드에 동기화되었습니다.</div>
           <button class="sync-retry" id="syncRetry" style="display:none">↻ 다시 시도</button>
         </div>
       </div>
       <button class="btn-mini header-more-btn" id="headerMoreBtn" aria-label="더보기">⋯</button>
-      <button class="btn-mini" id="profileBtn">👤 프로필</button>
+      <button class="btn-mini" id="profileBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg> 프로필</button>
       <button class="btn-mini" id="exportBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg> 내보내기</button>
-      <button class="btn-mini" id="importBtn">⬇ 가져오기</button>
-      <button class="btn-mini" id="logoutBtn">🔒 잠금</button>
+      <button class="btn-mini" id="importBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M8.5 11.5 12 15l3.5-3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg> 가져오기</button>
+      <button class="btn-mini" id="logoutBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg> 잠금</button>
     </div>
   </header>
 
   <nav class="apptabs" id="apptabs">
     <button class="atab" data-panel="dash" data-on="1"><svg class="ic ic-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/></svg> 대시보드</button>
-    <button class="atab" data-panel="assets">💰 자산</button>
-    <button class="atab" data-panel="props">🏘️ 매물</button>
+    <button class="atab" data-panel="assets"><svg class="ic ic-lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10.5h18"/><circle cx="16.5" cy="14.5" r="1"/></svg> 자산</button>
+    <button class="atab" data-panel="props"><svg class="ic ic-lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg> 매물</button>
 
-    <button class="atab" data-panel="actions">✅ 액션</button>
-    <button class="atab" data-panel="scraps">📋 수집함</button>
+    <button class="atab" data-panel="actions"><svg class="ic ic-lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 12l2.5 2.5L16 9"/></svg> 액션</button>
+    <button class="atab" data-panel="scraps"><svg class="ic ic-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h4l2 3h4l2-3h4"/><path d="M4 12 5.5 5.2a1 1 0 0 1 1-.8h11a1 1 0 0 1 1 .8L20 12"/><path d="M4 12v5.5A1.5 1.5 0 0 0 5.5 19h13a1.5 1.5 0 0 0 1.5-1.5V12"/></svg> 수집함</button>
   </nav>
 
   <!-- ===================== 대시보드 ===================== -->
@@ -137,12 +137,12 @@
 
       <div class="atarget">
         <div class="trow">
-          🎯 전세 보증금 목표
+          전세 보증금 목표
           <input type="number" id="a_target" step="0.1" placeholder="4.5"> 억
           <span id="a_targetMsg"></span>
         </div>
         <div class="trow">
-          🪙 예비비(결혼·이사 등)
+          예비비(결혼·이사 등)
           <input type="number" id="a_reserve" step="100" placeholder="1000"> 만원
           <span id="a_reserveMsg"></span>
         </div>
@@ -152,7 +152,7 @@
       <div class="anote">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
           <label>메모 (부모님 지원 조건, 증여 공제, 계획 등)</label>
-          <button type="button" class="sc-preview-toggle" id="an_previewToggle">👁 미리보기</button>
+          <button type="button" class="sc-preview-toggle" id="an_previewToggle"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기</button>
         </div>
         <div class="sc-md-toolbar" id="an_mdToolbar">
           <button type="button" data-antgt="wrap" data-open="**" data-close="**" title="굵게 (Ctrl+B)"><b>B</b></button>
@@ -160,7 +160,7 @@
           <span class="tb-sep"></span>
           <button type="button" data-antgt="line" data-prefix="## " title="제목">H</button>
           <button type="button" data-antgt="line" data-prefix="- " title="목록">•</button>
-          <button type="button" data-antgt="line" data-prefix="> " title="인용">❝</button>
+          <button type="button" data-antgt="line" data-prefix="> " title="인용"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/></svg></button>
         </div>
         <textarea id="a_notes" class="sc-md-textarea" placeholder="예: 양가 각각 본인 계좌로 입금 (증여공제 활용) / 8월 이자지원 확인 후 한도 재계산"></textarea>
         <div id="an_mdPreview" class="sc-md-preview sc-md-content" style="display:none;border:1px solid var(--hairline);border-radius:9px;padding:12px;margin-top:6px;"></div>
@@ -204,7 +204,7 @@
         <button class="site" data-site="hogang">호갱노노</button>
         <button class="site" data-site="rt">실거래가</button>
       </div>
-      <div class="tip">💡 팁 — <b>세대수 + 금액</b>만 먼저 필터 걸면 볼 곳이 확 줄어요. 마음에 들면 ＋매물추가의 ‘붙여넣기 자동 채우기’로 담으세요.</div>
+      <div class="tip"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.15 1 1.9v.2h5v-.2c0-.75.4-1.45 1-1.9A6 6 0 0 0 12 3z"/></svg> 팁 — <b>세대수 + 금액</b>만 먼저 필터 걸면 볼 곳이 확 줄어요. 마음에 들면 ＋매물추가의 ‘붙여넣기 자동 채우기’로 담으세요.</div>
     </div>
 
     <div class="wcard" style="display:none">
@@ -236,7 +236,7 @@
               <button class="addbtn" id="propExportBtn">내보내기 ↓</button>
             </div>
             <button class="addbtn" id="propBulkBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg> 시트 붙여넣기</button>
-            <button class="addbtn" id="propRouteBtn">🚶 임장 루트</button>
+            <button class="addbtn" id="propRouteBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg> 임장 루트</button>
             <button class="addbtn" id="toggleForm">＋ 매물 추가</button>
           </div>
         </div>
@@ -283,7 +283,7 @@
               <span class="tb-sep"></span>
               <button type="button" data-fmtgt="line" data-prefix="## " title="제목">H</button>
               <button type="button" data-fmtgt="line" data-prefix="- " title="목록">•</button>
-              <button type="button" data-fmtgt="line" data-prefix="> " title="인용">❝</button>
+              <button type="button" data-fmtgt="line" data-prefix="> " title="인용"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/></svg></button>
             </div>
             <textarea id="f_memo" placeholder="채광, 곰팡이, 보증보험 가능 여부, 집주인 융자 등"></textarea>
           </div>
@@ -291,7 +291,7 @@
             <label>사진 첨부 (선택)</label>
             <div style="display:flex;align-items:center;gap:10px;">
               <label class="sc-upload-label" for="f_img" style="cursor:pointer;">
-                <span id="f_imgLabel">📷 사진 추가</span>
+                <span id="f_imgLabel"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-2.5h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> 사진 추가</span>
                 <input type="file" id="f_img" accept="image/*" style="display:none">
               </label>
               <img id="f_imgPreview" class="card-img-sm" style="display:none;">
@@ -414,7 +414,7 @@
             <button type="button" data-mdline="## " title="제목 (H2)">H</button>
             <button type="button" data-mdline="- " title="목록">•</button>
             <button type="button" data-mdline="1. " title="번호 목록">1.</button>
-            <button type="button" data-mdline="> " title="인용">❝</button>
+            <button type="button" data-mdline="> " title="인용"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/></svg></button>
             <span class="tb-sep"></span>
             <button type="button" data-mdwrap="`||`" title="인라인 코드">{ }</button>
             <button type="button" data-mdline="---" title="구분선">—</button>
@@ -453,7 +453,7 @@
 
         <div class="sc-upload-row">
           <label class="sc-upload-label" for="sc_file">
-            <span id="sc_uploadLabel">📷 스크린샷 첨부</span>
+            <span id="sc_uploadLabel"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-2.5h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> 스크린샷 첨부</span>
             <input type="file" id="sc_file" accept="image/*" style="display:none">
           </label>
         </div>
@@ -542,7 +542,7 @@
 
   <div class="modal" id="importModal">
     <div class="box">
-      <h3>⬇ 전체 가져오기 (복원)</h3>
+      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M8.5 11.5 12 15l3.5-3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg> 전체 가져오기 (복원)</h3>
       <div class="hint">⚠ 가져오면 <b>지금 보드 내용이 백업 코드로 교체</b>됩니다. 새 보드에 복원할 때 쓰세요.</div>
       <div class="mdesc">보관해둔 <b>백업 코드</b>를 아래에 붙여넣고 가져오기를 누르세요. (예전 ‘집구하기맵’ 백업도 매물만 불러올 수 있어요.)</div>
       <textarea id="importText" placeholder="여기에 백업 코드를 붙여넣으세요…"></textarea>
@@ -557,7 +557,7 @@
   <!-- 수집함 항목 수정 모달 -->
   <div class="modal" id="scEditModal">
     <div class="box" style="max-height:90vh;overflow-y:auto;">
-      <h3>✏️ 수정</h3>
+      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4.2L15.8 5 19 8.2 8.2 19z"/><path d="M13.5 6.5l4 4"/></svg> 수정</h3>
       <div class="sc-field">
         <label>제목</label>
         <input type="text" id="sem_title" placeholder="제목">
@@ -589,7 +589,7 @@
           <span class="tb-sep"></span>
           <button type="button" data-semline="## " title="제목">H</button>
           <button type="button" data-semline="- " title="목록">•</button>
-          <button type="button" data-semline="> " title="인용">❝</button>
+          <button type="button" data-semline="> " title="인용"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/></svg></button>
         </div>
         <div style="position:relative;">
           <div id="sem_text" contenteditable="true" class="sc-md-editor sc-md-content" style="min-height:120px;" data-placeholder="원문·메모"></div>
@@ -627,7 +627,7 @@
       <div class="sc-field" style="margin-top:6px;">
         <label>사진 (선택)</label>
         <div style="display:flex;align-items:center;gap:10px;">
-          <label class="sc-upload-label" for="sem_img" style="cursor:pointer;"><span id="sem_imgLabel">📷 첨부/변경</span><input type="file" id="sem_img" accept="image/*" style="display:none"></label>
+          <label class="sc-upload-label" for="sem_img" style="cursor:pointer;"><span id="sem_imgLabel"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-2.5h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> 첨부/변경</span><input type="file" id="sem_img" accept="image/*" style="display:none"></label>
           <img id="sem_imgPreview" class="card-img-sm" style="display:none;">
           <button type="button" id="sem_imgClear" style="display:none;font-size:11px;color:var(--s-drop);border:none;background:none;cursor:pointer;">✕ 제거</button>
         </div>
@@ -732,7 +732,7 @@
           <span class="tb-sep"></span>
           <button type="button" data-emtgt="line" data-prefix="## " title="제목">H</button>
           <button type="button" data-emtgt="line" data-prefix="- " title="목록">•</button>
-          <button type="button" data-emtgt="line" data-prefix="> " title="인용">❝</button>
+          <button type="button" data-emtgt="line" data-prefix="> " title="인용"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/></svg></button>
         </div>
         <textarea id="em_memo" placeholder="채광, 곰팡이, 보증보험 가능 여부, 집주인 융자 등"></textarea>
       </div>
@@ -740,7 +740,7 @@
         <label>사진 첨부 (선택)</label>
         <div style="display:flex;align-items:center;gap:10px;">
           <label class="sc-upload-label" for="em_img" style="cursor:pointer;">
-            <span id="em_imgLabel">📷 사진 추가</span>
+            <span id="em_imgLabel"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-2.5h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> 사진 추가</span>
             <input type="file" id="em_img" accept="image/*" style="display:none">
           </label>
           <img id="em_imgPreview" class="card-img-sm" style="display:none;">

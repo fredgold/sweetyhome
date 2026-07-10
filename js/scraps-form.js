@@ -28,7 +28,7 @@ document.getElementById('sc_text').addEventListener('input',e=>{
   const ogPrev=document.getElementById('sc_ogPreview');
   if(/instagram\.com\/(p|reel)\//.test(raw)){
     ogPrev.style.display='block';
-    ogPrev.innerHTML='<div class="og-card"><span class="og-loading">💡 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
+    ogPrev.innerHTML='<div class="og-card"><span class="og-loading">'+ic('tip')+' 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
   } else { ogPrev.style.display='none'; }
   scDetectSlash(el,'sc_slashMenu');
 });
@@ -179,7 +179,7 @@ document.getElementById('sc_file').onchange=e=>{
   compressImage(f,dataUrl=>{
     scrapImgData=dataUrl;
     document.getElementById('sc_preview').innerHTML=`<img src="${dataUrl}" class="sc-card-img">`;
-    document.getElementById('sc_uploadLabel').textContent='📷 '+f.name;
+    document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' '+esc(f.name);
   });
 };
 
@@ -237,7 +237,7 @@ function scClearForm(){
   document.getElementById('sc_fit').value='';
   document.getElementById('sc_formErr').textContent='';
   document.getElementById('sc_preview').innerHTML='';
-  document.getElementById('sc_uploadLabel').textContent='📷 스크린샷 첨부';
+  document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' 스크린샷 첨부';
   document.getElementById('sc_file').value='';
   document.getElementById('sc_ogPreview').style.display='none';
   const scEl=document.getElementById('sc_text');
@@ -302,7 +302,7 @@ function openScEdit(id){
   const semClr=document.getElementById('sem_imgClear');
   if(s.img){semPrev.src=s.img;semPrev.style.display='';semClr.style.display='';}
   else{semPrev.style.display='none';semClr.style.display='none';}
-  document.getElementById('sem_imgLabel').textContent='📷 첨부/변경';
+  document.getElementById('sem_imgLabel').innerHTML=ic('camera')+' 첨부/변경';
   document.getElementById('sem_img').value='';
   openModal('scEditModal');
 }
@@ -391,7 +391,7 @@ document.getElementById('sem_img').onchange=e=>{
     semImgData=dataUrl;
     const prev=document.getElementById('sem_imgPreview');
     prev.src=dataUrl; prev.style.display='';
-    document.getElementById('sem_imgLabel').textContent='📷 '+f.name;
+    document.getElementById('sem_imgLabel').innerHTML=ic('camera')+' '+esc(f.name);
     document.getElementById('sem_imgClear').style.display='';
   });
 };
@@ -399,7 +399,7 @@ document.getElementById('sem_imgClear').onclick=()=>{
   semImgData=''; // empty string = remove image
   document.getElementById('sem_imgPreview').style.display='none';
   document.getElementById('sem_img').value='';
-  document.getElementById('sem_imgLabel').textContent='📷 첨부/변경';
+  document.getElementById('sem_imgLabel').innerHTML=ic('camera')+' 첨부/변경';
   document.getElementById('sem_imgClear').style.display='none';
 };
 function semResetSavedNote(){

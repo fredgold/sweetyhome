@@ -81,7 +81,7 @@ function renderTop3(){
       <span class="rank tnum">${i+1}</span>
       <span class="box" data-act-done="${a.id}">${CHECK}</span>
       <span class="atx">${esc(a.text)}</span>
-      <button class="star ${a.priority<=1?'on':''}" data-act-top="${a.id}" title="맨 위로">★</button>
+      <button class="star ${a.priority<=1?'on':''}" data-act-top="${a.id}" title="맨 위로">${ic('star')}</button>
       <button class="xx" data-act-del="${a.id}">✕</button>
     </div>`).join('') || `<div class="empty"><div class="big">🎉 우선순위 액션 완료!</div>새 할 일을 추가하거나 다른 탭을 채워보세요.</div>`;
   const doneCnt=state.actions.filter(a=>a.done).length;

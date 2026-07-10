@@ -11,6 +11,21 @@ const ICSVG={
   search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
   price:'<path d="M4 11.5 11.5 4H18a2 2 0 0 1 2 2v6.5L12.5 20a2 2 0 0 1-2.83 0l-5.67-5.67a2 2 0 0 1 0-2.83z"/><circle cx="15.5" cy="8.5" r="1.2"/>',
   export:'<path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/>',
+  /* 2라운드 — 잔여 이모지 정리 */
+  wallet:'<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10.5h18"/><circle cx="16.5" cy="14.5" r="1"/>',
+  listings:'<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',
+  tasks:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 12l2.5 2.5L16 9"/>',
+  inbox:'<path d="M4 12h4l2 3h4l2-3h4"/><path d="M4 12 5.5 5.2a1 1 0 0 1 1-.8h11a1 1 0 0 1 1 .8L20 12"/><path d="M4 12v5.5A1.5 1.5 0 0 0 5.5 19h13a1.5 1.5 0 0 0 1.5-1.5V12"/>',
+  profile:'<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/>',
+  sync:'<path d="M7.5 18a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17.4 9.2h.3a3.3 3.3 0 0 1 0 6.6H15"/><path d="M9.3 14.6l1.8 1.8 3.3-3.8"/>',
+  camera:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-2.5h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/>',
+  edit:'<path d="M4 20l1-4.2L15.8 5 19 8.2 8.2 19z"/><path d="M13.5 6.5l4 4"/>',
+  eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  star:'<path d="M12 3.5l2.5 5.6 6 .6-4.5 4.1 1.3 6-5.3-3.2-5.3 3.2 1.3-6-4.5-4.1 6-.6z"/>',
+  tip:'<path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.15 1 1.9v.2h5v-.2c0-.75.4-1.45 1-1.9A6 6 0 0 0 12 3z"/>',
+  quote:'<path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/>',
+  import:'<path d="M12 4v11"/><path d="M8.5 11.5 12 15l3.5-3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/>',
 };
 function ic(name,cls){ return `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" aria-hidden="true">${ICSVG[name]}</svg>`; }
 function checklistHTML(p){
@@ -137,7 +152,7 @@ function renderRouteBar(){
   bar.style.display='flex';
   if(routeMode==='select'){
     const n=routeSelected.size;
-    bar.innerHTML=`<div class="rb-info">🚶 임장 루트 — <b>${n}곳</b> 선택됨</div>
+    bar.innerHTML=`<div class="rb-info">${ic('map')} 임장 루트 — <b>${n}곳</b> 선택됨</div>
       <div class="rb-actions">
         <button class="addbtn" id="routeMakeBtn"${n<2?' disabled':''}>루트 만들기</button>
         <button class="btn-ghost" id="routeCancelBtn">취소</button>
@@ -157,7 +172,7 @@ function renderRouteBar(){
       <div class="rb-route-total">총 도보 약 ${totalMin}분 · ${(totalM/1000).toFixed(1)}km · ${routeStops.length}곳 (직선거리 추정, 드래그로 순서 변경 가능)</div>
     </div>
     <div class="rb-actions">
-      <button class="btn-ghost" id="routeSaveBtn">💾 저장</button>
+      <button class="btn-ghost" id="routeSaveBtn">저장</button>
       <button class="btn-ghost" id="routeRefreshBtn">↻ 새로고침</button>
       <button class="btn-ghost" id="routeReselectBtn">다시 선택</button>
       <button class="btn-ghost" id="routeCloseBtn">닫기</button>
@@ -568,7 +583,7 @@ function clearForm(){
   tempChecks=null;clearFormPin();
   propImgData=null;
   document.getElementById('f_img').value='';
-  document.getElementById('f_imgLabel').textContent='📷 사진 추가';
+  document.getElementById('f_imgLabel').innerHTML=ic('camera')+' 사진 추가';
   document.getElementById('f_imgPreview').style.display='none';
   document.getElementById('f_imgClear').style.display='none';
 }
@@ -600,7 +615,7 @@ function openEdit(id){
   const prev=document.getElementById('em_imgPreview'), clr=document.getElementById('em_imgClear');
   if(p.img){prev.src=p.img;prev.style.display='';clr.style.display='';}
   else{prev.style.display='none';clr.style.display='none';}
-  document.getElementById('em_imgLabel').textContent=p.img?'📷 사진 변경':'📷 사진 추가';
+  document.getElementById('em_imgLabel').innerHTML=ic('camera')+(p.img?' 사진 변경':' 사진 추가');
   document.getElementById('em_img').value='';
   openModal('propEditModal');
   setTimeout(()=>{
@@ -635,14 +650,14 @@ document.getElementById('em_img').onchange=e=>{
     editImgData=dataUrl;
     const prev=document.getElementById('em_imgPreview');
     prev.src=dataUrl; prev.style.display='';
-    document.getElementById('em_imgLabel').textContent='📷 '+f.name;
+    document.getElementById('em_imgLabel').innerHTML=ic('camera')+' '+esc(f.name);
     document.getElementById('em_imgClear').style.display='';
   });
 };
 document.getElementById('em_imgClear').onclick=()=>{
   editImgData=''; document.getElementById('em_img').value='';
   document.getElementById('em_imgPreview').style.display='none';
-  document.getElementById('em_imgLabel').textContent='📷 사진 추가';
+  document.getElementById('em_imgLabel').innerHTML=ic('camera')+' 사진 추가';
   document.getElementById('em_imgClear').style.display='none';
 };
 document.getElementById('em_saveBtn').onclick=()=>{
@@ -693,7 +708,7 @@ document.getElementById('f_img').onchange=e=>{
     propImgData=dataUrl;
     const prev=document.getElementById('f_imgPreview');
     prev.src=dataUrl; prev.style.display='';
-    document.getElementById('f_imgLabel').textContent='📷 '+f.name;
+    document.getElementById('f_imgLabel').innerHTML=ic('camera')+' '+esc(f.name);
     document.getElementById('f_imgClear').style.display='';
   });
 };
@@ -701,7 +716,7 @@ document.getElementById('f_imgClear').onclick=()=>{
   propImgData='';
   document.getElementById('f_img').value='';
   document.getElementById('f_imgPreview').style.display='none';
-  document.getElementById('f_imgLabel').textContent='📷 사진 추가';
+  document.getElementById('f_imgLabel').innerHTML=ic('camera')+' 사진 추가';
   document.getElementById('f_imgClear').style.display='none';
 };
 document.getElementById('saveBtn').onclick=()=>{

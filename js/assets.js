@@ -133,7 +133,7 @@ document.getElementById('an_previewToggle').onclick=function(){
   ta.style.display=on?'none':'';
   document.getElementById('an_mdToolbar').style.display=on?'none':'';
   this.classList.toggle('on',on);
-  this.textContent=on?'✏️ 편집':'👁 미리보기';
+  this.innerHTML=on?ic('edit')+' 편집':ic('eye')+' 미리보기';
   if(on) prev.innerHTML=renderMd(ta.value)||'<span style="color:var(--ink-faint);font-size:12px;">내용을 입력하면 미리보기가 표시됩니다.</span>';
 };
 

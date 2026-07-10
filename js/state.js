@@ -32,7 +32,7 @@
  */
 
 /* ===== 동기화 상태 칩 ===== */
-const SYNC_LABELS={ok:'☁ 동기화됨',local:'⚠ 로컬만',offline:'✕ 오프라인'};
+const SYNC_LABELS={ok:'동기화됨',local:'⚠ 로컬만',offline:'✕ 오프라인'};
 const SYNC_MSGS={
   ok:'클라우드에 동기화되었습니다.',
   local:'클라우드 저장 실패 — 이 기기에만 저장됨.\n잠시 후 다시 시도하세요.',
@@ -43,7 +43,8 @@ function setSyncState(s){
   const msg=document.getElementById('syncMsg');
   const retry=document.getElementById('syncRetry');
   if(!chip) return;
-  chip.dataset.sync=s; chip.textContent=SYNC_LABELS[s]||s;
+  chip.dataset.sync=s;
+  chip.innerHTML=(s==='ok'?ic('sync')+' ':'')+(SYNC_LABELS[s]||s);
   if(msg){ msg.textContent=SYNC_MSGS[s]||''; msg.style.whiteSpace='pre-line'; }
   if(retry) retry.style.display=(s==='ok')?'none':'block';
 }
