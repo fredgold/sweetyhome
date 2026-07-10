@@ -28,7 +28,7 @@ function renderAssets(){
         <div class="rcell"><span class="regcardlab">유동성</span><select data-f="liquidity">${liqSel(it.liquidity)}</select></div>
         <div class="rcell"><span class="regcardlab">동원 가능액(원)</span><input class="num" data-f="mobilizable" inputmode="numeric" value="${it.mobilizable?comma(it.mobilizable):''}" placeholder="0"></div>
         <div class="rcell rc-memo"><span class="regcardlab">메모</span><input data-f="memo" value="${esc(it.memo||'')}" placeholder="메모"></div>
-        <div class="del" data-del-asset="${it.id}" title="삭제">✕</div>
+        <div class="del" data-del-asset="${it.id}" title="삭제" aria-label="삭제">✕</div>
       </div>`).join('');
   }
   bindAssetRows();

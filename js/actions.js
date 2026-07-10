@@ -38,9 +38,9 @@ function renderActions(){
         <span class="rank tnum">${i+1}</span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
         <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}</span>
-        <button class="act-edit" data-actf-edit="${a.id}" title="수정">${ic('edit')}</button>
-        <button class="star ${a.priority<=Math.min(...live.map(x=>x.priority))?'on':''}" data-actf-top="${a.id}" title="맨 위로">${ic('star')}</button>
-        <button class="xx" data-actf-del="${a.id}">✕</button>
+        <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
+        <button class="star ${a.priority<=Math.min(...live.map(x=>x.priority))?'on':''}" data-actf-top="${a.id}" title="맨 위로" aria-label="맨 위로">${ic('star')}</button>
+        <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
       </div>`).join('');
   } else {
     html+='<div class="empty"><div class="big">모든 액션 완료!</div>새 할 일을 추가하거나 AI 제안을 받아보세요.</div>';
@@ -52,8 +52,8 @@ function renderActions(){
         <span class="rank tnum"></span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
         <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}</span>
-        <button class="act-edit" data-actf-edit="${a.id}" title="수정">${ic('edit')}</button>
-        <button class="xx" data-actf-del="${a.id}">✕</button>
+        <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
+        <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
       </div>`).join('');
     html+='</div></div>';
   }

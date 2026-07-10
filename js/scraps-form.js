@@ -178,7 +178,7 @@ document.getElementById('sc_file').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
   compressImage(f,dataUrl=>{
     scrapImgData=dataUrl;
-    document.getElementById('sc_preview').innerHTML=`<img src="${dataUrl}" class="sc-card-img">`;
+    document.getElementById('sc_preview').innerHTML=`<img src="${dataUrl}" class="sc-card-img" alt="첨부 사진 미리보기">`;
     document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' '+esc(f.name);
   });
 };

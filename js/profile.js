@@ -2,7 +2,7 @@
 function renderProfileMilestones(){
   const box=document.getElementById('pf_milestones');
   const ms=state.profile.milestones;
-  box.innerHTML=ms.map((m,i)=>`<div class="ms-row"><input class="ms-label" data-i="${i}" value="${esc(m.label)}" placeholder="이름"><input class="ms-date" data-i="${i}" type="date" value="${m.date||''}"><button class="ms-del" data-i="${i}">✕</button></div>`).join('');
+  box.innerHTML=ms.map((m,i)=>`<div class="ms-row"><input class="ms-label" data-i="${i}" value="${esc(m.label)}" placeholder="이름"><input class="ms-date" data-i="${i}" type="date" value="${m.date||''}"><button class="ms-del" data-i="${i}" aria-label="마일스톤 삭제">✕</button></div>`).join('');
   box.querySelectorAll('.ms-del').forEach(b=>b.onclick=()=>{ms.splice(+b.dataset.i,1);renderProfileMilestones();});
 }
 function openProfile(){

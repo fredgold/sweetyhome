@@ -276,7 +276,7 @@ function showRouteMenu(btn){
     +(saved.length?`<div class="rm-sep"></div>`:'')
     +saved.map(r=>`<div class="rm-item">
         <button class="sp-opt" data-loadroute="${r.id}">${esc(r.name)} <small>(${r.propertyIds.length}곳)</small></button>
-        <button class="rm-del" data-delroute="${r.id}" title="삭제">✕</button>
+        <button class="rm-del" data-delroute="${r.id}" title="삭제" aria-label="삭제">✕</button>
       </div>`).join('');
   document.body.appendChild(menu);
   _routeMenu=menu;
@@ -530,7 +530,7 @@ function renderList(){
       ${p.geocodePending&&!p.lat?'<span class="chip chip-warn">좌표확인필요</span>':''}
       ${p.lat?`<span class="chip geo">${ic('pin','ic-muted')} 위치 저장됨</span>`:''}
     </div>
-    ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy">`:''}
+    ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy" alt="${esc(p.name||'매물')} 사진">`:''}
     ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
     <div class="c-actions">
       ${p.lat?`<button data-locate="${p.id}">${ic('map')} 지도에서 보기</button>`:''}
