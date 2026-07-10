@@ -795,14 +795,6 @@ function runSiteSearch(site){
 document.querySelectorAll('.searchbar .site').forEach(b=>b.onclick=()=>runSiteSearch(b.dataset.site));
 document.getElementById('siteSearch').addEventListener('keydown',e=>{ if(e.key==='Enter') runSiteSearch('land'); });
 
-function renderPrep(){
-  document.getElementById('prep').innerHTML=state.prep.map(t=>`<div class="task" data-done="${t.done?1:0}" data-id="${t.id}"><div class="box">${CHECK}</div><div class="tx">${esc(t.tx)}${t.sub?`<small>${esc(t.sub)}</small>`:''}</div></div>`).join('');
-  document.querySelectorAll('#prep .task').forEach(el=>el.onclick=()=>{const t=state.prep.find(x=>x.id===el.dataset.id);t.done=!t.done;save();renderPrep();});
-}
-function renderSteps(){
-  document.getElementById('steps').innerHTML=state.steps.map((s,i)=>`<div class="step" data-done="${s.done?1:0}" data-id="${s.id}"><div class="num tnum">${s.done?'✓':i+1}</div><div class="stx">${esc(s.tx)}${s.sub?`<small>${esc(s.sub)}</small>`:''}</div></div>`).join('');
-  document.querySelectorAll('#steps .step').forEach(el=>el.onclick=()=>{const s=state.steps.find(x=>x.id===el.dataset.id);s.done=!s.done;save();renderSteps();});
-}
 function renderLineFilter(){
   const sel=document.getElementById('propLineFilter'); if(!sel)return;
   const lines=[...new Set(state.properties.map(p=>p.line).filter(Boolean))].sort();
@@ -811,7 +803,7 @@ function renderLineFilter(){
   sel.value=lines.includes(cur)?cur:'';
   if(sel.value!==cur) propLineFilter='';
 }
-function renderProps(){renderStats();renderTabs();renderList();renderPrep();renderSteps();renderWeights();renderLineFilter();}
+function renderProps(){renderStats();renderTabs();renderList();renderWeights();renderLineFilter();}
 
 document.addEventListener('DOMContentLoaded',()=>{
   const ps=document.getElementById('prop_search');
