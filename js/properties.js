@@ -465,13 +465,13 @@ document.getElementById('fillBtn').onclick=async()=>{
 document.getElementById('findBtn').onclick=async()=>{
   const q=(document.getElementById('f_name').value+' '+document.getElementById('f_loc').value).trim();
   if(!q){document.getElementById('f_name').focus();return;}
-  const btn=document.getElementById('findBtn'); btn.disabled=true; const old=btn.textContent; btn.textContent='찾는 중…';
+  const btn=document.getElementById('findBtn'); btn.disabled=true; const old=btn.innerHTML; btn.textContent='찾는 중…';
   try{
     const j=await geocode(q);
     if(j.found){ setFormPin(j.lat,j.lng,true); btn.textContent='✓ 찾았어요'; }
     else { btn.textContent='못 찾음 — 지도 탭'; }
   }catch(e){ btn.textContent='검색 실패 — 지도 직접 탭'; }
-  setTimeout(()=>{btn.disabled=false;btn.textContent=old;},1600);
+  setTimeout(()=>{btn.disabled=false;btn.innerHTML=old;},1600);
 };
 
 function renderStats(){const p=state.properties;document.getElementById('stats').innerHTML=
@@ -642,7 +642,7 @@ document.getElementById('em_findBtn').onclick=async function(){
       editMapMarker=L.marker([d.lat,d.lng]).addTo(editMapObj);
     }
   }catch(e){}
-  this.disabled=false; this.textContent='📍 위치 자동 찾기';
+  this.disabled=false; this.innerHTML=ic('pin')+' 위치 자동 찾기';
 };
 document.getElementById('em_img').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
