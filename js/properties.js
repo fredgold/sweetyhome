@@ -489,14 +489,14 @@ function renderTabs(){
 function areaChip(a){if(a==null||a==='')return'';const n=parseFloat(a);if(isNaN(n))return'';return n<=85?`<span class="chip ok tnum">전용 ${n}㎡ · 청약 OK</span>`:`<span class="chip warn tnum">전용 ${n}㎡ · 청약 영향 ⚠</span>`;}
 function depositChip(d){if(d==null||d==='')return'';const n=parseFloat(d);if(isNaN(n))return'';return `<span class="chip deposit tnum">보증금 ${n}억${n>5?' · 예산↑?':''}</span>`;}
 /* R4: 카드 액션 링크 — 우선순위 앞 2개(지도에서 보기·네이버 열기)만 상시 노출,
-   나머지는 '⋯ 더보기'로 접기. 480px 이하에서만 접힘(desktop은 display:contents로 한 줄 wrap) */
+   나머지는 '⋯ 더보기'로 접기. 480px 이하에서만 접힘(desktop은 display:contents로 한 줄 wrap).
+   호갱노노·실거래가는 매물별 딥링크가 불가능해(실거래가는 항상 홈페이지) 제거.
+   네이버 링크는 등록된 URL이 있으면 그 링크만, 없으면 이름 검색만 (둘 다 보여주지 않음) */
 function actionsHTML(p, urlSafe){
   const _acts=[];
   if(p.lat) _acts.push(`<button class="c-act" data-locate="${p.id}">${ic('map')} 지도에서 보기</button>`);
   if(urlSafe) _acts.push(`<a class="c-act naver" href="${esc(urlSafe)}" target="_blank" rel="noopener">${ic('link')} 네이버 열기 ↗</a>`);
-  _acts.push(`<a class="c-act naver" href="${naverUrl(p)}" target="_blank">${ic('map')} 네이버지도</a>`);
-  _acts.push(`<a class="c-act hogang" href="${siteUrl('hogang',p.name)}" target="_blank">호갱노노</a>`);
-  _acts.push(`<a class="c-act rt" href="${siteUrl('rt',p.name)}" target="_blank">실거래가</a>`);
+  else _acts.push(`<a class="c-act naver" href="${naverUrl(p)}" target="_blank">${ic('map')} 네이버지도</a>`);
   _acts.push(`<button class="c-act" data-edit="${p.id}">${ic('edit')} 수정</button>`);
   _acts.push(`<button class="c-act c-act-del" data-del="${p.id}">삭제</button>`);
   return `<div class="c-actions">

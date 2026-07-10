@@ -281,7 +281,6 @@
   .c-actions button,.c-actions a{font-size:var(--fs-label);font-weight:600;color:var(--ink-faint);padding:6px 10px;border-radius:var(--radius-sm);text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
   .c-actions a.naver{color:#06be34;}
   .c-actions button:hover,.c-actions a:hover{background:var(--hairline-soft);color:var(--ink);}
-  .c-actions a.hogang{color:#ff8a3d;} .c-actions a.rt{color:#3b73c4;}
   .c-act-del{color:var(--s-drop);}
   .c-more-btn{display:none;}
 
