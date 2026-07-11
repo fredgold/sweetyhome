@@ -5,7 +5,8 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 function gUrl(q){return 'https://www.google.com/search?q='+encodeURIComponent(q);}
 function nmapUrl(q){return 'https://map.naver.com/p/search/'+encodeURIComponent(q);}
 function landUrl(q){return 'https://m.land.naver.com/search/result/'+encodeURIComponent(q);}
-function naverUrl(p){return 'https://map.naver.com/p/search/'+encodeURIComponent((p.name||'')+' '+(p.loc||''));}
+function stripLabelPrefix(s){return String(s||'').replace(/^(\s*\[[^\]]*\])+\s*/,'');} // "[G1] 가양6단지" → "가양6단지" (네이버지도 검색 정확도용)
+function naverUrl(p){return 'https://map.naver.com/p/search/'+encodeURIComponent(stripLabelPrefix(p.name)+' '+(p.loc||''));}
 function siteUrl(site,q){
   q=(q||'').trim();
   if(site==='naver') return 'https://map.naver.com/p/search/'+encodeURIComponent(q);
