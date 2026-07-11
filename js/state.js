@@ -17,6 +17,17 @@
  *                     commuteSinsa, url, memo, img (base64), status, lat, lng,
  *                     geocodePending, checks:{k1..k9}, aiScore, aiComment}]
  *
+ * state.complexes : [{id, complexName, loc, geocodeQuery, groupCode, regionGroup,
+ *                     station, line, yearBuilt, households, householdGrade,
+ *                     commuteGangnam, commuteSinsa, complexStatus('관심' 기본),
+ *                     lat, lng, memo, createdAt, updatedAt}]
+ *                    v5(단지·매물 2계층) 목표 스키마. Stage 1은 빈 배열만 존재 —
+ *                    필드 채우기·마이그레이션은 다음 단계. properties[]와 병존, 아직 미사용.
+ * state.listings  : [{id, complexId, source, url, capturedAt, lastCheckedAt,
+ *                     dongHo, areaM2, areaText, areaGrade, deposit, managementFee,
+ *                     listingStatus('게시중' 기본), isRepresentative(false), memo}]
+ *                    complexes와 같은 v5 Stage 1 — 빈 배열만 존재, 아직 미사용.
+ *
  * state.scraps    : [{id, createdAt, title, type (SC_TYPE key),
  *                     raw, img (base64), location, price, area,
  *                     schedule, condition, source, status (SC_STATUS key),
@@ -122,6 +133,8 @@ const DEFAULT={
     {id:'a3',text:'협약은행 대출상담 예약 (KB·하나·신한)',priority:3,done:false},
   ],
   properties:[],
+  complexes:[],
+  listings:[],
   regNews:[],
   scraps:[],
   prep:[
@@ -244,6 +257,8 @@ function applyGuards(raw){
   });
   state.regNews=state.regNews||[];
   state.savedRoutes=state.savedRoutes||[];
+  state.complexes=state.complexes||[];
+  state.listings=state.listings||[];
   state.scraps=(state.scraps||[]).map(s=>{
     const p=s.parsed||{};
     return {
