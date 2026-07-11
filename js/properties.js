@@ -55,20 +55,67 @@ function initOverview(){
     refreshOverview();
   });
 }
-function refreshOverview(){
+/* 마커 = 보증금 라벨 pill + 상태색 테두리, 선택 시 상태색 링(outline) + 최상단(zIndexOffset).
+   히트영역은 CSS(.prop-marker padding)로 ~44px까지 확장 — 보이는 pill(~22px)보다 넓게 클릭 가능 */
+function markerLabel(p){
+  const d=p.depositNum!=null?p.depositNum:(p.deposit!=null&&p.deposit!==''?parseFloat(p.deposit):null);
+  return (d!=null&&!isNaN(d))?`${d}억`:'가격미정';
+}
+function markerHtml(p,selected){
+  const color=HEX[p.status]||'#6B7C93';
+  const ring=selected?`outline:3px solid ${color}88;outline-offset:1px;`:'';
+  return `<div class="prop-marker${selected?' selected':''}">
+    <span class="prop-marker-pill" style="border-color:${color};${ring}"><i style="background:${color}"></i>${esc(markerLabel(p))}</span>
+  </div>`;
+}
+/* 필터·검색으로 보이는 매물 id 집합이 실제로 바뀐 경우에만 fitBounds — 카드 펼침/접기·마커
+   재선택처럼 집합은 그대로인 리렌더에서는 지도가 튀지 않도록 (연타해도 멀미 안 나게, animate:false) */
+let lastVisibleMapKey='';
+function refreshOverview(items){
   if(!overview) return;
+  const withCoords=(items||visibleProperties()).filter(p=>p.lat&&p.lng);
+  const key=withCoords.map(p=>p.id).sort().join(',');
+  const setChanged=key!==lastVisibleMapKey;
+  lastVisibleMapKey=key;
   ovMarkers.forEach(m=>overview.removeLayer(m)); ovMarkers=[];
   const pts=[];
-  state.properties.filter(p=>p.lat&&p.lng).forEach(p=>{
-    const icon=L.divIcon({className:'prop-pin',html:`<span style="background:${HEX[p.status]||'#6B7C93'}"></span>`,iconSize:[20,20],iconAnchor:[10,10]});
-    const m=L.marker([p.lat,p.lng],{icon});
-    m.bindPopup(`<b>${esc(p.name||'')}</b><br>${esc(p.status)}${p.deposit?' · '+p.deposit+'억':''}${p.area?' · '+p.area+'㎡':''}<br><a href="${naverUrl(p)}" target="_blank">네이버에서 열기 →</a>`);
+  withCoords.forEach(p=>{
+    const selected=expandedPropId===p.id;
+    const icon=L.divIcon({className:'',html:markerHtml(p,selected),iconSize:[1,1],iconAnchor:[0,0]});
+    const m=L.marker([p.lat,p.lng],{icon,zIndexOffset:selected?1000:0});
+    m.on('click',()=>selectFromMap(p.id));
     m._pid=p.id;
     m.addTo(overview); ovMarkers.push(m); pts.push([p.lat,p.lng]);
   });
-  if(pts.length===1) overview.setView(pts[0],15);
-  else if(pts.length>1) overview.fitBounds(pts,{padding:[40,40],maxZoom:15});
+  if(setChanged){
+    if(pts.length===1) overview.setView(pts[0],Math.max(overview.getZoom(),15),{animate:false});
+    else if(pts.length>1) overview.fitBounds(pts,{padding:[40,40],maxZoom:15,animate:false});
+  }
   setTimeout(()=>overview.invalidateSize(),60);
+}
+/* 마커 탭 → 카드: 해당 카드를 펼치고 리스트를 그 위치로 스크롤 (sticky 탭 네비 높이만큼 오프셋) */
+function selectFromMap(id){
+  expandedPropId=id;
+  renderList();
+  scrollCardIntoView(id);
+}
+function scrollCardIntoView(id){
+  const toggle=document.querySelector(`[data-cardtoggle="${id}"]`);
+  const card=toggle&&toggle.closest('.card');
+  if(!card) return;
+  const nav=document.querySelector('.apptabs');
+  const offset=(nav?nav.getBoundingClientRect().height:0)+12;
+  const top=card.getBoundingClientRect().top+window.scrollY-offset;
+  window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+}
+/* 카드 → 지도: 마커 재생성 없이 아이콘만 바꿔치기(제거·재추가 없음 → fitBounds 재발동 안 함) */
+function reselectMarker(id){
+  ovMarkers.forEach(m=>{
+    const p=state.properties.find(x=>x.id===m._pid); if(!p) return;
+    const selected=m._pid===id;
+    m.setIcon(L.divIcon({className:'',html:markerHtml(p,selected),iconSize:[1,1],iconAnchor:[0,0]}));
+    m.setZIndexOffset(selected?1000:0);
+  });
 }
 document.getElementById('mapToggle').onclick=()=>{
   const c=document.getElementById('mapcard'); c.classList.toggle('collapsed');
@@ -531,17 +578,24 @@ function togglePropCard(id){
   expandedPropId = expandedPropId===id ? null : id;
   renderList();
 }
-function renderList(){
+/* 탭 필터·검색 — renderList()와 refreshOverview() 둘 다 같은 "보이는 집합"을 써야
+   목록 필터 변경 시 지도 마커 집합도 함께 좁혀진다 (덱 스펙 "필터=지도 동기화") */
+function visibleProperties(){
   let items=[...state.properties];
   if(activeTab!=='전체') items=items.filter(p=>p.status===activeTab);
   const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
   if(pq) items=items.filter(p=>(p.name||'').toLowerCase().includes(pq)||(p.loc||'').toLowerCase().includes(pq)||(p.memo||'').toLowerCase().includes(pq)||(p.station||'').toLowerCase().includes(pq)||(p.line||'').toLowerCase().includes(pq));
+  return items;
+}
+function renderList(){
+  let items=visibleProperties();
   if(sortMode==='jeonse') items.sort((a,b)=>(a.jeonseReal??a.depositNum??999)-(b.jeonseReal??b.depositNum??999));
   else if(sortMode==='households') items.sort((a,b)=>(b.households??0)-(a.households??0));
   else if(sortMode==='ratio') items.sort((a,b)=>(a.jeonseRatio??999)-(b.jeonseRatio??999));
   else items.sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||(b.created-a.created));
   const el=document.getElementById('list');
   updateUnisearch(items.length);
+  refreshOverview(items);
   if(!items.length){el.innerHTML=`<div class="empty"><div class="big">${activeTab==='전체'?'아직 등록된 매물이 없어요':'이 상태의 매물이 없어요'}</div>${activeTab==='전체'?'＋ 매물 추가로 첫 후보를 올려보세요.':'다른 탭을 눌러보세요.'}</div>`;return;}
   el.innerHTML=items.map(p=>{
     const urlSafe=p.url?safeUrl(p.url):'';
@@ -606,8 +660,11 @@ function locate(id){
   const p=state.properties.find(x=>x.id===id); if(!p||!p.lat)return;
   document.getElementById('mapcard').classList.remove('collapsed');
   document.getElementById('mapToggle').textContent='접기';
-  waitLeaflet(()=>{overview.setView([p.lat,p.lng],16);overview.invalidateSize();
-    const m=ovMarkers.find(mk=>{const ll=mk.getLatLng();return ll.lat===p.lat&&ll.lng===p.lng;}); if(m)m.openPopup();});
+  waitLeaflet(()=>{
+    overview.invalidateSize();
+    overview.panTo([p.lat,p.lng],{animate:true});
+    reselectMarker(id);
+  });
   document.getElementById('mapcard').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
