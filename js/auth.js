@@ -12,7 +12,7 @@ function unlockApp(isGuest){
     isGuestMode=true;
     OWNERS=['본인','배우자','공동'];
     document.body.classList.add('guest');
-    document.querySelector('.brand h1').innerHTML='스위티홈 <span class="guest-badge">데모</span>';
+    document.getElementById('guestBadge').textContent='데모';
     document.querySelector('.brand .sub').textContent='예비부부 · 결혼 & 내집마련 준비 보드 (체험판)';
   }
   load();

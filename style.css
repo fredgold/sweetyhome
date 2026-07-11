@@ -395,7 +395,7 @@
   .login-box .login-guest{font-size:12px;color:var(--ink-faint);font-weight:600;margin-top:16px;cursor:pointer;text-decoration:underline;}
   .login-box .login-guest:hover{color:var(--ink-soft);}
 
-  .guest-badge{display:none;font-size:10.5px;font-weight:700;background:#FFF3E0;color:#E65100;border-radius:var(--radius-sm);padding:4px 9px;margin-left:8px;}
+  .guest-badge{display:none;font-size:10.5px;font-weight:700;background:var(--line9-wash);color:var(--line9-deep);border-radius:var(--radius-sm);padding:4px 9px;margin-left:8px;}
   body.guest .guest-badge{display:inline-block;}
 
   /* ===== AI 상태 ===== */
