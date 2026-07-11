@@ -7,14 +7,6 @@ function nmapUrl(q){return 'https://map.naver.com/p/search/'+encodeURIComponent(
 function landUrl(q){return 'https://m.land.naver.com/search/result/'+encodeURIComponent(q);}
 function stripLabelPrefix(s){return String(s||'').replace(/^(\s*\[[^\]]*\])+\s*/,'');} // "[G1] 가양6단지" → "가양6단지" (네이버지도 검색 정확도용)
 function naverUrl(p){return 'https://map.naver.com/p/search/'+encodeURIComponent(stripLabelPrefix(p.name)+' '+(p.loc||''));}
-function siteUrl(site,q){
-  q=(q||'').trim();
-  if(site==='naver') return 'https://map.naver.com/p/search/'+encodeURIComponent(q);
-  if(site==='land')  return 'https://m.land.naver.com/search/result/'+encodeURIComponent(q);
-  if(site==='hogang')return 'https://hogangnono.com/search/'+encodeURIComponent(q);
-  if(site==='rt')    return 'https://rt.molit.go.kr/';
-  return 'https://map.naver.com/p/search/'+encodeURIComponent(q);
-}
 function won(w){ // w in 원 → 억/만 표시
   w=Math.round(w||0); const neg=w<0?'-':''; w=Math.abs(w);
   const eok=Math.floor(w/100000000), man=Math.floor((w%100000000)/10000);

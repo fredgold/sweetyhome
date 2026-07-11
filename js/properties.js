@@ -947,26 +947,15 @@ function showStatusPicker(pill, p){
   const close=ev=>{ if(!picker.contains(ev.target)){ picker.remove(); _statusPicker=null; document.removeEventListener('click',close,true); } };
   setTimeout(()=>document.addEventListener('click',close,true),0);
 }
-/* 통합검색 — 입력값에 따라 "내 목록 N곳" 안내 + 외부 검색 링크(네이버부동산·호갱노노 우선,
-   네이버지도·실거래가 보조) href 갱신. 검색어가 없으면 링크 비활성화(무의미한 빈 검색 방지) */
+/* 통합검색 — 입력값에 따라 "내 목록 N곳" 안내 갱신 */
 function updateUnisearch(matchCount){
   const input=document.getElementById('prop_search'); if(!input) return;
   const q=input.value.trim();
+  const resultEl=document.getElementById('unisearchResult');
   const textEl=document.getElementById('unisearchText');
-  if(textEl){
-    textEl.innerHTML = q
-      ? `내 목록 <b>${matchCount}곳</b> · 못 찾았다면 밖에서 '<b>${esc(q)}</b>'`
-      : '새 지역·단지는 아래 링크에서 바로 검색해보세요';
-  }
-  [['ur_land','land'],['ur_hogang','hogang'],['ur_naver','naver'],['ur_rt','rt']].forEach(([id,site])=>{
-    const a=document.getElementById(id); if(!a) return;
-    if(q){ a.href=siteUrl(site,q); a.classList.remove('disabled'); a.removeAttribute('aria-disabled'); }
-    else { a.href='#'; a.classList.add('disabled'); a.setAttribute('aria-disabled','true'); }
-  });
+  if(resultEl) resultEl.style.display=q?'':'none';
+  if(textEl&&q) textEl.innerHTML=`내 목록 <b>${matchCount}곳</b> 검색됨`;
 }
-document.querySelectorAll('.ur-link').forEach(a=>a.addEventListener('click',e=>{
-  if(a.classList.contains('disabled')){ e.preventDefault(); document.getElementById('prop_search')?.focus(); }
-}));
 
 function renderProps(){renderStats();renderTabs();renderList();renderWeights();}
 
