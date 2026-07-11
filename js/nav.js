@@ -42,7 +42,7 @@ function renderJourney(){
     steps.push({t:m.label,d:d,date:m.date});
   });
   const el=document.getElementById('journey');
-  const cols=Math.max(4,steps.length);
+  const cols=steps.length;
   el.style.gridTemplateColumns=`repeat(${cols},minmax(68px,1fr))`;
   el.innerHTML=steps.map(s=>`
     <div class="jstop ${s.now?'now':''}">
