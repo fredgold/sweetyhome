@@ -1,4 +1,4 @@
-import { verifySession, cors } from './_auth.js';
+import { verifySession, cors, rateLimit } from './_auth.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -8,6 +8,7 @@ export default async function handler(req, res) {
   }
 
   if (!await verifySession(req, res)) return;
+  if (!await rateLimit(req, res, { prefix: 'geocode', max: 120, windowSeconds: 3600 })) return;
 
   const keyId = process.env.NAVER_MAPS_CLIENT_ID;
   const key = process.env.NAVER_MAPS_CLIENT_SECRET;
@@ -16,9 +17,13 @@ export default async function handler(req, res) {
     return;
   }
 
-  const q = req.query.q;
+  const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
   if (!q) {
     res.status(400).json({ ok: false, error: '검색어(q)가 필요합니다.' });
+    return;
+  }
+  if (q.length > 120) {
+    res.status(400).json({ ok: false, error: '검색어는 120자 이하로 입력해주세요.' });
     return;
   }
 

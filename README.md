@@ -31,8 +31,7 @@ sweetyhome-vercel/
 3. 배포: `vercel`  (처음엔 프로젝트 생성 질문 몇 개 → 엔터로 진행), 운영 배포는 `vercel --prod`
 4. **환경변수 설정**(중요): Vercel 대시보드 → 프로젝트 → Settings → Environment Variables 에 추가
    - `ANTHROPIC_API_KEY` = 본인 API 키 (https://console.anthropic.com)
-   - (선택) `ANTHROPIC_MODEL` = `claude-sonnet-4-6` (기본값)
-   - (선택) `APP_SHARED_SECRET` = 아무 문자열. 설정하면 무단 호출을 막음(아래 참고)
+   - (선택) `ANTHROPIC_MODEL` = 서버에서 사용할 모델 ID (미설정 시 Haiku)
    - CLI로도 가능: `vercel env add ANTHROPIC_API_KEY`
 5. 환경변수 추가 후 **재배포**: `vercel --prod`
 
@@ -41,15 +40,14 @@ sweetyhome-vercel/
 ## 주의 — API 키 비용/보안
 
 - AI 호출은 본인 키로 과금됩니다(매물 분석·자동 평가·상담·자산 정리·위치 찾기).
-- `/api/messages`는 공개 엔드포인트라, 주소가 노출되면 남이 호출해 크레딧을 쓸 수 있습니다.
-  무단 사용이 걱정되면 `APP_SHARED_SECRET`를 설정하세요. (단, 그 경우 index.html의 `claudeAPI`에서
-  `headers`에 `"x-app-secret": "비밀값"`을 추가해야 합니다. 원하면 그 수정도 도와드릴게요.)
+- `/api/messages`는 Bearer 세션 인증과 세션별 호출 제한을 통과해야 사용할 수 있습니다.
+- 브라우저 코드에 공유 Secret을 넣으면 사용자에게 노출되므로 추가 보안 수단이 되지 않습니다.
 - `web_search`를 쓰는 기능(매물 분석/평가/상담/위치찾기)은 키 권한·요금제에 따라 동작이 달라질 수 있습니다.
   오류가 나면 해당 호출의 `tools`에서 web_search를 빼면 검색 없이 동작합니다.
 
 ## 모델명이 안 맞을 때
 
-`api/messages.js`가 기본 모델 `claude-sonnet-4-6`을 사용합니다. 계정에서 다른 모델만 쓸 수 있으면
+`api/messages.js`가 기본으로 Haiku를 사용합니다. 서버에서 다른 모델을 쓰려면
 `ANTHROPIC_MODEL` 환경변수에 가능한 모델 ID를 넣으세요.
 
 ## 데이터

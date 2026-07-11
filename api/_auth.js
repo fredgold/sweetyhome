@@ -50,12 +50,12 @@ export async function rateLimit(req, res, { prefix, max, windowSeconds }) {
   const auth = req.headers['authorization'] || '';
   const id = auth.slice(7) || 'anon';
   const key = `sweetyhome:rl:${prefix}:${id}`;
-  const count = (await redis.get(key)) || 0;
-  if (count >= max) {
+  const count = await redis.incr(key);
+  if (count === 1) await redis.expire(key, windowSeconds);
+  if (count > max) {
     const ttl = await redis.ttl(key);
     res.status(429).json({ ok: false, error: `호출 한도 초과. ${Math.ceil((ttl > 0 ? ttl : windowSeconds) / 60)}분 후 다시 시도해주세요.` });
     return false;
   }
-  await redis.set(key, count + 1, count === 0 ? { ex: windowSeconds } : {});
   return true;
 }

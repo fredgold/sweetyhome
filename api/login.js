@@ -27,9 +27,9 @@ export default async function handler(req, res) {
   const key = `sweetyhome:login:${ip}`;
 
   try {
-    const attempts = (await redis.get(key)) || 0;
-
-    if (attempts >= MAX_ATTEMPTS) {
+    const attempts = await redis.incr(key);
+    if (attempts === 1) await redis.expire(key, LOCKOUT_SECONDS);
+    if (attempts > MAX_ATTEMPTS) {
       const ttl = await redis.ttl(key);
       return res.status(429).json({
         ok: false,
@@ -48,10 +48,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, token });
     }
 
-    const newAttempts = attempts + 1;
-    await redis.set(key, newAttempts, { ex: LOCKOUT_SECONDS });
-
-    const remaining = MAX_ATTEMPTS - newAttempts;
+    const remaining = MAX_ATTEMPTS - attempts;
     return res.status(401).json({
       ok: false,
       locked: remaining <= 0,

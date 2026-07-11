@@ -5,8 +5,7 @@
 //
 // 필요한 환경변수 (Vercel > Settings > Environment Variables):
 //   ANTHROPIC_API_KEY  (필수)  — https://console.anthropic.com 에서 발급
-//   ANTHROPIC_MODEL    (선택)  — 기본값 "claude-sonnet-4-6"
-//   APP_SHARED_SECRET  (선택)  — 설정 시, 요청 헤더 x-app-secret 와 일치해야 통과(무단 사용 방지)
+//   ANTHROPIC_MODEL    (선택)  — 서버 관리자만 변경, 기본값 Haiku
 
 import { verifySession, cors, rateLimit } from './_auth.js';
 
@@ -26,18 +25,11 @@ export default async function handler(req, res) {
     return;
   }
 
-  // (선택) 간단한 공유 비밀번호로 무단 호출 차단
-  const secret = process.env.APP_SHARED_SECRET;
-  if (secret && req.headers["x-app-secret"] !== secret) {
-    res.status(401).json({ error: "unauthorized" });
-    return;
-  }
-
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
 
     const payload = {
-      model: body.model || process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
+      model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
       max_tokens: Math.min(Number(body.max_tokens) || 1024, 2048),
       messages: Array.isArray(body.messages) ? body.messages : [],
     };

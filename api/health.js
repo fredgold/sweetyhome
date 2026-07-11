@@ -1,8 +1,13 @@
-import { verifySession, cors } from './_auth.js';
+import { verifySession, cors, rateLimit } from './_auth.js';
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
+  if (req.method !== 'GET') {
+    res.status(405).json({ ok: false, error: 'GET only' });
+    return;
+  }
   if (!await verifySession(req, res)) return;
+  if (!await rateLimit(req, res, { prefix: 'health', max: 60, windowSeconds: 3600 })) return;
 
   const key = process.env.ANTHROPIC_API_KEY || process.env.sweetyhome;
   if (!key) {
@@ -38,7 +43,8 @@ export default async function handler(req, res) {
     } else if (errMsg.includes('invalid') || upstream.status === 401) {
       res.status(200).json({ ok: false, reason: 'invalid_key', msg: 'API 키가 유효하지 않아요. 키를 확인해주세요.' });
     } else {
-      res.status(200).json({ ok: false, reason: 'unknown', msg: errMsg || `API 오류 (${upstream.status})` });
+      console.error('[health] upstream error:', upstream.status, errMsg);
+      res.status(200).json({ ok: false, reason: 'unknown', msg: `API 오류 (${upstream.status})` });
     }
   } catch (e) {
     res.status(200).json({ ok: false, reason: 'network', msg: 'API 서버에 연결할 수 없어요.' });
