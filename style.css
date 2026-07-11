@@ -285,7 +285,7 @@
   .card[data-st="탈락"]::before{border-color:var(--s-drop);opacity:.6;}
   .card[data-st="보류"]::before{border-color:var(--s-hold);}
   .card.dim{opacity:.62;}
-  /* 카드 헤드라인 = 보증금·전용면적, 부제 = 단지명·역·호선. 접힘 기본(2줄), 클릭 시 아코디언 펼침 */
+  /* 카드 헤드라인 = 단지명·역·호선, 부제 = 보증금·전용면적. 접힘 기본(2줄), 클릭 시 아코디언 펼침 */
   .c-top{display:flex;align-items:flex-start;gap:10px;padding:14px 15px;cursor:pointer;}
   .c-top:focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:var(--radius-card);}
   .c-head-text{flex:1;min-width:0;}

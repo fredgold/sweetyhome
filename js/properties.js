@@ -668,8 +668,8 @@ function renderList(){
     <div class="c-top" data-cardtoggle="${p.id}" role="button" tabindex="0" aria-expanded="${expanded?'true':'false'}" aria-controls="cbody-${p.id}">
       ${routeCheckHTML}
       <div class="c-head-text">
-        <div class="c-headline tnum">${headlineText(p)}</div>
-        <div class="c-sub">${ic('transit','ic-muted')} ${subtitleText(p)}</div>
+        <div class="c-headline">${ic('transit','ic-muted')} ${subtitleText(p)}</div>
+        <div class="c-sub tnum">${headlineText(p)}</div>
       </div>
       <div class="c-badge-col">
         <span class="pill" data-statuspill="${p.id}" style="border-left-color:${color}"><i class="pill-dot" style="background:${color}"></i>${p.status}</span>
