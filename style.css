@@ -287,7 +287,7 @@
   .c-actions a.naver{color:#06be34;}
   .c-actions button:hover,.c-actions a:hover{background:var(--hairline-soft);color:var(--ink);}
   .c-act-del{color:var(--s-drop);}
-  .c-more-btn{display:none;}
+  .c-actions .c-more-btn{display:none;}
 
   .route-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);padding:11px 15px;margin-bottom:14px;box-shadow:var(--shadow);}
   .route-bar .rb-info{font-size:13px;font-weight:700;color:var(--ink);}
@@ -841,7 +841,7 @@
   .c-actions-more{display:none;flex-wrap:wrap;gap:8px;width:100%;margin-top:2px;}
   .card.more-open .c-actions-more{display:flex;}
   .c-actions button,.c-actions a{font-size:var(--fs-label);padding:0 14px;min-height:44px;flex:1 1 auto;justify-content:center;border:1px solid var(--hairline);}
-  .c-more-btn{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:44px;padding:0 16px;border:1px solid var(--hairline);border-radius:var(--radius-sm);color:var(--ink-soft);font-weight:700;}
+  .c-actions .c-more-btn{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:44px;padding:0 16px;border:1px solid var(--hairline);border-radius:var(--radius-sm);color:var(--ink-soft);font-weight:700;}
   .chip{font-size:var(--fs-micro);padding:4px 8px;}
   .pill{padding:6px 11px;}
   .card{padding:10px 11px;}
