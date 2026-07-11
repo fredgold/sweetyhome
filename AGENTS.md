@@ -37,7 +37,8 @@
 
 ## 자주 실수하는 지점 (CLAUDE.md에 상세, 여기선 요약)
 - **저장 스키마를 깨지 마라.** 상태 키는 `sweetyhome` 하나. 새 필드는 `state.js`의 기본값 보정(DEFAULT/load 가드)에 추가해 기존 데이터가 안 깨지게.
-- **AI 호출은 `/api/messages` 프록시만.** `api.anthropic.com` 직접 호출 금지. API 키·PIN·토큰을 코드에 하드코딩 절대 금지. 시크릿은 환경변수로만.
+- **AI 호출은 `/api/messages` 프록시만.** `api.anthropic.com` 직접 호출 금지. API 키·Client Secret·PIN·토큰을 코드에 하드코딩 절대 금지. 시크릿은 환경변수로만.
+- **공개 SDK Client ID 예외.** 브라우저 SDK 사양상 노출이 필수이고 배포 도메인 제한이 걸린 공개 Client ID만 코드에 둘 수 있다. Secret은 절대 해당하지 않는다.
 - **새 환경변수가 필요하면** 코드에 넣지 말고 "Vercel Settings에 이 env를 추가해 달라"고 사람에게 요청하라.
 - **배포**: `git push` → Vercel 자동 배포. 별도 빌드 없음.
 - **디자인 토큰 재사용**: 색 역할 골드=매물, 그린=자산, 보라=AI. 실제 값은 `style.css`에 있으니 새로 만들지 말고 읽어 써라. 한국어 UI, 큰 버튼, 초보 친화.
