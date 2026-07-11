@@ -338,9 +338,9 @@
   .route-pin span{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;color:#fff;font-size:12px;font-weight:800;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);}
 
   /* 매물 지도 마커 — 보증금 라벨 pill + 상태색 테두리. 보이는 pill(~22px)보다 히트영역을
-     넓게(padding) 잡아 터치 타깃 ≥44px 확보. 선택 시 outline으로 강조 + JS에서 zIndexOffset↑ */
-  /* inline-flex 필수: Leaflet 아이콘 래퍼가 width:1px라서 display:flex(블록)면
-     콘텐츠 폭 무시하고 1px로 눌려버려 실제 클릭 히트박스가 보이는 pill보다 좁아짐 */
+     넓게(padding) 잡아 터치 타깃 ≥44px 확보. 선택 시 outline으로 강조 + JS에서 zIndex↑ */
+  /* inline-flex 필수: block(flex)이면 마커 래퍼가 콘텐츠 폭을 무시하고 눌려버려
+     실제 클릭 히트박스가 보이는 pill보다 좁아짐 (실측 확인된 값이라 유지) */
   .prop-marker{position:relative;transform:translate(-50%,-50%);display:inline-flex;align-items:center;justify-content:center;padding:11px 8px;box-sizing:border-box;cursor:pointer;}
   .prop-marker-pill{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-family:"Pretendard",sans-serif;font-size:12px;font-weight:700;line-height:1;color:var(--ink);background:#fff;border:2px solid var(--hairline);border-radius:999px;padding:5px 10px;box-shadow:0 2px 6px rgba(30,37,34,.28);}
   .prop-marker-pill i{width:6px;height:6px;border-radius:50%;flex:none;}
@@ -585,9 +585,9 @@
   .rn-card .rn-src{color:var(--ink-faint);}
   .rn-empty{text-align:center;padding:30px 16px;color:var(--ink-faint);font-size:13px;line-height:1.6;}
 
-  .leaflet-popup-content{font-family:"Pretendard",sans-serif;font-size:12.5px;}
-  .leaflet-popup-content b{font-size:13.5px;}
-  .leaflet-popup-content a{color:#06be34;font-weight:700;text-decoration:none;}
+  .route-popup{font-family:"Pretendard",sans-serif;font-size:12.5px;background:#fff;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:8px 10px;box-shadow:0 2px 8px rgba(30,37,34,.2);}
+  .route-popup b{font-size:13.5px;}
+  .route-popup a{color:#06be34;font-weight:700;text-decoration:none;}
 
   .modal{position:fixed;inset:0;background:rgba(30,37,34,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000;}
   .modal.open{display:flex;}

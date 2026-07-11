@@ -46,12 +46,11 @@ function checklistHTML(p){
     </div></div>`;
 }
 
-function waitLeaflet(cb){ if(typeof L!=='undefined'){cb();} else {setTimeout(()=>waitLeaflet(cb),120);} }
+function waitNaverMaps(cb){ if(typeof naver!=='undefined'&&naver.maps){cb();} else {setTimeout(()=>waitNaverMaps(cb),120);} }
 function initOverview(){
-  waitLeaflet(()=>{
+  waitNaverMaps(()=>{
     if(overview){refreshOverview();return;}
-    overview=L.map('overviewMap',{scrollWheelZoom:true}).setView(CENTER,13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(overview);
+    overview=new naver.maps.Map('overviewMap',{center:new naver.maps.LatLng(CENTER[0],CENTER[1]),zoom:13,scrollWheel:true,zoomControl:true,zoomControlOptions:{position:naver.maps.Position.TOP_RIGHT}});
     refreshOverview();
   });
 }
@@ -80,21 +79,25 @@ function refreshOverview(items){
   const markerKey=withCoords.map(p=>`${p.id}:${p.lat}:${p.lng}:${p.status}:${markerLabel(p)}:${expandedPropId===p.id}`).sort().join(',');
   if(markerKey===lastMarkerRenderKey) return;
   lastMarkerRenderKey=markerKey;
-  ovMarkers.forEach(m=>overview.removeLayer(m)); ovMarkers=[];
+  ovMarkers.forEach(m=>m.setMap(null)); ovMarkers=[];
   const pts=[];
   withCoords.forEach(p=>{
     const selected=expandedPropId===p.id;
-    const icon=L.divIcon({className:'',html:markerHtml(p,selected),iconSize:[1,1],iconAnchor:[0,0]});
-    const m=L.marker([p.lat,p.lng],{icon,zIndexOffset:selected?1000:0});
-    m.on('click',()=>selectFromMap(p.id));
+    const pos=new naver.maps.LatLng(p.lat,p.lng);
+    const m=new naver.maps.Marker({position:pos,map:overview,icon:{content:markerHtml(p,selected),anchor:new naver.maps.Point(0,0)},zIndex:selected?1000:0});
+    naver.maps.Event.addListener(m,'click',()=>selectFromMap(p.id));
     m._pid=p.id;
-    m.addTo(overview); ovMarkers.push(m); pts.push([p.lat,p.lng]);
+    ovMarkers.push(m); pts.push(pos);
   });
   if(setChanged){
-    if(pts.length===1) overview.setView(pts[0],Math.max(overview.getZoom(),15),{animate:false});
-    else if(pts.length>1) overview.fitBounds(pts,{padding:[40,40],maxZoom:15,animate:false});
+    if(pts.length===1){ overview.setCenter(pts[0]); overview.setZoom(Math.max(overview.getZoom(),15)); }
+    else if(pts.length>1){
+      const bounds=new naver.maps.LatLngBounds(); pts.forEach(p=>bounds.extend(p));
+      overview.fitBounds(bounds,{top:40,right:40,bottom:40,left:40});
+      naver.maps.Event.once(overview,'idle',()=>{ if(overview.getZoom()>15) overview.setZoom(15); });
+    }
   }
-  setTimeout(()=>overview.invalidateSize(),60);
+  setTimeout(()=>overview.refresh(true),60);
 }
 const DESKTOP_MQ=window.matchMedia('(min-width:900px)');
 /* 마커 탭 → 카드: 해당 카드를 펼치고 리스트를 그 위치로 스크롤 (sticky 탭 네비 높이만큼 오프셋).
@@ -128,8 +131,8 @@ function reselectMarker(id){
   ovMarkers.forEach(m=>{
     const p=state.properties.find(x=>x.id===m._pid); if(!p) return;
     const selected=m._pid===id;
-    m.setIcon(L.divIcon({className:'',html:markerHtml(p,selected),iconSize:[1,1],iconAnchor:[0,0]}));
-    m.setZIndexOffset(selected?1000:0);
+    m.setIcon({content:markerHtml(p,selected),anchor:new naver.maps.Point(0,0)});
+    m.setZIndex(selected?1000:0);
   });
 }
 /* 모바일 전용 지도 풀스크린 토글 (≥900px에서는 버튼 자체가 CSS로 숨겨져 호출될 일 없음) */
@@ -138,10 +141,10 @@ function setMapExpanded(on){
   c.classList.toggle('expanded',on);
   const btn=document.getElementById('mapExpand');
   if(btn) btn.textContent=on?'작게 보기':'크게 보기';
-  setTimeout(()=>overview&&overview.invalidateSize(),300);
+  setTimeout(()=>overview&&overview.refresh(true),300);
 }
 /* --nav-h 갱신 + sticky 탭 네비 높이가 바뀔 수 있는 모든 계기(리사이즈·브레이크포인트 전환)에서
-   지도 invalidateSize 재호출. 900px 경계를 "진입"할 때는 모바일 전용 상태(풀스크린·접기)가
+   지도 refresh(true) 재호출. 900px 경계를 "진입"할 때는 모바일 전용 상태(풀스크린·접기)가
    남아있으면 2단 그리드가 깨지므로 강제 초기화 */
 function updateNavHeightVar(){
   const nav=document.querySelector('.apptabs');
@@ -155,10 +158,10 @@ function handleBreakpointChange(e){
   }
   updateNavHeightVar();
   /* --nav-h 변경이 #overviewMap의 calc() 높이에 반영되는 레이아웃·페인트가 끝난 뒤에
-     불러야 해서 이중 rAF로 한 프레임 넘김 (동기 호출하면 갱신 전 크기로 invalidateSize가
+     불러야 해서 이중 rAF로 한 프레임 넘김 (동기 호출하면 갱신 전 크기로 refresh(true)가
      실행돼 새로 넓어진 영역의 타일이 안 채워지는 문제가 실측됨) */
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    waitLeaflet(()=>overview&&overview.invalidateSize());
+    waitNaverMaps(()=>overview&&overview.refresh(true));
   }));
 }
 DESKTOP_MQ.addEventListener('change',handleBreakpointChange);
@@ -169,14 +172,14 @@ updateNavHeightVar();
     if(raf) cancelAnimationFrame(raf);
     raf=requestAnimationFrame(()=>{
       updateNavHeightVar();
-      requestAnimationFrame(()=>{ if(overview) overview.invalidateSize(); });
+      requestAnimationFrame(()=>{ if(overview) overview.refresh(true); });
     });
   });
 })();
 document.getElementById('mapToggle').onclick=()=>{
   const c=document.getElementById('mapcard'); c.classList.toggle('collapsed');
   document.getElementById('mapToggle').textContent=c.classList.contains('collapsed')?'펼치기':'접기';
-  if(!c.classList.contains('collapsed')) setTimeout(()=>overview&&overview.invalidateSize(),80);
+  if(!c.classList.contains('collapsed')) setTimeout(()=>overview&&overview.refresh(true),80);
 };
 document.getElementById('mapExpand').onclick=()=>{
   setMapExpanded(!document.getElementById('mapcard').classList.contains('expanded'));
@@ -221,9 +224,9 @@ function reorderRoute(fromIdx,toIdx){
   const [moved]=pts.splice(fromIdx,1);
   pts.splice(toIdx,0,moved);
   routeStops=legsForOrder(pts);
-  renderRouteBar(); waitLeaflet(()=>drawRoute());
+  renderRouteBar(); waitNaverMaps(()=>drawRoute());
 }
-function clearRouteLayer(){ if(routeLayerGroup&&overview) overview.removeLayer(routeLayerGroup); routeLayerGroup=null; }
+function clearRouteLayer(){ if(routeLayerGroup) routeLayerGroup.forEach(o=>o.setMap(null)); routeLayerGroup=null; }
 function dimRouteStatusMarkers(on){
   const ids=new Set(routeStops.map(s=>s.property.id));
   ovMarkers.forEach(m=>{ const dim=on&&ids.has(m._pid); m.setOpacity(dim?.15:1); });
@@ -231,17 +234,20 @@ function dimRouteStatusMarkers(on){
 function drawRoute(){
   clearRouteLayer();
   if(!overview||routeStops.length<2) return;
-  routeLayerGroup=L.layerGroup().addTo(overview);
+  routeLayerGroup=[];
   const latlngs=[];
   routeStops.forEach((s,i)=>{
-    const p=s.property; latlngs.push([p.lat,p.lng]);
-    const icon=L.divIcon({className:'route-pin',html:`<span style="background:${HEX[p.status]||'#6B7C93'}">${i+1}</span>`,iconSize:[24,24],iconAnchor:[12,12]});
-    const mk=L.marker([p.lat,p.lng],{icon});
-    mk.bindPopup(`<b>${i+1}. ${esc(p.name||'')}</b>`+(i>0?`<br>이전 정류점에서 도보 약 ${s.legMinutes}분 (${Math.round(s.legDistanceM)}m)`:''));
-    mk.addTo(routeLayerGroup);
+    const p=s.property; const pos=new naver.maps.LatLng(p.lat,p.lng); latlngs.push(pos);
+    const mk=new naver.maps.Marker({position:pos,map:overview,icon:{content:`<div class="route-pin"><span style="background:${HEX[p.status]||'#6B7C93'}">${i+1}</span></div>`,anchor:new naver.maps.Point(12,12)},zIndex:500});
+    const info=new naver.maps.InfoWindow({content:`<div class="route-popup"><b>${i+1}. ${esc(p.name||'')}</b>`+(i>0?`<br>이전 정류점에서 도보 약 ${s.legMinutes}분 (${Math.round(s.legDistanceM)}m)`:'')+`</div>`,borderWidth:0,backgroundColor:'transparent',disableAnchor:true});
+    naver.maps.Event.addListener(mk,'click',()=>info.open(overview,mk));
+    routeLayerGroup.push(mk);
   });
-  L.polyline(latlngs,{color:'#4B88CC',weight:3,dashArray:'6 6',opacity:.85}).addTo(routeLayerGroup);
-  overview.fitBounds(latlngs,{padding:[50,50],maxZoom:16});
+  const polyline=new naver.maps.Polyline({map:overview,path:latlngs,strokeColor:'#4B88CC',strokeWeight:3,strokeOpacity:.85,strokeStyle:'shortdash'});
+  routeLayerGroup.push(polyline);
+  const bounds=new naver.maps.LatLngBounds(); latlngs.forEach(p=>bounds.extend(p));
+  overview.fitBounds(bounds,{top:50,right:50,bottom:50,left:50});
+  naver.maps.Event.once(overview,'idle',()=>{ if(overview.getZoom()>16) overview.setZoom(16); });
   dimRouteStatusMarkers(true);
 }
 function renderRouteBar(){
@@ -327,7 +333,7 @@ function makeRoute(){
   if(routeStops.length<2){ alert('좌표가 저장된 매물이 2곳 이상 필요해요.'); return; }
   routeMode='result';
   expandMapCard();
-  renderList(); renderRouteBar(); waitLeaflet(()=>drawRoute());
+  renderList(); renderRouteBar(); waitNaverMaps(()=>drawRoute());
 }
 function refreshRoute(){
   const pts=routeStops.map(s=>s.property.id).map(id=>state.properties.find(p=>p.id===id)).filter(p=>p&&p.lat&&p.lng);
@@ -338,7 +344,7 @@ function refreshRoute(){
     return;
   }
   routeStops=legsForOrder(pts);
-  renderRouteBar(); waitLeaflet(()=>drawRoute());
+  renderRouteBar(); waitNaverMaps(()=>drawRoute());
 }
 function saveCurrentRoute(){
   const name=(prompt('루트 이름을 입력하세요 (예: 강남권 · 7월말)')||'').trim();
@@ -357,7 +363,7 @@ function loadSavedRoute(id){
   routeStops=legsForOrder(pts);
   routeMode='result';
   expandMapCard();
-  renderList(); renderRouteBar(); waitLeaflet(()=>drawRoute());
+  renderList(); renderRouteBar(); waitNaverMaps(()=>drawRoute());
 }
 let _routeMenu=null;
 function closeRouteMenu(){ if(_routeMenu){ _routeMenu.remove(); _routeMenu=null; } }
@@ -455,24 +461,27 @@ async function autoGeocode(){
 }
 
 function initFormMap(){
-  waitLeaflet(()=>{
-    if(formMapObj){setTimeout(()=>formMapObj.invalidateSize(),60);return;}
-    formMapObj=L.map('formMap').setView(CENTER,13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'}).addTo(formMapObj);
-    formMapObj.on('click',e=>setFormPin(e.latlng.lat,e.latlng.lng,true));
-    setTimeout(()=>formMapObj.invalidateSize(),60);
+  waitNaverMaps(()=>{
+    if(formMapObj){setTimeout(()=>formMapObj.refresh(true),60);return;}
+    formMapObj=new naver.maps.Map('formMap',{center:new naver.maps.LatLng(CENTER[0],CENTER[1]),zoom:13});
+    naver.maps.Event.addListener(formMapObj,'click',e=>setFormPin(e.coord.lat(),e.coord.lng(),true));
+    setTimeout(()=>formMapObj.refresh(true),60);
   });
 }
 function setFormPin(lat,lng,recenter){
   tempLatLng={lat,lng};
-  waitLeaflet(()=>{
+  waitNaverMaps(()=>{
     if(!formMapObj) return;
-    if(formMarker) formMarker.setLatLng([lat,lng]);
-    else formMarker=L.marker([lat,lng],{draggable:true}).addTo(formMapObj).on('dragend',ev=>{const p=ev.target.getLatLng();tempLatLng={lat:p.lat,lng:p.lng};});
-    if(recenter) formMapObj.setView([lat,lng],16);
+    const pos=new naver.maps.LatLng(lat,lng);
+    if(formMarker) formMarker.setPosition(pos);
+    else{
+      formMarker=new naver.maps.Marker({position:pos,map:formMapObj,draggable:true});
+      naver.maps.Event.addListener(formMarker,'dragend',ev=>{const p=ev.coord;tempLatLng={lat:p.lat(),lng:p.lng()};});
+    }
+    if(recenter){ formMapObj.setCenter(pos); formMapObj.setZoom(16); }
   });
 }
-function clearFormPin(){ if(formMarker&&formMapObj){formMapObj.removeLayer(formMarker);} formMarker=null; tempLatLng=null; }
+function clearFormPin(){ if(formMarker&&formMapObj){formMarker.setMap(null);} formMarker=null; tempLatLng=null; }
 
 let aiAvailable=null;
 async function claudeAPI(messages,tools,system){
@@ -713,9 +722,9 @@ function locate(id){
   const p=state.properties.find(x=>x.id===id); if(!p||!p.lat)return;
   document.getElementById('mapcard').classList.remove('collapsed');
   document.getElementById('mapToggle').textContent='접기';
-  waitLeaflet(()=>{
-    overview.invalidateSize();
-    overview.panTo([p.lat,p.lng],{animate:true});
+  waitNaverMaps(()=>{
+    overview.refresh(true);
+    overview.panTo(new naver.maps.LatLng(p.lat,p.lng));
     reselectMarker(id);
   });
   document.getElementById('mapcard').scrollIntoView({behavior:'smooth',block:'center'});
@@ -740,13 +749,13 @@ document.getElementById('cancelBtn').onclick=closeForm;
 let propEditId='', editMapObj=null, editMapMarker=null, editTempLatLng=null, editImgData=null;
 function initEditMap(){
   const el=document.getElementById('propEditMap'); if(!el)return;
-  if(editMapObj){editMapObj.invalidateSize();return;}
-  editMapObj=L.map('propEditMap',{zoomControl:true}).setView([37.5665,126.9780],12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(editMapObj);
-  editMapObj.on('click',e=>{
-    editTempLatLng={lat:e.latlng.lat,lng:e.latlng.lng};
-    if(editMapMarker) editMapObj.removeLayer(editMapMarker);
-    editMapMarker=L.marker([e.latlng.lat,e.latlng.lng]).addTo(editMapObj);
+  if(editMapObj){editMapObj.refresh(true);return;}
+  editMapObj=new naver.maps.Map('propEditMap',{center:new naver.maps.LatLng(37.5665,126.9780),zoom:12,zoomControl:true,zoomControlOptions:{position:naver.maps.Position.TOP_RIGHT}});
+  naver.maps.Event.addListener(editMapObj,'click',e=>{
+    const pos=e.coord;
+    editTempLatLng={lat:pos.lat(),lng:pos.lng()};
+    if(editMapMarker) editMapMarker.setMap(null);
+    editMapMarker=new naver.maps.Marker({position:pos,map:editMapObj});
   });
 }
 function openEdit(id){
@@ -764,11 +773,12 @@ function openEdit(id){
   document.getElementById('em_img').value='';
   openModal('propEditModal');
   setTimeout(()=>{
-    initEditMap(); editMapObj.invalidateSize();
+    initEditMap(); editMapObj.refresh(true);
     if(p.lat&&p.lng){
-      editMapObj.setView([p.lat,p.lng],15);
-      if(editMapMarker) editMapObj.removeLayer(editMapMarker);
-      editMapMarker=L.marker([p.lat,p.lng]).addTo(editMapObj);
+      const pos=new naver.maps.LatLng(p.lat,p.lng);
+      editMapObj.setCenter(pos); editMapObj.setZoom(15);
+      if(editMapMarker) editMapMarker.setMap(null);
+      editMapMarker=new naver.maps.Marker({position:pos,map:editMapObj});
     }
   },120);
 }
@@ -781,10 +791,11 @@ document.getElementById('em_findBtn').onclick=async function(){
     const d=await r.json();
     if(d.lat){
       editTempLatLng={lat:d.lat,lng:d.lng};
-      initEditMap(); editMapObj.invalidateSize();
-      editMapObj.setView([d.lat,d.lng],15);
-      if(editMapMarker) editMapObj.removeLayer(editMapMarker);
-      editMapMarker=L.marker([d.lat,d.lng]).addTo(editMapObj);
+      initEditMap(); editMapObj.refresh(true);
+      const pos=new naver.maps.LatLng(d.lat,d.lng);
+      editMapObj.setCenter(pos); editMapObj.setZoom(15);
+      if(editMapMarker) editMapMarker.setMap(null);
+      editMapMarker=new naver.maps.Marker({position:pos,map:editMapObj});
     }
   }catch(e){}
   this.disabled=false; this.innerHTML=ic('pin')+' 위치 자동 찾기';
