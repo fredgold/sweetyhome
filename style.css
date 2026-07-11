@@ -314,7 +314,7 @@
   .c-actions button:hover,.c-actions a:hover{background:var(--hairline-soft);}
   .c-act-del{color:var(--s-drop);}
 
-  .route-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);padding:11px 15px;margin-bottom:14px;box-shadow:var(--shadow);}
+  .route-bar{display:flex;flex-direction:column;align-items:stretch;gap:12px;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);padding:11px 15px;margin-bottom:14px;box-shadow:var(--shadow);}
   .route-bar .rb-info{font-size:13px;font-weight:700;color:var(--ink);}
   .route-bar .rb-actions{display:flex;gap:8px;flex-wrap:wrap;}
   .route-bar .rb-route{flex:1;min-width:0;}
@@ -840,7 +840,6 @@
 @media (max-width:480px){
   /* iOS Safari가 16px 미만 입력 포커스 시 자동 확대하는 것 방지 */
   input,select,textarea{font-size:16px !important;}
-  .route-bar{flex-direction:column;align-items:stretch;}
   .ph-actions{gap:4px;}
   .ph-actions .prop-filter-sel,.ph-actions .addbtn{font-size:11px;padding:5px 8px;}
   /* 매물탭 툴바 더보기 접기 — 정렬/매물추가만 상시 노출, 나머지는 ⋯ 메뉴로 */
