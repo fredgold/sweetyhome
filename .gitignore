@@ -3,3 +3,4 @@ node_modules/
 .vercel
 *.xlsx
 .DS_Store
+docs/*standalone*.html
