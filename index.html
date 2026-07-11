@@ -201,16 +201,22 @@
       <div id="overviewMap"></div>
     </div>
 
-    <div class="searchbar">
-      <div class="sh"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg> 동·단지·역 바로 검색</div>
-      <div class="sb-row">
-        <input id="siteSearch" placeholder="예: 노량진동 전세 / 상도두산위브 / 신길역">
-        <button class="site" data-site="land">네이버 부동산</button>
-        <button class="site" data-site="naver">네이버 지도</button>
-        <button class="site" data-site="hogang">호갱노노</button>
-        <button class="site" data-site="rt">실거래가</button>
+    <div class="unisearch" id="unisearch">
+      <div class="unisearch-box">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
+        <input id="prop_search" placeholder="단지·역·호선·메모 검색 — 새 지역은 아래에서" aria-label="매물 검색">
       </div>
-      <div class="tip"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.15 1 1.9v.2h5v-.2c0-.75.4-1.45 1-1.9A6 6 0 0 0 12 3z"/></svg> 팁 — <b>세대수 + 금액</b>만 먼저 필터 걸면 볼 곳이 확 줄어요. 마음에 들면 ＋매물추가의 ‘붙여넣기 자동 채우기’로 담으세요.</div>
+      <div class="unisearch-result" id="unisearchResult">
+        <div class="ur-text" id="unisearchText">새 지역·단지는 아래 링크에서 바로 검색해보세요</div>
+        <div class="ur-links">
+          <a class="ur-link disabled" id="ur_land" href="#" target="_blank" rel="noopener" aria-disabled="true">네이버부동산 <span aria-hidden="true">↗</span></a>
+          <a class="ur-link disabled" id="ur_hogang" href="#" target="_blank" rel="noopener" aria-disabled="true">호갱노노 <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="ur-links ur-links-sub">
+          <a class="ur-link sub disabled" id="ur_naver" href="#" target="_blank" rel="noopener" aria-disabled="true">네이버지도 <span aria-hidden="true">↗</span></a>
+          <a class="ur-link sub disabled" id="ur_rt" href="#" target="_blank" rel="noopener" aria-disabled="true">실거래가 <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
     </div>
 
     <div class="wcard" style="display:none">
@@ -310,17 +316,6 @@
           </div>
         </div>
 
-        <div class="prop-search-bar">
-          <input class="prop-search-input" id="prop_search" placeholder="🔍 단지명·위치·메모 검색...">
-          <select id="propGradeFilter" class="prop-filter-sel">
-            <option value="">전체 세대수</option>
-            <option>1000세대+</option><option>500세대+</option><option>300세대+</option>
-            <option>소규모조건부</option><option>소규모주의</option>
-          </select>
-          <select id="propLineFilter" class="prop-filter-sel">
-            <option value="">전체 노선</option>
-          </select>
-        </div>
         <div class="tabs" id="tabs"></div>
         <div class="rail" id="list"></div>
       </section>

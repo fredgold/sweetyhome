@@ -35,14 +35,8 @@ function ic(name,cls){ return `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 
 function checklistHTML(p){
   const ch=p.checks||{};
   const done=CHECKLIST.filter(c=>ch[c.id]).length;
-  const pct=Math.round(done/CHECKLIST.length*100);
   return `<div class="ck" data-pid="${p.id}">
-    <button class="ck-toggle" data-cktoggle="${p.id}">
-      <span>✓ 실사 체크</span>
-      <span class="bar"><i style="width:${pct}%"></i></span>
-      <span class="cnt">${done}/${CHECKLIST.length}</span>
-      <span class="arw">▾</span>
-    </button>
+    <div class="ck-label">실사 체크 ${done}/${CHECKLIST.length}</div>
     <div class="ck-body">
       ${CHECKLIST.map(c=>`<div class="ck-item" data-ck="${p.id}|${c.id}" data-on="${ch[c.id]?1:0}">
         <span class="cb">${CHECK}</span>
@@ -486,10 +480,7 @@ function renderTabs(){
   document.getElementById('tabs').innerHTML=tabs.map(t=>`<button class="tab" data-on="${activeTab===t?1:0}" data-tab="${t}">${t}<span class="ct tnum">${cnt[t]}</span></button>`).join('');
   document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;renderList();renderTabs();});
 }
-function areaChip(a){if(a==null||a==='')return'';const n=parseFloat(a);if(isNaN(n))return'';return n<=85?`<span class="chip ok tnum">전용 ${n}㎡ · 청약 OK</span>`:`<span class="chip warn tnum">전용 ${n}㎡ · 청약 영향 ⚠</span>`;}
-function depositChip(d){if(d==null||d==='')return'';const n=parseFloat(d);if(isNaN(n))return'';return `<span class="chip deposit tnum">보증금 ${n}억${n>5?' · 예산↑?':''}</span>`;}
-/* R4: 카드 액션 링크 — 우선순위 앞 2개(지도에서 보기·네이버 열기)만 상시 노출,
-   나머지는 '⋯ 더보기'로 접기. 480px 이하에서만 접힘(desktop은 display:contents로 한 줄 wrap).
+/* 카드 액션 링크 — 펼친 상태에서만 보이므로 4개 전부 상시 노출(더보기 접기 불필요).
    호갱노노·실거래가는 매물별 딥링크가 불가능해(실거래가는 항상 홈페이지) 제거.
    네이버 링크는 등록된 URL이 있으면 그 링크만, 없으면 이름 검색만 (둘 다 보여주지 않음) */
 function actionsHTML(p, urlSafe){
@@ -498,58 +489,89 @@ function actionsHTML(p, urlSafe){
   if(urlSafe) _acts.push(`<a class="c-act naver" href="${esc(urlSafe)}" target="_blank" rel="noopener">${ic('link')} 네이버 열기 ↗</a>`);
   else _acts.push(`<a class="c-act naver" href="${naverUrl(p)}" target="_blank">${ic('map')} 네이버지도</a>`);
   _acts.push(`<button class="c-act" data-edit="${p.id}">${ic('edit')} 수정</button>`);
-  _acts.push(`<button class="c-act c-act-del" data-del="${p.id}">삭제</button>`);
-  return `<div class="c-actions">
-      <div class="c-actions-row">${_acts.slice(0,2).join('')}<button class="c-more-btn" data-cmore="${p.id}" aria-label="추가 옵션 더보기" aria-expanded="false">⋯ 더보기</button></div>
-      <div class="c-actions-more">${_acts.slice(2).join('')}</div>
-    </div>`;
+  _acts.push(`<button class="c-act c-act-del" data-del="${p.id}" aria-label="매물 삭제">✕ 삭제</button>`);
+  return `<div class="c-actions">${_acts.join('')}</div>`;
+}
+/* 헤드라인 = 보증금·전용면적 (비교 1순위 정보). 부제 = 단지명·역·호선 */
+function headlineText(p){
+  const d=p.depositNum!=null?p.depositNum:(p.deposit!=null&&p.deposit!==''?parseFloat(p.deposit):null);
+  const a=p.area!=null&&p.area!==''?parseFloat(p.area):null;
+  const dTxt=(d!=null&&!isNaN(d))?`보증금 ${d}억`:'보증금 미정';
+  const aTxt=(a!=null&&!isNaN(a))?`전용 ${a}㎡`:'면적 미정';
+  return `${dTxt} · ${aTxt}`;
+}
+function subtitleText(p){
+  const parts=[];
+  if(p.name) parts.push(esc(p.name));
+  const st=p.station||p.loc;
+  if(st) parts.push(esc(st));
+  if(p.line) parts.push(esc(p.line));
+  return parts.join(' · ')||'정보 없음';
+}
+/* 펼침 본문 메타칩 — 가격·면적은 헤드라인에 이미 있으므로 경고성 신호만 별도 칩으로 */
+function bodyMetaChips(p){
+  const chips=[];
+  const dn=p.depositNum!=null?p.depositNum:parseFloat(p.deposit);
+  if(!isNaN(dn)&&dn>5) chips.push(`<span class="chip warn tnum">예산↑? · 보증금 ${dn}억</span>`);
+  const a=p.area!=null&&p.area!==''?parseFloat(p.area):null;
+  if(a!=null&&!isNaN(a)&&a>85) chips.push(`<span class="chip warn tnum">전용 ${a}㎡ · 청약 영향 ⚠</span>`);
+  if(p.householdGrade) chips.push(`<span class="chip">${esc(p.householdGrade)}</span>`);
+  else if(p.households) chips.push(`<span class="chip tnum">${p.households}세대</span>`);
+  if(p.jeonseRatio!=null) chips.push(`<span class="chip tnum">전세가율 ${p.jeonseRatio}%</span>`);
+  if(p.commuteGangnam) chips.push(`<span class="chip tnum">강남 ${esc(p.commuteGangnam)}</span>`);
+  if(p.commuteSinsa) chips.push(`<span class="chip tnum">신사 ${esc(p.commuteSinsa)}</span>`);
+  if(p.aiScore!=null) chips.push(`<span class="chip score">AI ${p.aiScore}점</span>`);
+  if(p.geocodePending&&!p.lat) chips.push('<span class="chip chip-warn">좌표확인필요</span>');
+  else if(p.lat) chips.push(`<span class="chip geo">${ic('pin','ic-muted')} 위치 저장됨</span>`);
+  return chips.join('');
 }
 let propSearchQuery='';
+let expandedPropId=null;
+function togglePropCard(id){
+  expandedPropId = expandedPropId===id ? null : id;
+  renderList();
+}
 function renderList(){
   let items=[...state.properties];
   if(activeTab!=='전체') items=items.filter(p=>p.status===activeTab);
-  if(propGradeFilter) items=items.filter(p=>p.householdGrade===propGradeFilter);
-  if(propLineFilter) items=items.filter(p=>p.line===propLineFilter);
   const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
-  if(pq) items=items.filter(p=>(p.name||'').toLowerCase().includes(pq)||(p.loc||'').toLowerCase().includes(pq)||(p.memo||'').toLowerCase().includes(pq));
+  if(pq) items=items.filter(p=>(p.name||'').toLowerCase().includes(pq)||(p.loc||'').toLowerCase().includes(pq)||(p.memo||'').toLowerCase().includes(pq)||(p.station||'').toLowerCase().includes(pq)||(p.line||'').toLowerCase().includes(pq));
   if(sortMode==='jeonse') items.sort((a,b)=>(a.jeonseReal??a.depositNum??999)-(b.jeonseReal??b.depositNum??999));
   else if(sortMode==='households') items.sort((a,b)=>(b.households??0)-(a.households??0));
   else if(sortMode==='ratio') items.sort((a,b)=>(a.jeonseRatio??999)-(b.jeonseRatio??999));
   else items.sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||(b.created-a.created));
   const el=document.getElementById('list');
+  updateUnisearch(items.length);
   if(!items.length){el.innerHTML=`<div class="empty"><div class="big">${activeTab==='전체'?'아직 등록된 매물이 없어요':'이 상태의 매물이 없어요'}</div>${activeTab==='전체'?'＋ 매물 추가로 첫 후보를 올려보세요.':'다른 탭을 눌러보세요.'}</div>`;return;}
   el.innerHTML=items.map(p=>{
-    const depDisplay=p.depositNum!=null?`<span class="chip deposit tnum">보증금 ${p.depositNum}억${p.depositNum>5?' · 예산↑?':''}</span>`:depositChip(p.deposit);
     const urlSafe=p.url?safeUrl(p.url):'';
+    const expanded=expandedPropId===p.id;
+    const done=CHECKLIST.filter(c=>(p.checks||{})[c.id]).length;
+    const pct=Math.round(done/CHECKLIST.length*100);
+    const color='var('+(SC[p.status]||'--hairline')+')';
     const routeCheckHTML = routeMode!=='select' ? '' :
       (p.lat&&p.lng
-        ? `<label class="c-routecheck-wrap"><input type="checkbox" class="c-routecheck" data-routecheck="${p.id}"${routeSelected.has(p.id)?' checked':''}></label>`
+        ? `<label class="c-routecheck-wrap"><input type="checkbox" class="c-routecheck" aria-label="임장 루트에 포함" data-routecheck="${p.id}"${routeSelected.has(p.id)?' checked':''}></label>`
         : `<span class="c-routecheck-disabled" title="좌표가 없어 루트에 포함할 수 없어요">${ic('pin','ic-muted')} 위치없음</span>`);
-    return `<div class="card ${(p.status==='탈락'||p.status==='보류')?'dim':''}" data-st="${p.status}">
-    <div class="c-top">
-      <div class="c-top-left">
-        ${routeCheckHTML}
-        <div>
-          <div class="c-name">${esc(p.name||'(이름 없음)')}</div>
-          ${(p.station||p.loc)?`<div class="c-loc">${ic('transit','ic-muted')} ${esc(p.station||p.loc)}${p.line?` <span class="c-line">${esc(p.line)}</span>`:''}</div>`:''}
-        </div>
+    return `<div class="card${expanded?' expanded':''}${(p.status==='탈락'||p.status==='보류')?' dim':''}" data-st="${p.status}">
+    <div class="c-top" data-cardtoggle="${p.id}" role="button" tabindex="0" aria-expanded="${expanded?'true':'false'}" aria-controls="cbody-${p.id}">
+      ${routeCheckHTML}
+      <div class="c-head-text">
+        <div class="c-headline tnum">${headlineText(p)}</div>
+        <div class="c-sub">${ic('transit','ic-muted')} ${subtitleText(p)}</div>
       </div>
-      <span class="pill" style="border-left-color:var(${SC[p.status]})"><i class="pill-dot" style="background:var(${SC[p.status]})"></i>${p.status}</span>
+      <div class="c-badge-col">
+        <span class="pill" data-statuspill="${p.id}" style="border-left-color:${color}"><i class="pill-dot" style="background:${color}"></i>${p.status}</span>
+        <div class="c-progress"><span class="c-progress-text tnum">실사 ${done}/${CHECKLIST.length}</span><span class="c-progress-track"><i style="width:${pct}%;background:${color}"></i></span></div>
+      </div>
     </div>
-    <div class="c-meta">
-      ${depDisplay}${areaChip(p.area)}
-      ${p.householdGrade?`<span class="chip">${esc(p.householdGrade)}</span>`:(p.households?`<span class="chip tnum">${p.households}세대</span>`:'')}
-      ${p.jeonseRatio!=null?`<span class="chip tnum">전세가율 ${p.jeonseRatio}%</span>`:''}
-      ${p.commuteGangnam?`<span class="chip tnum">강남 ${esc(p.commuteGangnam)}</span>`:''}
-      ${p.commuteSinsa?`<span class="chip tnum">신사 ${esc(p.commuteSinsa)}</span>`:''}
-      ${p.aiScore!=null?`<span class="chip score">AI ${p.aiScore}점</span>`:''}
-      ${p.geocodePending&&!p.lat?'<span class="chip chip-warn">좌표확인필요</span>':''}
-      ${p.lat?`<span class="chip geo">${ic('pin','ic-muted')} 위치 저장됨</span>`:''}
-    </div>
-    ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy" alt="${esc(p.name||'매물')} 사진">`:''}
-    ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
-    ${actionsHTML(p, urlSafe)}
-    ${aiBlock(p)}${checklistHTML(p)}</div>`;
+    <div class="c-body" id="cbody-${p.id}">
+      <div class="c-meta">${bodyMetaChips(p)}</div>
+      ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy" alt="${esc(p.name||'매물')} 사진">`:''}
+      ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
+      ${actionsHTML(p, urlSafe)}
+      ${aiBlock(p)}${checklistHTML(p)}
+    </div></div>`;
   }).join('');
   el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEdit(b.dataset.edit));
   el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delProp(b.dataset.del));
@@ -758,15 +780,13 @@ document.getElementById('saveBtn').onclick=()=>{
 function delProp(id){if(!confirm('이 매물을 삭제할까요?'))return;state.properties=state.properties.filter(x=>x.id!==id);save();renderProps();refreshOverview();}
 
 document.getElementById('list').addEventListener('click',e=>{
-  const moreBtn=e.target.closest('[data-cmore]');
-  if(moreBtn){
-    const card=moreBtn.closest('.card');
-    const open=card.classList.toggle('more-open');
-    moreBtn.setAttribute('aria-expanded',open?'true':'false');
+  const pill=e.target.closest('.pill');
+  if(pill){
+    const p=state.properties.find(x=>x.id===pill.dataset.statuspill); if(!p)return;
+    showStatusPicker(pill, p);
     return;
   }
-  const tog=e.target.closest('[data-cktoggle]');
-  if(tog){ tog.closest('.ck').classList.toggle('open'); return; }
+  if(e.target.closest('.c-routecheck-wrap')) return;
   const item=e.target.closest('.ck-item');
   if(item){
     if(e.target.closest('a')) return;
@@ -774,16 +794,20 @@ document.getElementById('list').addEventListener('click',e=>{
     const p=state.properties.find(x=>x.id===pid); if(!p)return;
     p.checks=p.checks||{}; p.checks[cid]=!p.checks[cid];
     item.dataset.on=p.checks[cid]?'1':'0';
-    const ck=item.closest('.ck');
     const done=CHECKLIST.filter(c=>p.checks[c.id]).length;
-    ck.querySelector('.cnt').textContent=done+'/'+CHECKLIST.length;
-    ck.querySelector('.bar i').style.width=Math.round(done/CHECKLIST.length*100)+'%';
+    const card=item.closest('.card');
+    const label=card.querySelector('.ck-label'); if(label) label.textContent=`실사 체크 ${done}/${CHECKLIST.length}`;
+    const progText=card.querySelector('.c-progress-text'); if(progText) progText.textContent=`실사 ${done}/${CHECKLIST.length}`;
+    const progBar=card.querySelector('.c-progress-track i'); if(progBar) progBar.style.width=Math.round(done/CHECKLIST.length*100)+'%';
     save(); return;
   }
-  const pill=e.target.closest('.pill'); if(!pill)return;
-  const card=pill.closest('.card');
-  const p=state.properties.find(x=>x.id===card.querySelector('[data-edit]').dataset.edit); if(!p)return;
-  showStatusPicker(pill, p);
+  const ctoggle=e.target.closest('[data-cardtoggle]');
+  if(ctoggle){ togglePropCard(ctoggle.dataset.cardtoggle); return; }
+});
+document.getElementById('list').addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ') return;
+  const ctoggle=e.target.closest('[data-cardtoggle]');
+  if(ctoggle){ e.preventDefault(); togglePropCard(ctoggle.dataset.cardtoggle); }
 });
 
 let _statusPicker=null;
@@ -807,23 +831,28 @@ function showStatusPicker(pill, p){
   const close=ev=>{ if(!picker.contains(ev.target)){ picker.remove(); _statusPicker=null; document.removeEventListener('click',close,true); } };
   setTimeout(()=>document.addEventListener('click',close,true),0);
 }
-function runSiteSearch(site){
-  const q=document.getElementById('siteSearch').value.trim();
-  if(!q){document.getElementById('siteSearch').focus();return;}
-  window.open(siteUrl(site,q),'_blank');
+/* 통합검색 — 입력값에 따라 "내 목록 N곳" 안내 + 외부 검색 링크(네이버부동산·호갱노노 우선,
+   네이버지도·실거래가 보조) href 갱신. 검색어가 없으면 링크 비활성화(무의미한 빈 검색 방지) */
+function updateUnisearch(matchCount){
+  const input=document.getElementById('prop_search'); if(!input) return;
+  const q=input.value.trim();
+  const textEl=document.getElementById('unisearchText');
+  if(textEl){
+    textEl.innerHTML = q
+      ? `내 목록 <b>${matchCount}곳</b> · 못 찾았다면 밖에서 '<b>${esc(q)}</b>'`
+      : '새 지역·단지는 아래 링크에서 바로 검색해보세요';
+  }
+  [['ur_land','land'],['ur_hogang','hogang'],['ur_naver','naver'],['ur_rt','rt']].forEach(([id,site])=>{
+    const a=document.getElementById(id); if(!a) return;
+    if(q){ a.href=siteUrl(site,q); a.classList.remove('disabled'); a.removeAttribute('aria-disabled'); }
+    else { a.href='#'; a.classList.add('disabled'); a.setAttribute('aria-disabled','true'); }
+  });
 }
-document.querySelectorAll('.searchbar .site').forEach(b=>b.onclick=()=>runSiteSearch(b.dataset.site));
-document.getElementById('siteSearch').addEventListener('keydown',e=>{ if(e.key==='Enter') runSiteSearch('land'); });
+document.querySelectorAll('.ur-link').forEach(a=>a.addEventListener('click',e=>{
+  if(a.classList.contains('disabled')){ e.preventDefault(); document.getElementById('prop_search')?.focus(); }
+}));
 
-function renderLineFilter(){
-  const sel=document.getElementById('propLineFilter'); if(!sel)return;
-  const lines=[...new Set(state.properties.map(p=>p.line).filter(Boolean))].sort();
-  const cur=sel.value;
-  sel.innerHTML=`<option value="">전체 노선</option>`+lines.map(l=>`<option${cur===l?' selected':''}>${esc(l)}</option>`).join('');
-  sel.value=lines.includes(cur)?cur:'';
-  if(sel.value!==cur) propLineFilter='';
-}
-function renderProps(){renderStats();renderTabs();renderList();renderWeights();renderLineFilter();}
+function renderProps(){renderStats();renderTabs();renderList();renderWeights();}
 
 document.addEventListener('DOMContentLoaded',()=>{
   const ps=document.getElementById('prop_search');
@@ -922,8 +951,6 @@ function readBackup(code){
 
 
 /* ============ v4: 시트 승격 벌크 임포트 ============ */
-let propGradeFilter='',propLineFilter='';
-
 function safeUrl(u){
   try{const url=new URL(u);if(!['http:','https:'].includes(url.protocol))return'';return url.href;}catch(e){return'';}
 }
@@ -1085,10 +1112,3 @@ document.getElementById('propBulkBtn').onclick=()=>{
   importParsedRows=[];
   openModal('propImportModal');
 };
-
-(()=>{
-  const gf=document.getElementById('propGradeFilter');
-  const lf=document.getElementById('propLineFilter');
-  if(gf) gf.onchange=()=>{propGradeFilter=gf.value;renderList();};
-  if(lf) lf.onchange=()=>{propLineFilter=lf.value;renderList();};
-})();
