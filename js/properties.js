@@ -957,7 +957,7 @@ function updateUnisearch(matchCount){
   if(textEl&&q) textEl.innerHTML=`내 목록 <b>${matchCount}곳</b> 검색됨`;
 }
 
-function renderProps(){renderStats();renderTabs();renderList();renderWeights();}
+function renderProps(){renderStats();renderTabs();renderList();renderWeights();renderComplexes();}
 
 (()=>{ const ps=document.getElementById('prop_search'); if(ps) ps.addEventListener('input',()=>renderList()); })();
 
@@ -1385,3 +1385,213 @@ function migApply(){
   document.getElementById('migApplyBtn').onclick=migApply;
   document.getElementById('migStartBtn').onclick=()=>{ renderMigPreview(); openModal('migPreviewModal'); };
 })();
+
+/* ============ v5 Stage 3+4: 단지 카드 목록 + 단지 상세·매물 목록 (properties[] 뷰 공존) ============ */
+const SC_CX=Object.assign({},SC,{임장예정:SC['방문예정']});
+function getAreaGrade(areaM2){
+  if(areaM2==null||isNaN(areaM2))return'';
+  const v=+areaM2;
+  if(v>=85)return'85㎡+';
+  if(v>=60)return'60~84㎡';
+  return'59㎡ 이하';
+}
+function listingStatusChipClass(st){
+  if(st==='게시중')return'ok';
+  if(st==='가격변동')return'warn';
+  if(st==='사라짐')return'gone';
+  return'';
+}
+
+/* ---- (3) 단지 카드 목록 ---- */
+let legacyExpanded=null;
+function updateLegacyToggleLabel(){
+  const btn=document.getElementById('legacyToggleBtn'); if(!btn)return;
+  btn.textContent=`${legacyExpanded?'▾':'▸'} 기존(미정리) 매물 (${state.properties.length})`;
+}
+function renderComplexes(){
+  const wrap=document.getElementById('complexSection');
+  const legacyToggleWrap=document.getElementById('legacyToggleWrap');
+  const legacyWrap=document.getElementById('legacyWrap');
+  if(!wrap||!legacyToggleWrap||!legacyWrap) return;
+
+  if(!state.complexes.length){
+    wrap.innerHTML=`<div class="cx-empty">
+      아직 정리된 단지가 없어요. 기존 매물을 단지로 정리하면 여기 카드로 모여요.<br>
+      <button class="btn-save" id="cxGoMigrateBtn" style="margin-top:10px">${ic('listings')} 기존 매물을 단지로 정리</button>
+    </div>`;
+    const goBtn=document.getElementById('cxGoMigrateBtn');
+    if(goBtn) goBtn.onclick=()=>{ renderMigPreview(); openModal('migPreviewModal'); };
+    legacyToggleWrap.style.display='none';
+    legacyWrap.style.display='';
+    return;
+  }
+
+  legacyToggleWrap.style.display='';
+  if(legacyExpanded===null) legacyExpanded=false;
+  legacyWrap.style.display=legacyExpanded?'':'none';
+  updateLegacyToggleLabel();
+
+  wrap.innerHTML=state.complexes.map(cx=>{
+    const cxListings=state.listings.filter(l=>l.complexId===cx.id);
+    const rep=cxListings.find(l=>l.isRepresentative)||cxListings[0]||null;
+    const st=cx.complexStatus||'관심';
+    const color='var('+(SC_CX[st]||'--hairline')+')';
+    const repHTML=rep?`<div class="c-meta">
+        <span class="chip deposit tnum">${rep.deposit!=null?'보증금 '+rep.deposit+'억':'보증금 미정'}</span>
+        <span class="chip tnum">${rep.areaM2!=null?'전용 '+rep.areaM2+'㎡':(rep.areaText?esc(rep.areaText):'면적 미정')}</span>
+        <span class="chip">${esc(rep.areaGrade||getAreaGrade(rep.areaM2)||'—')}</span>
+        <span class="chip ${listingStatusChipClass(rep.listingStatus)}">${esc(rep.listingStatus||'확인필요')}</span>
+      </div>
+      <div class="cx-listing-meta">최근 확인 ${rep.lastCheckedAt?esc(new Date(rep.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>`
+      :`<div class="c-meta"><span class="chip warn">현재 대표매물 없음</span></div>`;
+    return `<div class="card" data-cxid="${cx.id}">
+      <div class="c-top" data-cxopen="${cx.id}" role="button" tabindex="0">
+        <div class="c-head-text">
+          <div class="c-headline">${cx.groupCode?`<span class="chip" style="margin-right:5px">${esc(cx.groupCode)}</span>`:''}${cx.regionGroup?esc(cx.regionGroup)+' · ':''}${esc(cx.complexName||'(이름 없음)')}</div>
+          <div class="c-sub">${esc([cx.station,cx.line,cx.householdGrade].filter(Boolean).join(' · ')||'정보 없음')}</div>
+        </div>
+        <div class="c-badge-col">
+          <span class="pill" style="border-left-color:${color}"><i class="pill-dot" style="background:${color}"></i>${esc(st)}</span>
+        </div>
+      </div>
+      <div style="padding:0 15px 14px">${repHTML}</div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('legacyToggleBtn').onclick=()=>{
+  legacyExpanded=!legacyExpanded;
+  document.getElementById('legacyWrap').style.display=legacyExpanded?'':'none';
+  updateLegacyToggleLabel();
+};
+document.getElementById('complexSection').addEventListener('click',e=>{
+  const el=e.target.closest('[data-cxopen]'); if(!el)return;
+  openComplexDetail(el.dataset.cxopen);
+});
+document.getElementById('complexSection').addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  const el=e.target.closest('[data-cxopen]'); if(!el)return;
+  e.preventDefault(); openComplexDetail(el.dataset.cxopen);
+});
+
+/* ---- (4) 단지 상세 + 매물 목록 ---- */
+let cxDetailId=null, cxDetailMapObj=null, cxDetailMarker=null;
+/* #cxDetailMap은 formMap/propEditMap과 동일하게 컨테이너를 절대 display:none 처리하지 않고
+   인스턴스를 한 번만 만들어 재사용한다 — 지도 div를 숨겼다 다시 보이면 네이버 지도 SDK
+   내부(비동기 타일 onload 콜백)에서 널 참조 에러가 남(실측 확인). 좌표 없을 땐 지도 위에
+   "좌표 확인 필요" 오버레이(#cxDetailNoCoord)만 덮어 시각적으로 가린다 */
+function initCxDetailMap(){
+  const el=document.getElementById('cxDetailMap'); if(!el)return;
+  waitNaverMaps(()=>{
+    if(!cxDetailMapObj){
+      cxDetailMapObj=new naver.maps.Map('cxDetailMap',{center:new naver.maps.LatLng(CENTER[0],CENTER[1]),zoom:12,zoomControl:true,zoomControlOptions:{position:naver.maps.Position.TOP_RIGHT}});
+    }
+    cxDetailMapObj.refresh(true);
+  });
+}
+function setCxDetailMapPosition(lat,lng){
+  waitNaverMaps(()=>{
+    initCxDetailMap();
+    if(!cxDetailMapObj)return;
+    const pos=new naver.maps.LatLng(lat,lng);
+    cxDetailMapObj.setCenter(pos); cxDetailMapObj.setZoom(15);
+    if(cxDetailMarker) cxDetailMarker.setMap(null);
+    cxDetailMarker=new naver.maps.Marker({position:pos,map:cxDetailMapObj});
+  });
+}
+function openComplexDetail(id){
+  const cx=state.complexes.find(x=>x.id===id); if(!cx)return;
+  cxDetailId=id;
+  renderComplexDetailBody(cx);
+  openModal('complexDetailModal');
+}
+function renderComplexDetailBody(cx){
+  document.getElementById('cxDetailTitle').textContent=cx.complexName||'(이름 없음)';
+  document.getElementById('cxDetailLoc').textContent=cx.loc||'주소 정보 없음';
+  document.getElementById('cxDetailStationLine').textContent=[cx.station,cx.line].filter(Boolean).join(' · ')||'—';
+  document.getElementById('cxDetailYear').textContent=cx.yearBuilt?cx.yearBuilt+'년 준공':'—';
+  document.getElementById('cxDetailHouseholds').textContent=cx.households?(cx.households+'세대'+(cx.householdGrade?' · '+cx.householdGrade:'')):'—';
+  document.getElementById('cxDetailCommute').textContent=[
+    cx.commuteGangnam!=null?'강남역 '+cx.commuteGangnam+'분':null,
+    cx.commuteSinsa!=null?'신사역 '+cx.commuteSinsa+'분':null
+  ].filter(Boolean).join(' · ')||'—';
+  document.getElementById('cxDetailStatusSel').value=cx.complexStatus||'관심';
+  document.getElementById('cxDetailMemo').value=cx.memo||'';
+
+  const noCoord=document.getElementById('cxDetailNoCoord');
+  if(cx.lat&&cx.lng){
+    noCoord.style.display='none';
+    setTimeout(()=>setCxDetailMapPosition(cx.lat,cx.lng),120);
+  } else {
+    noCoord.style.display='flex';
+  }
+  renderCxListings(cx.id);
+}
+function renderCxListings(complexId){
+  const wrap=document.getElementById('cxDetailListings'); if(!wrap)return;
+  const listings=state.listings.filter(l=>l.complexId===complexId)
+    .slice().sort((a,b)=>new Date(a.capturedAt||0)-new Date(b.capturedAt||0));
+  if(!listings.length){
+    wrap.innerHTML='<p style="font-size:12.5px;color:var(--ink-soft)">등록된 매물이 없어요.</p>';
+    return;
+  }
+  wrap.innerHTML=listings.map(l=>{
+    const safeHref=l.url?safeUrl(l.url):'';
+    return `<div class="cx-listing-row" data-lid="${l.id}">
+      <div class="cx-listing-top">
+        <span class="cx-listing-dongho">${esc(l.dongHo||'동/호 미상')}</span>
+        <span class="chip ${listingStatusChipClass(l.listingStatus)}">${esc(l.listingStatus||'확인필요')}</span>
+        ${l.isRepresentative?'<span class="chip ok">대표매물</span>':''}
+      </div>
+      <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||getAreaGrade(l.areaM2)||'—')}</div>
+      <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · 확인 ${l.lastCheckedAt?esc(new Date(l.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>
+      <div class="c-actions">
+        ${l.isRepresentative?'':`<button data-lact="rep">대표매물로 설정</button>`}
+        <button data-lact="check">게시중 확인</button>
+        <button data-lact="gone">사라짐 처리</button>
+        <button data-lact="price">가격변동 기록</button>
+        ${safeHref?`<a href="${safeHref}" target="_blank" rel="noopener">${ic('link')} URL 열기</a>`:''}
+        <button data-lact="del" class="c-act-del">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('cxDetailListings').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-lact]'); if(!btn)return;
+  const row=btn.closest('[data-lid]'); if(!row)return;
+  const lid=row.dataset.lid;
+  const listing=state.listings.find(l=>l.id===lid); if(!listing)return;
+  const act=btn.dataset.lact;
+  if(act==='rep'){
+    state.listings.filter(l=>l.complexId===listing.complexId).forEach(l=>l.isRepresentative=false);
+    listing.isRepresentative=true;
+  } else if(act==='check'){
+    listing.lastCheckedAt=new Date().toISOString();
+    listing.listingStatus='게시중';
+  } else if(act==='gone'){
+    listing.listingStatus='사라짐';
+  } else if(act==='price'){
+    const nv=prompt('새 보증금(억)을 입력하세요',listing.deposit!=null?listing.deposit:'');
+    if(nv==null)return;
+    const num=parseFloat(nv);
+    if(isNaN(num))return;
+    listing.deposit=num;
+    listing.listingStatus='가격변동';
+    listing.lastCheckedAt=new Date().toISOString();
+  } else if(act==='del'){
+    if(!confirm('이 매물 기록을 삭제할까요? (단지는 유지돼요)'))return;
+    state.listings=state.listings.filter(l=>l.id!==lid);
+  }
+  save();
+  renderCxListings(listing.complexId);
+  renderComplexes();
+});
+document.getElementById('cxDetailStatusSel').onchange=e=>{
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
+  cx.complexStatus=e.target.value; cx.updatedAt=new Date().toISOString();
+  save(); renderComplexes();
+};
+document.getElementById('cxDetailMemo').addEventListener('blur',e=>{
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
+  cx.memo=e.target.value.trim(); cx.updatedAt=new Date().toISOString();
+  save();
+});

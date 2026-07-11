@@ -305,8 +305,14 @@
           </div>
         </div>
 
-        <div class="tabs" id="tabs"></div>
-        <div class="rail" id="list"></div>
+        <div id="complexSection"></div>
+        <div id="legacyToggleWrap" class="legacy-toggle" style="display:none">
+          <button class="btn-ghost" id="legacyToggleBtn" type="button"></button>
+        </div>
+        <div id="legacyWrap">
+          <div class="tabs" id="tabs"></div>
+          <div class="rail" id="list"></div>
+        </div>
       </section>
     </div>
   </section>
@@ -769,6 +775,62 @@
       <div style="text-align:right;margin-top:12px">
         <button class="btn-ghost" data-close="propImportModal">닫기</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal" id="complexDetailModal">
+    <div class="box" style="max-width:460px;width:100%;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+        <h3 id="cxDetailTitle" style="margin:0">단지 상세</h3>
+        <button class="btn-ghost" data-close="complexDetailModal">닫기</button>
+      </div>
+      <div id="cxDetailMapWrap" style="position:relative">
+        <div id="cxDetailMap"></div>
+        <div id="cxDetailNoCoord" class="cx-nocoord-overlay" style="display:none">좌표 확인 필요</div>
+      </div>
+
+      <div class="cx-dl" style="margin-top:12px">
+        <div class="cx-dt">주소</div>
+        <div class="cx-dd" id="cxDetailLoc">—</div>
+      </div>
+      <div class="row">
+        <div class="cx-dl">
+          <div class="cx-dt">역 / 노선</div>
+          <div class="cx-dd" id="cxDetailStationLine">—</div>
+        </div>
+        <div class="cx-dl">
+          <div class="cx-dt">준공연도</div>
+          <div class="cx-dd" id="cxDetailYear">—</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="cx-dl">
+          <div class="cx-dt">세대수</div>
+          <div class="cx-dd" id="cxDetailHouseholds">—</div>
+        </div>
+        <div class="cx-dl">
+          <div class="cx-dt">출퇴근</div>
+          <div class="cx-dd" id="cxDetailCommute">—</div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <label>단지 상태</label>
+        <select id="cxDetailStatusSel">
+          <option value="관심">관심</option>
+          <option value="검토중">검토중</option>
+          <option value="후보">후보</option>
+          <option value="임장예정">임장예정</option>
+          <option value="보류">보류</option>
+          <option value="탈락">탈락</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:14px">
+        <label>단지 메모</label>
+        <textarea id="cxDetailMemo" placeholder="단지 관련 메모"></textarea>
+      </div>
+
+      <h3 style="font-size:14px;margin-bottom:8px">매물 목록</h3>
+      <div id="cxDetailListings"></div>
     </div>
   </div>
 
