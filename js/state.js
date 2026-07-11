@@ -11,9 +11,11 @@
  * state.settings  : { targetDeposit (억), weights:{commute,budget,
  *                     area,complex,risk} }
  *
- * state.properties: [{id, created, name, loc, deposit (억), area (㎡),
- *                     households, memo, img (base64), status, lat, lng,
- *                     checks:{k1..k9}, aiScore, aiComment}]
+ * state.properties: [{id, created, name, loc, station, line, deposit (억),
+ *                     depositNum (억), area (㎡), households, householdGrade,
+ *                     jeonseReal, saleReal, jeonseRatio, commuteGangnam,
+ *                     commuteSinsa, url, memo, img (base64), status, lat, lng,
+ *                     geocodePending, checks:{k1..k9}, aiScore, aiComment}]
  *
  * state.scraps    : [{id, createdAt, title, type (SC_TYPE key),
  *                     raw, img (base64), location, price, area,

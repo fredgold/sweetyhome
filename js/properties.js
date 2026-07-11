@@ -41,7 +41,7 @@ function checklistHTML(p){
       ${CHECKLIST.map(c=>`<div class="ck-item" data-ck="${p.id}|${c.id}" data-on="${ch[c.id]?1:0}">
         <span class="cb">${CHECK}</span>
         <span class="ct">${c.t}<small>${c.s}</small></span>
-        <a class="ck-verify" href="${c.vu(((p.name||'')+' '+(p.loc||'')).trim())}" target="_blank">${ic('search')} ${c.vl}</a>
+        <a class="ck-verify" href="${c.vu(((p.name||'')+' '+(p.loc||'')).trim())}" target="_blank" rel="noopener">${ic('search')} ${c.vl}</a>
       </div>`).join('')}
     </div></div>`;
 }
@@ -70,13 +70,16 @@ function markerHtml(p,selected){
 }
 /* 필터·검색으로 보이는 매물 id 집합이 실제로 바뀐 경우에만 fitBounds — 카드 펼침/접기·마커
    재선택처럼 집합은 그대로인 리렌더에서는 지도가 튀지 않도록 (연타해도 멀미 안 나게, animate:false) */
-let lastVisibleMapKey='';
+let lastVisibleMapKey='',lastMarkerRenderKey='';
 function refreshOverview(items){
   if(!overview) return;
   const withCoords=(items||visibleProperties()).filter(p=>p.lat&&p.lng);
-  const key=withCoords.map(p=>p.id).sort().join(',');
+  const key=withCoords.map(p=>`${p.id}:${p.lat}:${p.lng}`).sort().join(',');
   const setChanged=key!==lastVisibleMapKey;
   lastVisibleMapKey=key;
+  const markerKey=withCoords.map(p=>`${p.id}:${p.lat}:${p.lng}:${p.status}:${markerLabel(p)}:${expandedPropId===p.id}`).sort().join(',');
+  if(markerKey===lastMarkerRenderKey) return;
+  lastMarkerRenderKey=markerKey;
   ovMarkers.forEach(m=>overview.removeLayer(m)); ovMarkers=[];
   const pts=[];
   withCoords.forEach(p=>{
@@ -584,7 +587,7 @@ function actionsHTML(p, urlSafe){
   const _acts=[];
   if(p.lat) _acts.push(`<button class="c-act" data-locate="${p.id}">${ic('map')} 지도에서 보기</button>`);
   if(urlSafe) _acts.push(`<a class="c-act naver" href="${esc(urlSafe)}" target="_blank" rel="noopener">${ic('link')} 네이버 열기 ↗</a>`);
-  else _acts.push(`<a class="c-act naver" href="${naverUrl(p)}" target="_blank">${ic('map')} 네이버지도</a>`);
+  else _acts.push(`<a class="c-act naver" href="${naverUrl(p)}" target="_blank" rel="noopener">${ic('map')} 네이버지도</a>`);
   _acts.push(`<button class="c-act" data-edit="${p.id}">${ic('edit')} 수정</button>`);
   _acts.push(`<button class="c-act c-act-del" data-del="${p.id}" aria-label="매물 삭제">✕ 삭제</button>`);
   return `<div class="c-actions">${_acts.join('')}</div>`;
@@ -634,7 +637,7 @@ function visibleProperties(){
   let items=[...state.properties];
   if(activeTab!=='전체') items=items.filter(p=>p.status===activeTab);
   const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
-  if(pq) items=items.filter(p=>(p.name||'').toLowerCase().includes(pq)||(p.loc||'').toLowerCase().includes(pq)||(p.memo||'').toLowerCase().includes(pq)||(p.station||'').toLowerCase().includes(pq)||(p.line||'').toLowerCase().includes(pq));
+  if(pq) items=items.filter(p=>[p.name,p.loc,p.memo,p.station,p.line,p.householdGrade,p.households].some(v=>String(v??'').toLowerCase().includes(pq)));
   return items;
 }
 function renderList(){
@@ -961,11 +964,6 @@ document.querySelectorAll('.ur-link').forEach(a=>a.addEventListener('click',e=>{
 
 function renderProps(){renderStats();renderTabs();renderList();renderWeights();}
 
-document.addEventListener('DOMContentLoaded',()=>{
-  const ps=document.getElementById('prop_search');
-  if(ps) ps.addEventListener('input',()=>renderList());
-});
-// prop_search 즉시 바인딩 (DOMContentLoaded 이미 지났을 때)
 (()=>{ const ps=document.getElementById('prop_search'); if(ps) ps.addEventListener('input',()=>renderList()); })();
 
 
