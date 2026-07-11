@@ -36,7 +36,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum";}
-  .wrap{max-width:1160px;margin:0 auto;padding:24px 20px 64px;}
+  .wrap{max-width:1440px;margin:0 auto;padding:24px 20px 64px;}
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
   input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);}
   .tnum{font-variant-numeric:tabular-nums;}
