@@ -1149,14 +1149,49 @@ function parseTSV(text){
   });
 }
 
-function calcDupStatus(parsed){
-  const existKeys=new Set(state.properties.map(p=>normalizeStr(p.name)+'|'+normalizeStr(p.loc||p.station||'')));
-  const existNames=new Set(state.properties.map(p=>normalizeStr(p.name)));
+/* v5 stage5b: 상태 매핑 — parseTSV()의 mapImportStatus()가 이미 한 번 정규화한
+   값(관심/검토중/문의예정/방문예정/후보/보류/탈락)을 입력받아 단지 상태 어휘로 재매핑 */
+function mapCxImportStatus(s){
+  const statusMap={관심:'관심',검토중:'검토중',후보:'후보',후보확정:'후보',
+    문의예정:'문의예정',방문예정:'임장예정',임장예정:'임장예정',보류:'보류',탈락:'탈락'};
+  return statusMap[s]||'관심';
+}
+/* 단지 중복은 normalize(complexName)+'|'+normalize(loc||station), 매물 중복은
+   URL 우선(없으면 complexId+dongHo+areaM2+deposit)으로 별도 판정. 같은 배치 안의
+   행끼리도 병합/중복 감지가 되도록 배치 내 상태를 누적하며 순회한다 */
+function calcCxImportStatus(parsed){
+  const existingCxByKey=new Map();
+  state.complexes.forEach(cx=>{
+    const key=normalizeStr(cx.complexName)+'|'+normalizeStr(cx.loc||cx.station||'');
+    if(!existingCxByKey.has(key)) existingCxByKey.set(key,cx.id);
+  });
+  const listingKey=(cxId,url,dongHo,areaM2,deposit)=>url
+    ?cxId+'|url:'+normalizeStr(url)
+    :cxId+'|'+normalizeStr(dongHo)+'|'+normalizeStr(areaM2==null?'':String(areaM2))+'|'+normalizeStr(deposit==null?'':String(deposit));
+  const listingKeySet=new Set(state.listings.map(l=>listingKey(l.complexId,l.url,l.dongHo,l.areaM2,l.deposit)));
+
+  const batchCxPseudoId=new Map();
+  let pseudoSeq=0;
   return parsed.map(row=>{
-    const key=normalizeStr(row.name)+'|'+normalizeStr(row.loc||row.station||'');
-    if(existKeys.has(key)) return{...row,_dup:'중복'};
-    if(normalizeStr(row.name)&&existNames.has(normalizeStr(row.name))) return{...row,_dup:'이름유사'};
-    return{...row,_dup:'신규'};
+    const {complexName,groupCode,dongHo}=migParseName(row.name);
+    const loc=row.loc||'';
+    const geocodeQuery=`${loc} ${complexName}`.trim();
+    const mergeKey=normalizeStr(complexName)+'|'+normalizeStr(loc||row.station||'');
+
+    let cxId, cxJudgment, existingComplexId=null;
+    if(existingCxByKey.has(mergeKey)){
+      cxId=existingCxByKey.get(mergeKey); existingComplexId=cxId; cxJudgment='existing';
+    } else if(batchCxPseudoId.has(mergeKey)){
+      cxId=batchCxPseudoId.get(mergeKey); cxJudgment='existing';
+    } else {
+      cxId='batch'+(++pseudoSeq); batchCxPseudoId.set(mergeKey,cxId); cxJudgment='new';
+    }
+
+    const lk=listingKey(cxId,row.url,dongHo,row.area,row.depositNum);
+    const listingDup=listingKeySet.has(lk);
+    if(!listingDup) listingKeySet.add(lk);
+
+    return {...row,complexName,groupCode,dongHo,geocodeQuery,mergeKey,cxId,cxJudgment,existingComplexId,listingDup};
   });
 }
 
@@ -1167,23 +1202,23 @@ function renderImportPreview(rows){
     return;
   }
   document.getElementById('propImportErr').textContent='';
-  const dupCount=rows.filter(r=>r._dup==='중복').length;
+  const newCxCount=new Set(rows.filter(r=>r.cxJudgment==='new').map(r=>r.mergeKey)).size;
+  const dupListingCount=rows.filter(r=>r.listingDup).length;
   const html=`<div style="overflow-x:auto"><table class="import-tbl">
     <thead><tr>
       <th><input type="checkbox" id="piChkAll" checked></th>
-      <th>단지명</th><th>지역/역</th><th>전세보증금(호가)</th><th>억값</th>
-      <th>전세가율</th><th>세대수등급</th><th>상태</th><th>중복여부</th>
+      <th>단지명</th><th>지역</th><th>전세보증금</th><th>전용면적</th>
+      <th>상태</th><th>단지 판정</th><th>매물 판정</th>
     </tr></thead>
-    <tbody>${rows.map((r,i)=>`<tr class="${r._dup==='중복'?'dup-r':''}">
-      <td><input type="checkbox" class="pi-chk" data-idx="${i}"${r._dup!=='중복'?' checked':''}></td>
-      <td>${esc(r.name||'—')}</td>
+    <tbody>${rows.map((r,i)=>`<tr class="${r.listingDup?'dup-r':''}">
+      <td><input type="checkbox" class="pi-chk" data-idx="${i}"${r.listingDup?'':' checked'}></td>
+      <td>${esc(r.complexName||r.name||'—')}</td>
       <td>${esc(r.loc||r.station||'—')}</td>
-      <td>${esc(r.deposit||'—')}</td>
       <td class="tnum">${r.depositNum!=null?r.depositNum+'억':'—'}</td>
-      <td class="tnum">${r.jeonseRatio!=null?r.jeonseRatio+'%':'—'}</td>
-      <td>${esc(r.householdGrade||'—')}</td>
+      <td class="tnum">${r.area!=null?r.area+'㎡':'—'}</td>
       <td>${esc(r.status)}</td>
-      <td><span class="dup-badge dup-${r._dup}">${r._dup}</span></td>
+      <td><span class="dup-badge ${r.cxJudgment==='new'?'dup-신규':'dup-이름유사'}">${r.cxJudgment==='new'?'신규 단지':'기존 단지 있음 · 매물 추가'}</span></td>
+      <td>${r.listingDup?'<span class="dup-badge dup-중복">기존 매물 있음</span>':'—'}</td>
     </tr>`).join('')}</tbody>
   </table></div>`;
   document.getElementById('propImportTable').innerHTML=html;
@@ -1198,14 +1233,14 @@ function renderImportPreview(rows){
   };
   document.querySelectorAll('.pi-chk').forEach(cb=>cb.onchange=updateCount);
   updateCount();
-  document.getElementById('propImportSummary').textContent=`총 ${rows.length}행 · 중복 ${dupCount}행 자동 해제`;
+  document.getElementById('propImportSummary').textContent=`총 ${rows.length}행 · 신규 단지 ${newCxCount}개 · 중복 매물 ${dupListingCount}건 자동 해제`;
   document.getElementById('propImportPreview').style.display='';
 }
 
 document.getElementById('propImportPreviewBtn').onclick=()=>{
   const text=document.getElementById('propImportTa').value;
   if(!text.trim()){document.getElementById('propImportErr').textContent='데이터를 붙여넣어 주세요.';return;}
-  importParsedRows=calcDupStatus(parseTSV(text));
+  importParsedRows=calcCxImportStatus(parseTSV(text));
   renderImportPreview(importParsedRows);
 };
 document.getElementById('propImportBackBtn').onclick=()=>{
@@ -1213,45 +1248,72 @@ document.getElementById('propImportBackBtn').onclick=()=>{
 };
 document.getElementById('propImportSubmitBtn').onclick=async()=>{
   const chkEls=[...document.querySelectorAll('.pi-chk:checked')];
-  const toImport=chkEls.map(cb=>importParsedRows[+cb.dataset.idx]).filter(r=>r&&r._dup!=='중복'&&r.name);
+  const toImport=chkEls.map(cb=>importParsedRows[+cb.dataset.idx]).filter(r=>r&&r.name&&!r.listingDup);
   if(!toImport.length)return;
-  const batchId='b'+Date.now().toString(36);
+
+  /* v5 stage5b: TSV 임포트 결과는 properties[]에 push하지 않고 complexes/listings에만
+     기록(이중 저장 방지). 같은 배치 안 동일 단지(mergeKey)는 실제 complexId 1개로
+     합쳐 매물만 여러 개 추가한다. */
   const now=new Date().toISOString();
-  const newIds=[];
+  const resolvedCxId=new Map();
+  const newComplexIds=[];
+  let newCxCount=0, newListingCount=0, seq=0;
+
   toImport.forEach(row=>{
-    const id='m'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-    newIds.push(id);
-    state.properties.push({
-      id,created:Date.now(),
-      name:row.name,loc:row.loc,station:row.station,line:row.line,
-      yearBuilt:row.yearBuilt,households:row.households,householdGrade:row.householdGrade,
-      area:row.area,deposit:row.deposit,depositNum:row.depositNum,
-      jeonseReal:row.jeonseReal,saleReal:row.saleReal,jeonseRatio:row.jeonseRatio,
-      commuteGangnam:row.commuteGangnam,commuteSinsa:row.commuteSinsa,
-      url:row.url,memo:row.memo,status:row.status,
-      lat:null,lng:null,geocodePending:true,
-      checks:{},aiScore:null,aiComment:'',img:'',
-      importSource:'sheet',importedAt:now,importBatchId:batchId,
+    let realCxId=resolvedCxId.get(row.mergeKey);
+    if(!realCxId){
+      if(row.existingComplexId){
+        realCxId=row.existingComplexId;
+      } else {
+        const cx={
+          id:'cx'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+(++seq),
+          complexName:row.complexName||row.name, loc:row.loc||'', geocodeQuery:row.geocodeQuery,
+          groupCode:row.groupCode||'', regionGroup:'',
+          station:row.station||'', line:row.line||'',
+          yearBuilt:row.yearBuilt??null, households:row.households??null, householdGrade:row.householdGrade||'',
+          commuteGangnam:row.commuteGangnam||null, commuteSinsa:row.commuteSinsa||null,
+          complexStatus:mapCxImportStatus(row.status),
+          lat:null, lng:null, memo:row.memo||'',
+          createdAt:now, updatedAt:now,
+        };
+        state.complexes.push(cx);
+        realCxId=cx.id;
+        newComplexIds.push(cx.id);
+        newCxCount++;
+      }
+      resolvedCxId.set(row.mergeKey,realCxId);
+    }
+    const isFirstListing=state.listings.filter(l=>l.complexId===realCxId).length===0;
+    state.listings.push({
+      id:'lst'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+(++seq),
+      complexId:realCxId, source:'sheet', url:row.url||'',
+      capturedAt:now, lastCheckedAt:'',
+      dongHo:row.dongHo||'', areaM2:row.area??null, areaText:row.area!=null?String(row.area):'',
+      areaGrade:'', deposit:row.depositNum??null,
+      managementFee:null, listingStatus:'확인필요',
+      isRepresentative:isFirstListing,
+      memo:row.memo||'',
     });
+    newListingCount++;
   });
-  const dupSkip=importParsedRows.filter(r=>r._dup==='중복').length;
+
+  const dupSkip=importParsedRows.filter(r=>r.listingDup).length;
   closeModal('propImportModal');
   save();renderProps();refreshOverview();
-  showPropToast(`${toImport.length}개 등록 완료 / 중복 ${dupSkip}개 건너뜀`);
-  geocodeBatch(newIds);
+  showPropToast(`단지 ${newCxCount}개 신규 · 매물 ${newListingCount}개 등록 완료 / 중복 매물 ${dupSkip}건 건너뜀`);
+  geocodeComplexBatch(newComplexIds);
 };
-
-async function geocodeBatch(ids){
-  const props=ids.map(id=>state.properties.find(p=>p.id===id)).filter(Boolean);
-  for(const p of props){
-    const q=((p.name||'')+' '+(p.loc||p.station||'')).trim();
-    if(!q)continue;
+async function geocodeComplexBatch(ids){
+  const cxs=ids.map(id=>state.complexes.find(c=>c.id===id)).filter(Boolean);
+  for(const cx of cxs){
+    if(cx.lat&&cx.lng) continue;
+    if(!cx.geocodeQuery) continue;
     try{
-      const j=await geocode(q);
-      if(j.found){p.lat=j.lat;p.lng=j.lng;p.geocodePending=false;}
-    }catch(e){/* geocodePending stays true */}
+      const j=await geocode(cx.geocodeQuery);
+      if(j.found){ cx.lat=j.lat; cx.lng=j.lng; }
+    }catch(e){/* 좌표 확인 필요 상태로 남음 */}
   }
-  save();renderList();refreshOverview();
+  save();renderComplexes();refreshOverview();
 }
 
 function showPropToast(msg){
