@@ -9,9 +9,10 @@ export default async function handler(req, res) {
 
   if (!await verifySession(req, res)) return;
 
-  const key = process.env.KAKAO_REST_KEY;
-  if (!key) {
-    res.status(500).json({ ok: false, error: 'KAKAO_REST_KEY가 설정되지 않았습니다.' });
+  const keyId = process.env.NAVER_MAPS_CLIENT_ID;
+  const key = process.env.NAVER_MAPS_CLIENT_SECRET;
+  if (!keyId || !key) {
+    res.status(500).json({ ok: false, error: 'NAVER_MAPS_CLIENT_ID/NAVER_MAPS_CLIENT_SECRET이 설정되지 않았습니다.' });
     return;
   }
 
@@ -22,15 +23,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const url = 'https://dapi.kakao.com/v2/local/search/keyword.json?' + new URLSearchParams({ query: q, size: '1' });
+    const url = 'https://maps.apigw.ntruss.com/map-geocode/v2/geocode?' + new URLSearchParams({ query: q });
     const upstream = await fetch(url, {
-      headers: { Authorization: 'KakaoAK ' + key },
+      headers: { 'x-ncp-apigw-api-key-id': keyId, 'x-ncp-apigw-api-key': key },
     });
     const data = await upstream.json();
 
-    if (data.documents && data.documents.length > 0) {
-      const d = data.documents[0];
-      res.status(200).json({ ok: true, lat: parseFloat(d.y), lng: parseFloat(d.x), name: d.place_name, address: d.address_name });
+    if (data.status === 'OK' && data.addresses && data.addresses.length > 0) {
+      const a = data.addresses[0];
+      res.status(200).json({ ok: true, lat: parseFloat(a.y), lng: parseFloat(a.x), address: a.roadAddress || a.jibunAddress });
     } else {
       res.status(200).json({ ok: false });
     }
