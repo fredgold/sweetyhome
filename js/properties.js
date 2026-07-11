@@ -41,7 +41,7 @@ function checklistHTML(p){
       ${CHECKLIST.map(c=>`<div class="ck-item" data-ck="${p.id}|${c.id}" data-on="${ch[c.id]?1:0}">
         <span class="cb">${CHECK}</span>
         <span class="ct">${c.t}<small>${c.s}</small></span>
-        <a class="ck-verify" href="${c.vu(((p.name||'')+' '+(p.loc||'')).trim())}" target="_blank" rel="noopener">${ic('search')} ${c.vl}</a>
+        ${c.vu&&c.vl?`<a class="ck-verify" href="${c.vu(((p.name||'')+' '+(p.loc||'')).trim())}" target="_blank" rel="noopener">${ic('search')} ${c.vl}</a>`:''}
       </div>`).join('')}
     </div></div>`;
 }
