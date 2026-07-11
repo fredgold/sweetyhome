@@ -413,7 +413,7 @@
   .login-overlay{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;}
   .login-overlay.hidden{display:none;}
   .login-box{background:var(--surface);border:1px solid var(--hairline);border-radius:20px;padding:36px 32px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.12);text-align:center;}
-  .login-box .login-mark{margin-bottom:12px;}
+  .login-box .login-mark{width:64px;height:64px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;background:var(--line9-wash);margin-bottom:12px;}
   .login-box h1{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:4px;}
   .login-box .login-sub{font-size:13px;color:var(--ink-soft);font-weight:500;margin-bottom:24px;}
   .login-box .login-q{font-size:14px;font-weight:700;color:var(--line9-deep);margin-bottom:12px;}
