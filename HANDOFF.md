@@ -1,10 +1,10 @@
-# HANDOFF — 매물탭 UI 수정 + API 보안 후속 (2026-07-11)
+# HANDOFF — 매물탭 UI #6 + API 보안 후속 (2026-07-11)
 
 ## 1. 목표
 `QA_2026-07-11.md` 기반 매물탭 UI 버그·개선 5건. 지도 API(네이버 전환) 작업과는 별도, CSS·카드 마크업·링크 제거 위주.
 
 ## 2. 완료
-**매물탭 UI 5건 + API 보안 후속 완료·push.**
+**매물탭 UI 6건 + API 보안 후속 완료·push.**
 
 ```
 06533af fix: 매물 상태 필터 칩 상단 클리핑
@@ -14,7 +14,15 @@ ac72a31 refactor: 매물 외부검색 링크(네이버·호갱노노 등) 제거
 24501a6 fix: 임장루트 리스트 세로 깨짐 — route-bar 세로 스택
 fc847ee docs: 매물탭 UI 수정 5건 세션 HANDOFF 갱신
 bcf2334 fix: harden API cost and abuse controls
+28527c7 refactor: 실사체크 구글검색 링크(호갱노노 등) 제거
 ```
+
+### 매물탭 UI #6
+- `js/state.js`: 실사체크 k1·k6·k7·k9의 Google 검색 `vl`/`vu`만 제거. 체크 항목과 저장 ID는 그대로 유지.
+- `js/properties.js`: `c.vu`/`c.vl`이 모두 있을 때만 `.ck-verify` 링크를 렌더하도록 가드 추가.
+- `js/utils.js`: 사용처가 사라진 `gUrl()` 제거.
+- k2·k3의 `nmapUrl`, k4·k5·k8의 `landUrl`, 카드 액션의 `naverUrl`은 그대로 유지.
+- 검증: `gUrl(`/`google.com/search` 참조 0개, 네이버 체크 링크 5개 유지, 전체 JS `node --check` 및 `git diff --check` 통과.
 
 ### Codex API 보안 후속
 - `/api/messages`: 클라이언트의 `body.model` 지정을 무시하고 서버 `ANTHROPIC_MODEL` 또는 Haiku 기본값만 사용.
@@ -36,7 +44,7 @@ bcf2334 fix: harden API cost and abuse controls
 - **js/properties.js**:
   - 매물 카드 `.c-headline`/`.c-sub` 내용 스왑: 헤드라인=`subtitleText(p)`(단지명·역·호선), 부제=`headlineText(p)`(보증금·전용, `tnum` 클래스 이동). 상태 뱃지·실사 진행률·확장 토글 위치는 변경 없음.
   - `updateUnisearch()`에서 외부 검색 링크(`ur_land`/`ur_hogang`/`ur_naver`/`ur_rt`) href 채우던 로직과 관련 클릭 핸들러 제거. 검색어 있을 때만 "내 목록 N곳 검색됨" 표시, 없으면 결과 영역 숨김. `prop_search` 필터 기능(line 640 부근)은 그대로 유지.
-- **js/utils.js**: `updateUnisearch`에서만 쓰이던 `siteUrl()` 헬퍼 제거(죽은 코드). `gUrl`/`nmapUrl`/`landUrl`/`naverUrl`은 체크리스트·카드 액션에서 계속 쓰여 유지.
+- **js/utils.js**: `updateUnisearch`에서만 쓰이던 `siteUrl()` 헬퍼와 #6 후 사용처가 사라진 `gUrl()` 제거. `nmapUrl`/`landUrl`/`naverUrl`은 체크리스트·카드 액션에서 계속 쓰여 유지.
 - **index.html**: `unisearch-result` 안의 외부 검색 링크 마크업(네이버부동산/호갱노노/네이버지도/실거래가 4개 `<a>`) 제거. 검색 input(`#prop_search`)은 유지.
 
 ### 발견한 이슈 — 상태 필터 칩 클리핑 (수정 5)
