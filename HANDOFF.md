@@ -57,5 +57,6 @@ db0bad6 feat: 매물탭 반응형 2단 그리드 (매물탭 이식 4단계)
 
 ## 6. 컨텍스트
 - 이 레포는 "머리(커맨드 센터, 코드 미수정) — 손 A(Claude Code, 나) — 손 B(Codex)" 3자 협업 구조. SSOT는 CLAUDE.md, 실행 규칙은 AGENTS.md, 이력은 HISTORY.md(단, HISTORY.md 최신 tail은 Kakao Maps API 등 현재 구조와 안 맞는 구버전 내용이 섞여있어 보임 — CLAUDE.md의 Leaflet.js 기준이 맞음).
+- `CLAUDE.md`와 `AGENTS.md`에 모든 작업 전 `CLAUDE.md` → `AGENTS.md` → `HANDOFF.md` 필수 선행 규칙을 동일하게 반영함. 우선순위는 SSOT → 실행 규칙 → 최신 인수인계 순서.
 - 참조 목업(`docs/스위티홈 매물탭 리디자인 (standalone).html`)은 React 기반 번들(DCLogic/x-dc)이라 프레임워크 래퍼는 이식하지 않고 컴포넌트 로직만 추출해 바닐라 JS로 재작성함 — 원본 파일은 22MB(폰트+이미지 포함)라 직접 읽지 말고 필요시 gzip 압축된 `__bundler/manifest` 스크립트 블록을 디코딩해서 볼 것(이번 세션에서 한 방법 그대로).
 - 데스크톱(≥900px) 2단 그리드는 덱의 "리스트 480px 고정" 스펙을 있는 그대로 안 따르고 `minmax(0,360px)`로 축소함 — 전역 `.wrap`(max-width:980px)을 안 건드리는 선에서 타협한 것, 사용자 승인됨.

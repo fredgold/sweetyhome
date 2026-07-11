@@ -132,7 +132,10 @@ state.assets.items[] — amount/mobilizable 단위: 원
 ### Claude가 따르는 규칙
 
 **세션 시작**
-- CLAUDE.md만 읽고 시작. 전체 파일 스캔 금지.
+- 모든 작업·리뷰·커밋 전 `CLAUDE.md` → `AGENTS.md` → `HANDOFF.md` 순서로 반드시 읽고 시작. 전체 파일 스캔 금지.
+- 문서 역할: `CLAUDE.md`=프로젝트 SSOT, `AGENTS.md`=다중 에이전트 실행 규칙, `HANDOFF.md`=최신 작업 상태·검증·남은 일.
+- `HANDOFF.md`가 없으면 사람에게 알리고 현재 Git 상태와 진행 중인 작업을 확인한 뒤 진행.
+- 세 문서가 충돌하면 `CLAUDE.md` → `AGENTS.md` → `HANDOFF.md` 순으로 따르고 사람(테디)에게 충돌을 알림.
 - 기능 위치는 "파일 구조" + "주요 ID 레퍼런스" 표로 먼저 파악.
 - 불확실할 때만 해당 파일 Read. 확실하면 바로 Edit.
 
