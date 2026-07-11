@@ -186,39 +186,6 @@
       <div class="gatelist" id="gateList"></div>
     </div>
 
-    <div class="mapcard" id="mapcard">
-      <div class="mh">
-        <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/></svg> 매물 한눈에 보기</h3>
-        <div class="legend">
-          <span><i style="background:#4F8A5B"></i>후보</span>
-          <span><i style="background:#B89233"></i>검토</span>
-          <span><i style="background:#C7853A"></i>방문</span>
-          <span><i style="background:#6B7C93"></i>관심</span>
-          <button class="toggle" id="mapExpand">크게 보기</button>
-          <button class="toggle" id="mapToggle">접기</button>
-        </div>
-      </div>
-      <div id="overviewMap"></div>
-    </div>
-
-    <div class="unisearch" id="unisearch">
-      <div class="unisearch-box">
-        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
-        <input id="prop_search" placeholder="단지·역·호선·메모 검색 — 새 지역은 아래에서" aria-label="매물 검색">
-      </div>
-      <div class="unisearch-result" id="unisearchResult">
-        <div class="ur-text" id="unisearchText">새 지역·단지는 아래 링크에서 바로 검색해보세요</div>
-        <div class="ur-links">
-          <a class="ur-link disabled" id="ur_land" href="#" target="_blank" rel="noopener" aria-disabled="true">네이버부동산 <span aria-hidden="true">↗</span></a>
-          <a class="ur-link disabled" id="ur_hogang" href="#" target="_blank" rel="noopener" aria-disabled="true">호갱노노 <span aria-hidden="true">↗</span></a>
-        </div>
-        <div class="ur-links ur-links-sub">
-          <a class="ur-link sub disabled" id="ur_naver" href="#" target="_blank" rel="noopener" aria-disabled="true">네이버지도 <span aria-hidden="true">↗</span></a>
-          <a class="ur-link sub disabled" id="ur_rt" href="#" target="_blank" rel="noopener" aria-disabled="true">실거래가 <span aria-hidden="true">↗</span></a>
-        </div>
-      </div>
-    </div>
-
     <div class="wcard" style="display:none">
       <div class="wh">
         <h3>🎚️ AI 자동 평가 가중치</h3>
@@ -229,7 +196,38 @@
     </div>
 
     <div class="grid">
+      <div class="mapcard" id="mapcard">
+        <div class="mh">
+          <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2.2"/></svg> 매물 한눈에 보기</h3>
+          <div class="legend">
+            <span><i style="background:#4F8A5B"></i>후보</span>
+            <span><i style="background:#B89233"></i>검토</span>
+            <span><i style="background:#C7853A"></i>방문</span>
+            <span><i style="background:#6B7C93"></i>관심</span>
+            <button class="toggle" id="mapExpand">크게 보기</button>
+            <button class="toggle" id="mapToggle">접기</button>
+          </div>
+        </div>
+        <div id="overviewMap"></div>
+      </div>
       <section>
+        <div class="unisearch" id="unisearch">
+          <div class="unisearch-box">
+            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
+            <input id="prop_search" placeholder="단지·역·호선·메모 검색 — 새 지역은 아래에서" aria-label="매물 검색">
+          </div>
+          <div class="unisearch-result" id="unisearchResult">
+            <div class="ur-text" id="unisearchText">새 지역·단지는 아래 링크에서 바로 검색해보세요</div>
+            <div class="ur-links">
+              <a class="ur-link disabled" id="ur_land" href="#" target="_blank" rel="noopener" aria-disabled="true">네이버부동산 <span aria-hidden="true">↗</span></a>
+              <a class="ur-link disabled" id="ur_hogang" href="#" target="_blank" rel="noopener" aria-disabled="true">호갱노노 <span aria-hidden="true">↗</span></a>
+            </div>
+            <div class="ur-links ur-links-sub">
+              <a class="ur-link sub disabled" id="ur_naver" href="#" target="_blank" rel="noopener" aria-disabled="true">네이버지도 <span aria-hidden="true">↗</span></a>
+              <a class="ur-link sub disabled" id="ur_rt" href="#" target="_blank" rel="noopener" aria-disabled="true">실거래가 <span aria-hidden="true">↗</span></a>
+            </div>
+          </div>
+        </div>
         <div class="panel-head">
           <div><h2>매물 트래커</h2><div class="stats" id="stats"></div></div>
           <div class="ph-actions">

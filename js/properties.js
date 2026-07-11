@@ -93,16 +93,28 @@ function refreshOverview(items){
   }
   setTimeout(()=>overview.invalidateSize(),60);
 }
-/* 마커 탭 → 카드: 해당 카드를 펼치고 리스트를 그 위치로 스크롤 (sticky 탭 네비 높이만큼 오프셋) */
+const DESKTOP_MQ=window.matchMedia('(min-width:900px)');
+/* 마커 탭 → 카드: 해당 카드를 펼치고 리스트를 그 위치로 스크롤 (sticky 탭 네비 높이만큼 오프셋).
+   모바일 지도 풀스크린 중이었다면 카드가 보이도록 다시 리스트로 복귀(풀스크린 해제) */
 function selectFromMap(id){
   expandedPropId=id;
+  if(document.getElementById('mapcard').classList.contains('expanded')) setMapExpanded(false);
   renderList();
   scrollCardIntoView(id);
 }
+/* ≥900px: 리스트가 자체 스크롤 컨테이너(.rail)라 그 안에서만 스크롤 — 전체 페이지 스크롤 오염 없음.
+   <900px: 페이지 전체 스크롤 + sticky 탭 네비 높이(동적 측정)만큼 오프셋 보정 */
 function scrollCardIntoView(id){
   const toggle=document.querySelector(`[data-cardtoggle="${id}"]`);
   const card=toggle&&toggle.closest('.card');
   if(!card) return;
+  if(DESKTOP_MQ.matches){
+    const list=document.getElementById('list');
+    if(!list) return;
+    const delta=card.getBoundingClientRect().top-list.getBoundingClientRect().top-12;
+    list.scrollTo({top:Math.max(0,list.scrollTop+delta),behavior:'smooth'});
+    return;
+  }
   const nav=document.querySelector('.apptabs');
   const offset=(nav?nav.getBoundingClientRect().height:0)+12;
   const top=card.getBoundingClientRect().top+window.scrollY-offset;
@@ -117,16 +129,54 @@ function reselectMarker(id){
     m.setZIndexOffset(selected?1000:0);
   });
 }
+/* 모바일 전용 지도 풀스크린 토글 (≥900px에서는 버튼 자체가 CSS로 숨겨져 호출될 일 없음) */
+function setMapExpanded(on){
+  const c=document.getElementById('mapcard');
+  c.classList.toggle('expanded',on);
+  const btn=document.getElementById('mapExpand');
+  if(btn) btn.textContent=on?'작게 보기':'크게 보기';
+  setTimeout(()=>overview&&overview.invalidateSize(),300);
+}
+/* --nav-h 갱신 + sticky 탭 네비 높이가 바뀔 수 있는 모든 계기(리사이즈·브레이크포인트 전환)에서
+   지도 invalidateSize 재호출. 900px 경계를 "진입"할 때는 모바일 전용 상태(풀스크린·접기)가
+   남아있으면 2단 그리드가 깨지므로 강제 초기화 */
+function updateNavHeightVar(){
+  const nav=document.querySelector('.apptabs');
+  document.documentElement.style.setProperty('--nav-h',(nav?nav.getBoundingClientRect().height:64)+'px');
+}
+function handleBreakpointChange(e){
+  if(e.matches){
+    document.getElementById('mapcard').classList.remove('expanded','collapsed');
+    const btn=document.getElementById('mapExpand'); if(btn) btn.textContent='크게 보기';
+    const tbtn=document.getElementById('mapToggle'); if(tbtn) tbtn.textContent='접기';
+  }
+  updateNavHeightVar();
+  /* --nav-h 변경이 #overviewMap의 calc() 높이에 반영되는 레이아웃·페인트가 끝난 뒤에
+     불러야 해서 이중 rAF로 한 프레임 넘김 (동기 호출하면 갱신 전 크기로 invalidateSize가
+     실행돼 새로 넓어진 영역의 타일이 안 채워지는 문제가 실측됨) */
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    waitLeaflet(()=>overview&&overview.invalidateSize());
+  }));
+}
+DESKTOP_MQ.addEventListener('change',handleBreakpointChange);
+updateNavHeightVar();
+(()=>{
+  let raf=null;
+  window.addEventListener('resize',()=>{
+    if(raf) cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(()=>{
+      updateNavHeightVar();
+      requestAnimationFrame(()=>{ if(overview) overview.invalidateSize(); });
+    });
+  });
+})();
 document.getElementById('mapToggle').onclick=()=>{
   const c=document.getElementById('mapcard'); c.classList.toggle('collapsed');
   document.getElementById('mapToggle').textContent=c.classList.contains('collapsed')?'펼치기':'접기';
   if(!c.classList.contains('collapsed')) setTimeout(()=>overview&&overview.invalidateSize(),80);
 };
 document.getElementById('mapExpand').onclick=()=>{
-  const c=document.getElementById('mapcard');
-  c.classList.toggle('expanded');
-  document.getElementById('mapExpand').textContent=c.classList.contains('expanded')?'작게 보기':'크게 보기';
-  setTimeout(()=>overview&&overview.invalidateSize(),300);
+  setMapExpanded(!document.getElementById('mapcard').classList.contains('expanded'));
 };
 
 /* ============ 임장 루트 (client-only, non-persisted) ============ */
