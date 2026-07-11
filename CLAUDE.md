@@ -10,7 +10,7 @@
 - **배포**: Vercel (정적 파일 + `api/` serverless functions)
 - **스토리지**: Upstash Redis (`/api/state`) + localStorage fallback
 - **인증**: PIN → `/api/login` → UUID Bearer token → `sessionStorage sh_token` (24h TTL)
-- **지도**: Leaflet.js (CDN)
+- **지도**: 네이버 지도 JS API v3 (CDN) — 지오코딩은 `/api/geocode` 서버리스 프록시(네이버 Geocoding API)
 - **마크다운**: marked.js v9 (CDN, `renderMd()` in utils.js)
 - **AI**: Anthropic Claude API (`/api/messages` 서버리스 프록시)
 - **Redis 키**: `'sweetyhome'` — 절대 변경 금지
