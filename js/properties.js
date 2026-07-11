@@ -870,7 +870,7 @@ document.getElementById('f_imgClear').onclick=()=>{
   document.getElementById('f_imgLabel').innerHTML=ic('camera')+' 사진 추가';
   document.getElementById('f_imgClear').style.display='none';
 };
-document.getElementById('saveBtn').onclick=()=>{
+document.getElementById('saveBtn').onclick=async()=>{
   const name=document.getElementById('f_name').value.trim();
   if(!name){const f=document.getElementById('f_name');f.focus();f.style.borderColor='var(--s-drop)';return;}
   const cur=document.getElementById('editId').value;
@@ -889,10 +889,66 @@ document.getElementById('saveBtn').onclick=()=>{
     lng:tempLatLng?tempLatLng.lng:(existing?existing.lng:null),
     checks:Object.assign({}, existing?existing.checks:{}, tempChecks||{}),
   };
-  if(existing) Object.assign(existing,data);
-  else state.properties.push({id:'m'+Date.now(),created:Date.now(),...data});
+  if(existing){
+    Object.assign(existing,data);
+  } else {
+    /* v5 stage5a: 신규 매물은 properties[]가 아니라 단지(complexes)/매물(listings)
+       2계층으로 라우팅. properties[]는 기존 데이터 백업용으로 손대지 않는다 */
+    await saveAsComplexListing(data);
+  }
   closeForm(); save(); renderProps(); refreshOverview();
 };
+/* 파싱·입력 UX는 그대로, 저장 목적지만 단지/매물로 변경(Stage2 규칙 재사용) */
+async function saveAsComplexListing(data){
+  const {complexName,groupCode,dongHo}=migParseName(data.name);
+  const loc=data.loc||'';
+  const geocodeQuery=`${loc} ${complexName}`.trim();
+  const mergeKey=normalizeStr(complexName)+'|'+normalizeStr(loc||data.station||'');
+  let cx=state.complexes.find(c=>normalizeStr(c.complexName)+'|'+normalizeStr(c.loc||c.station||'')===mergeKey);
+  const isNewComplex=!cx;
+
+  if(isNewComplex){
+    const hh=data.households?parseInt(data.households)||null:null;
+    const now=new Date().toISOString();
+    cx={
+      id:'cx'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+      complexName:complexName||data.name, loc, geocodeQuery, groupCode, regionGroup:'',
+      station:data.station||'', line:data.line||'',
+      yearBuilt:null, households:hh, householdGrade:hh?calcHouseholdGrade(hh):'',
+      commuteGangnam:null, commuteSinsa:null,
+      complexStatus:migComplexStatus(data.status),
+      lat:data.lat??null, lng:data.lng??null,
+      memo:data.memo||'',
+      createdAt:now, updatedAt:now,
+    };
+    state.complexes.push(cx);
+    if(!(cx.lat&&cx.lng)){
+      try{
+        const j=await geocode(geocodeQuery);
+        if(j.found){ cx.lat=j.lat; cx.lng=j.lng; }
+      }catch(e){/* 좌표 확인 필요 상태로 남음 */}
+    }
+  }
+
+  const isFirstListing=state.listings.filter(l=>l.complexId===cx.id).length===0;
+  const areaNum=data.area!=null&&data.area!==''?parseFloat(data.area):null;
+  const now2=new Date().toISOString();
+  state.listings.push({
+    id:'lst'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    complexId:cx.id, source:'', url:data.url||'',
+    capturedAt:now2, lastCheckedAt:now2,
+    dongHo, areaM2:(areaNum!=null&&!isNaN(areaNum))?areaNum:null,
+    areaText:data.area?String(data.area):'', areaGrade:'',
+    deposit:data.deposit?parseEok(data.deposit):null,
+    managementFee:null, listingStatus:'게시중',
+    isRepresentative:isFirstListing,
+    memo:data.memo||'',
+  });
+
+  showPropToast(isNewComplex
+    ? `새 단지 "${cx.complexName}"가 등록됐어요${(cx.lat&&cx.lng)?'':' · 좌표 확인 필요'}`
+    : `기존 단지 "${cx.complexName}"에 매물이 추가됐어요`);
+}
 function delProp(id){if(!confirm('이 매물을 삭제할까요?'))return;state.properties=state.properties.filter(x=>x.id!==id);save();renderProps();refreshOverview();}
 
 document.getElementById('list').addEventListener('click',e=>{
