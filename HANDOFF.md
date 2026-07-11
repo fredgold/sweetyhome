@@ -15,7 +15,12 @@ ac72a31 refactor: 매물 외부검색 링크(네이버·호갱노노 등) 제거
 fc847ee docs: 매물탭 UI 수정 5건 세션 HANDOFF 갱신
 bcf2334 fix: harden API cost and abuse controls
 28527c7 refactor: 실사체크 구글검색 링크(호갱노노 등) 제거
+6f2bd1d chore: gitignore Claude Design standalone HTML exports
 ```
+
+### 저장소 위생
+- `.gitignore`에 `docs/*standalone*.html`을 추가해 Claude Design이 생성하는 대용량 standalone HTML의 실수 커밋을 방지.
+- `docs/style-guide.html`과 `docs/스위티홈_ClaudeCode_지시문.md`는 계속 Git 추적 상태.
 
 ### 매물탭 UI #6
 - `js/state.js`: 실사체크 k1·k6·k7·k9의 Google 검색 `vl`/`vu`만 제거. 체크 항목과 저장 ID는 그대로 유지.
