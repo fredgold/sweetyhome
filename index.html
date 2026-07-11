@@ -209,6 +209,7 @@
         </div>
         <div id="overviewMap"></div>
       </div>
+      <div class="grid-resize-handle" id="gridResizeHandle" role="separator" aria-orientation="vertical" aria-label="목록·지도 너비 조절"></div>
       <section>
         <div class="unisearch" id="unisearch">
           <div class="unisearch-box">
@@ -301,6 +302,49 @@
           </div>
         </div>
 
+        <div id="cxFilterBar" class="sc-filter-bar" style="display:none">
+          <div class="sc-filter-label">탐색그룹</div>
+          <div class="sc-filter-row" id="cxFilterRegion"><span class="sc-filter-chip on" data-fregion="">전체</span></div>
+          <div class="sc-filter-label">단지상태</div>
+          <div class="sc-filter-row" id="cxFilterStatus">
+            <span class="sc-filter-chip on" data-fstatus="">전체</span>
+            <span class="sc-filter-chip" data-fstatus="관심">관심</span>
+            <span class="sc-filter-chip" data-fstatus="검토중">검토중</span>
+            <span class="sc-filter-chip" data-fstatus="후보">후보</span>
+            <span class="sc-filter-chip" data-fstatus="문의예정">문의예정</span>
+            <span class="sc-filter-chip" data-fstatus="임장예정">임장예정</span>
+            <span class="sc-filter-chip" data-fstatus="보류">보류</span>
+            <span class="sc-filter-chip" data-fstatus="탈락">탈락</span>
+          </div>
+          <div class="sc-filter-label">매물상태</div>
+          <div class="sc-filter-row" id="cxFilterListingStatus">
+            <span class="sc-filter-chip on" data-flisting="">전체</span>
+            <span class="sc-filter-chip" data-flisting="게시중">게시중</span>
+            <span class="sc-filter-chip" data-flisting="사라짐">사라짐</span>
+            <span class="sc-filter-chip" data-flisting="가격변동">가격변동</span>
+            <span class="sc-filter-chip" data-flisting="다른동호수등장">다른동호수등장</span>
+            <span class="sc-filter-chip" data-flisting="확인필요">확인필요</span>
+          </div>
+          <div class="sc-filter-label">면적등급</div>
+          <div class="sc-filter-row" id="cxFilterAreaGrade">
+            <span class="sc-filter-chip on" data-farea="">전체</span>
+            <span class="sc-filter-chip" data-farea="메인면적">메인면적</span>
+            <span class="sc-filter-chip" data-farea="조건부">조건부</span>
+            <span class="sc-filter-chip" data-farea="협소주의">협소주의</span>
+            <span class="sc-filter-chip" data-farea="가격참고">가격참고</span>
+          </div>
+          <div class="sc-filter-label">세대수등급</div>
+          <div class="sc-filter-row" id="cxFilterHouseholdGrade">
+            <span class="sc-filter-chip on" data-fhh="">전체</span>
+            <span class="sc-filter-chip" data-fhh="1000세대+">1000세대+</span>
+            <span class="sc-filter-chip" data-fhh="500세대+">500세대+</span>
+            <span class="sc-filter-chip" data-fhh="300세대+">300세대+</span>
+            <span class="sc-filter-chip" data-fhh="소규모조건부">소규모조건부</span>
+            <span class="sc-filter-chip" data-fhh="소규모주의">소규모주의</span>
+          </div>
+          <div class="sc-filter-label">노선</div>
+          <div class="sc-filter-row" id="cxFilterLine"><span class="sc-filter-chip on" data-fline="">전체</span></div>
+        </div>
         <div id="complexSection"></div>
         <div id="legacyToggleWrap" class="legacy-toggle" style="display:none">
           <button class="btn-ghost" id="legacyToggleBtn" type="button"></button>
@@ -808,6 +852,10 @@
           <div class="cx-dt">출퇴근</div>
           <div class="cx-dd" id="cxDetailCommute">—</div>
         </div>
+      </div>
+      <div class="c-actions" style="margin-bottom:10px">
+        <span id="cxDetailWeeklyBadge" class="chip warn" style="display:none">7일+ 미확인</span>
+        <button type="button" id="cxDetailWeeklyCheckBtn">이번 주 확인 완료</button>
       </div>
       <div class="field" style="margin-bottom:10px">
         <label>단지 상태</label>

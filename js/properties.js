@@ -1607,8 +1607,60 @@ function updateLegacyToggleLabel(){
   const btn=document.getElementById('legacyToggleBtn'); if(!btn)return;
   btn.textContent=`${legacyExpanded?'▾':'▸'} 기존(미정리) 매물 (${state.properties.length})`;
 }
+
+/* ---- v5 stage6c: 단지 목록 필터 (6종) ---- */
+let cxFilters={region:'',status:'',listing:'',area:'',hh:'',line:''};
+function renderCxFilterOptions(){
+  const regionSet=new Set(state.complexes.map(c=>c.regionGroup).filter(Boolean));
+  const regionWrap=document.getElementById('cxFilterRegion');
+  if(regionWrap) regionWrap.innerHTML=`<span class="sc-filter-chip${cxFilters.region===''?' on':''}" data-fregion="">전체</span>`
+    +[...regionSet].map(r=>`<span class="sc-filter-chip${cxFilters.region===r?' on':''}" data-fregion="${esc(r)}">${esc(r)}</span>`).join('');
+  const lineSet=new Set(state.complexes.map(c=>c.line).filter(Boolean));
+  const lineWrap=document.getElementById('cxFilterLine');
+  if(lineWrap) lineWrap.innerHTML=`<span class="sc-filter-chip${cxFilters.line===''?' on':''}" data-fline="">전체</span>`
+    +[...lineSet].map(l=>`<span class="sc-filter-chip${cxFilters.line===l?' on':''}" data-fline="${esc(l)}">${esc(l)}</span>`).join('');
+  document.querySelectorAll('#cxFilterStatus [data-fstatus]').forEach(c=>c.classList.toggle('on',c.dataset.fstatus===cxFilters.status));
+  document.querySelectorAll('#cxFilterListingStatus [data-flisting]').forEach(c=>c.classList.toggle('on',c.dataset.flisting===cxFilters.listing));
+  document.querySelectorAll('#cxFilterAreaGrade [data-farea]').forEach(c=>c.classList.toggle('on',c.dataset.farea===cxFilters.area));
+  document.querySelectorAll('#cxFilterHouseholdGrade [data-fhh]').forEach(c=>c.classList.toggle('on',c.dataset.fhh===cxFilters.hh));
+}
+function cxMatchesFilters(cx){
+  if(cxFilters.region && (cx.regionGroup||'')!==cxFilters.region) return false;
+  if(cxFilters.status && (cx.complexStatus||'관심')!==cxFilters.status) return false;
+  if(cxFilters.hh && (cx.householdGrade||'')!==cxFilters.hh) return false;
+  if(cxFilters.line && (cx.line||'')!==cxFilters.line) return false;
+  if(cxFilters.listing||cxFilters.area){
+    const cxListings=state.listings.filter(l=>l.complexId===cx.id);
+    if(cxFilters.listing && !cxListings.some(l=>l.listingStatus===cxFilters.listing)) return false;
+    if(cxFilters.area && !cxListings.some(l=>l.areaGrade===cxFilters.area)) return false;
+  }
+  return true;
+}
+document.getElementById('cxFilterRegion').onclick=e=>{const c=e.target.closest('[data-fregion]');if(!c)return;cxFilters.region=c.dataset.fregion;renderComplexes();};
+document.getElementById('cxFilterStatus').onclick=e=>{const c=e.target.closest('[data-fstatus]');if(!c)return;cxFilters.status=c.dataset.fstatus;renderComplexes();};
+document.getElementById('cxFilterListingStatus').onclick=e=>{const c=e.target.closest('[data-flisting]');if(!c)return;cxFilters.listing=c.dataset.flisting;renderComplexes();};
+document.getElementById('cxFilterAreaGrade').onclick=e=>{const c=e.target.closest('[data-farea]');if(!c)return;cxFilters.area=c.dataset.farea;renderComplexes();};
+document.getElementById('cxFilterHouseholdGrade').onclick=e=>{const c=e.target.closest('[data-fhh]');if(!c)return;cxFilters.hh=c.dataset.fhh;renderComplexes();};
+document.getElementById('cxFilterLine').onclick=e=>{const c=e.target.closest('[data-fline]');if(!c)return;cxFilters.line=c.dataset.fline;renderComplexes();};
+
+/* ---- v5 stage6c: 주간 상태 UX (화면 표시만, 알림·스케줄링 없음) ---- */
+function needsWeeklyCheck(cx,rep){
+  if(!['후보','검토중'].includes(cx.complexStatus)) return false;
+  if(!rep||!rep.lastCheckedAt) return true;
+  return (Date.now()-new Date(rep.lastCheckedAt).getTime())/86400000>=7;
+}
+function weeklyCheckComplex(cxId){
+  const listings=state.listings.filter(l=>l.complexId===cxId);
+  const rep=listings.find(l=>l.isRepresentative)||listings[0]||null;
+  if(!rep) return;
+  rep.lastCheckedAt=new Date().toISOString();
+  save(); renderComplexes();
+  if(cxDetailId===cxId) renderCxListings(cxId);
+}
+
 function renderComplexes(){
   const wrap=document.getElementById('complexSection');
+  const filterBar=document.getElementById('cxFilterBar');
   const legacyToggleWrap=document.getElementById('legacyToggleWrap');
   const legacyWrap=document.getElementById('legacyWrap');
   if(!wrap||!legacyToggleWrap||!legacyWrap) return;
@@ -1620,17 +1672,27 @@ function renderComplexes(){
     </div>`;
     const goBtn=document.getElementById('cxGoMigrateBtn');
     if(goBtn) goBtn.onclick=()=>{ renderMigPreview(); openModal('migPreviewModal'); };
+    if(filterBar) filterBar.style.display='none';
     legacyToggleWrap.style.display='none';
     legacyWrap.style.display='';
     return;
   }
+
+  if(filterBar) filterBar.style.display='';
+  renderCxFilterOptions();
 
   legacyToggleWrap.style.display='';
   if(legacyExpanded===null) legacyExpanded=false;
   legacyWrap.style.display=legacyExpanded?'':'none';
   updateLegacyToggleLabel();
 
-  wrap.innerHTML=state.complexes.map(cx=>{
+  const filtered=state.complexes.filter(cxMatchesFilters);
+  if(!filtered.length){
+    wrap.innerHTML=`<div class="cx-empty">필터 조건에 맞는 단지가 없어요.</div>`;
+    return;
+  }
+
+  wrap.innerHTML=filtered.map(cx=>{
     const cxListings=state.listings.filter(l=>l.complexId===cx.id);
     const rep=cxListings.find(l=>l.isRepresentative)||cxListings[0]||null;
     const st=cx.complexStatus||'관심';
@@ -1643,6 +1705,8 @@ function renderComplexes(){
       </div>
       <div class="cx-listing-meta">최근 확인 ${rep.lastCheckedAt?esc(new Date(rep.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>`
       :`<div class="c-meta"><span class="chip warn">현재 대표매물 없음</span></div>`;
+    const weeklyBadge=needsWeeklyCheck(cx,rep)?'<span class="chip warn">7일+ 미확인</span>':'';
+    const weeklyBtn=rep?`<button data-weeklycheck="${cx.id}">${ic('sync')} 이번 주 확인 완료</button>`:'';
     return `<div class="card" data-cxid="${cx.id}">
       <div class="c-top" data-cxopen="${cx.id}" role="button" tabindex="0">
         <div class="c-head-text">
@@ -1653,7 +1717,10 @@ function renderComplexes(){
           <span class="pill" style="border-left-color:${color}"><i class="pill-dot" style="background:${color}"></i>${esc(st)}</span>
         </div>
       </div>
-      <div style="padding:0 15px 14px">${repHTML}</div>
+      <div style="padding:0 15px 14px">
+        ${repHTML}
+        ${(weeklyBadge||weeklyBtn)?`<div class="c-actions">${weeklyBadge}${weeklyBtn}</div>`:''}
+      </div>
     </div>`;
   }).join('');
 }
@@ -1663,6 +1730,8 @@ document.getElementById('legacyToggleBtn').onclick=()=>{
   updateLegacyToggleLabel();
 };
 document.getElementById('complexSection').addEventListener('click',e=>{
+  const wc=e.target.closest('[data-weeklycheck]');
+  if(wc){ weeklyCheckComplex(wc.dataset.weeklycheck); return; }
   const el=e.target.closest('[data-cxopen]'); if(!el)return;
   openComplexDetail(el.dataset.cxopen);
 });
@@ -1715,6 +1784,13 @@ function renderComplexDetailBody(cx){
   ].filter(Boolean).join(' · ')||'—';
   document.getElementById('cxDetailStatusSel').value=cx.complexStatus||'관심';
   document.getElementById('cxDetailMemo').value=cx.memo||'';
+
+  const cxListingsForWeekly=state.listings.filter(l=>l.complexId===cx.id);
+  const repForWeekly=cxListingsForWeekly.find(l=>l.isRepresentative)||cxListingsForWeekly[0]||null;
+  const weeklyBtn=document.getElementById('cxDetailWeeklyCheckBtn');
+  if(weeklyBtn) weeklyBtn.disabled=!repForWeekly;
+  const weeklyBadge=document.getElementById('cxDetailWeeklyBadge');
+  if(weeklyBadge) weeklyBadge.style.display=needsWeeklyCheck(cx,repForWeekly)?'':'none';
 
   const noCoord=document.getElementById('cxDetailNoCoord');
   if(cx.lat&&cx.lng){
@@ -1789,8 +1865,52 @@ document.getElementById('cxDetailStatusSel').onchange=e=>{
   cx.complexStatus=e.target.value; cx.updatedAt=new Date().toISOString();
   save(); renderComplexes();
 };
+document.getElementById('cxDetailWeeklyCheckBtn').onclick=()=>{
+  if(!cxDetailId) return;
+  weeklyCheckComplex(cxDetailId);
+  const cx=state.complexes.find(x=>x.id===cxDetailId);
+  if(cx) renderComplexDetailBody(cx);
+};
 document.getElementById('cxDetailMemo').addEventListener('blur',e=>{
   const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
   cx.memo=e.target.value.trim(); cx.updatedAt=new Date().toISOString();
   save();
 });
+
+/* ---- v5 stage6c: 사이드바↔지도 리사이즈(B-08) — ≥900px 2단 그리드 전용,
+   모바일 단일 컬럼에선 핸들이 display:none이라 드래그 자체가 안 걸림.
+   폭은 세션 메모리(sessionStorage)에만 남기고 state/Redis엔 저장하지 않음 */
+(function initGridResize(){
+  const handle=document.getElementById('gridResizeHandle');
+  const grid=document.querySelector('.grid');
+  if(!handle||!grid) return;
+  const MIN=280, MAX=560;
+  try{
+    const saved=+sessionStorage.getItem('sh_sidebarW');
+    if(saved) document.documentElement.style.setProperty('--sidebar-w',Math.max(MIN,Math.min(MAX,saved))+'px');
+  }catch(e){/* sessionStorage 접근 불가 시 기본값 유지 */}
+
+  handle.onpointerdown=(e)=>{
+    if(window.innerWidth<900) return;
+    e.preventDefault();
+    const sectionEl=grid.querySelector('section');
+    if(!sectionEl) return;
+    const startX=e.clientX;
+    const startW=sectionEl.getBoundingClientRect().width;
+    handle.classList.add('dragging');
+    const onMove=(ev)=>{
+      const w=Math.max(MIN,Math.min(MAX,startW+(ev.clientX-startX)));
+      document.documentElement.style.setProperty('--sidebar-w',w+'px');
+    };
+    const onUp=()=>{
+      document.removeEventListener('pointermove',onMove);
+      document.removeEventListener('pointerup',onUp);
+      handle.classList.remove('dragging');
+      const w=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w'))||360;
+      try{ sessionStorage.setItem('sh_sidebarW',w); }catch(err){/* 세션 메모리 저장 실패는 무시 */}
+      waitNaverMaps(()=>overview&&overview.refresh(true));
+    };
+    document.addEventListener('pointermove',onMove);
+    document.addEventListener('pointerup',onUp);
+  };
+})();
