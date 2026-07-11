@@ -858,7 +858,7 @@
   .ph-actions>#phExportRow,.ph-actions>#propBulkBtn,.ph-actions>#propRouteBtn{display:none;}
   .ph-more-menu{min-width:210px;}
   .ph-more-menu #phExportRow{width:100%;}
-  .ph-more-menu #propExportFmt{flex:1;}
+  .ph-more-menu #phExportRow #propExportBtn{width:100%;justify-content:center;}
   .ph-more-menu #propBulkBtn,.ph-more-menu #propRouteBtn{width:100%;justify-content:center;}
   /* 헤더 더보기 접기 — 프로필/잠금만 상시 노출, 나머지는 ⋯ 메뉴로 */
   .header-more-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px 12px;}

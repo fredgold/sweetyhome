@@ -1056,16 +1056,26 @@ document.getElementById('evalBtn').onclick=async()=>{
   btn.disabled=false; btn.textContent=old;
 };
 document.getElementById('propSortSel').onchange=function(){sortMode=this.value;renderList();};
-function exportProps(){
-  const fmt=document.getElementById('propExportFmt').value;
+/* v5 stage6a: 내보내기 공용 헬퍼 — CSV injection 이스케이프(=,+,-,@)·BOM 유지 로직을
+   단지/매물/통합/레거시 4개 내보내기가 공유 */
+function csvCell(v,fmt){
+  const s=String(v==null?'':v);
+  const danger=fmt==='csv'?/[,\n"]/.test(s):(/[\t\n"]/.test(s));
+  if(danger||/^[=+\-@]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+function downloadDelimited(filename,cols,rows,fmt){
   const sep=fmt==='csv'?',':'\t';
+  const content=[cols.join(sep),...rows.map(r=>r.map(v=>csvCell(v,fmt)).join(sep))].join('\n');
+  const mime=fmt==='csv'?'text/csv':'text/tab-separated-values';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+content],{type:mime+';charset=utf-8'}));
+  a.download=filename+(fmt==='csv'?'.csv':'.tsv');
+  a.click(); URL.revokeObjectURL(a.href);
+}
+/* 레거시(기존 매물) 내보내기 — properties[] 원본, 컬럼 구성은 기존과 동일(회귀 없음) */
+function exportProps(fmt){
   const COLS=['단지명','위치','역','호선','전세호가(억)','전세호가숫자','매매호가','전용면적','세대수','세대수등급','준공년도','전세가율(%)','강남출퇴근','신사출퇴근','상태','URL','메모','메모2'];
-  function cell(v){
-    const s=String(v==null?'':v);
-    const danger=fmt==='csv'?/[,\n"]/.test(s):(/[\t\n"]/.test(s));
-    if(danger||/^[=+\-@]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
-    return s;
-  }
   const rows=state.properties.map(p=>[
     p.name||'',p.loc||'',p.station||'',p.line||'',
     p.jeonseReal!=null?p.jeonseReal:'',p.depositNum!=null?p.depositNum:'',
@@ -1073,15 +1083,86 @@ function exportProps(){
     p.area!=null?p.area:'',p.households!=null?p.households:'',p.householdGrade||'',p.yearBuilt||'',
     p.jeonseRatio!=null?p.jeonseRatio:'',
     p.commuteGangnam||'',p.commuteSinsa||'',p.status||'',p.url||'',p.memo||'',''
-  ].map(cell).join(sep));
-  const content=[COLS.join(sep),...rows].join('\n');
-  const mime=fmt==='csv'?'text/csv':'text/tab-separated-values';
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['﻿'+content],{type:mime+';charset=utf-8'}));
-  a.download='매물목록_'+new Date().toISOString().slice(0,10)+(fmt==='csv'?'.csv':'.tsv');
-  a.click(); URL.revokeObjectURL(a.href);
+  ]);
+  downloadDelimited('매물목록(레거시)_'+new Date().toISOString().slice(0,10),COLS,rows,fmt);
 }
-document.getElementById('propExportBtn').onclick=exportProps;
+/* 단지 목록 내보내기 — complexes[] 기준 */
+function exportComplexes(fmt){
+  const COLS=['단지ID','탐색그룹코드','탐색그룹명','단지명','지역','역/도보','노선','준공연도','세대수','세대수등급','강남역','신사역','단지상태','메모'];
+  const rows=state.complexes.map(cx=>[
+    cx.id,cx.groupCode||'',cx.regionGroup||'',cx.complexName||'',cx.loc||'',
+    cx.station||'',cx.line||'',cx.yearBuilt??'',cx.households??'',cx.householdGrade||'',
+    cx.commuteGangnam??'',cx.commuteSinsa??'',cx.complexStatus||'',cx.memo||''
+  ]);
+  downloadDelimited('단지목록_'+new Date().toISOString().slice(0,10),COLS,rows,fmt);
+}
+/* 매물 목록 내보내기 — listings[] 기준. 전세보증금은 deposit 단일 컬럼(B-06) */
+function exportListings(fmt){
+  const cxNameById=new Map(state.complexes.map(cx=>[cx.id,cx.complexName||'']));
+  const COLS=['매물ID','단지ID','단지명','동/호','전용면적','면적등급','전세보증금','매물상태','대표매물여부','수집일','최근확인일','링크','메모'];
+  const rows=state.listings.map(l=>[
+    l.id,l.complexId||'',cxNameById.get(l.complexId)||'',
+    l.dongHo||'',l.areaM2??'',l.areaGrade||getAreaGrade(l.areaM2)||'',
+    l.deposit??'',l.listingStatus||'',l.isRepresentative?'Y':'N',
+    l.capturedAt?l.capturedAt.slice(0,10):'',l.lastCheckedAt?l.lastCheckedAt.slice(0,10):'',
+    l.url||'',l.memo||''
+  ]);
+  downloadDelimited('매물목록_'+new Date().toISOString().slice(0,10),COLS,rows,fmt);
+}
+/* 단지+대표매물 통합 내보내기 — 단지 1행당 대표매물(없으면 첫 매물) 핵심 정보만 붙여 요약 */
+function exportComplexesWithRep(fmt){
+  const COLS=['단지ID','단지명','지역','역/도보','노선','세대수','세대수등급','준공연도','강남역','신사역','단지상태','대표매물동호','대표매물전용면적','대표매물전세보증금','대표매물상태','대표매물링크','단지메모'];
+  const rows=state.complexes.map(cx=>{
+    const listings=state.listings.filter(l=>l.complexId===cx.id);
+    const rep=listings.find(l=>l.isRepresentative)||listings[0]||null;
+    return [
+      cx.id,cx.complexName||'',cx.loc||'',cx.station||'',cx.line||'',
+      cx.households??'',cx.householdGrade||'',cx.yearBuilt??'',
+      cx.commuteGangnam??'',cx.commuteSinsa??'',cx.complexStatus||'',
+      rep?rep.dongHo||'':'',rep?rep.areaM2??'':'',rep?rep.deposit??'':'',
+      rep?rep.listingStatus||'':'',rep?rep.url||'':'',cx.memo||''
+    ];
+  });
+  downloadDelimited('단지_대표매물_통합_'+new Date().toISOString().slice(0,10),COLS,rows,fmt);
+}
+/* 내보내기 드롭다운(B-10) — 기존 showRouteMenu와 동일한 status-picker 플로팅 메뉴 패턴 재사용 */
+let _exportMenu=null;
+function closeExportMenu(){ if(_exportMenu){ _exportMenu.remove(); _exportMenu=null; } }
+function showExportMenu(btn){
+  if(_exportMenu){ closeExportMenu(); return; }
+  const menu=document.createElement('div');
+  menu.className='status-picker route-menu';
+  menu.innerHTML=`
+    <button class="sp-opt" data-exp="cx" data-fmt="csv">단지 목록 (CSV)</button>
+    <button class="sp-opt" data-exp="cx" data-fmt="tsv">단지 목록 (TSV)</button>
+    <div class="rm-sep"></div>
+    <button class="sp-opt" data-exp="listing" data-fmt="csv">매물 목록 (CSV)</button>
+    <button class="sp-opt" data-exp="listing" data-fmt="tsv">매물 목록 (TSV)</button>
+    <div class="rm-sep"></div>
+    <button class="sp-opt" data-exp="combined" data-fmt="csv">단지+대표매물 통합 (CSV)</button>
+    <button class="sp-opt" data-exp="combined" data-fmt="tsv">단지+대표매물 통합 (TSV)</button>
+    <div class="rm-sep"></div>
+    <button class="sp-opt" data-exp="legacy" data-fmt="csv">레거시(기존 매물) CSV</button>
+    <button class="sp-opt" data-exp="legacy" data-fmt="tsv">레거시(기존 매물) TSV</button>
+  `;
+  document.body.appendChild(menu);
+  _exportMenu=menu;
+  const rect=btn.getBoundingClientRect();
+  menu.style.top=(rect.bottom+window.scrollY+4)+'px';
+  menu.style.left=Math.max(8,Math.min(rect.left+window.scrollX, window.innerWidth-240))+'px';
+  menu.querySelectorAll('[data-exp]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const kind=b.dataset.exp, fmt=b.dataset.fmt;
+    closeExportMenu();
+    if(kind==='cx') exportComplexes(fmt);
+    else if(kind==='listing') exportListings(fmt);
+    else if(kind==='combined') exportComplexesWithRep(fmt);
+    else if(kind==='legacy') exportProps(fmt);
+  });
+  const close=ev=>{ if(!menu.contains(ev.target)&&ev.target!==btn){ closeExportMenu(); document.removeEventListener('click',close,true); } };
+  setTimeout(()=>document.addEventListener('click',close,true),0);
+}
+document.getElementById('propExportBtn').onclick=e=>showExportMenu(e.currentTarget);
 
 
 /* ============ 내보내기 / 가져오기 ============ */
