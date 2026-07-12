@@ -593,6 +593,45 @@ e=>{if(e.target===m)...}))`, 모든 모달에 적용)가 처리하고 있어 새
 
 ---
 
+## 2026-07-12 — B-12 실기기 z-index/스크롤 버그 3건 수정
+
+실기기 배포 후 스크린샷 기반 피드백을 받아 세 가지 레이아웃 버그를 atomic 커밋 3건으로 수정.
+
+### 버그1 — 바텀시트·폼시트가 탭바에 가림 (`9acb7a7`)
+`.apptabs`(탭바) `z-index:1001`이 모바일 `#complexDetailModal`·`.form.open`(각각 1000/미지정→
+`.modal` 기본값 1000 상속)보다 높아 시트 상단이 탭바 뒤로 가려짐. 두 시트 모두 `z-index:1100`으로
+올려 탭바 위에 뜨도록 수정. `.modal` 자체가 딤 배경이고 `.box`는 그 자식이라 z-index 하나만
+올리면 딤·시트가 함께 올라감. 데스크톱(≥900px) `#complexDetailModal{z-index:1002}`은 별도
+미디어쿼리라 무변경(재확인 완료).
+
+### 버그2 — 리스트뷰 첫 카드가 고정 칩/⋯바에 가림 (`434fb71`)
+`data-view=list`는 `#panel-props`가 `position:static`(페이지 스크롤)인데 정렬칩·뷰토글·⋯버튼은
+여전히 `position:fixed`로 떠 있고 카드 목록 상단에 여백이 없어 첫 카드가 그 뒤로 들어감.
+`#complexSection`에 `padding-top:58px` 추가 — 스크롤 0(리스트뷰 진입 직후)일 때 바가 쉬는 위치
+(콘텐츠 시작점 기준 10~48px)를 가리지 않을 만큼. `--overlay-top`을 calc에 넣지 않은 이유: 리스트
+뷰는 `--overlay-top`이 `--topbar-h`와 같아지는 "맨 위" 순간(=스크롤 0)에만 이 여백이 필요하고,
+스크롤 중엔 바가 탭바를 따라 위로 붙어 더 이상 겹치지 않기 때문. 스크롤 중 겹침 자체는 별도
+이슈(B-22, 낮은 우선순위 미관 문제)로 이미 추적 중이라 함께 손대지 않음.
+
+### 버그3 — 시트·⋯메뉴 열림 중 뒤 배경 스크롤 (`8cbfb95`)
+`utils.js`의 `openModal`/`closeModal`에 `lockBodyScroll`/`unlockBodyScroll`을 훅으로 추가 — body를
+`position:fixed`로 고정하는 표준 기법(iOS Safari에서 `overflow:hidden`만으론 러버밴드 스크롤이
+안 막히는 문제 우회). 카운터를 둬서 모달 위에 또 다른 모달/메뉴가 겹쳐 열려도 마지막 하나가
+닫힐 때만 해제. 같은 유틸을 `properties.js`의 `openForm`/`closeForm`(매물추가 폼시트)·
+`showMoreMenu`/`closeMoreMenu`(⋯ 더보기)에도 적용 — 폼시트는 데스크톱(인라인 콘텐츠)에서 잠금을
+건너뛰되, 폼이 열린 채로 브레이크포인트를 넘나드는 경우까지 대비해 실제로 잠갔는지를
+`_formLocked`로 기억해 open/close를 대칭적으로 처리. ⋯메뉴는 기존 위치 계산(`window.scrollY`
+기반)을 먼저 끝낸 뒤 잠금을 걸어, body가 `position:fixed`가 되며 `.status-picker`의 containing
+block이 바뀌어도 `body{top:-scrollY}` 오프셋과 기존 `+scrollY` 계산이 상쇄돼 위치가 그대로 맞음
+(Playwright 실측 확인). 매물탭 지도뷰(이미 `#panel-props{overflow:hidden}`로 무스크롤)는 잠글
+스크롤이 없어 사실상 영향 없음.
+
+검증: Playwright로 세 진입점(바텀시트/폼시트/⋯메뉴) 각각 열림 중 `body{position:fixed}` 전환·
+스크롤 시도 무반응·닫으면 원래 위치로 복원 확인. 데스크톱은 세 버그 모두 무회귀(모달 z-index
+1002 유지, 폼 오픈 시 스크롤 안 잠김) 재확인. `node --check`/`git diff --check` 통과, XSS 무접점.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
