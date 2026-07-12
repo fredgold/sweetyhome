@@ -259,11 +259,13 @@
     }
     .grid>section>.panel-head .ph-actions>#toggleForm::before{content:"＋";font-size:22px;line-height:1;}
     .my-loc-btn{display:flex;bottom:78px;z-index:15;}
-    /* 매물 추가 폼 — 지도를 밀어내지 않는 하단 시트 */
+    /* 매물 추가 폼 — 지도를 밀어내지 않는 하단 시트.
+       z-index:1100 — .apptabs(탭바) 1001보다 위. 원래 1000(.modal 기본값과 동일한 티어를
+       의도)이었는데 탭바(1001)가 더 높아 시트 상단이 탭바에 가려지던 버그(B-12 버그1) */
     .grid>section>.form.open{
       display:block;position:fixed;left:0;right:0;bottom:0;margin:0;
       max-height:80vh;overflow-y:auto;border-radius:16px 16px 0 0;
-      z-index:1000;animation:sheetup .22s ease;
+      z-index:1100;animation:sheetup .22s ease;
     }
     /* cxFilterBar의 .sc-filter-row는 overflow-x:auto로 스크롤되게 만들어졌지만,
        부모(.ph-more-menu)에 폭 제한이 없으면 auto가 무력화되고 메뉴 자체가
@@ -275,7 +277,9 @@
     #complexSection>.card{flex:0 0 86%;scroll-snap-align:center;margin-bottom:0;box-shadow:var(--shadow);}
     #complexSection>.cx-empty{flex:0 0 100%;}
     #complexSection>.card.active{border-color:var(--line9);box-shadow:0 0 0 2px var(--line9-wash);}
-    #complexDetailModal{align-items:flex-end;justify-content:center;padding:0;}
+    /* z-index:1100 — .apptabs(1001)보다 위. 기본 .modal(1000)만으론 탭바에 가려짐(B-12 버그1).
+       데스크톱(≥900px) 쪽 #complexDetailModal{z-index:1002} 규칙은 별도 미디어쿼리라 무관 */
+    #complexDetailModal{align-items:flex-end;justify-content:center;padding:0;z-index:1100;}
     #complexDetailModal .box{width:100%;max-width:100%;height:auto;max-height:88vh;border-radius:16px 16px 0 0;margin:0;overflow-y:auto;animation:sheetup .22s ease;}
     #complexDetailModal .box::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--hairline);margin:8px auto 2px;}
     /* 리스트뷰(data-view=list) — 지도를 숨기고 카드를 세로 목록으로. 위치 확인은 카드 탭 →
