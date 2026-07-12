@@ -632,6 +632,44 @@ block이 바뀌어도 `body{top:-scrollY}` 오프셋과 기존 `+scrollY` 계산
 
 ---
 
+## 2026-07-12 — B-12 리스트뷰 겹침 + ⋯메뉴 스크롤 재수정 2건
+
+직전 수정만으론 부족했던 두 가지를 근본적으로 재수정. atomic 커밋 2건.
+
+### 재수정A — 리스트뷰 스크롤 중 정렬칩/⋯이 카드와 겹침 (`9a8f7ef`)
+이전 수정(`padding-top:58px`)은 리스트뷰 진입 직후 첫 카드만 밀어줬을 뿐, 정렬칩·뷰토글·
+⋯버튼이 여전히 `position:fixed`로 떠 있어 스크롤하면 카드가 그 아래로 지나가며 겹쳐 보임
+(투명 배경이라 더 두드러짐 — B-22에서 이미 지적된 근본 원인).
+
+근본 수정: 리스트뷰에서만 이 세 요소를 신규 `#cxListToolbar`(`index.html`)로 실제 이동시켜
+(복제 없이 DOM 이동 — `showMoreMenu()`와 같은 패턴, 이벤트 핸들러 그대로 유지)
+`position:sticky` + 불투명 배경(`var(--bg)`) 툴바로 재구성. 지도뷰로 돌아가면 원래 자리로
+되돌려 기존 `position:fixed` 오버레이 동작 복원(`properties.js`: `syncListToolbar()`,
+`applyPropViewMode()`에서 호출). sticky 툴바가 실제 문서 흐름을 차지해 카드를 자연히
+밀어내므로 `#complexSection`의 `padding-top` 매직넘버(58px)를 12px로 되돌림.
+
+검증 중 발견·수정한 버그: `.cx-list-toolbar{display:none}` 기본값을 실수로 모바일
+미디어쿼리 안에만 둬서 데스크톱에선 `<div>` 기본값(`display:block`)이 새던 것을 Playwright로
+발견, 무조건 적용 구간으로 옮겨 수정.
+
+### 재수정B — ⋯메뉴가 뷰포트 넘칠 때 배경 스크롤 (`83ac8ab`)
+`lockBodyScroll()`로 body를 잠가도 여전히 뒤 배경이 스크롤되던 재발. 원인: `.ph-more-menu`가
+검색+필터(6줄)+버튼 3개를 다 담으면 뷰포트보다 길어지는데 `max-height`/`overflow` 제약이
+없어 메뉴 자체가 페이지를 늘려버림 — body `position:fixed` 잠금과 무관하게 브라우저가 늘어난
+페이지 크기에 맞춰 스크롤을 허용. `showMoreMenu()`에서 버튼 아래 남는 세로 공간만큼
+`menu.style.maxHeight`를 계산해 부여(기존 top/left 위치 계산과 같은 JS 실측 방식) + CSS
+`.ph-more-menu{overflow-y:auto}`로 넘치는 내용은 메뉴 내부에서만 스크롤.
+
+검증: Playwright로 (A) 스크롤 여러 지점에서 스크린샷 확인 — opaque sticky 바가 카드 위에
+자연스럽게 얹히고 텍스트 비침 없음(겹침 자체는 sticky의 정상 동작, 문제였던 "투명 배경으로
+비침"만 해결 대상이었음), 지도뷰 복귀 시 원래 자리·`position:fixed`로 정확히 복원, 데스크톱
+`display:none` 유지. (B) 뷰포트를 인위적으로 짧게(390×500) 만들어 메뉴 내용이 실제로 넘치는
+상황에서 `overflow-y:auto`가 작동해 메뉴 내부만 스크롤되고 `documentElement.scrollHeight`는
+뷰포트 높이와 동일하게 유지됨(페이지 자체가 안 늘어남) 확인. `node --check`/CSS 중괄호 균형/
+`git diff --check` 통과, XSS 무접점, 데스크톱 무회귀.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
