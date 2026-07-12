@@ -1,4 +1,4 @@
-# HANDOFF — 매물탭 UI #6 + API 보안 후속 (2026-07-11)
+# HANDOFF — v5 후속 B-11/B-16 + 매물탭 UI/API 보안 (2026-07-12)
 
 ## 1. 목표
 `QA_2026-07-11.md` 기반 매물탭 UI 버그·개선 5건. 지도 API(네이버 전환) 작업과는 별도, CSS·카드 마크업·링크 제거 위주.
@@ -16,7 +16,15 @@ fc847ee docs: 매물탭 UI 수정 5건 세션 HANDOFF 갱신
 bcf2334 fix: harden API cost and abuse controls
 28527c7 refactor: 실사체크 구글검색 링크(호갱노노 등) 제거
 6f2bd1d chore: gitignore Claude Design standalone HTML exports
+f4fcc3a fix: nav.js invalidateSize→네이버 refresh
+32d7f96 fix: 대시보드 집계 complexes 기준
 ```
+
+### v5 후속 B-11/B-16
+- B-11: 매물탭 재진입 시 `overview.invalidateSize()` Leaflet 잔재를 네이버 지도 `overview.refresh(true)`로 교체. `overview` 가드와 뒤의 `autoGeocode()` 호출 유지.
+- B-16: 대시보드 매물 요약을 `state.properties` 대신 `state.complexes`/`state.listings`로 전환. 단지 수, 연결된 매물 건수, `후보`, `임장예정` 상태를 표시.
+- 검증: `node --check js/nav.js`, `git diff --check` 통과. DOM/state 목에서 단지 3·연결 매물 2·후보 1·임장예정 1 집계와 빈 상태 문구 통과.
+- 다른 에이전트가 작업 중인 `index.html`/`js/properties.js`는 건드리지 않음.
 
 ### 저장소 위생
 - `.gitignore`에 `docs/*standalone*.html`을 추가해 Claude Design이 생성하는 대용량 standalone HTML의 실수 커밋을 방지.
