@@ -221,22 +221,27 @@
   @media (max-width:899.98px){
     /* A안: 매물탭을 뷰포트 고정 풀스크린 지도뷰로. 세로 스크롤 자체를 없애 스크롤·z-index 혼선을 원천 차단.
        #panel-props가 position:fixed 컨테이닝 블록이 되어 .mapcard(absolute;inset:0)가 이를 기준으로 꽉 채움 */
-    #panel-props{position:fixed;top:var(--nav-h,64px);left:0;right:0;bottom:0;overflow:hidden;z-index:0;}
+    #panel-props{position:fixed;top:var(--topbar-h,110px);left:0;right:0;bottom:0;overflow:hidden;z-index:0;}
     #panel-props .gates,#panel-props .wcard{display:none;}
     .mapcard{position:absolute;inset:0;margin:0;border-radius:0;border:none;box-shadow:none;z-index:0;}
     .mapcard .mh{display:none;}
     #overviewMap{position:absolute;inset:0;width:100%;height:100%;}
-    /* 카드 스트립·정렬칩·현위치·검색·필터·폼·레거시 목록은 A2/A3에서 오버레이로 다시 노출 */
+    /* 현위치/매물추가 FAB·검색·필터·폼·레거시 목록은 A3에서 오버레이로 다시 노출 */
     .grid>section>.unisearch,
     .grid>section>.panel-head,
     .grid>section>.route-bar,
     .grid>section>.form,
     .grid>section>#cxFilterBar,
-    #complexSection,
     #legacyToggleWrap,
     #legacyWrap{display:none;}
-    .cx-sort-chips{display:none;}
     .my-loc-btn{display:none;}
+    /* z-index 체계: 지도 0 < 오버레이(칩·FAB·카드) 10~20 < ⋯/필터 팝업(.status-picker,기존 2000) < 바텀시트·폼시트(.modal,기존 1000) */
+    .cx-sort-chips{display:flex;z-index:10;}
+    #complexSection{position:absolute;left:0;right:0;bottom:14px;z-index:12;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 12px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    #complexSection::-webkit-scrollbar{display:none;}
+    #complexSection>.card{flex:0 0 86%;scroll-snap-align:center;margin-bottom:0;box-shadow:var(--shadow);}
+    #complexSection>.cx-empty{flex:0 0 100%;}
+    #complexSection>.card.active{border-color:var(--line9);box-shadow:0 0 0 2px var(--line9-wash);}
     #complexDetailModal{align-items:flex-end;justify-content:center;padding:0;}
     #complexDetailModal .box{width:100%;max-width:100%;height:auto;max-height:88vh;border-radius:16px 16px 0 0;margin:0;overflow-y:auto;animation:sheetup .22s ease;}
     #complexDetailModal .box::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--hairline);margin:8px auto 2px;}

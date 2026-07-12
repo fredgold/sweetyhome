@@ -48,6 +48,9 @@ function checklistHTML(p){
 
 function waitNaverMaps(cb){ if(typeof naver!=='undefined'&&naver.maps){cb();} else {setTimeout(()=>waitNaverMaps(cb),120);} }
 function initOverview(){
+  /* switchPanel('props') 진입마다 재측정 — 로그인 게이트 해제 직후 등 최초 --topbar-h
+     측정 시점에 header/apptabs 레이아웃이 아직 최종 상태가 아니었을 수 있는 경우 보정 */
+  updateNavHeightVar();
   waitNaverMaps(()=>{
     if(overview){refreshOverview();return;}
     overview=new naver.maps.Map('overviewMap',{center:new naver.maps.LatLng(CENTER[0],CENTER[1]),zoom:13,scrollWheel:true,zoomControl:true,zoomControlOptions:{position:naver.maps.Position.TOP_RIGHT}});
@@ -170,6 +173,11 @@ function setMapExpanded(on){
 function updateNavHeightVar(){
   const nav=document.querySelector('.apptabs');
   document.documentElement.style.setProperty('--nav-h',(nav?nav.getBoundingClientRect().height:64)+'px');
+  /* --topbar-h: header+apptabs를 합친, 뷰포트 상단에서 실제 콘텐츠가 시작되는 지점.
+     switchPanel()이 매번 scrollTo(top:0)을 호출하므로 이 시점의 .apptabs bottom이
+     header 높이까지 포함한 안정적인 값 — 모바일 매물탭 풀스크린 지도뷰(#panel-props)의
+     top 기준으로 사용(--nav-h는 apptabs 자체 높이만이라 헤더와 겹침) */
+  document.documentElement.style.setProperty('--topbar-h',(nav?nav.getBoundingClientRect().bottom:110)+'px');
 }
 function handleBreakpointChange(e){
   if(e.matches){
