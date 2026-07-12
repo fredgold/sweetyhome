@@ -219,21 +219,27 @@
   /* 모바일 전용 지도 풀스크린 — 확장 버튼을 누르면 지도가 뷰포트 전체를 채움(단순 70vh 확대가 아님).
      ≥900px에서는 지도가 항상 sticky로 보이므로 이 오버레이 자체가 불필요 → 버튼도 CSS로 숨김 */
   @media (max-width:899.98px){
-    .mapcard{position:sticky;top:calc(var(--nav-h,64px) + 8px);z-index:20;}
+    /* A안: 매물탭을 뷰포트 고정 풀스크린 지도뷰로. 세로 스크롤 자체를 없애 스크롤·z-index 혼선을 원천 차단.
+       #panel-props가 position:fixed 컨테이닝 블록이 되어 .mapcard(absolute;inset:0)가 이를 기준으로 꽉 채움 */
+    #panel-props{position:fixed;top:var(--nav-h,64px);left:0;right:0;bottom:0;overflow:hidden;z-index:0;}
+    #panel-props .gates,#panel-props .wcard{display:none;}
+    .mapcard{position:absolute;inset:0;margin:0;border-radius:0;border:none;box-shadow:none;z-index:0;}
     .mapcard .mh{display:none;}
-    .cx-sort-chips{display:flex;}
-    .my-loc-btn{display:flex;}
-    #complexSection{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-    #complexSection::-webkit-scrollbar{display:none;}
-    #complexSection>.card{flex:0 0 86%;scroll-snap-align:center;margin-bottom:0;}
-    #complexSection>.cx-empty{flex:0 0 100%;}
-    #complexSection>.card.active{border-color:var(--line9);box-shadow:0 0 0 2px var(--line9-wash);}
+    #overviewMap{position:absolute;inset:0;width:100%;height:100%;}
+    /* 카드 스트립·정렬칩·현위치·검색·필터·폼·레거시 목록은 A2/A3에서 오버레이로 다시 노출 */
+    .grid>section>.unisearch,
+    .grid>section>.panel-head,
+    .grid>section>.route-bar,
+    .grid>section>.form,
+    .grid>section>#cxFilterBar,
+    #complexSection,
+    #legacyToggleWrap,
+    #legacyWrap{display:none;}
+    .cx-sort-chips{display:none;}
+    .my-loc-btn{display:none;}
     #complexDetailModal{align-items:flex-end;justify-content:center;padding:0;}
     #complexDetailModal .box{width:100%;max-width:100%;height:auto;max-height:88vh;border-radius:16px 16px 0 0;margin:0;overflow-y:auto;animation:sheetup .22s ease;}
     #complexDetailModal .box::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--hairline);margin:8px auto 2px;}
-    .mapcard.expanded{position:fixed;inset:0;z-index:1500;border-radius:0;margin:0;display:flex;flex-direction:column;box-shadow:none;}
-    .mapcard.expanded .mh{flex:none;}
-    .mapcard.expanded #overviewMap{flex:1;height:auto;transition:none;}
   }
 
   /* minmax(0,...): 그리드 아이템의 기본 min-width:auto를 무시하고 트랙 폭까지 실제로 줄어들게 함
