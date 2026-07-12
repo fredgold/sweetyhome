@@ -2069,6 +2069,58 @@ document.getElementById('cxDetailMemo').addEventListener('blur',e=>{
   save();
 });
 
+/* B-21: 바텀시트(단지 상세) 드래그다운 닫기. 배경 딤 탭 닫기는 이미 위쪽
+   document.querySelectorAll('.modal').forEach(...) 범용 핸들러가 처리하고 있어
+   별도 구현 불필요(확인 완료) — 여기선 드래그다운만 추가.
+   핸들(.box::before)+헤더가 .box 맨 위 ~60px 안에 있고 헤더가 sticky가 아니라서
+   본문을 스크롤하면 헤더가 화면 밖으로 밀려나 애초에 그 영역에서 터치가 시작될 수
+   없음 — "상단 ~60px에서 시작" 조건만으로 "시트가 최상단일 때만"이 자연히 보장돼
+   본문 스크롤과 충돌하지 않음(box.scrollTop>0 체크는 안전망으로 추가) */
+(()=>{
+  const modal=document.getElementById('complexDetailModal');
+  const box=modal&&modal.querySelector('.box');
+  if(!modal||!box) return;
+  const HANDLE_ZONE=60, THRESHOLD=90;
+  let startX=0,startY=0,active=false,dragging=false,curDist=0;
+
+  box.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1){ active=false; return; }
+    const rect=box.getBoundingClientRect();
+    if(e.touches[0].clientY-rect.top>HANDLE_ZONE||box.scrollTop>0){ active=false; return; }
+    startX=e.touches[0].clientX; startY=e.touches[0].clientY;
+    active=true; dragging=false; curDist=0;
+  },{passive:true});
+
+  box.addEventListener('touchmove',e=>{
+    if(!active) return;
+    const dx=e.touches[0].clientX-startX, dy=e.touches[0].clientY-startY;
+    if(!dragging){
+      if(Math.abs(dx)<6&&Math.abs(dy)<6) return;
+      if(dy<=0||Math.abs(dy)<=Math.abs(dx)){ active=false; return; } // 위로·가로 우세 → 드래그닫기 아님
+      dragging=true;
+      box.style.transition='none';
+    }
+    curDist=Math.max(0,dy);
+    box.style.transform='translateY('+curDist+'px)';
+    e.preventDefault();
+  },{passive:false});
+
+  function finish(){
+    if(!dragging){ active=false; return; }
+    box.style.transition='transform .2s ease';
+    if(curDist>=THRESHOLD){
+      box.style.transform='translateY(100%)';
+      setTimeout(()=>{ closeModal('complexDetailModal'); box.style.transition=''; box.style.transform=''; },200);
+    } else {
+      box.style.transform='translateY(0)';
+      setTimeout(()=>{ box.style.transition=''; box.style.transform=''; },200);
+    }
+    active=false; dragging=false;
+  }
+  box.addEventListener('touchend',finish);
+  box.addEventListener('touchcancel',finish);
+})();
+
 /* ---- v5 stage6c: 사이드바↔지도 리사이즈(B-08) — ≥900px 2단 그리드 전용,
    모바일 단일 컬럼에선 핸들이 display:none이라 드래그 자체가 안 걸림.
    폭은 세션 메모리(sessionStorage)에만 남기고 state/Redis엔 저장하지 않음 */
