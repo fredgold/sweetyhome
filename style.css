@@ -209,11 +209,15 @@
   .mapcard .mh .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:3px;vertical-align:middle;}
   .toggle{font-size:11.5px;font-weight:700;color:var(--ink-soft);padding:6px 10px;border-radius:var(--radius-md);border:1px solid var(--hairline);}
   #overviewMap{height:240px;width:100%;background:#dfe3df;transition:height .25s ease;}
-  .cx-sort-chips{position:absolute;top:10px;left:10px;z-index:5;display:none;gap:6px;}
+  /* position:fixed — .mapcard 밖(.grid 형제)으로 옮겨졌으므로 뷰포트 기준 고정.
+     top은 헤더+탭바 높이(--topbar-h)를 더해야 함, bottom/right는 #panel-props가
+     뷰포트 바닥/우측과 맞닿아 있어 절대위치일 때와 동일한 값 사용 가능 */
+  .cx-sort-chips{position:fixed;top:calc(var(--overlay-top,110px) + 10px);left:10px;z-index:5;display:none;gap:6px;}
   .cx-chip{font-size:12px;padding:5px 11px;border-radius:16px;background:var(--surface);border:1px solid var(--hairline);color:var(--ink-soft);font-weight:600;cursor:pointer;box-shadow:var(--shadow);}
   .cx-chip.on{background:var(--line9-wash);border-color:var(--line9);color:var(--line9-deep);}
   .cx-chip:disabled{opacity:.45;cursor:not-allowed;}
-  .my-loc-btn{position:absolute;bottom:14px;right:14px;z-index:5;width:38px;height:38px;border-radius:50%;background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;color:var(--money-deep);cursor:pointer;}
+  .my-loc-btn{position:fixed;bottom:14px;right:14px;z-index:5;width:38px;height:38px;border-radius:50%;background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;color:var(--money-deep);cursor:pointer;}
+  .prop-view-toggle{position:fixed;top:calc(var(--overlay-top,110px) + 10px);right:58px;z-index:11;width:38px;height:38px;border-radius:50%;background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--ink-soft);cursor:pointer;padding:0;}
   .myloc-pin{width:14px;height:14px;border-radius:50%;background:#2f6df6;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,109,246,.5);}
   .mapcard.collapsed #overviewMap{display:none;}
   /* 모바일 전용 지도 풀스크린 — 확장 버튼을 누르면 지도가 뷰포트 전체를 채움(단순 70vh 확대가 아님).
@@ -235,12 +239,15 @@
     #legacyWrap{display:none;}
     .grid>section>.panel-head>div:first-child,
     .grid>section>.panel-head .ph-actions>*{display:none;}
-    /* z-index 체계: 지도 0 < 오버레이(칩·FAB·카드) 10~20 < ⋯/필터 팝업(.status-picker,기존 2000) < 바텀시트·폼시트(.modal,기존 1000) */
+    /* z-index 체계: 지도 0 < 오버레이(칩·FAB·카드) 10~20 < 바텀시트·폼시트(.modal,기존 1000) <
+       ⋯/필터 팝업(.status-picker,기존 2000) — 팝업이 시트보다 위(둘이 동시에 뜨는 흐름은 없어
+       무해하지만 실측값 기준으로 순서를 정확히 적음) */
     .cx-sort-chips{display:flex;z-index:10;}
+    .prop-view-toggle{display:flex;}
     /* ⋯ 더보기 — 지도 우상단 오버레이. #propMoreBtn을 원래 DOM 위치(.panel-head 안)에
        그대로 두고 position:fixed만 부여(고정 위치는 조상 위치와 무관하게 뷰포트 기준) */
     .grid>section>.panel-head .ph-actions>#propMoreBtn{
-      display:flex;position:fixed;top:calc(var(--topbar-h,110px) + 10px);right:12px;
+      display:flex;position:fixed;top:calc(var(--overlay-top,110px) + 10px);right:12px;
       z-index:11;width:38px;height:38px;border-radius:50%;padding:0;
       align-items:center;justify-content:center;
     }
@@ -271,6 +278,17 @@
     #complexDetailModal{align-items:flex-end;justify-content:center;padding:0;}
     #complexDetailModal .box{width:100%;max-width:100%;height:auto;max-height:88vh;border-radius:16px 16px 0 0;margin:0;overflow-y:auto;animation:sheetup .22s ease;}
     #complexDetailModal .box::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--hairline);margin:8px auto 2px;}
+    /* 리스트뷰(data-view=list) — 지도를 숨기고 카드를 세로 목록으로. 위치 확인은 카드 탭 →
+       단지 상세 바텀시트의 지도(#cxDetailMap)로 충분해 지도뷰와 중복하지 않음.
+       칩·FAB·⋯메뉴는 전부 position:fixed라 #panel-props의 position/overflow와 무관하게
+       그대로 동작 — 이 블록에서 별도로 손댈 필요 없음 */
+    #panel-props[data-view="list"]{position:static;overflow:visible;}
+    #panel-props[data-view="list"] .mapcard{display:none;}
+    #panel-props[data-view="list"] #complexSection{
+      position:static;display:block;overflow-x:visible;scroll-snap-type:none;padding:2px 12px 10px;
+    }
+    #panel-props[data-view="list"] #complexSection>.card{flex:none;scroll-snap-align:none;margin-bottom:12px;}
+    #panel-props[data-view="list"] #complexSection>.cx-empty{flex:none;}
   }
 
   /* minmax(0,...): 그리드 아이템의 기본 min-width:auto를 무시하고 트랙 폭까지 실제로 줄어들게 함

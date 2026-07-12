@@ -178,7 +178,25 @@ function updateNavHeightVar(){
      header 높이까지 포함한 안정적인 값 — 모바일 매물탭 풀스크린 지도뷰(#panel-props)의
      top 기준으로 사용(--nav-h는 apptabs 자체 높이만이라 헤더와 겹침) */
   document.documentElement.style.setProperty('--topbar-h',(nav?nav.getBoundingClientRect().bottom:110)+'px');
+  updateOverlayTopVar();
 }
+/* --overlay-top: 모바일 매물탭 지도 위 오버레이(정렬칩·뷰토글·⋯버튼)의 top 기준값.
+   지도뷰는 #panel-props가 overflow:hidden이라 페이지가 항상 scrollY=0 → --topbar-h와 동일.
+   리스트뷰는 페이지가 실제로 스크롤되는데, header는 sticky가 아니라 스크롤에 딸려 올라가고
+   .apptabs만 top:0에 들러붙어 남음 — 오버레이가 --topbar-h(헤더 포함 높이)에 고정된 채면
+   스크롤 후 apptabs만 남은 좁은 공간을 넘어 카드 위에 얹힘. scrollY만큼 topbar-h에서 빼되
+   apptabs 자체 높이(nav-h) 밑으로는 내려가지 않게 클램프해 항상 탭바 바로 아래에 붙게 함 */
+function updateOverlayTopVar(){
+  const navH=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'))||64;
+  const topbarH=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h'))||110;
+  const top=Math.max(navH,topbarH-window.scrollY);
+  document.documentElement.style.setProperty('--overlay-top',top+'px');
+}
+let _overlayTopRaf=null;
+window.addEventListener('scroll',()=>{
+  if(_overlayTopRaf) return;
+  _overlayTopRaf=requestAnimationFrame(()=>{ _overlayTopRaf=null; updateOverlayTopVar(); });
+},{passive:true});
 function handleBreakpointChange(e){
   if(e.matches){
     document.getElementById('mapcard').classList.remove('expanded','collapsed');
@@ -1896,6 +1914,24 @@ document.querySelectorAll('[data-cxsort]').forEach(b=>b.onclick=()=>{
 });
 { const mlb=document.getElementById('myLocBtn'); if(mlb) mlb.onclick=requestMyLoc; }
 syncSortChips();
+
+/* B-12 A안: 모바일 매물탭 지도뷰⇄리스트뷰 토글. #panel-props[data-view]로 CSS 분기,
+   마커↔카드 스크롤 연동(focusCxCard 등)은 리스트뷰에선 지도가 안 보이니 애초에 호출될
+   경로가 없어(마커 클릭 불가) 별도 가드 불필요 — 세션 간 기억은 안 함(새로고침 시 지도뷰로) */
+let propViewMode='map';
+function applyPropViewMode(){
+  const panel=document.getElementById('panel-props');
+  if(panel) panel.dataset.view=propViewMode;
+  const btn=document.getElementById('propViewToggleBtn');
+  if(btn) btn.textContent=propViewMode==='map'?'목록':'지도';
+  if(propViewMode==='map') requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    waitNaverMaps(()=>overview&&overview.refresh(true));
+  }));
+}
+{ const vtb=document.getElementById('propViewToggleBtn'); if(vtb) vtb.onclick=()=>{
+  propViewMode=propViewMode==='map'?'list':'map'; applyPropViewMode();
+}; }
+applyPropViewMode();
 
 /* ---- (4) 단지 상세 + 매물 목록 ---- */
 let cxDetailId=null, cxDetailMapObj=null, cxDetailMarker=null;

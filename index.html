@@ -207,14 +207,18 @@
             <button class="toggle" id="mapToggle">접기</button>
           </div>
         </div>
-        <div class="cx-sort-chips">
-          <button type="button" data-cxsort="new" class="cx-chip on">최신순</button>
-          <button type="button" data-cxsort="price" class="cx-chip">가격순</button>
-          <button type="button" data-cxsort="dist" class="cx-chip">거리순</button>
-        </div>
-        <button type="button" class="my-loc-btn" id="myLocBtn" aria-label="내 위치"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21"/></svg></button>
         <div id="overviewMap"></div>
       </div>
+      <!-- cx-sort-chips/myLocBtn/propViewToggleBtn은 모바일에서 position:fixed 오버레이라
+           .mapcard 안에 있으면 안 됨(리스트뷰에서 .mapcard가 display:none이면 자식도 함께
+           사라짐) — .grid 형제로 분리해 지도뷰/리스트뷰 어느 쪽이든 항상 접근 가능하게 유지 -->
+      <div class="cx-sort-chips">
+        <button type="button" data-cxsort="new" class="cx-chip on">최신순</button>
+        <button type="button" data-cxsort="price" class="cx-chip">가격순</button>
+        <button type="button" data-cxsort="dist" class="cx-chip">거리순</button>
+      </div>
+      <button type="button" class="my-loc-btn" id="myLocBtn" aria-label="내 위치"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21"/></svg></button>
+      <button type="button" class="prop-view-toggle" id="propViewToggleBtn" aria-label="지도/목록 보기 전환">목록</button>
       <div class="grid-resize-handle" id="gridResizeHandle" role="separator" aria-orientation="vertical" aria-label="목록·지도 너비 조절"></div>
       <section>
         <div class="unisearch" id="unisearch">
