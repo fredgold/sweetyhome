@@ -445,21 +445,25 @@ document.getElementById('propRouteBtn').onclick=(e)=>{
   showRouteMenu(e.currentTarget);
 };
 
-/* 매물탭 툴바 "⋯ 더보기" — 480px 이하에서 숨겨진 실제 컨트롤을 기존
-   .status-picker 플로팅 메뉴 안으로 옮겼다가 닫으면 원래 자리로 되돌림
-   (컨트롤을 복제하지 않고 그대로 이동해 이벤트 핸들러도 그대로 유지) */
-let _moreMenu=null, _moreHome=null, _moreHomeNext=null;
+/* 매물탭 툴바 "⋯ 더보기" — 480px 이하(데스크톱)/900px 이하(모바일 풀스크린 지도뷰)에서
+   숨겨진 실제 컨트롤을 기존 .status-picker 플로팅 메뉴 안으로 옮겼다가 닫으면 원래
+   자리로 되돌림(컨트롤을 복제하지 않고 그대로 이동해 이벤트 핸들러도 그대로 유지).
+   모바일에서는 검색(unisearch)·필터(cxFilterBar)도 함께 옮기는데, 이 둘은 원래
+   부모가 .ph-actions가 아니라 각자 다르므로 요소별로 (parent,next)를 따로 기억해야
+   닫을 때 서로 다른 원래 자리로 정확히 되돌아감 */
+let _moreMenu=null, _moreSlots=null;
 function closeMoreMenu(){
   if(!_moreMenu) return;
-  [..._moreMenu.children].forEach(el=>_moreHome.insertBefore(el,_moreHomeNext));
-  _moreMenu.remove(); _moreMenu=null;
+  _moreSlots.forEach(({el,parent,next})=>parent.insertBefore(el,next));
+  _moreMenu.remove(); _moreMenu=null; _moreSlots=null;
 }
 function showMoreMenu(btn){
   if(_moreMenu){ closeMoreMenu(); return; }
-  const ids=['phExportRow','propBulkBtn','propRouteBtn'];
-  const els=ids.map(id=>document.getElementById(id));
-  _moreHome=els[0].parentElement;
-  _moreHomeNext=els[0].nextSibling;
+  const ids=DESKTOP_MQ.matches
+    ? ['phExportRow','propBulkBtn','propRouteBtn']
+    : ['unisearch','cxFilterBar','phExportRow','propBulkBtn','propRouteBtn'];
+  const els=ids.map(id=>document.getElementById(id)).filter(Boolean);
+  _moreSlots=els.map(el=>({el,parent:el.parentElement,next:el.nextSibling}));
   const menu=document.createElement('div');
   menu.className='status-picker ph-more-menu';
   els.forEach(el=>menu.appendChild(el));

@@ -226,17 +226,38 @@
     .mapcard{position:absolute;inset:0;margin:0;border-radius:0;border:none;box-shadow:none;z-index:0;}
     .mapcard .mh{display:none;}
     #overviewMap{position:absolute;inset:0;width:100%;height:100%;}
-    /* 현위치/매물추가 FAB·검색·필터·폼·레거시 목록은 A3에서 오버레이로 다시 노출 */
+    /* 검색·필터·정렬셀렉트·내보내기·시트붙여넣기·임장루트 본문은 지도 위에선 자리를 차지하지
+       않고 ⋯메뉴(showMoreMenu, propMoreBtn)로만 진입 — 레거시 목록도 계속 숨김 */
     .grid>section>.unisearch,
-    .grid>section>.panel-head,
     .grid>section>.route-bar,
-    .grid>section>.form,
     .grid>section>#cxFilterBar,
     #legacyToggleWrap,
     #legacyWrap{display:none;}
-    .my-loc-btn{display:none;}
+    .grid>section>.panel-head>div:first-child,
+    .grid>section>.panel-head .ph-actions>*{display:none;}
     /* z-index 체계: 지도 0 < 오버레이(칩·FAB·카드) 10~20 < ⋯/필터 팝업(.status-picker,기존 2000) < 바텀시트·폼시트(.modal,기존 1000) */
     .cx-sort-chips{display:flex;z-index:10;}
+    /* ⋯ 더보기 — 지도 우상단 오버레이. #propMoreBtn을 원래 DOM 위치(.panel-head 안)에
+       그대로 두고 position:fixed만 부여(고정 위치는 조상 위치와 무관하게 뷰포트 기준) */
+    .grid>section>.panel-head .ph-actions>#propMoreBtn{
+      display:flex;position:fixed;top:calc(var(--topbar-h,110px) + 10px);right:12px;
+      z-index:11;width:38px;height:38px;border-radius:50%;padding:0;
+      align-items:center;justify-content:center;
+    }
+    /* 매물추가 FAB — 우하단, 현위치 버튼 위쪽에 세로로 쌓음 */
+    .grid>section>.panel-head .ph-actions>#toggleForm{
+      display:flex;position:fixed;right:14px;bottom:14px;z-index:15;
+      width:50px;height:50px;border-radius:50%;padding:0;font-size:0;
+      align-items:center;justify-content:center;box-shadow:var(--shadow);
+    }
+    .grid>section>.panel-head .ph-actions>#toggleForm::before{content:"＋";font-size:22px;line-height:1;}
+    .my-loc-btn{display:flex;bottom:78px;z-index:15;}
+    /* 매물 추가 폼 — 지도를 밀어내지 않는 하단 시트 */
+    .grid>section>.form.open{
+      display:block;position:fixed;left:0;right:0;bottom:0;margin:0;
+      max-height:80vh;overflow-y:auto;border-radius:16px 16px 0 0;
+      z-index:1000;animation:sheetup .22s ease;
+    }
     #complexSection{position:absolute;left:0;right:0;bottom:14px;z-index:12;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 12px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
     #complexSection::-webkit-scrollbar{display:none;}
     #complexSection>.card{flex:0 0 86%;scroll-snap-align:center;margin-bottom:0;box-shadow:var(--shadow);}
