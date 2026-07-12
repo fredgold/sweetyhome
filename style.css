@@ -958,6 +958,11 @@ html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
 .act-edit{font-size:12px;padding:2px 6px;border:none;background:none;color:var(--ink-faint);cursor:pointer;border-radius:var(--radius-sm);flex-shrink:0;}
 .act-edit:hover{color:var(--money);background:var(--money-wash);}
 .status-picker{position:absolute;z-index:2000;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);box-shadow:0 4px 20px rgba(0,0,0,.13);padding:6px;display:flex;flex-direction:column;gap:3px;min-width:120px;}
+/* B-12 재수정B: showMoreMenu()가 menu.style.maxHeight를 버튼 아래 남는 세로 공간
+   기준으로 항상 계산해 넣어줌(properties.js) — 검색+필터 6줄+버튼 3개가 다 들어가는
+   모바일 ⋯메뉴처럼 내용이 그 높이를 넘치면 overflow-y:auto로 메뉴 내부만 스크롤되고
+   뒤 배경(body)은 lockBodyScroll()로 이미 잠겨 있어 안 움직임 */
+.ph-more-menu{overflow-y:auto;}
 .sp-opt{display:block;width:100%;text-align:left;padding:7px 12px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;border-radius:var(--radius-sm);color:var(--ink);transition:background .12s;}
 .sp-opt:hover,.sp-opt.on{background:var(--money-wash);color:var(--money);}
 .route-menu{min-width:220px;max-width:280px;}

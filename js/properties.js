@@ -498,6 +498,13 @@ function showMoreMenu(btn){
   // 코드를 그대로 두기 위해 잠금을 뒤에 붙임
   menu.style.top=(rect.bottom+window.scrollY+4)+'px';
   menu.style.left=Math.max(8,Math.min(rect.left+window.scrollX, window.innerWidth-menuW-8))+'px';
+  /* B-12 재수정B: 모바일에서 검색+필터(6줄)+버튼 3개가 다 들어가면 메뉴 내용이
+     뷰포트보다 길어져(overflow 제약 없던 시절) 메뉴 자체가 페이지를 늘려 뒤 배경이
+     스크롤되던 원인이었음 — lockBodyScroll()이 body를 잠가도 메뉴가 뷰포트를
+     넘치면 body 잠금과 무관하게 브라우저가 페이지를 늘려버림. 버튼 아래 남는 세로
+     공간만큼 max-height를 주고 CSS(.ph-more-menu{overflow-y:auto})로 메뉴 내부만
+     스크롤되게 함 */
+  menu.style.maxHeight=Math.max(120,window.innerHeight-rect.bottom-4-12)+'px';
   lockBodyScroll();
   const close=ev=>{ if(!menu.contains(ev.target)&&ev.target!==btn){ closeMoreMenu(); document.removeEventListener('click',close,true); } };
   setTimeout(()=>document.addEventListener('click',close,true),0);
