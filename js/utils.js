@@ -158,8 +158,37 @@ function autoResizeTa(ta){
   ta.style.height=Math.min(ta.scrollHeight,400)+'px';
 }
 function parseJSON(t){try{return JSON.parse((t||'').replace(/```json|```/g,'').trim());}catch(e){return null;}}
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+/* B-12 버그3: 모달/시트/⋯메뉴가 열려 있는 동안 뒤 배경(주로 매물탭 리스트뷰의 페이지
+   스크롤)이 같이 움직이는 문제 — body를 position:fixed로 고정해 잠금(iOS Safari에서
+   overflow:hidden만으론 러버밴드 스크롤이 안 막히는 문제를 우회하는 표준 기법).
+   카운터를 둬서 모달 위에 또 다른 모달/메뉴가 겹쳐 열려도(예: 상세시트 안에서 메뉴)
+   먼저 열린 것보다 먼저 닫혀도 잠금이 풀리지 않게 함 — 마지막 하나가 닫힐 때만 해제.
+   openModal/closeModal(모든 .modal 공용) + openForm/closeForm(매물추가 폼시트) +
+   showMoreMenu/closeMoreMenu(⋯ 더보기, properties.js)가 공유해서 씀 */
+let _scrollLockCount=0, _scrollLockY=0;
+function lockBodyScroll(){
+  if(_scrollLockCount===0){
+    _scrollLockY=window.scrollY;
+    document.body.style.position='fixed';
+    document.body.style.top='-'+_scrollLockY+'px';
+    document.body.style.left='0';
+    document.body.style.right='0';
+  }
+  _scrollLockCount++;
+}
+function unlockBodyScroll(){
+  _scrollLockCount=Math.max(0,_scrollLockCount-1);
+  if(_scrollLockCount===0){
+    document.body.style.position='';
+    document.body.style.top='';
+    document.body.style.left='';
+    document.body.style.right='';
+    window.scrollTo(0,_scrollLockY);
+  }
+}
+function openModal(id){document.getElementById(id).classList.add('open');lockBodyScroll();}
+function closeModal(id){document.getElementById(id).classList.remove('open');unlockBodyScroll();}
 
 /* ── 금액 단위 파싱 (억 숫자로 통일) ── */
 function parseEok(text){

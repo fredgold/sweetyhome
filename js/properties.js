@@ -474,6 +474,7 @@ function closeMoreMenu(){
   if(!_moreMenu) return;
   _moreSlots.forEach(({el,parent,next})=>parent.insertBefore(el,next));
   _moreMenu.remove(); _moreMenu=null; _moreSlots=null;
+  unlockBodyScroll();
 }
 function showMoreMenu(btn){
   if(_moreMenu){ closeMoreMenu(); return; }
@@ -489,8 +490,15 @@ function showMoreMenu(btn){
   _moreMenu=menu;
   const rect=btn.getBoundingClientRect();
   const menuW=menu.offsetWidth||230;
+  // 위치 계산은 잠금(body position:fixed) 전에 실측 scrollY 기준으로 먼저 끝내고,
+  // 잠금은 그 다음에 걸어야 함(B-12 버그3) — body가 position:fixed가 되는 순간
+  // .status-picker(position:absolute, body 직계 자식)의 containing block이 body로
+  // 바뀌는데, body의 top:-scrollY 오프셋과 여기서 더한 +scrollY가 정확히 상쇄되므로
+  // 결과 좌표는 동일(실측 확인 완료) — 순서를 바꿔도 무방하지만 기존 위치 계산
+  // 코드를 그대로 두기 위해 잠금을 뒤에 붙임
   menu.style.top=(rect.bottom+window.scrollY+4)+'px';
   menu.style.left=Math.max(8,Math.min(rect.left+window.scrollX, window.innerWidth-menuW-8))+'px';
+  lockBodyScroll();
   const close=ev=>{ if(!menu.contains(ev.target)&&ev.target!==btn){ closeMoreMenu(); document.removeEventListener('click',close,true); } };
   setTimeout(()=>document.addEventListener('click',close,true),0);
 }
@@ -799,8 +807,22 @@ function clearForm(){
   document.getElementById('f_imgPreview').style.display='none';
   document.getElementById('f_imgClear').style.display='none';
 }
-function openForm(){form.classList.add('open');initFormMap();document.getElementById('f_name').focus();}
-function closeForm(){form.classList.remove('open');clearForm();}
+/* .form.open은 데스크톱에선 사이드바 안 인라인 콘텐츠(스크롤 잠글 이유 없음)지만
+   모바일(<900px)에선 A안에서 지도를 안 밀어내는 position:fixed 하단시트라 배경(뒤
+   리스트뷰)이 같이 스크롤되는 문제(B-12 버그3)가 있어 모바일에서만 잠금.
+   _formLocked로 실제 잠갔는지를 기억해두는 이유: 폼이 열려 있는 동안 창 폭이
+   모바일↔데스크톱 경계를 넘나들면 DESKTOP_MQ.matches를 open/close 시점에 각각
+   다시 읽는 방식은 비대칭이 생겨(연 시점엔 모바일이라 잠갔는데 닫는 시점엔
+   데스크톱이라 안 풀리는 등) 잠금이 영영 안 풀릴 수 있음 */
+let _formLocked=false;
+function openForm(){
+  form.classList.add('open');initFormMap();document.getElementById('f_name').focus();
+  if(!DESKTOP_MQ.matches){ lockBodyScroll(); _formLocked=true; }
+}
+function closeForm(){
+  form.classList.remove('open');clearForm();
+  if(_formLocked){ unlockBodyScroll(); _formLocked=false; }
+}
 document.getElementById('toggleForm').onclick=()=>{ if(form.classList.contains('open'))closeForm(); else {clearForm();openForm();} };
 document.getElementById('cancelBtn').onclick=closeForm;
 
