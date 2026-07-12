@@ -934,7 +934,7 @@ document.getElementById('saveBtn').onclick=async()=>{
 async function saveAsComplexListing(data){
   const {complexName,groupCode,dongHo}=migParseName(data.name);
   const loc=data.loc||'';
-  const geocodeQuery=`${loc} ${complexName}`.trim();
+  const geocodeQuery=buildGeocodeQuery(loc,complexName);
   const mergeKey=normalizeStr(complexName)+'|'+normalizeStr(loc||data.station||'');
   let cx=state.complexes.find(c=>normalizeStr(c.complexName)+'|'+normalizeStr(c.loc||c.station||'')===mergeKey);
   const isNewComplex=!cx;
@@ -1267,27 +1267,47 @@ function mapCxImportStatus(s){
     문의예정:'문의예정',방문예정:'임장예정',임장예정:'임장예정',보류:'보류',탈락:'탈락'};
   return statusMap[s]||'관심';
 }
-/* 단지 중복은 normalize(complexName)+'|'+normalize(loc||station), 매물 중복은
-   URL 우선(없으면 complexId+dongHo+areaM2+deposit)으로 별도 판정. 같은 배치 안의
-   행끼리도 병합/중복 감지가 되도록 배치 내 상태를 누적하며 순회한다 */
+/* 단지/매물 중복 판정 공용 헬퍼 — Stage5b TSV 프리뷰·migApply 재실행 idempotency
+   가드가 공통으로 씀. 단지 중복: normalize(complexName)+'|'+normalize(loc||station).
+   매물 중복: URL 우선(없으면 complexId+dongHo+areaM2+deposit 조합) */
+function cxMergeKey(complexName,loc,station){
+  return normalizeStr(complexName)+'|'+normalizeStr(loc||station||'');
+}
+function findExistingComplexId(complexName,loc,station){
+  const key=cxMergeKey(complexName,loc,station);
+  const found=state.complexes.find(cx=>cxMergeKey(cx.complexName,cx.loc,cx.station)===key);
+  return found?found.id:null;
+}
+function cxListingDupKey(cxId,url,dongHo,areaM2,deposit){
+  return url
+    ?cxId+'|url:'+normalizeStr(url)
+    :cxId+'|'+normalizeStr(dongHo)+'|'+normalizeStr(areaM2==null?'':String(areaM2))+'|'+normalizeStr(deposit==null?'':String(deposit));
+}
+function listingExists(cxId,url,dongHo,areaM2,deposit){
+  const key=cxListingDupKey(cxId,url,dongHo,areaM2,deposit);
+  return state.listings.some(l=>cxListingDupKey(l.complexId,l.url,l.dongHo,l.areaM2,l.deposit)===key);
+}
+/* geocodeQuery엔 지오코딩 정확도를 위해 "서울" 리전 컨텍스트를 항상 포함(중복 접두 방지) */
+function buildGeocodeQuery(loc,complexName){
+  const base=`${loc||''} ${complexName||''}`.trim();
+  return /^서울/.test(base)?base:`서울 ${base}`.trim();
+}
+/* 같은 배치 안의 행끼리도 병합/중복 감지가 되도록 배치 내 상태를 누적하며 순회한다 */
 function calcCxImportStatus(parsed){
   const existingCxByKey=new Map();
   state.complexes.forEach(cx=>{
-    const key=normalizeStr(cx.complexName)+'|'+normalizeStr(cx.loc||cx.station||'');
+    const key=cxMergeKey(cx.complexName,cx.loc,cx.station);
     if(!existingCxByKey.has(key)) existingCxByKey.set(key,cx.id);
   });
-  const listingKey=(cxId,url,dongHo,areaM2,deposit)=>url
-    ?cxId+'|url:'+normalizeStr(url)
-    :cxId+'|'+normalizeStr(dongHo)+'|'+normalizeStr(areaM2==null?'':String(areaM2))+'|'+normalizeStr(deposit==null?'':String(deposit));
-  const listingKeySet=new Set(state.listings.map(l=>listingKey(l.complexId,l.url,l.dongHo,l.areaM2,l.deposit)));
+  const listingKeySet=new Set(state.listings.map(l=>cxListingDupKey(l.complexId,l.url,l.dongHo,l.areaM2,l.deposit)));
 
   const batchCxPseudoId=new Map();
   let pseudoSeq=0;
   return parsed.map(row=>{
     const {complexName,groupCode,dongHo}=migParseName(row.name);
     const loc=row.loc||'';
-    const geocodeQuery=`${loc} ${complexName}`.trim();
-    const mergeKey=normalizeStr(complexName)+'|'+normalizeStr(loc||row.station||'');
+    const geocodeQuery=buildGeocodeQuery(loc,complexName);
+    const mergeKey=cxMergeKey(complexName,loc,row.station);
 
     let cxId, cxJudgment, existingComplexId=null;
     if(existingCxByKey.has(mergeKey)){
@@ -1298,7 +1318,7 @@ function calcCxImportStatus(parsed){
       cxId='batch'+(++pseudoSeq); batchCxPseudoId.set(mergeKey,cxId); cxJudgment='new';
     }
 
-    const lk=listingKey(cxId,row.url,dongHo,row.area,row.depositNum);
+    const lk=cxListingDupKey(cxId,row.url,dongHo,row.area,row.depositNum);
     const listingDup=listingKeySet.has(lk);
     if(!listingDup) listingKeySet.add(lk);
 
@@ -1466,7 +1486,7 @@ function migBuildRows(){
   const rows=state.properties.map(p=>{
     const {complexName,groupCode,dongHo}=migParseName(p.name);
     const loc=p.loc||'';
-    const geocodeQuery=`${loc} ${complexName}`.trim();
+    const geocodeQuery=buildGeocodeQuery(loc,complexName);
     const mergeKey=normalizeStr(complexName)+'|'+normalizeStr(loc||p.station||'');
     return {p,complexName,groupCode,dongHo,loc,geocodeQuery,mergeKey,confident:!!complexName};
   });
@@ -1498,7 +1518,7 @@ function renderMigPreview(){
     <thead><tr>
       <th><input type="checkbox" id="migChkAll" checked></th>
       <th>기존이름</th><th>탐색그룹</th><th>추정 단지명</th><th>추정 동/호</th>
-      <th>주소</th><th>geocodeQuery</th><th>병합예정 단지</th>
+      <th>주소</th><th>지도 검색어</th><th>병합예정 단지</th>
     </tr></thead>
     <tbody>${migRows.map((r,i)=>`<tr>
       <td><input type="checkbox" class="mig-chk" data-idx="${i}"${r.confident?' checked':''}></td>
@@ -1524,6 +1544,8 @@ function renderMigPreview(){
   const groupCount=new Set(migRows.map(r=>r.mergeKey)).size;
   document.getElementById('migSummary').textContent=`매물 ${migRows.length}건 → 단지 ${groupCount}개로 정리 예정`;
 }
+/* B-14: idempotency 가드 — "정리" 재실행 시 단지는 findExistingComplexId()로 재사용
+   (새로 안 만듦), 매물은 listingExists()에 걸리면 건너뜀. 여러 번 눌러도 중복 생성 없음 */
 function migApply(){
   const toApply=[...document.querySelectorAll('.mig-chk:checked')]
     .map(cb=>migRows[+cb.dataset.idx]).filter(Boolean);
@@ -1534,38 +1556,46 @@ function migApply(){
     groups.get(r.mergeKey).push(r);
   });
   const now=new Date().toISOString();
-  let newComplexes=0, newListings=0;
+  let newComplexes=0, newListings=0, skippedListings=0;
   groups.forEach(rowsInGroup=>{
     const first=rowsInGroup[0].p;
     const groupCode=rowsInGroup.map(r=>r.groupCode).find(Boolean)||'';
-    const complexId='cx'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-    const cx={
-      id:complexId,
-      complexName:rowsInGroup[0].complexName||first.name||'',
-      loc:first.loc||'',
-      geocodeQuery:rowsInGroup[0].geocodeQuery||'',
-      groupCode, regionGroup:'',
-      station:first.station||'', line:first.line||'',
-      yearBuilt:first.yearBuilt??null,
-      households:first.households??null,
-      householdGrade:first.householdGrade||'',
-      commuteGangnam:first.commuteGangnam??null,
-      commuteSinsa:first.commuteSinsa??null,
-      complexStatus:migComplexStatus(first.status),
-      lat:first.lat??null, lng:first.lng??null,
-      memo:first.memo||'',
-      createdAt:now, updatedAt:now,
-    };
-    if(first.aiScore!=null) cx.aiScore=first.aiScore;
-    if(first.aiComment) cx.aiComment=first.aiComment;
-    if(first.aiReport) cx.aiReport=first.aiReport;
-    state.complexes.push(cx);
-    newComplexes++;
-    rowsInGroup.forEach((r,idx)=>{
+
+    let complexId=findExistingComplexId(rowsInGroup[0].complexName||first.name,first.loc,first.station);
+    if(!complexId){
+      complexId='cx'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+      const cx={
+        id:complexId,
+        complexName:rowsInGroup[0].complexName||first.name||'',
+        loc:first.loc||'',
+        geocodeQuery:rowsInGroup[0].geocodeQuery||'',
+        groupCode, regionGroup:'',
+        station:first.station||'', line:first.line||'',
+        yearBuilt:first.yearBuilt??null,
+        households:first.households??null,
+        householdGrade:first.householdGrade||'',
+        commuteGangnam:first.commuteGangnam??null,
+        commuteSinsa:first.commuteSinsa??null,
+        complexStatus:migComplexStatus(first.status),
+        lat:first.lat??null, lng:first.lng??null,
+        memo:first.memo||'',
+        createdAt:now, updatedAt:now,
+      };
+      if(first.aiScore!=null) cx.aiScore=first.aiScore;
+      if(first.aiComment) cx.aiComment=first.aiComment;
+      if(first.aiReport) cx.aiReport=first.aiReport;
+      state.complexes.push(cx);
+      newComplexes++;
+    }
+
+    rowsInGroup.forEach(r=>{
       const p=r.p;
       const areaNum=p.area!=null&&p.area!==''?parseFloat(p.area):null;
+      const depositVal=p.depositNum!=null?p.depositNum:(p.deposit?parseEok(p.deposit):null);
+      if(listingExists(complexId,p.url,r.dongHo,areaNum,depositVal)){ skippedListings++; return; }
+      const isFirstListing=state.listings.filter(l=>l.complexId===complexId).length===0;
       state.listings.push({
-        id:'lst'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+idx,
+        id:'lst'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+newListings,
         complexId,
         source:p.importSource||'',
         url:p.url||'',
@@ -1575,10 +1605,10 @@ function migApply(){
         areaM2:(areaNum!=null&&!isNaN(areaNum))?areaNum:null,
         areaText:p.area!=null&&p.area!==''?String(p.area):'',
         areaGrade:'',
-        deposit:p.depositNum!=null?p.depositNum:(p.deposit?parseEok(p.deposit):null),
+        deposit:depositVal,
         managementFee:null,
         listingStatus:'확인필요',
-        isRepresentative:idx===0,
+        isRepresentative:isFirstListing,
         memo:p.memo||'',
       });
       newListings++;
@@ -1587,7 +1617,7 @@ function migApply(){
   save();
   closeModal('migPreviewModal');
   renderProps();
-  showPropToast(`단지 ${newComplexes}개 · 매물 ${newListings}건 적용 완료 (기존 매물 목록은 그대로 유지돼요)`);
+  showPropToast(`단지 ${newComplexes}개 신규 · 매물 ${newListings}건 등록${skippedListings?` · 중복 ${skippedListings}건 건너뜀`:''} (기존 매물 목록은 그대로 유지돼요)`);
 }
 (function migInjectUI(){
   const phActions=document.querySelector('.ph-actions');
