@@ -288,8 +288,14 @@
        그대로 동작 — 이 블록에서 별도로 손댈 필요 없음 */
     #panel-props[data-view="list"]{position:static;overflow:visible;}
     #panel-props[data-view="list"] .mapcard{display:none;}
+    /* padding-top:58px — 정렬칩/뷰토글/⋯버튼 바가 쉬는 위치(스크롤 0일 때
+       top:calc(var(--overlay-top)+10px), 높이 38px, 즉 콘텐츠 시작점 기준 10~48px)를
+       가리지 않을 만큼. 리스트뷰는 #panel-props가 static이라 --overlay-top이
+       --topbar-h와 같아지는 "맨 위" 순간에만 유효하면 되는 고정값이라 --overlay-top을
+       calc에 넣을 필요 없음(스크롤 중엔 바가 탭바를 따라 위로 붙어 이 여백보다
+       위쪽에 있게 됨 — B-12 버그2, 스크롤 중 겹침은 B-22로 별도 추적) */
     #panel-props[data-view="list"] #complexSection{
-      position:static;display:block;overflow-x:visible;scroll-snap-type:none;padding:2px 12px 10px;
+      position:static;display:block;overflow-x:visible;scroll-snap-type:none;padding:58px 12px 10px;
     }
     #panel-props[data-view="list"] #complexSection>.card{flex:none;scroll-snap-align:none;margin-bottom:12px;}
     #panel-props[data-view="list"] #complexSection>.cx-empty{flex:none;}
