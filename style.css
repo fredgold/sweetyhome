@@ -347,6 +347,9 @@
   .cx-listing-dongho{font-size:13px;font-weight:700;}
   .cx-listing-meta{font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-bottom:3px;}
   .cx-nocoord-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--hairline-soft);border-radius:var(--radius-md);border:1px solid var(--hairline);font-size:12px;color:var(--ink-soft);font-weight:600;}
+  .cx-hover-tip{pointer-events:none;padding:8px 10px;min-width:0;white-space:nowrap;}
+  .cx-hover-name{font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:2px;}
+  .cx-hover-meta{font-size:11px;font-weight:600;color:var(--ink-soft);}
   @media (min-width:900px){
     #complexDetailModal{justify-content:flex-end;padding:0;z-index:1002;}
     #complexDetailModal .box{max-width:460px;width:100%;height:100vh;max-height:100vh;border-radius:0;margin:0;animation:drop .18s ease;}

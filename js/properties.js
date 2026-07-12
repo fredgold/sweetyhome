@@ -54,40 +54,79 @@ function initOverview(){
     refreshOverview();
   });
 }
-/* 마커 = 보증금 라벨 pill + 상태색 테두리, 선택 시 상태색 링(outline) + 최상단(zIndexOffset).
+/* v5 cutover: 지도 마커 소스를 properties[]→complexes[](대표매물 라벨)로 전환.
+   마커 = 대표매물 보증금 라벨 pill + 단지상태색 테두리, 상세 열려있으면 선택 링(outline) + 최상단.
    히트영역은 CSS(.prop-marker padding)로 ~44px까지 확장 — 보이는 pill(~22px)보다 넓게 클릭 가능 */
-function markerLabel(p){
-  const d=p.depositNum!=null?p.depositNum:(p.deposit!=null&&p.deposit!==''?parseFloat(p.deposit):null);
+function cxMarkerLabel(rep){
+  const d=rep&&rep.deposit!=null?rep.deposit:null;
   return (d!=null&&!isNaN(d))?`${d}억`:'가격미정';
 }
-function markerHtml(p,selected){
-  const color=HEX[p.status]||'#6B7C93';
+function cxMarkerHtml(cx,rep,selected,dimmed){
+  const color=HEX_CX[cx.complexStatus]||'#6B7C93';
   const ring=selected?`outline:3px solid ${color}88;outline-offset:1px;`:'';
-  return `<div class="prop-marker${selected?' selected':''}">
-    <span class="prop-marker-pill" style="border-color:${color};${ring}"><i style="background:${color}"></i>${esc(markerLabel(p))}</span>
+  return `<div class="prop-marker${selected?' selected':''}"${dimmed?' style="opacity:.15"':''}>
+    <span class="prop-marker-pill" style="border-color:${color};${ring}"><i style="background:${color}"></i>${esc(cxMarkerLabel(rep))}</span>
   </div>`;
 }
-/* 필터·검색으로 보이는 매물 id 집합이 실제로 바뀐 경우에만 fitBounds — 카드 펼침/접기·마커
-   재선택처럼 집합은 그대로인 리렌더에서는 지도가 튀지 않도록 (연타해도 멀미 안 나게, animate:false) */
+/* B-02: 데스크톱 hover 시 단지명+대표매물(전세보증금/전용) 툴팁. hover 불가(터치) 환경은
+   탭이 곧 상세 패널 열기라 별도 툴팁을 붙이지 않음("모바일은 탭 대체") */
+const CAN_HOVER=window.matchMedia('(hover:hover)').matches;
+let _cxHoverTip=null;
+function closeCxHoverTip(){ if(_cxHoverTip){ _cxHoverTip.remove(); _cxHoverTip=null; } }
+function showCxHoverTip(marker,cx,rep){
+  closeCxHoverTip();
+  const tip=document.createElement('div');
+  tip.className='status-picker cx-hover-tip';
+  const depositTxt=rep&&rep.deposit!=null?`보증금 ${rep.deposit}억`:'보증금 미정';
+  const areaTxt=rep&&rep.areaM2!=null?`전용 ${rep.areaM2}㎡`:'면적 미정';
+  tip.innerHTML=`<div class="cx-hover-name">${esc(cx.complexName||'(이름 없음)')}</div><div class="cx-hover-meta">${esc(depositTxt)} · ${esc(areaTxt)}</div>`;
+  document.body.appendChild(tip);
+  _cxHoverTip=tip;
+  const mapEl=document.getElementById('overviewMap');
+  const off=overview.getProjection().fromCoordToOffset(marker.getPosition());
+  const mapRect=mapEl.getBoundingClientRect();
+  const left=mapRect.left+window.scrollX+off.x-tip.offsetWidth/2;
+  const top=mapRect.top+window.scrollY+off.y-tip.offsetHeight-14;
+  tip.style.left=Math.max(8,left)+'px';
+  tip.style.top=Math.max(8,top)+'px';
+}
+function bindMarkerHover(marker,cx,rep){
+  if(!CAN_HOVER) return;
+  naver.maps.Event.addListener(marker,'mouseover',()=>showCxHoverTip(marker,cx,rep));
+  naver.maps.Event.addListener(marker,'mouseout',closeCxHoverTip);
+}
+/* 필터로 보이는 단지 id 집합이 실제로 바뀐 경우에만 fitBounds — 상세 열기/닫기·마커 재선택처럼
+   집합은 그대로인 리렌더에서는 지도가 튀지 않도록 (연타해도 멀미 안 나게, animate:false) */
 let lastVisibleMapKey='',lastMarkerRenderKey='';
 function refreshOverview(items){
   if(!overview) return;
-  const withCoords=(items||visibleProperties()).filter(p=>p.lat&&p.lng);
-  const key=withCoords.map(p=>`${p.id}:${p.lat}:${p.lng}`).sort().join(',');
+  closeCxHoverTip();
+  const withCoords=(items||state.complexes.filter(cxMatchesFilters)).filter(cx=>cx.lat&&cx.lng);
+  const key=withCoords.map(cx=>`${cx.id}:${cx.lat}:${cx.lng}`).sort().join(',');
   const setChanged=key!==lastVisibleMapKey;
   lastVisibleMapKey=key;
-  const markerKey=withCoords.map(p=>`${p.id}:${p.lat}:${p.lng}:${p.status}:${markerLabel(p)}:${expandedPropId===p.id}`).sort().join(',');
+  const markerKey=withCoords.map(cx=>{
+    const rep=cxRepOf(cx);
+    return `${cx.id}:${cx.lat}:${cx.lng}:${cx.complexStatus}:${rep?rep.deposit:''}:${cxDetailId===cx.id}`;
+  }).sort().join(',');
   if(markerKey===lastMarkerRenderKey) return;
   lastMarkerRenderKey=markerKey;
-  ovMarkers.forEach(m=>m.setMap(null)); ovMarkers=[];
+  /* 네이버 지도 SDK가 오래 산 마커의 setMap(null) 내부에서 널 참조로 죽는 경우가
+     실측됨(SDK 내부 상태 문제로 추정, 우리 코드 밖) — 마커 하나 정리 실패가 전체
+     리프레시를 막지 않도록 개별 try/catch */
+  ovMarkers.forEach(m=>{ try{ m.setMap(null); }catch(e){} }); ovMarkers=[];
   const pts=[];
-  withCoords.forEach(p=>{
-    const selected=expandedPropId===p.id;
-    const pos=new naver.maps.LatLng(p.lat,p.lng);
-    const m=new naver.maps.Marker({position:pos,map:overview,icon:{content:markerHtml(p,selected),anchor:new naver.maps.Point(0,0)},zIndex:selected?1000:0});
-    naver.maps.Event.addListener(m,'click',()=>selectFromMap(p.id));
-    m._pid=p.id;
-    ovMarkers.push(m); pts.push(pos);
+  withCoords.forEach(cx=>{
+    try{
+      const rep=cxRepOf(cx);
+      const selected=cxDetailId===cx.id;
+      const pos=new naver.maps.LatLng(cx.lat,cx.lng);
+      const m=new naver.maps.Marker({position:pos,map:overview,icon:{content:cxMarkerHtml(cx,rep,selected),anchor:new naver.maps.Point(0,0)},zIndex:selected?1000:0});
+      naver.maps.Event.addListener(m,'click',()=>{ closeCxHoverTip(); openComplexDetail(cx.id); });
+      bindMarkerHover(m,cx,rep);
+      m._cxid=cx.id;
+      ovMarkers.push(m); pts.push(pos);
+    }catch(e){ /* 마커 하나 생성 실패가 나머지 단지 마커까지 막지 않도록 */ }
   });
   if(setChanged){
     if(pts.length===1){ overview.setCenter(pts[0]); overview.setZoom(Math.max(overview.getZoom(),15)); }
@@ -100,41 +139,23 @@ function refreshOverview(items){
   setTimeout(()=>overview.refresh(true),60);
 }
 const DESKTOP_MQ=window.matchMedia('(min-width:900px)');
-/* 마커 탭 → 카드: 해당 카드를 펼치고 리스트를 그 위치로 스크롤 (sticky 탭 네비 높이만큼 오프셋).
-   모바일 지도 풀스크린 중이었다면 카드가 보이도록 다시 리스트로 복귀(풀스크린 해제) */
-function selectFromMap(id){
-  expandedPropId=id;
-  if(document.getElementById('mapcard').classList.contains('expanded')) setMapExpanded(false);
-  renderList();
-  scrollCardIntoView(id);
-}
-/* ≥900px: 리스트가 자체 스크롤 컨테이너(.rail)라 그 안에서만 스크롤 — 전체 페이지 스크롤 오염 없음.
-   <900px: 페이지 전체 스크롤 + sticky 탭 네비 높이(동적 측정)만큼 오프셋 보정 */
-function scrollCardIntoView(id){
-  const toggle=document.querySelector(`[data-cardtoggle="${id}"]`);
-  const card=toggle&&toggle.closest('.card');
-  if(!card) return;
-  if(DESKTOP_MQ.matches){
-    const list=document.getElementById('list');
-    if(!list) return;
-    const delta=card.getBoundingClientRect().top-list.getBoundingClientRect().top-12;
-    list.scrollTo({top:Math.max(0,list.scrollTop+delta),behavior:'smooth'});
-    return;
-  }
-  const nav=document.querySelector('.apptabs');
-  const offset=(nav?nav.getBoundingClientRect().height:0)+12;
-  const top=card.getBoundingClientRect().top+window.scrollY-offset;
-  window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
-}
-/* 카드 → 지도: 마커 재생성 없이 아이콘만 바꿔치기(제거·재추가 없음 → fitBounds 재발동 안 함) */
-function reselectMarker(id){
+/* 상세 열기 → 지도: 마커 재생성 없이 아이콘만 바꿔치기(제거·재추가 없음 → fitBounds 재발동 안 함) */
+function reselectCxMarker(id){
   ovMarkers.forEach(m=>{
-    const p=state.properties.find(x=>x.id===m._pid); if(!p) return;
-    const selected=m._pid===id;
-    m.setIcon({content:markerHtml(p,selected),anchor:new naver.maps.Point(0,0)});
-    m.setZIndex(selected?1000:0);
+    try{
+      const cx=state.complexes.find(x=>x.id===m._cxid); if(!cx) return;
+      const rep=cxRepOf(cx);
+      const selected=m._cxid===id;
+      m.setIcon({content:cxMarkerHtml(cx,rep,selected),anchor:new naver.maps.Point(0,0)});
+      m.setZIndex(selected?1000:0);
+    }catch(e){}
   });
 }
+/* 레거시(기존 매물) 카드의 "지도에서 보기"(locate())가 호출하던 마커 재선택 로직 —
+   지도가 더 이상 매물 마커를 그리지 않아(모든 마커가 _cxid만 가짐) 실질적으로
+   무동작이 됨. properties[] 뷰 은퇴에 따른 알려진 부수효과이며, locate()의 지도
+   패닝 자체는 유지(좌표 확인 용도로는 여전히 유효해 남겨둠) */
+function reselectMarker(id){ /* no-op: 매물 마커 자체가 더 이상 존재하지 않음 */ }
 /* 모바일 전용 지도 풀스크린 토글 (≥900px에서는 버튼 자체가 CSS로 숨겨져 호출될 일 없음) */
 function setMapExpanded(on){
   const c=document.getElementById('mapcard');
@@ -207,7 +228,7 @@ function legsForOrder(pts){
   });
 }
 function computeRoute(ids){
-  const pts=ids.map(id=>state.properties.find(p=>p.id===id)).filter(p=>p&&p.lat&&p.lng);
+  const pts=ids.map(id=>state.complexes.find(c=>c.id===id)).filter(p=>p&&p.lat&&p.lng);
   if(pts.length<2) return [];
   const remaining=pts.slice(1); let current=pts[0];
   const order=[current];
@@ -227,9 +248,19 @@ function reorderRoute(fromIdx,toIdx){
   renderRouteBar(); waitNaverMaps(()=>drawRoute());
 }
 function clearRouteLayer(){ if(routeLayerGroup) routeLayerGroup.forEach(o=>o.setMap(null)); routeLayerGroup=null; }
+/* naver.maps.Marker엔 Leaflet의 setOpacity() 같은 메서드가 없음(실측 확인, 이전
+   네이버 전환 세션의 잔재 버그로 추정) — 아이콘을 opacity 스타일 포함해 다시
+   그려 넣는 setIcon()으로 대체. 이미 지도 전환 전 코드에서도 깨져 있던 걸 이번에
+   루트 플로우를 테스트하다 발견해서 같이 고침 */
 function dimRouteStatusMarkers(on){
   const ids=new Set(routeStops.map(s=>s.property.id));
-  ovMarkers.forEach(m=>{ const dim=on&&ids.has(m._pid); m.setOpacity(dim?.15:1); });
+  ovMarkers.forEach(m=>{
+    const cx=state.complexes.find(x=>x.id===m._cxid); if(!cx) return;
+    const rep=cxRepOf(cx);
+    const dim=on&&ids.has(m._cxid);
+    const selected=cxDetailId===m._cxid;
+    m.setIcon({content:cxMarkerHtml(cx,rep,selected,dim),anchor:new naver.maps.Point(0,0)});
+  });
 }
 function drawRoute(){
   clearRouteLayer();
@@ -237,11 +268,13 @@ function drawRoute(){
   routeLayerGroup=[];
   const latlngs=[];
   routeStops.forEach((s,i)=>{
-    const p=s.property; const pos=new naver.maps.LatLng(p.lat,p.lng); latlngs.push(pos);
-    const mk=new naver.maps.Marker({position:pos,map:overview,icon:{content:`<div class="route-pin"><span style="background:${HEX[p.status]||'#6B7C93'}">${i+1}</span></div>`,anchor:new naver.maps.Point(12,12)},zIndex:500});
-    const info=new naver.maps.InfoWindow({content:`<div class="route-popup"><b>${i+1}. ${esc(p.name||'')}</b>`+(i>0?`<br>이전 정류점에서 도보 약 ${s.legMinutes}분 (${Math.round(s.legDistanceM)}m)`:'')+`</div>`,borderWidth:0,backgroundColor:'transparent',disableAnchor:true});
-    naver.maps.Event.addListener(mk,'click',()=>info.open(overview,mk));
-    routeLayerGroup.push(mk);
+    try{
+      const p=s.property; const pos=new naver.maps.LatLng(p.lat,p.lng); latlngs.push(pos);
+      const mk=new naver.maps.Marker({position:pos,map:overview,icon:{content:`<div class="route-pin"><span style="background:${HEX_CX[p.complexStatus]||'#6B7C93'}">${i+1}</span></div>`,anchor:new naver.maps.Point(12,12)},zIndex:500});
+      const info=new naver.maps.InfoWindow({content:`<div class="route-popup"><b>${i+1}. ${esc(p.complexName||'')}</b>`+(i>0?`<br>이전 정류점에서 도보 약 ${s.legMinutes}분 (${Math.round(s.legDistanceM)}m)`:'')+`</div>`,borderWidth:0,backgroundColor:'transparent',disableAnchor:true});
+      naver.maps.Event.addListener(mk,'click',()=>info.open(overview,mk));
+      routeLayerGroup.push(mk);
+    }catch(e){}
   });
   const polyline=new naver.maps.Polyline({map:overview,path:latlngs,strokeColor:'#4B88CC',strokeWeight:3,strokeOpacity:.85,strokeStyle:'shortdash'});
   routeLayerGroup.push(polyline);
@@ -269,7 +302,7 @@ function renderRouteBar(){
   const totalM=routeStops.reduce((s,x)=>s+x.legDistanceM,0);
   const rows=routeStops.map((s,i)=>
     (i>0?`<div class="rb-leg-row">→ 도보 약 ${s.legMinutes}분(${Math.round(s.legDistanceM)}m) →</div>`:'')
-    +`<div class="rb-stop" data-idx="${i}"><span class="rb-drag">⠿</span><span class="rb-num">${i+1}</span><span class="rb-name">${esc(s.property.name||'(이름 없음)')}</span></div>`
+    +`<div class="rb-stop" data-idx="${i}"><span class="rb-drag">⠿</span><span class="rb-num">${i+1}</span><span class="rb-name">${esc(s.property.complexName||'(이름 없음)')}</span></div>`
   ).join('');
   bar.innerHTML=`<div class="rb-route">
       <div class="rb-route-list" id="rbRouteList">${rows}</div>
@@ -317,11 +350,11 @@ function bindRouteDrag(){
 function enterRouteSelectMode(preserveSelection){
   if(!preserveSelection) routeSelected=new Set();
   routeMode='select'; clearRouteLayer(); dimRouteStatusMarkers(false);
-  renderList(); renderRouteBar();
+  renderComplexes(); renderRouteBar();
 }
 function exitRouteMode(){
   routeMode='off'; routeSelected=new Set(); routeStops=[];
-  clearRouteLayer(); renderList(); renderRouteBar(); refreshOverview();
+  clearRouteLayer(); renderComplexes(); renderRouteBar();
 }
 function expandMapCard(){
   document.getElementById('mapcard').classList.remove('collapsed');
@@ -330,22 +363,25 @@ function expandMapCard(){
 function makeRoute(){
   if(routeSelected.size<2) return;
   routeStops=computeRoute([...routeSelected]);
-  if(routeStops.length<2){ alert('좌표가 저장된 매물이 2곳 이상 필요해요.'); return; }
+  if(routeStops.length<2){ alert('좌표가 저장된 단지가 2곳 이상 필요해요.'); return; }
   routeMode='result';
   expandMapCard();
-  renderList(); renderRouteBar(); waitNaverMaps(()=>drawRoute());
+  renderComplexes(); renderRouteBar(); waitNaverMaps(()=>drawRoute());
 }
 function refreshRoute(){
-  const pts=routeStops.map(s=>s.property.id).map(id=>state.properties.find(p=>p.id===id)).filter(p=>p&&p.lat&&p.lng);
+  const pts=routeStops.map(s=>s.property.id).map(id=>state.complexes.find(c=>c.id===id)).filter(p=>p&&p.lat&&p.lng);
   routeSelected=new Set(pts.map(p=>p.id));
   if(pts.length<2){
-    alert('선택된 매물이 삭제되었거나 부족해 루트를 유지할 수 없어요. 다시 선택해주세요.');
+    alert('선택된 단지가 삭제되었거나 부족해 루트를 유지할 수 없어요. 다시 선택해주세요.');
     enterRouteSelectMode(true);
     return;
   }
   routeStops=legsForOrder(pts);
   renderRouteBar(); waitNaverMaps(()=>drawRoute());
 }
+/* v5 cutover: 임장은 단지 단위로 전환. 필드명 propertyIds는 state.js 스키마
+   안정성을 위해 그대로 두되(범위 밖 파일이라 이름 변경 안 함), 저장되는 값은
+   이제 매물 id가 아니라 단지(complexes) id */
 function saveCurrentRoute(){
   const name=(prompt('루트 이름을 입력하세요 (예: 강남권 · 7월말)')||'').trim();
   if(!name) return;
@@ -357,13 +393,13 @@ function saveCurrentRoute(){
 function loadSavedRoute(id){
   const r=(state.savedRoutes||[]).find(x=>x.id===id);
   if(!r) return;
-  const pts=r.propertyIds.map(pid=>state.properties.find(p=>p.id===pid)).filter(p=>p&&p.lat&&p.lng);
-  if(pts.length<2){ alert('저장된 매물이 삭제되었거나 좌표가 없어 루트를 불러올 수 없어요.'); return; }
+  const pts=r.propertyIds.map(pid=>state.complexes.find(c=>c.id===pid)).filter(p=>p&&p.lat&&p.lng);
+  if(pts.length<2){ alert('저장된 단지가 삭제되었거나 좌표가 없어 루트를 불러올 수 없어요.'); return; }
   routeSelected=new Set(pts.map(p=>p.id));
   routeStops=legsForOrder(pts);
   routeMode='result';
   expandMapCard();
-  renderList(); renderRouteBar(); waitNaverMaps(()=>drawRoute());
+  renderComplexes(); renderRouteBar(); waitNaverMaps(()=>drawRoute());
 }
 let _routeMenu=null;
 function closeRouteMenu(){ if(_routeMenu){ _routeMenu.remove(); _routeMenu=null; } }
@@ -400,11 +436,6 @@ document.getElementById('propRouteBtn').onclick=(e)=>{
   if(!(state.savedRoutes&&state.savedRoutes.length)){ enterRouteSelectMode(false); return; }
   showRouteMenu(e.currentTarget);
 };
-document.getElementById('list').addEventListener('change', e=>{
-  const rc=e.target.closest('[data-routecheck]'); if(!rc) return;
-  rc.checked ? routeSelected.add(rc.dataset.routecheck) : routeSelected.delete(rc.dataset.routecheck);
-  renderRouteBar();
-});
 
 /* 매물탭 툴바 "⋯ 더보기" — 480px 이하에서 숨겨진 실제 컨트롤을 기존
    .status-picker 플로팅 메뉴 안으로 옮겼다가 닫으면 원래 자리로 되돌림
@@ -442,17 +473,18 @@ async function geocode(q){
   }catch(e){}
   return {found:false};
 }
+/* v5 cutover: 좌표 자동 채우기 대상을 properties[]에서 complexes[]로 전환.
+   geocodeQuery는 이미 [G#]·동/호·가격 등이 제거된 상태로 저장돼 있어 그대로 사용 */
 async function autoGeocode(){
-  const noCoord=state.properties.filter(p=>!p.lat&&(p.name||p.loc));
+  const noCoord=state.complexes.filter(cx=>!(cx.lat&&cx.lng)&&cx.geocodeQuery);
   if(!noCoord.length) return;
-  for(const p of noCoord){
-    const q=((p.name||'')+' '+(p.loc||'')).trim();
+  for(const cx of noCoord){
     try{
-      const j=await geocode(q);
-      if(j.found){ p.lat=j.lat; p.lng=j.lng; }
+      const j=await geocode(cx.geocodeQuery);
+      if(j.found){ cx.lat=j.lat; cx.lng=j.lng; }
     }catch(e){ break; }
   }
-  if(noCoord.some(p=>p.lat)) { save(); refreshOverview(); }
+  if(noCoord.some(cx=>cx.lat)) { save(); refreshOverview(); }
 }
 
 function initFormMap(){
@@ -576,8 +608,12 @@ document.getElementById('findBtn').onclick=async()=>{
   setTimeout(()=>{btn.disabled=false;btn.innerHTML=old;},1600);
 };
 
-function renderStats(){const p=state.properties;document.getElementById('stats').innerHTML=
-  `총 <b>${p.length}</b>곳 · 후보 <b>${p.filter(x=>x.status==='후보').length}</b> · 방문예정 <b>${p.filter(x=>x.status==='방문예정').length}</b>`;}
+/* v5 cutover: 통계를 properties[] 기준에서 단지/매물(complexes/listings) 기준으로 전환 */
+function renderStats(){
+  const cx=state.complexes;
+  document.getElementById('stats').innerHTML=
+    `단지 <b>${cx.length}</b>개 · 매물 <b>${state.listings.length}</b>건 · 후보 <b>${cx.filter(x=>x.complexStatus==='후보').length}</b> · 임장예정 <b>${cx.filter(x=>x.complexStatus==='임장예정').length}</b>`;
+}
 function renderTabs(){
   const tabs=['전체','관심','검토중','문의예정','방문예정','후보','보류','탈락'];
   const cnt={전체:state.properties.length}; tabs.slice(1).forEach(s=>cnt[s]=state.properties.filter(p=>p.status===s).length);
@@ -652,7 +688,8 @@ function renderList(){
   else items.sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||(b.created-a.created));
   const el=document.getElementById('list');
   updateUnisearch(items.length);
-  refreshOverview(items);
+  /* v5 cutover: 지도는 이제 complexes[] 기준(refreshOverview는 renderComplexes()에서 호출) —
+     레거시 매물 목록 자체 갱신에는 지도 리프레시가 더 이상 필요 없음 */
   if(!items.length){el.innerHTML=`<div class="empty"><div class="big">${activeTab==='전체'?'아직 등록된 매물이 없어요':'이 상태의 매물이 없어요'}</div>${activeTab==='전체'?'＋ 매물 추가로 첫 후보를 올려보세요.':'다른 탭을 눌러보세요.'}</div>`;return;}
   el.innerHTML=items.map(p=>{
     const urlSafe=p.url?safeUrl(p.url):'';
@@ -660,13 +697,8 @@ function renderList(){
     const done=CHECKLIST.filter(c=>(p.checks||{})[c.id]).length;
     const pct=Math.round(done/CHECKLIST.length*100);
     const color='var('+(SC[p.status]||'--hairline')+')';
-    const routeCheckHTML = routeMode!=='select' ? '' :
-      (p.lat&&p.lng
-        ? `<label class="c-routecheck-wrap"><input type="checkbox" class="c-routecheck" aria-label="임장 루트에 포함" data-routecheck="${p.id}"${routeSelected.has(p.id)?' checked':''}></label>`
-        : `<span class="c-routecheck-disabled" title="좌표가 없어 루트에 포함할 수 없어요">${ic('pin','ic-muted')} 위치없음</span>`);
     return `<div class="card${expanded?' expanded':''}${(p.status==='탈락'||p.status==='보류')?' dim':''}" data-st="${p.status}">
     <div class="c-top" data-cardtoggle="${p.id}" role="button" tabindex="0" aria-expanded="${expanded?'true':'false'}" aria-controls="cbody-${p.id}">
-      ${routeCheckHTML}
       <div class="c-head-text">
         <div class="c-headline">${ic('transit','ic-muted')} ${subtitleText(p)}</div>
         <div class="c-sub tnum">${headlineText(p)}</div>
@@ -958,7 +990,6 @@ document.getElementById('list').addEventListener('click',e=>{
     showStatusPicker(pill, p);
     return;
   }
-  if(e.target.closest('.c-routecheck-wrap')) return;
   const item=e.target.closest('.ck-item');
   if(item){
     if(e.target.closest('a')) return;
@@ -1113,8 +1144,7 @@ function exportListings(fmt){
 function exportComplexesWithRep(fmt){
   const COLS=['단지ID','단지명','지역','역/도보','노선','세대수','세대수등급','준공연도','강남역','신사역','단지상태','대표매물동호','대표매물전용면적','대표매물전세보증금','대표매물상태','대표매물링크','단지메모'];
   const rows=state.complexes.map(cx=>{
-    const listings=state.listings.filter(l=>l.complexId===cx.id);
-    const rep=listings.find(l=>l.isRepresentative)||listings[0]||null;
+    const rep=cxRepOf(cx);
     return [
       cx.id,cx.complexName||'',cx.loc||'',cx.station||'',cx.line||'',
       cx.households??'',cx.householdGrade||'',cx.yearBuilt??'',
@@ -1556,6 +1586,7 @@ function migApply(){
   });
   save();
   closeModal('migPreviewModal');
+  renderProps();
   showPropToast(`단지 ${newComplexes}개 · 매물 ${newListings}건 적용 완료 (기존 매물 목록은 그대로 유지돼요)`);
 }
 (function migInjectUI(){
@@ -1587,6 +1618,12 @@ function migApply(){
 
 /* ============ v5 Stage 3+4: 단지 카드 목록 + 단지 상세·매물 목록 (properties[] 뷰 공존) ============ */
 const SC_CX=Object.assign({},SC,{임장예정:SC['방문예정']});
+const HEX_CX=Object.assign({},HEX,{임장예정:HEX['방문예정']});
+/* 대표매물(isRepresentative), 없으면 첫 매물 — 지도·카드·통계·루트가 공통으로 씀 */
+function cxRepOf(cx){
+  const ls=state.listings.filter(l=>l.complexId===cx.id);
+  return ls.find(l=>l.isRepresentative)||ls[0]||null;
+}
 function getAreaGrade(areaM2){
   if(areaM2==null||isNaN(areaM2))return'';
   const v=+areaM2;
@@ -1650,8 +1687,8 @@ function needsWeeklyCheck(cx,rep){
   return (Date.now()-new Date(rep.lastCheckedAt).getTime())/86400000>=7;
 }
 function weeklyCheckComplex(cxId){
-  const listings=state.listings.filter(l=>l.complexId===cxId);
-  const rep=listings.find(l=>l.isRepresentative)||listings[0]||null;
+  const cx=state.complexes.find(c=>c.id===cxId); if(!cx) return;
+  const rep=cxRepOf(cx);
   if(!rep) return;
   rep.lastCheckedAt=new Date().toISOString();
   save(); renderComplexes();
@@ -1675,6 +1712,7 @@ function renderComplexes(){
     if(filterBar) filterBar.style.display='none';
     legacyToggleWrap.style.display='none';
     legacyWrap.style.display='';
+    refreshOverview([]);
     return;
   }
 
@@ -1689,12 +1727,12 @@ function renderComplexes(){
   const filtered=state.complexes.filter(cxMatchesFilters);
   if(!filtered.length){
     wrap.innerHTML=`<div class="cx-empty">필터 조건에 맞는 단지가 없어요.</div>`;
+    refreshOverview([]);
     return;
   }
 
   wrap.innerHTML=filtered.map(cx=>{
-    const cxListings=state.listings.filter(l=>l.complexId===cx.id);
-    const rep=cxListings.find(l=>l.isRepresentative)||cxListings[0]||null;
+    const rep=cxRepOf(cx);
     const st=cx.complexStatus||'관심';
     const color='var('+(SC_CX[st]||'--hairline')+')';
     const repHTML=rep?`<div class="c-meta">
@@ -1707,8 +1745,13 @@ function renderComplexes(){
       :`<div class="c-meta"><span class="chip warn">현재 대표매물 없음</span></div>`;
     const weeklyBadge=needsWeeklyCheck(cx,rep)?'<span class="chip warn">7일+ 미확인</span>':'';
     const weeklyBtn=rep?`<button data-weeklycheck="${cx.id}">${ic('sync')} 이번 주 확인 완료</button>`:'';
+    const routeCheckHTML = routeMode!=='select' ? '' :
+      (cx.lat&&cx.lng
+        ? `<label class="c-routecheck-wrap"><input type="checkbox" class="c-routecheck" aria-label="임장 루트에 포함" data-routecheck="${cx.id}"${routeSelected.has(cx.id)?' checked':''}></label>`
+        : `<span class="c-routecheck-disabled" title="좌표가 없어 루트에 포함할 수 없어요">${ic('pin','ic-muted')} 위치없음</span>`);
     return `<div class="card" data-cxid="${cx.id}">
       <div class="c-top" data-cxopen="${cx.id}" role="button" tabindex="0">
+        ${routeCheckHTML}
         <div class="c-head-text">
           <div class="c-headline">${cx.groupCode?`<span class="chip" style="margin-right:5px">${esc(cx.groupCode)}</span>`:''}${cx.regionGroup?esc(cx.regionGroup)+' · ':''}${esc(cx.complexName||'(이름 없음)')}</div>
           <div class="c-sub">${esc([cx.station,cx.line,cx.householdGrade].filter(Boolean).join(' · ')||'정보 없음')}</div>
@@ -1723,6 +1766,7 @@ function renderComplexes(){
       </div>
     </div>`;
   }).join('');
+  refreshOverview(filtered);
 }
 document.getElementById('legacyToggleBtn').onclick=()=>{
   legacyExpanded=!legacyExpanded;
@@ -1732,8 +1776,14 @@ document.getElementById('legacyToggleBtn').onclick=()=>{
 document.getElementById('complexSection').addEventListener('click',e=>{
   const wc=e.target.closest('[data-weeklycheck]');
   if(wc){ weeklyCheckComplex(wc.dataset.weeklycheck); return; }
+  if(e.target.closest('.c-routecheck-wrap')) return;
   const el=e.target.closest('[data-cxopen]'); if(!el)return;
   openComplexDetail(el.dataset.cxopen);
+});
+document.getElementById('complexSection').addEventListener('change', e=>{
+  const rc=e.target.closest('[data-routecheck]'); if(!rc) return;
+  rc.checked ? routeSelected.add(rc.dataset.routecheck) : routeSelected.delete(rc.dataset.routecheck);
+  renderRouteBar();
 });
 document.getElementById('complexSection').addEventListener('keydown',e=>{
   if(e.key!=='Enter'&&e.key!==' ')return;
@@ -1771,6 +1821,7 @@ function openComplexDetail(id){
   cxDetailId=id;
   renderComplexDetailBody(cx);
   openModal('complexDetailModal');
+  reselectCxMarker(id);
 }
 function renderComplexDetailBody(cx){
   document.getElementById('cxDetailTitle').textContent=cx.complexName||'(이름 없음)';
@@ -1785,8 +1836,7 @@ function renderComplexDetailBody(cx){
   document.getElementById('cxDetailStatusSel').value=cx.complexStatus||'관심';
   document.getElementById('cxDetailMemo').value=cx.memo||'';
 
-  const cxListingsForWeekly=state.listings.filter(l=>l.complexId===cx.id);
-  const repForWeekly=cxListingsForWeekly.find(l=>l.isRepresentative)||cxListingsForWeekly[0]||null;
+  const repForWeekly=cxRepOf(cx);
   const weeklyBtn=document.getElementById('cxDetailWeeklyCheckBtn');
   if(weeklyBtn) weeklyBtn.disabled=!repForWeekly;
   const weeklyBadge=document.getElementById('cxDetailWeeklyBadge');
