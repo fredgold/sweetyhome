@@ -547,6 +547,23 @@ A안(풀스크린 지도뷰) 위에 리스트뷰(지도 숨기고 단지 카드 
 
 ---
 
+## 2026-07-12 — B-23 iOS 웹앱 당겨서 새로고침(pull-to-refresh) (`c0c72b8`)
+
+iOS 홈화면 웹앱(standalone)은 브라우저 UI가 없어 새로고침 수단이 전무했던 문제를 커스텀
+pull-to-refresh로 해결. `navigator.standalone===true`일 때만 활성화 — 안드로이드 Chrome·일반
+브라우저 탭은 리스너 자체를 붙이지 않아 기존 pull-to-refresh를 그대로 유지(충돌 방지).
+
+- 최상단(`scrollTop 0`)에서 아래로 70px 이상 당기면 인디케이터가 "당김 완료" 상태로 전환, 손을 떼면 `location.reload()`. 임계 미만이면 원위치 스냅백. 당기는 동안 인디케이터 위치/회전이 손가락을 실시간으로 따라감.
+- **가로 스와이프 충돌 방지**: 세로 이동이 가로보다 우세할 때만 pull 제스처로 판정(`js/boot.js`) — 방향이 확정되기 전엔 판단 보류, 가로 우세로 판명되면 즉시 관여를 끊어(`preventDefault` 호출 안 함) 매물탭 지도뷰의 `#complexSection` 카드 가로 스와이프가 그대로 살아있게 함.
+- **범위**: touch delta 기반 전역 리스너(`document`)라 매물탭 지도뷰처럼 자체 스크롤이 없는 화면(`#panel-props{overflow:hidden}`)도 `document.scrollingElement.scrollTop`이 항상 0이라 자연히 "최상단"으로 처리됨 — 별도 컨테이너 판별 로직 불필요.
+- 모달이 열려 있는 동안은 pull 제스처를 아예 시작하지 않음(`.modal.open` 가드) — 폼/바텀시트 내부 스크롤 중 실수로 전체 리로드되는 걸 방지(명시 요구사항은 아니었으나 실사용 안전장치로 추가).
+- iOS standalone에서만 `<html>`에 `.ios-pwa` 클래스를 부여해 `overscroll-behavior-y:contain`으로 네이티브 러버밴드 바운스를 억제(커스텀 인디케이터와 이중으로 안 겹치게) — 이 클래스가 안 붙는 안드로이드/데스크톱은 스크롤 동작 무변경.
+- 새 JS 파일 없이 `boot.js`에 추가(`index.html`엔 인디케이터 DOM만, `style.css`엔 표시 스타일만). `js/properties.js`·매물탭 레이아웃 CSS는 전혀 건드리지 않음(B-12와 파일 비충돌 확인).
+- 검증: `node --check` + CSS 중괄호 균형 + `git diff --check` 통과. Playwright(`hasTouch` 컨텍스트 + `navigator.standalone` 모킹 + 합성 `TouchEvent`)로 임계 초과(reload 발생)·임계 미만(취소)·가로 우세 제스처(인디케이터 미표시)·non-standalone(전혀 관여 안 함)·매물탭 지도뷰(overflow:hidden에서도 정상 동작)·`#complexSection` 카드 위 가로 스와이프(인디케이터 미표시, 기존 스와이프 무방해)·데스크톱 1400px(콘솔 에러 0) 전부 확인.
+- **실기기 검증 필요**: iOS standalone에서의 실제 러버밴드 억제 체감·리로드 타이밍은 에뮬레이터 한계로 확인 불가, 실기기 배포 후 확인 필요.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
