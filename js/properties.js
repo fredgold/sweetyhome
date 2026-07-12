@@ -1941,11 +1941,33 @@ syncSortChips();
    마커↔카드 스크롤 연동(focusCxCard 등)은 리스트뷰에선 지도가 안 보이니 애초에 호출될
    경로가 없어(마커 클릭 불가) 별도 가드 불필요 — 세션 간 기억은 안 함(새로고침 시 지도뷰로) */
 let propViewMode='map';
+/* B-12 재수정A: 리스트뷰 스크롤 중 정렬칩/뷰토글/⋯버튼(지도뷰에선 position:fixed
+   오버레이)이 카드 위에 겹쳐 보이던 문제(B-22) — 리스트뷰에서만 이 셋을 실제로
+   #cxListToolbar 안으로 옮겨 position:sticky 불투명 바로 묶음(복제 없이 DOM을
+   그대로 이동해 이벤트 핸들러 유지, showMoreMenu()와 같은 패턴). 지도뷰로
+   돌아가면 원래 자리(.grid/.panel-head 안)로 되돌려 기존 fixed 오버레이 동작 복원 */
+let _listToolbarSlots=null;
+function syncListToolbar(){
+  const toolbar=document.getElementById('cxListToolbar');
+  if(!toolbar) return;
+  if(propViewMode==='list'){
+    if(_listToolbarSlots) return;
+    const ids=['cxSortChips','propViewToggleBtn','propMoreBtn'];
+    const els=ids.map(id=>document.getElementById(id)).filter(Boolean);
+    _listToolbarSlots=els.map(el=>({el,parent:el.parentElement,next:el.nextSibling}));
+    els.forEach(el=>toolbar.appendChild(el));
+  } else {
+    if(!_listToolbarSlots) return;
+    _listToolbarSlots.forEach(({el,parent,next})=>parent.insertBefore(el,next));
+    _listToolbarSlots=null;
+  }
+}
 function applyPropViewMode(){
   const panel=document.getElementById('panel-props');
   if(panel) panel.dataset.view=propViewMode;
   const btn=document.getElementById('propViewToggleBtn');
   if(btn) btn.textContent=propViewMode==='map'?'목록':'지도';
+  syncListToolbar();
   if(propViewMode==='map') requestAnimationFrame(()=>requestAnimationFrame(()=>{
     waitNaverMaps(()=>overview&&overview.refresh(true));
   }));

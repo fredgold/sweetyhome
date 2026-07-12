@@ -217,7 +217,7 @@
       <!-- cx-sort-chips/myLocBtn/propViewToggleBtn은 모바일에서 position:fixed 오버레이라
            .mapcard 안에 있으면 안 됨(리스트뷰에서 .mapcard가 display:none이면 자식도 함께
            사라짐) — .grid 형제로 분리해 지도뷰/리스트뷰 어느 쪽이든 항상 접근 가능하게 유지 -->
-      <div class="cx-sort-chips">
+      <div class="cx-sort-chips" id="cxSortChips">
         <button type="button" data-cxsort="new" class="cx-chip on">최신순</button>
         <button type="button" data-cxsort="price" class="cx-chip">가격순</button>
         <button type="button" data-cxsort="dist" class="cx-chip">거리순</button>
@@ -359,6 +359,10 @@
           <div class="sc-filter-label">노선</div>
           <div class="sc-filter-row" id="cxFilterLine"><span class="sc-filter-chip on" data-fline="">전체</span></div>
         </div>
+        <!-- B-12 재수정A: 리스트뷰 전용 sticky 불투명 툴바. 지도뷰의 fixed 오버레이
+             정렬칩/뷰토글/⋯버튼을 JS(applyPropViewMode)가 여기로 옮겨 담음 —
+             복제 없이 실제 DOM을 이동해 이벤트 핸들러 유지(기존 showMoreMenu 패턴과 동일) -->
+        <div id="cxListToolbar" class="cx-list-toolbar"></div>
         <div id="complexSection"></div>
         <div id="legacyToggleWrap" class="legacy-toggle" style="display:none">
           <button class="btn-ghost" id="legacyToggleBtn" type="button"></button>

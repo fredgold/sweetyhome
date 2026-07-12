@@ -219,6 +219,10 @@
   .my-loc-btn{position:fixed;bottom:14px;right:14px;z-index:5;width:38px;height:38px;border-radius:50%;background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;color:var(--money-deep);cursor:pointer;}
   .prop-view-toggle{position:fixed;top:calc(var(--overlay-top,110px) + 10px);right:58px;z-index:11;width:38px;height:38px;border-radius:50%;background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--ink-soft);cursor:pointer;padding:0;}
   .myloc-pin{width:14px;height:14px;border-radius:50%;background:#2f6df6;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,109,246,.5);}
+  /* 데스크톱 기본값도 명시적으로 display:none — 모바일 미디어쿼리 안에서만 규칙을
+     두면(예전 실수) 데스크톱에선 아예 스타일 없는 채로 <div> 기본값(display:block)이
+     새서 빈 박스가 남을 수 있어 여기(무조건 적용 구간)에 둠 */
+  .cx-list-toolbar{display:none;}
   .mapcard.collapsed #overviewMap{display:none;}
   /* 모바일 전용 지도 풀스크린 — 확장 버튼을 누르면 지도가 뷰포트 전체를 채움(단순 70vh 확대가 아님).
      ≥900px에서는 지도가 항상 sticky로 보이므로 이 오버레이 자체가 불필요 → 버튼도 CSS로 숨김 */
@@ -284,18 +288,26 @@
     #complexDetailModal .box::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--hairline);margin:8px auto 2px;}
     /* 리스트뷰(data-view=list) — 지도를 숨기고 카드를 세로 목록으로. 위치 확인은 카드 탭 →
        단지 상세 바텀시트의 지도(#cxDetailMap)로 충분해 지도뷰와 중복하지 않음.
-       칩·FAB·⋯메뉴는 전부 position:fixed라 #panel-props의 position/overflow와 무관하게
-       그대로 동작 — 이 블록에서 별도로 손댈 필요 없음 */
+       현위치(.my-loc-btn)는 지도 관련 기능이라 리스트뷰에선 그대로 숨김 유지 —
+       정렬칩·뷰토글·⋯버튼만 #cxListToolbar로 옮겨 sticky 불투명 바로 재구성(재수정A,
+       B-22). 지도뷰의 fixed 오버레이(칩 top:10px 등)는 이 블록 밖 base 규칙 그대로 */
     #panel-props[data-view="list"]{position:static;overflow:visible;}
     #panel-props[data-view="list"] .mapcard{display:none;}
-    /* padding-top:58px — 정렬칩/뷰토글/⋯버튼 바가 쉬는 위치(스크롤 0일 때
-       top:calc(var(--overlay-top)+10px), 높이 38px, 즉 콘텐츠 시작점 기준 10~48px)를
-       가리지 않을 만큼. 리스트뷰는 #panel-props가 static이라 --overlay-top이
-       --topbar-h와 같아지는 "맨 위" 순간에만 유효하면 되는 고정값이라 --overlay-top을
-       calc에 넣을 필요 없음(스크롤 중엔 바가 탭바를 따라 위로 붙어 이 여백보다
-       위쪽에 있게 됨 — B-12 버그2, 스크롤 중 겹침은 B-22로 별도 추적) */
+    #panel-props[data-view="list"] #cxListToolbar{
+      display:flex;align-items:center;gap:8px;padding:10px 12px;
+      position:sticky;top:var(--nav-h,64px);z-index:10;
+      background:var(--bg);border-bottom:1px solid var(--hairline);
+    }
+    /* 옮겨 담긴 요소들은 base 규칙(.cx-sort-chips 등)의 position:fixed를
+       상쇄하고 sticky 바 안에서 평범한 flex 아이템으로 눕힘 — #cxListToolbar>
+       라는 부모 스코프가 그 base 규칙보다 특정도가 높아 확실히 이김.
+       뷰토글에만 margin-left:auto를 줘서 "정렬칩 왼쪽 / 뷰토글+⋯ 오른쪽" 배치 유지
+       (뒤따르는 #propMoreBtn도 flex라 자동으로 같이 오른쪽에 붙음) */
+    #cxListToolbar>.cx-sort-chips{position:static;top:auto;left:auto;}
+    #cxListToolbar>.prop-view-toggle{position:static;margin-left:auto;}
+    #cxListToolbar>#propMoreBtn{position:static;top:auto;right:auto;}
     #panel-props[data-view="list"] #complexSection{
-      position:static;display:block;overflow-x:visible;scroll-snap-type:none;padding:58px 12px 10px;
+      position:static;display:block;overflow-x:visible;scroll-snap-type:none;padding:12px 12px 10px;
     }
     #panel-props[data-view="list"] #complexSection>.card{flex:none;scroll-snap-align:none;margin-bottom:12px;}
     #panel-props[data-view="list"] #complexSection>.cx-empty{flex:none;}
