@@ -6,7 +6,7 @@ function switchPanel(name){
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+name));
   if(name==='dash') renderDash();
   if(name==='assets') renderAssets();
-  if(name==='props'){ initOverview(); setTimeout(()=>{overview&&overview.invalidateSize();autoGeocode();},80); }
+  if(name==='props'){ initOverview(); setTimeout(()=>{overview&&overview.refresh(true);autoGeocode();},80); }
   if(name==='actions') renderActions();
   if(name==='scraps') renderScraps();
   window.scrollTo({top:0,behavior:'smooth'});
