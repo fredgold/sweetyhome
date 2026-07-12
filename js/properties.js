@@ -122,7 +122,7 @@ function refreshOverview(items){
       const selected=cxDetailId===cx.id;
       const pos=new naver.maps.LatLng(cx.lat,cx.lng);
       const m=new naver.maps.Marker({position:pos,map:overview,icon:{content:cxMarkerHtml(cx,rep,selected),anchor:new naver.maps.Point(0,0)},zIndex:selected?1000:0});
-      naver.maps.Event.addListener(m,'click',()=>{ closeCxHoverTip(); openComplexDetail(cx.id); });
+      naver.maps.Event.addListener(m,'click',()=>{ closeCxHoverTip(); if(DESKTOP_MQ.matches){ openComplexDetail(cx.id); } else { focusCxCard(cx.id); } });
       bindMarkerHover(m,cx,rep);
       m._cxid=cx.id;
       ovMarkers.push(m); pts.push(pos);
@@ -1725,6 +1725,33 @@ function weeklyCheckComplex(cxId){
   if(cxDetailId===cxId) renderCxListings(cxId);
 }
 
+let cxSort='new', myLoc=null, myLocMarker=null;
+function cxDistM(cx){ return (myLoc&&cx.lat&&cx.lng)?haversineM(myLoc,{lat:cx.lat,lng:cx.lng}):Infinity; }
+function sortComplexes(arr){
+  if(cxSort==='price') return arr.slice().sort((a,b)=>((cxRepOf(a)?.deposit??Infinity)-(cxRepOf(b)?.deposit??Infinity)));
+  if(cxSort==='dist'&&myLoc) return arr.slice().sort((a,b)=>cxDistM(a)-cxDistM(b));
+  return arr.slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+}
+function syncSortChips(){
+  document.querySelectorAll('[data-cxsort]').forEach(b=>b.classList.toggle('on',b.dataset.cxsort===cxSort));
+  const d=document.querySelector('[data-cxsort="dist"]'); if(d) d.disabled=!myLoc;
+}
+function drawMyLocMarker(){
+  if(!overview||!myLoc) return;
+  waitNaverMaps(()=>{
+    const pos=new naver.maps.LatLng(myLoc.lat,myLoc.lng);
+    if(myLocMarker) myLocMarker.setMap(null);
+    myLocMarker=new naver.maps.Marker({position:pos,map:overview,icon:{content:'<div class="myloc-pin" aria-label="내 위치"></div>',anchor:new naver.maps.Point(9,9)},zIndex:2000});
+    overview.setCenter(pos);
+  });
+}
+function requestMyLoc(){
+  if(!navigator.geolocation){ showPropToast('이 브라우저는 위치를 지원하지 않아요'); return; }
+  navigator.geolocation.getCurrentPosition(
+    p=>{ myLoc={lat:p.coords.latitude,lng:p.coords.longitude}; cxSort='dist'; drawMyLocMarker(); renderComplexes(); syncSortChips(); },
+    ()=>{ showPropToast('위치 권한이 필요해요'); if(cxSort==='dist'){cxSort='new';renderComplexes();syncSortChips();} }
+  );
+}
 function renderComplexes(){
   const wrap=document.getElementById('complexSection');
   const filterBar=document.getElementById('cxFilterBar');
@@ -1754,7 +1781,8 @@ function renderComplexes(){
   legacyWrap.style.display=legacyExpanded?'':'none';
   updateLegacyToggleLabel();
 
-  const filtered=state.complexes.filter(cxMatchesFilters);
+  const _cxBase=state.complexes.filter(cxMatchesFilters);
+  const filtered=DESKTOP_MQ.matches?_cxBase:sortComplexes(_cxBase);
   if(!filtered.length){
     wrap.innerHTML=`<div class="cx-empty">필터 조건에 맞는 단지가 없어요.</div>`;
     refreshOverview([]);
@@ -1784,7 +1812,7 @@ function renderComplexes(){
         ${routeCheckHTML}
         <div class="c-head-text">
           <div class="c-headline">${cx.groupCode?`<span class="chip" style="margin-right:5px">${esc(cx.groupCode)}</span>`:''}${cx.regionGroup?esc(cx.regionGroup)+' · ':''}${esc(cx.complexName||'(이름 없음)')}</div>
-          <div class="c-sub">${esc([cx.station,cx.line,cx.householdGrade].filter(Boolean).join(' · ')||'정보 없음')}</div>
+          <div class="c-sub">${esc([cx.station,cx.line,cx.householdGrade].filter(Boolean).join(' · ')||'정보 없음')}${(myLoc&&cx.lat&&cx.lng)?' · <span class="cx-dist">'+(cxDistM(cx)/1000).toFixed(1)+'km</span>':''}</div>
         </div>
         <div class="c-badge-col">
           <span class="pill" style="border-left-color:${color}"><i class="pill-dot" style="background:${color}"></i>${esc(st)}</span>
@@ -1820,6 +1848,41 @@ document.getElementById('complexSection').addEventListener('keydown',e=>{
   const el=e.target.closest('[data-cxopen]'); if(!el)return;
   e.preventDefault(); openComplexDetail(el.dataset.cxopen);
 });
+function highlightCxCard(id){
+  document.querySelectorAll('#complexSection .card').forEach(c=>c.classList.toggle('active',c.dataset.cxid===id));
+}
+function cxStripCenterId(){
+  const strip=document.getElementById('complexSection'); if(!strip)return null;
+  const mid=strip.scrollLeft+strip.clientWidth/2;
+  let best=null,bd=Infinity;
+  strip.querySelectorAll('.card[data-cxid]').forEach(c=>{
+    const d=Math.abs(c.offsetLeft+c.offsetWidth/2-mid);
+    if(d<bd){bd=d;best=c;}
+  });
+  return best?best.dataset.cxid:null;
+}
+function focusCxCard(id){
+  const strip=document.getElementById('complexSection');
+  const card=strip&&strip.querySelector('.card[data-cxid="'+id+'"]');
+  if(!card){ openComplexDetail(id); return; }
+  strip.scrollTo({left:Math.max(0,card.offsetLeft-(strip.clientWidth-card.offsetWidth)/2),behavior:'smooth'});
+  highlightCxCard(id); reselectCxMarker(id);
+}
+let _cxStripRaf=null;
+document.getElementById('complexSection').addEventListener('scroll',()=>{
+  if(DESKTOP_MQ.matches||_cxStripRaf)return;
+  _cxStripRaf=requestAnimationFrame(()=>{
+    _cxStripRaf=null;
+    const id=cxStripCenterId(); if(!id)return;
+    highlightCxCard(id); reselectCxMarker(id);
+  });
+});
+document.querySelectorAll('[data-cxsort]').forEach(b=>b.onclick=()=>{
+  if(b.dataset.cxsort==='dist'&&!myLoc){ requestMyLoc(); return; }
+  cxSort=b.dataset.cxsort; renderComplexes(); syncSortChips();
+});
+{ const mlb=document.getElementById('myLocBtn'); if(mlb) mlb.onclick=requestMyLoc; }
+syncSortChips();
 
 /* ---- (4) 단지 상세 + 매물 목록 ---- */
 let cxDetailId=null, cxDetailMapObj=null, cxDetailMarker=null;

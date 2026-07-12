@@ -202,22 +202,35 @@
   .gate .gt em.pref{background:var(--s-interest);}
   .gate .gd{font-size:11px;color:var(--ink-soft);}
 
-  .mapcard{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow);}
+  .mapcard{position:relative;background:var(--surface);border:1px solid var(--hairline);border-radius:14px;overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow);}
   .mapcard .mh{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;}
   .mapcard .mh h3{font-size:13px;font-weight:800;}
   .mapcard .mh .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:10.5px;color:var(--ink-soft);font-weight:600;align-items:center;}
   .mapcard .mh .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:3px;vertical-align:middle;}
   .toggle{font-size:11.5px;font-weight:700;color:var(--ink-soft);padding:6px 10px;border-radius:var(--radius-md);border:1px solid var(--hairline);}
   #overviewMap{height:240px;width:100%;background:#dfe3df;transition:height .25s ease;}
+  .cx-sort-chips{position:absolute;top:10px;left:10px;z-index:5;display:none;gap:6px;}
+  .cx-chip{font-size:12px;padding:5px 11px;border-radius:16px;background:var(--surface);border:1px solid var(--hairline);color:var(--ink-soft);font-weight:600;cursor:pointer;box-shadow:var(--shadow);}
+  .cx-chip.on{background:var(--line9-wash);border-color:var(--line9);color:var(--line9-deep);}
+  .cx-chip:disabled{opacity:.45;cursor:not-allowed;}
+  .my-loc-btn{position:absolute;bottom:14px;right:14px;z-index:5;width:38px;height:38px;border-radius:50%;background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;color:var(--money-deep);cursor:pointer;}
+  .myloc-pin{width:14px;height:14px;border-radius:50%;background:#2f6df6;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,109,246,.5);}
   .mapcard.collapsed #overviewMap{display:none;}
   /* 모바일 전용 지도 풀스크린 — 확장 버튼을 누르면 지도가 뷰포트 전체를 채움(단순 70vh 확대가 아님).
      ≥900px에서는 지도가 항상 sticky로 보이므로 이 오버레이 자체가 불필요 → 버튼도 CSS로 숨김 */
   @media (max-width:899.98px){
     .mapcard{position:sticky;top:calc(var(--nav-h,64px) + 8px);z-index:20;}
+    .mapcard .mh{display:none;}
+    .cx-sort-chips{display:flex;}
+    .my-loc-btn{display:flex;}
     #complexSection{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
     #complexSection::-webkit-scrollbar{display:none;}
     #complexSection>.card{flex:0 0 86%;scroll-snap-align:center;margin-bottom:0;}
     #complexSection>.cx-empty{flex:0 0 100%;}
+    #complexSection>.card.active{border-color:var(--line9);box-shadow:0 0 0 2px var(--line9-wash);}
+    #complexDetailModal{align-items:flex-end;justify-content:center;padding:0;}
+    #complexDetailModal .box{width:100%;max-width:100%;height:auto;max-height:88vh;border-radius:16px 16px 0 0;margin:0;overflow-y:auto;animation:sheetup .22s ease;}
+    #complexDetailModal .box::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--hairline);margin:8px auto 2px;}
     .mapcard.expanded{position:fixed;inset:0;z-index:1500;border-radius:0;margin:0;display:flex;flex-direction:column;box-shadow:none;}
     .mapcard.expanded .mh{flex:none;}
     .mapcard.expanded #overviewMap{flex:1;height:auto;transition:none;}
@@ -614,6 +627,7 @@
   .route-popup a{color:#06be34;font-weight:700;text-decoration:none;}
 
   .modal{position:fixed;inset:0;background:rgba(30,37,34,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000;}
+  @keyframes sheetup{from{transform:translateY(100%)}to{transform:translateY(0)}}
   .modal.open{display:flex;}
   .modal .box{background:var(--surface);border-radius:16px;max-width:520px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:88vh;overflow:auto;}
   .modal h3{font-size:16px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px;}
