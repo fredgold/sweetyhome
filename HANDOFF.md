@@ -1,87 +1,50 @@
-# HANDOFF — v5 후속 B-11/B-16 + 매물탭 UI/API 보안 (2026-07-12)
+# HANDOFF — B-12 모바일 매물탭 지도/목록 통합 리뷰·커밋·push (2026-07-12)
 
 ## 1. 목표
-`QA_2026-07-11.md` 기반 매물탭 UI 버그·개선 5건. 지도 API(네이버 전환) 작업과는 별도, CSS·카드 마크업·링크 제거 위주.
+커맨드센터가 워크스페이스에 직접 구현한 B-12(모바일 매물탭 지도/목록 통합 UX) 2~4단계를 리뷰·검증·커밋·push. 손 A(Claude Code, 나)는 기능 코드를 새로 짜지 않고 리뷰·검증·커밋·문서화만 담당.
 
 ## 2. 완료
-**매물탭 UI 6건 + API 보안 후속 완료·push.**
+**리뷰 2라운드 + 발견사항 수정 지시 반영 + 커밋·push 완료.**
 
 ```
-06533af fix: 매물 상태 필터 칩 상단 클리핑
-ac72a31 refactor: 매물 외부검색 링크(네이버·호갱노노 등) 제거
-8da4f45 feat: 매물 카드 헤드라인을 단지명으로 (위계 변경)
-67b05cf style: .wrap 최대폭 1440px로 상향
-24501a6 fix: 임장루트 리스트 세로 깨짐 — route-bar 세로 스택
-fc847ee docs: 매물탭 UI 수정 5건 세션 HANDOFF 갱신
-bcf2334 fix: harden API cost and abuse controls
-28527c7 refactor: 실사체크 구글검색 링크(호갱노노 등) 제거
-6f2bd1d chore: gitignore Claude Design standalone HTML exports
-f4fcc3a fix: nav.js invalidateSize→네이버 refresh
-32d7f96 fix: 대시보드 집계 complexes 기준
+b9b7926 feat: B-12 모바일 매물탭 카드↔마커·정렬·현위치·바텀시트 + 리뷰수정 (2-4/4)
+f2b0113 feat: B-12 모바일 매물탭 지도 sticky + 카드 가로 스트립 골격 (1/4)  ← 이전 세션에 이미 커밋됨
 ```
 
-### v5 후속 B-11/B-16
-- B-11: 매물탭 재진입 시 `overview.invalidateSize()` Leaflet 잔재를 네이버 지도 `overview.refresh(true)`로 교체. `overview` 가드와 뒤의 `autoGeocode()` 호출 유지.
-- B-16: 대시보드 매물 요약을 `state.properties` 대신 `state.complexes`/`state.listings`로 전환. 단지 수, 연결된 매물 건수, `후보`, `임장예정` 상태를 표시.
-- 검증: `node --check js/nav.js`, `git diff --check` 통과. DOM/state 목에서 단지 3·연결 매물 2·후보 1·임장예정 1 집계와 빈 상태 문구 통과.
-- 다른 에이전트가 작업 중인 `index.html`/`js/properties.js`는 건드리지 않음.
+### 진행 순서
+1. 잔존 `.git/index.lock`/`.git/HEAD.lock` 제거(샌드박스 lock 문제 해소).
+2. `git status`로 변경 파일 확인 — `style.css`/`js/properties.js`/`index.html` 3개, 예상대로.
+3. **1차 리뷰**: XSS·geolocation graceful·이벤트 리스너 중복 바인딩·데스크톱 회귀·`reselectCxMarker`/`refreshOverview` 재사용 5개 관점 점검. 4개는 문제 없음 확인. **1건 발견**: `.cx-sort-chips`(정렬칩)/`.my-loc-btn`(현위치)이 모바일 미디어쿼리 밖에 선언돼 데스크톱(≥900px)에서도 렌더링되며 기존 지도 헤더(`.mh`, 제목+범례)를 완전히 가림. Playwright로 데스크톱·모바일 양쪽 스크린샷 찍어 실측 확인 후 보고, 임의 수정 안 하고 승인 대기.
+4. 사용자가 발견1 인정, 좁은 범위 수정 지시(display 토글 + 정렬 데스크톱 제외 + 토스트 문구 정정) → 반영 후 재검증. **데스크톱은 완전 해결, 모바일은 칩이 여전히 헤더와 같은 좌표라 제목이 가려지는 걸 재확인** → 다시 보고, 임의 확장 안 함.
+5. 사용자가 "헤더 자체를 숨긴다" 방식으로 확정 지시 → `.mapcard .mh{display:none}`을 모바일 미디어쿼리 안에 추가 → 재검증(데스크톱/모바일 둘 다 정상) → 커밋 → push.
+6. `HISTORY.md`/`HANDOFF.md` 갱신(이 문서).
 
-### 저장소 위생
-- `.gitignore`에 `docs/*standalone*.html`을 추가해 Claude Design이 생성하는 대용량 standalone HTML의 실수 커밋을 방지.
-- `docs/style-guide.html`과 `docs/스위티홈_ClaudeCode_지시문.md`는 계속 Git 추적 상태.
+### 최종 반영 내용
+- **B-12 2~4단계**(커맨드센터 구현, 내가 리뷰만): 마커↔카드 양방향 연동(데스크톱=기존 상세 패널, 모바일=카드 스트립 스크롤+하이라이트, `focusCxCard`/`reselectCxMarker` 재사용) · 정렬(최신/가격/거리, `sortComplexes`) · 현위치(`requestMyLoc`, geolocation) · 바텀시트(기존 `complexDetailModal`을 모바일 CSS로만 하단 시트 래핑).
+- **리뷰 발견·수정(내가 지시받아 반영)**:
+  - `.cx-sort-chips`/`.my-loc-btn`: base `display:none` → `@media(max-width:899.98px)`에서만 `display:flex`.
+  - `renderComplexes()`의 정렬 적용을 `DESKTOP_MQ.matches?원본:sortComplexes(원본)`으로 — 데스크톱 카드 순서 회귀 방지.
+  - `.mapcard .mh`(지도 헤더: 제목+범례+크게보기/접기 토글)를 모바일 미디어쿼리 안에서 `display:none` — 헤더가 사라져야 정렬칩(`top:10px`)이 겹칠 대상 없이 지도 최상단에 안착. 부수효과로 "크게 보기"/"접기" 토글도 모바일에서 함께 사라짐(sticky 지도 UX상 불필요, 의도됨) — **실기기에서 이 트레이드오프가 실제로 괜찮은지 확인 필요**.
+  - geolocation 거부 토스트 문구 정정(`'... 최신순으로 정렬'` 제거 — 항상 최신순으로 바뀌는 게 아니라 부정확했음).
 
-### 매물탭 UI #6
-- `js/state.js`: 실사체크 k1·k6·k7·k9의 Google 검색 `vl`/`vu`만 제거. 체크 항목과 저장 ID는 그대로 유지.
-- `js/properties.js`: `c.vu`/`c.vl`이 모두 있을 때만 `.ck-verify` 링크를 렌더하도록 가드 추가.
-- `js/utils.js`: 사용처가 사라진 `gUrl()` 제거.
-- k2·k3의 `nmapUrl`, k4·k5·k8의 `landUrl`, 카드 액션의 `naverUrl`은 그대로 유지.
-- 검증: `gUrl(`/`google.com/search` 참조 0개, 네이버 체크 링크 5개 유지, 전체 JS `node --check` 및 `git diff --check` 통과.
-
-### Codex API 보안 후속
-- `/api/messages`: 클라이언트의 `body.model` 지정을 무시하고 서버 `ANTHROPIC_MODEL` 또는 Haiku 기본값만 사용.
-- `api/_auth.js`: 세션별 rate limit을 Redis `INCR` 기반 원자 증가로 변경.
-- `/api/login`: PIN 시도 횟수도 Redis `INCR` 기반으로 보강.
-- `/api/health`: GET만 허용, 세션당 시간당 60회 제한, Anthropic 원문 오류는 서버 로그에만 남김.
-- `/api/geocode`: 세션당 시간당 120회, 검색어 120자 제한.
-- 브라우저에 노출되는 `APP_SHARED_SECRET`은 보안 효과가 없어 코드·README에서 제거. Bearer 세션 + rate limit으로 보호.
-- `CLAUDE.md`/`AGENTS.md`: 도메인 제한된 공개 SDK Client ID와 절대 노출 금지인 Client Secret을 구분하도록 규칙 명문화.
-- 검증: 전체 `api/*.js`, `js/*.js` `node --check` 통과, `git diff --check` 통과. Vercel 배포 후 로그인·AI 상태·지오코딩 실호출 확인 필요.
-
-파일별 실제 변경 내용:
-- **style.css**:
-  - `.route-bar`를 `flex-direction:column;align-items:stretch`로 변경(base 승격). `.rb-actions`(버튼 4개, 281px)가 row 레이아웃에서 `.rb-route`를 35px로 압축시켜 매물명이 한 글자씩 세로로 깨지던 문제. 480px 미디어쿼리의 동일 규칙은 중복이라 제거.
-  - `.wrap` max-width 1160→1440px. 매물 2단 그리드는 리스트 컬럼이 `minmax(0,360px)`로 고정돼 있어 늘어난 폭은 지도(1fr) 쪽으로 흡수됨.
-  - `.c-headline`/`.c-sub` 위계 스왑 관련 주석 갱신("헤드라인=단지명·역·호선, 부제=보증금·전용면적").
-  - `unisearch-result`의 `.ur-link*` 관련 CSS(죽은 코드) 제거.
-  - `.tabs{flex-shrink:0}` 추가 — 아래 "발견한 이슈" 참고.
-- **js/properties.js**:
-  - 매물 카드 `.c-headline`/`.c-sub` 내용 스왑: 헤드라인=`subtitleText(p)`(단지명·역·호선), 부제=`headlineText(p)`(보증금·전용, `tnum` 클래스 이동). 상태 뱃지·실사 진행률·확장 토글 위치는 변경 없음.
-  - `updateUnisearch()`에서 외부 검색 링크(`ur_land`/`ur_hogang`/`ur_naver`/`ur_rt`) href 채우던 로직과 관련 클릭 핸들러 제거. 검색어 있을 때만 "내 목록 N곳 검색됨" 표시, 없으면 결과 영역 숨김. `prop_search` 필터 기능(line 640 부근)은 그대로 유지.
-- **js/utils.js**: `updateUnisearch`에서만 쓰이던 `siteUrl()` 헬퍼와 #6 후 사용처가 사라진 `gUrl()` 제거. `nmapUrl`/`landUrl`/`naverUrl`은 체크리스트·카드 액션에서 계속 쓰여 유지.
-- **index.html**: `unisearch-result` 안의 외부 검색 링크 마크업(네이버부동산/호갱노노/네이버지도/실거래가 4개 `<a>`) 제거. 검색 input(`#prop_search`)은 유지.
-
-### 발견한 이슈 — 상태 필터 칩 클리핑 (수정 5)
-QA 문서엔 "재현 필요"로 남아있던 항목. Playwright(임시 설치, 세션 종료 후 제거)로 로컬 정적 서버 띄우고 게스트 모드로 매물 25개를 시드해 실측 재현함:
-- 원인: `.tabs{overflow-x:auto}`는 CSS 스펙상 `overflow-y`도 `auto`로 승격시키고, 이게 flex 아이템의 "자동 최소높이"를 0으로 만듦. ≥900px 좌측 컬럼(`.grid>section`, `max-height:calc(100vh - nav - 24px)` 고정)에서 매물이 많아 컬럼 내용이 넘치면 flexbox가 `.tabs`를 콘텐츠 높이(31px) 대신 7px대까지 짓눌러 칩이 빈 것처럼 잘려 보임.
-- 수정: `.tabs`에 `flex-shrink:0` 추가. 압축은 원래 그 역할이던 `.rail`(`flex:1`, 내부 스크롤)이 전담.
-- 실측: 수정 전 `.tabs` 렌더 높이 7.45px(스크롤 높이 22px) → 수정 후 31px(스크롤 높이와 일치, 클리핑 없음). 스크린샷으로도 확인.
-
-검증: `node --check` 전체 통과. Playwright로 대시보드·자산·매물·액션·수집함 5개 탭 전환 + 매물 25개 시드 렌더링 회귀 확인, 콘솔 에러 없음(네이버 지도 도메인 인증 401/404는 로컬 테스트 환경 특성상 예상된 것, 코드 무관).
+검증: 전체 `js/*.js` `node --check`, CSS 중괄호 균형(799/799), `git diff --check` 전부 통과. Playwright로 데스크톱(1400px)·모바일(390px) 재실측 — 데스크톱 헤더 정상+칩/버튼 완전 숨김+카드 순서 무변경, 모바일 칩/버튼이 헤더 없이 지도 상단에 깔끔히 안착+정렬 정상 동작(가격순 테스트), 콘솔 에러 0.
 
 ## 3. 미완
-- `.route-bar`의 select 모드(매물 선택 단계) UI는 코드 검토로만 확인, 실측 스크린샷은 못 찍음(테스트 시드 매물에 좌표가 없어 실제 루트 생성까지는 못 감. `.rb-info`+`.rb-actions` 컬럼 스택도 로직상 자연스럽게 적용됨).
+- **실기기 모바일 시각 검증 대기.** 로컬 PIN·네이버 지도 도메인 제약으로 Playwright 정적 서버 + 목데이터로만 확인했음. 실제 배포 도메인 + 실기기(iOS/Android 브라우저)에서: 바텀시트 드래그 제스처감, 카드 스트립 스와이프 스냅 체감, 마커↔카드 연동 타이밍, "크게 보기/접기" 토글 제거가 실제로 불편하지 않은지 확인 필요.
+- 바텀시트 드래그다운 닫기 제스처는 이번 범위에서 제외(B-21, 스크롤 충돌 리스크로 보류 — 커맨드센터 판단, 내가 다시 건드리지 않음).
 
 ## 4. 다음 단계
-1. 배포 후 PIN 로그인, AI 상태 확인, 위치 자동 찾기 실호출 확인.
-2. 실브라우저에서 매물 카드 헤드라인/부제 위계 변경 체감 확인(특히 단지명이 긴 경우 줄바꿈 여부).
-3. 임장 루트 실제 생성(좌표 있는 매물 2곳 이상)해서 세로 스택 레이아웃 최종 확인.
+1. 실기기에서 매물탭 모바일 UX 전체 확인(정렬칩/현위치/카드 스와이프/바텀시트/헤더 사라짐 체감).
+2. 문제 없으면 B-12는 완료 처리(BACKLOG.md는 커맨드센터가 정리 — 내가 건드리지 않음).
+3. B-19(단지 매칭 퍼지 매칭)·B-20(수동 추가 매물 중복 가드)·B-21(바텀시트 드래그다운) 등은 별도 지시 대기.
 
 ## 5. 주의점
 - PIN·API 키·실제 금액 데이터는 이 문서 어디에도 기록 안 함.
-- 이번 세션은 지도 API(네이버 전환) 작업과 파일이 겹치지 않게 진행함(`js/properties.js`는 겹쳤지만 수정 영역이 카드 마크업·통합검색 텍스트 로직으로, 지도 인스턴스(`naver.maps.*`) 코드는 건드리지 않음).
-- 로컬 회귀 테스트용으로 `playwright`를 `npm install --no-save`로 임시 설치했다가 확인 후 `npm uninstall`로 제거함 — `package.json`엔 흔적 없음(`node_modules`는 gitignore).
-- **매 작업(커밋 단위) 완료 후 이 문서를 그 세션 기준으로 갱신하는 규칙 계속 준수**(사용자 명시적 요청, 2026-07-11).
+- **BACKLOG.md는 커맨드센터 소유(읽기 전용)** — 이번 세션에서 읽기만 하고 전혀 수정·커밋 안 함.
+- 이번 세션은 "기능 코드를 새로 짜지 마, 리뷰·검증·커밋만"이라는 명시적 제약 아래 진행 — 리뷰에서 발견한 이슈도 임의로 고치지 않고 매번 보고 후 사용자가 준 정확한 수정 지시만 반영함(2라운드).
+- 로컬 검증용 `playwright`는 매번 `npm install --no-save`로 임시 설치 후 `npm uninstall`로 제거 — `package.json`엔 흔적 없음.
 
 ## 6. 컨텍스트
-- 이 레포는 "머리(커맨드 센터, 코드 미수정) — 손 A(Claude Code, 나) — 손 B(Codex)" 3자 협업 구조. SSOT는 `CLAUDE.md`, 실행 규칙은 `AGENTS.md`, 이력은 `HISTORY.md`.
-- 직전 세션(HEAD `dc32ea0` 이전)은 QA 여백 수정 + 로고 통일 + 지도 API 전면 교체(Leaflet→네이버) 완료·push까지 끝난 상태였음. 이번 세션은 그 위에 매물탭 UI 5건을 이어서 진행.
+- 이 레포는 "머리(커맨드 센터, 코드 미수정) — 손 A(Claude Code, 나) — 손 B(Codex)" 3자 협업 구조. SSOT는 `CLAUDE.md`, 실행 규칙은 `AGENTS.md`, 이력은 `HISTORY.md`, 백로그는 `BACKLOG.md`(커맨드센터 전용).
+- 직전 세션들: v5 단지·매물 2계층 전환(E-01, `9335be4`~`8e4ac07`) → 배포 후 하드닝 3건(`f3da9cb`/`f4fcc3a`/`32d7f96`) → 이번 B-12 세션.
+- B-12는 커맨드센터가 **코드를 직접 워크스페이스에 편집**한 드문 케이스(보통은 손 A/B에게 지시만 내림). 샌드박스 git lock 문제로 1단계만 커밋되고 2~4단계가 미커밋 상태로 남아 있던 걸 이번 세션에서 이어받아 마무리함.
