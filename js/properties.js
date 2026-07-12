@@ -1699,7 +1699,7 @@ function cxMatchesFilters(cx){
   if(cxFilters.listing||cxFilters.area){
     const cxListings=state.listings.filter(l=>l.complexId===cx.id);
     if(cxFilters.listing && !cxListings.some(l=>l.listingStatus===cxFilters.listing)) return false;
-    if(cxFilters.area && !cxListings.some(l=>l.areaGrade===cxFilters.area)) return false;
+    if(cxFilters.area && !cxListings.some(l=>(l.areaGrade||getAreaGrade(l.areaM2))===cxFilters.area)) return false;
   }
   return true;
 }
