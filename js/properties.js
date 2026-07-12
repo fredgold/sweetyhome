@@ -470,8 +470,9 @@ function showMoreMenu(btn){
   document.body.appendChild(menu);
   _moreMenu=menu;
   const rect=btn.getBoundingClientRect();
+  const menuW=menu.offsetWidth||230;
   menu.style.top=(rect.bottom+window.scrollY+4)+'px';
-  menu.style.left=Math.max(8,Math.min(rect.left+window.scrollX, window.innerWidth-230))+'px';
+  menu.style.left=Math.max(8,Math.min(rect.left+window.scrollX, window.innerWidth-menuW-8))+'px';
   const close=ev=>{ if(!menu.contains(ev.target)&&ev.target!==btn){ closeMoreMenu(); document.removeEventListener('click',close,true); } };
   setTimeout(()=>document.addEventListener('click',close,true),0);
 }

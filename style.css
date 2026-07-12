@@ -258,6 +258,11 @@
       max-height:80vh;overflow-y:auto;border-radius:16px 16px 0 0;
       z-index:1000;animation:sheetup .22s ease;
     }
+    /* cxFilterBar의 .sc-filter-row는 overflow-x:auto로 스크롤되게 만들어졌지만,
+       부모(.ph-more-menu)에 폭 제한이 없으면 auto가 무력화되고 메뉴 자체가
+       뷰포트 밖으로 넓어짐 — 메뉴에 명시적 max-width를 줘서 방지 */
+    .ph-more-menu{max-width:calc(100vw - 24px);}
+    .ph-more-menu #unisearch,.ph-more-menu #cxFilterBar{width:100%;margin-bottom:0;}
     #complexSection{position:absolute;left:0;right:0;bottom:14px;z-index:12;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 12px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
     #complexSection::-webkit-scrollbar{display:none;}
     #complexSection>.card{flex:0 0 86%;scroll-snap-align:center;margin-bottom:0;box-shadow:var(--shadow);}
