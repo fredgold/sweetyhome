@@ -907,6 +907,21 @@
 .dup-badge.dup-신규{background:var(--s-final);color:#fff;}
 .prop-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--ink);color:var(--surface);padding:10px 20px;border-radius:var(--radius-md);font-size:13px;font-weight:600;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:9999;}
 .prop-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* B-23: iOS standalone 전용 당겨서 새로고침 인디케이터. 기본 위치는 노치/상태바
+   안전영역(env(safe-area-inset-top)) 위쪽으로 완전히 숨겨두고, 당기는 동안 js가
+   ptrIndicator.style.transform=translateY(...)로 손가락을 따라 내려오게 만듦
+   (거리는 boot.js에서 계산, 여기선 표시만 담당) */
+.ptr-indicator{position:fixed;top:calc(env(safe-area-inset-top,0px) - 50px);left:50%;width:36px;height:36px;margin-left:-18px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;z-index:9999;pointer-events:none;}
+.ptr-indicator.ptr-show{display:flex;}
+.ptr-spinner{width:18px;height:18px;color:var(--ink-soft);fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.ptr-indicator.ptr-ready .ptr-spinner{color:var(--line9-deep);}
+.ptr-indicator.ptr-spin .ptr-spinner{animation:ptrspin .7s linear infinite;}
+@keyframes ptrspin{to{transform:rotate(360deg);}}
+/* iOS standalone에서만(js가 html에 .ios-pwa 부여) 네이티브 러버밴드 바운스를 억제해
+   커스텀 인디케이터와 이중으로 겹쳐 보이지 않게 함 — 안드로이드 Chrome 등은 이 클래스가
+   안 붙으므로 자체 pull-to-refresh가 그대로 유지됨(요구사항: 커스텀 비활성) */
+html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
 .chip.chip-warn{background:#fff3cd;color:#856404;}
 .pam-header{font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer;padding:6px 2px;display:flex;align-items:center;gap:4px;margin-bottom:2px;}
 .pam-arrow{font-size:10px;}
