@@ -10,7 +10,36 @@ function renderAll(){
   renderRegNews();
   if(activePanel==='props'){ initOverview(); }
 }
-load();
+
+/* B-24: 새로고침 후 보던 화면 유지. nav.js(switchPanel 정의)는 Codex 충돌 우려로
+   미접촉 — 여기선 이미 정의된 switchPanel을 "호출"만 한다. sessionStorage는 탭이
+   살아있는 동안만 유지되므로(reload에도 보존, 새 탭/완전종료엔 초기화) "이 세션에서
+   마지막으로 보던 화면"이라는 의도에 정확히 맞음 */
+const SH_VIEW_KEY='sh_lastView';
+function saveViewState(){
+  try{
+    sessionStorage.setItem(SH_VIEW_KEY,JSON.stringify({
+      panel:activePanel,
+      propViewMode:(typeof propViewMode!=='undefined'?propViewMode:'map'),
+    }));
+  }catch(e){}
+}
+function restoreLastView(){
+  try{
+    const raw=sessionStorage.getItem(SH_VIEW_KEY);
+    if(!raw) return;
+    const v=JSON.parse(raw);
+    const panels=['dash','assets','props','actions','scraps'];
+    if(v.panel&&panels.includes(v.panel)&&typeof switchPanel==='function') switchPanel(v.panel);
+    if(v.panel==='props'&&(v.propViewMode==='map'||v.propViewMode==='list')&&typeof applyPropViewMode==='function'){
+      propViewMode=v.propViewMode; applyPropViewMode();
+    }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveViewState(); });
+window.addEventListener('pagehide',saveViewState);
+
+load().then(restoreLastView);
 
 (async()=>{
   try{
@@ -88,7 +117,7 @@ load();
       el.classList.add('ptr-spin');
       el.style.transition='transform .15s ease';
       setIndicator(THRESHOLD*0.6,true);
-      setTimeout(()=>location.reload(),250);
+      setTimeout(()=>{ saveViewState(); location.reload(); },250);
     } else {
       resetIndicator();
     }
