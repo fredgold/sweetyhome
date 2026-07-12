@@ -564,6 +564,35 @@ pull-to-refresh로 해결. `navigator.standalone===true`일 때만 활성화 —
 
 ---
 
+## 2026-07-12 — B-12/B-23 실기기 피드백 반영 2건
+
+실기기 배포 후 사용자 피드백을 받아 두 가지 불편을 atomic 커밋 2건으로 수정.
+
+### B-21 — 바텀시트(단지 상세) 드래그다운 닫기 (`25a0671`)
+상단 "닫기" 버튼만 있어 불편하다는 피드백. 배경(딤) 탭 닫기는 조사 결과 이미 기존 범용
+`.modal` 클릭 핸들러(`document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',
+e=>{if(e.target===m)...}))`, 모든 모달에 적용)가 처리하고 있어 새로 구현할 필요가 없었음
+(Playwright로 재확인만) — 실제로 새로 추가한 건 드래그다운뿐.
+
+- `.box` 상단 ~60px(핸들 바+헤더 행) 안에서 시작한, 세로 우세·아래 방향 터치만 드래그닫기로 판정.
+- 헤더가 sticky가 아니라서 본문을 스크롤하면 헤더가 화면 밖으로 밀려나 그 영역에서 터치가 시작될 수 없음 — "상단 존에서 시작"이라는 조건 하나로 "시트가 최상단일 때만"이 자연히 보장돼 본문 스크롤과 무충돌(`box.scrollTop>0` 체크는 안전망으로 추가).
+- 90px 이상 끌면 `closeModal()` 재사용해 닫힘, 미만이면 스냅백. 기존 `openModal`/`closeModal` 그대로 사용, 새 CSS 불필요(기존 `.box::before` 핸들 바로 충분).
+- 검증: Playwright + `hasTouch`로 임계 초과 닫힘·임계 미만 스냅백·핸들존 밖(본문 깊숙이) 드래그 무동작·배경 탭 닫힘·데스크톱 무회귀 확인.
+
+### B-24 — pull-to-refresh 새로고침 후 화면 위치 유지 (`246b673`)
+`location.reload()`가 앱을 대시보드 초기 상태로 되돌리던 문제. `activePanel`(`state.js` 전역)·
+`propViewMode`(`properties.js` 전역)를 `sessionStorage`에 저장했다가 부팅 시 복원.
+
+- 저장 시점 3곳: PTR의 `location.reload()` 직전 + `visibilitychange`(hidden 전환) + `pagehide`(안전망, reload 외 경로로 페이지가 사라지는 경우도 커버).
+- 복원은 `boot.js`의 `load().then(restoreLastView)`로 — `load()`가 이미 `async`라 반환하는 Promise에 체이닝만 하면 돼 `state.js`를 건드릴 필요가 없었음.
+- **`js/nav.js` 무접촉**(Codex 충돌 우려, 이전 세션들과 동일 원칙) — panel 이름을 화이트리스트로 검증한 뒤 이미 정의된 `switchPanel()`을 호출만 함(정의는 그대로).
+- `sessionStorage`라 탭이 살아있는 동안(리로드 포함)만 유지, 새 탭/완전 종료 시엔 초기화 — "이 세션에서 마지막으로 보던 화면" 의도에 정확히 부합.
+- 검증: Playwright로 `saveViewState()` 내용·`visibilitychange` 자동저장·사전 시딩된 `sessionStorage`로 부팅 시 props+리스트뷰 복원·다른 패널 복원·저장값 없을 때 기본 대시보드·손상된 JSON 무크래시·존재하지 않는 패널명 무시(빈 화면 방지)·데스크톱 무회귀 확인.
+
+두 건 모두 `node --check`/CSS 중괄호 균형/`git diff --check` 통과, XSS 무접점(신규 innerHTML 없음).
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
