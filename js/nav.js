@@ -60,15 +60,17 @@ function renderDashSummaries(){
     <div class="bignum tnum">${won(total)}<small>원</small></div>
     <div class="meter"><i style="width:${pct}%"></i></div>
     <div class="subnum">즉시 동원 기준 · 전세 보증금 목표 <b>${state.settings.targetDeposit||0}억</b> 대비 <b>${pct}%</b> · 만기 포함 전체 <b>${won(sumMob())}</b></div>`;
-  const p=state.properties;
-  const fin=p.filter(x=>x.status==='후보확정').length, vis=p.filter(x=>x.status==='방문예정').length;
+  const complexes=state.complexes||[], complexIds=new Set(complexes.map(cx=>cx.id));
+  const listingCount=(state.listings||[]).filter(l=>complexIds.has(l.complexId)).length;
+  const fin=complexes.filter(cx=>cx.complexStatus==='후보').length;
+  const vis=complexes.filter(cx=>cx.complexStatus==='임장예정').length;
   document.getElementById('d_propSummary').innerHTML=`
-    <div class="bignum tnum">${p.length}<small>곳</small></div>
+    <div class="bignum tnum">${complexes.length}<small>단지</small></div>
     <div class="statline">
-      <span class="statpill">후보확정 <b>${fin}</b></span>
-      <span class="statpill">방문예정 <b>${vis}</b></span>
+      <span class="statpill">후보 <b>${fin}</b></span>
+      <span class="statpill">임장예정 <b>${vis}</b></span>
     </div>
-    <div class="subnum">${p.length?'매물 탭에서 실사 체크와 지도를 확인하세요.':'아직 등록된 매물이 없어요. 매물 탭에서 첫 후보를 담아보세요.'}</div>`;
+    <div class="subnum">${complexes.length?`등록 매물 <b>${listingCount}건</b> · 매물 탭에서 실사 체크와 지도를 확인하세요.`:'아직 등록된 단지가 없어요. 매물 탭에서 첫 후보를 담아보세요.'}</div>`;
 }
 function renderTop3(){
   const sorted=[...state.actions].sort((a,b)=>(a.done-b.done)||(a.priority-b.priority));
