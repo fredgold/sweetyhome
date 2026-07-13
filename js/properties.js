@@ -1935,8 +1935,10 @@ function renderComplexes(){
     const rep=cxRepOf(cx);
     const st=cx.complexStatus||'관심';
     const color='var('+(SC_CX[st]||'--hairline')+')';
+    /* B-44②: 대표가격은 헤드라인급으로 c-head-text에 별도 노출(c-price)하므로
+       c-meta의 deposit 칩은 중복 제거 — "사람은 단지가 아니라 가격을 기억" */
+    const priceHTML=(rep&&rep.deposit!=null)?`<div class="c-price tnum">보증금 ${rep.deposit}억</div>`:'';
     const repHTML=rep?`<div class="c-meta">
-        <span class="chip deposit tnum">${rep.deposit!=null?'보증금 '+rep.deposit+'억':'보증금 미정'}</span>
         <span class="chip tnum">${rep.areaM2!=null?'전용 '+rep.areaM2+'㎡':(rep.areaText?esc(rep.areaText):'면적 미정')}</span>
         <span class="chip">${esc(rep.areaGrade||getAreaGrade(rep.areaM2)||'—')}</span>
         <span class="chip ${listingStatusChipClass(rep.listingStatus)}">${esc(rep.listingStatus||'확인필요')}</span>
@@ -1955,13 +1957,14 @@ function renderComplexes(){
         ${routeCheckHTML}
         <div class="c-head-text">
           <div class="c-headline">${cx.groupCode?`<span class="chip" style="margin-right:5px">${esc(cx.groupCode)}</span>`:''}${cx.regionGroup?esc(cx.regionGroup)+' · ':''}${esc(cx.complexName||'(이름 없음)')}</div>
+          ${priceHTML}
           <div class="c-sub">${esc([cx.station,cx.line,cx.householdGrade].filter(Boolean).join(' · ')||'정보 없음')}${(myLoc&&cx.lat&&cx.lng)?' · <span class="cx-dist">'+(cxDistM(cx)/1000).toFixed(1)+'km</span>':''}</div>
         </div>
         <div class="c-badge-col">
           <span class="pill" style="border-left-color:${color}"><i class="pill-dot" style="background:${color}"></i>${esc(st)}</span>
         </div>
       </div>
-      <div style="padding:0 15px 14px">
+      <div class="cx-card-body">
         ${repHTML}
         ${weeklyBadge?`<div class="c-actions">${weeklyBadge}</div>`:''}
       </div>

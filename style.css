@@ -389,6 +389,15 @@
        고정폭으로 유지(레거시 .rail과 동일 패턴) */
     .unisearch,.panel-head,.form,#legacyToggleWrap{flex-shrink:0;}
     #complexSection{flex:1;min-height:0;overflow-y:auto;padding-right:4px;}
+    /* B-44②: 데스크톱 단지 카드 밀도 개선 — #complexSection 안으로 스코프해 레거시
+       .rail .card(properties[] 미마이그레이션 목록, 같은 .card/.c-top/.c-meta 클래스
+       공유)는 그대로 두고 단지 카드만 컴팩트하게. 모바일(지도 위 스트립·리스트뷰)은
+       터치 타깃·가독성 유지를 위해 건드리지 않음 */
+    #complexSection .card{margin-bottom:4px;}
+    #complexSection .c-top{padding:8px 15px;gap:8px;}
+    #complexSection .c-sub{margin-top:1px;}
+    #complexSection .cx-card-body{padding:0 15px 8px;}
+    #complexSection .c-meta{margin-bottom:3px;gap:6px;}
     /* B-47: 모바일(480px 이하)과 동일한 패턴으로 데스크톱도 보조 버튼(내보내기·시트·임장·
        단지정리)을 ⋯더보기로 묶어 상단을 슬림화. 상시 노출은 검색·필터칩·정렬(select)·
        매물추가만 — showMoreMenu()의 desktop ids 배열도 함께 갱신(js/properties.js) */
@@ -473,7 +482,6 @@
   .chip{font-size:var(--fs-micro);font-weight:700;background:var(--hairline-soft);border-radius:var(--radius-sm);padding:5px 9px;letter-spacing:-.01em;}
   .chip.ok{background:#E8F1EA;color:#3C7A4C;}
   .chip.warn{background:#FBEDE5;color:#B5602F;}
-  .chip.deposit{background:var(--line9-wash);color:var(--line9-deep);}
   .chip.geo{background:#EAEEF3;color:#566B86;}
   .chip.gone{background:#F3E5E3;color:var(--s-drop);}
   .c-memo{font-size:13px;color:var(--ink-soft);margin-bottom:10px;white-space:pre-wrap;line-height:1.55;}
@@ -500,6 +508,12 @@
 
   /* ---- v5 단지 카드 / 단지 상세 ---- */
   .legacy-toggle{margin:2px 0 10px;}
+  /* B-44②: 대표가격을 단지명 바로 아래 헤드라인급으로 — "사람은 단지가 아니라
+     가격을 기억"(c-meta의 deposit 칩은 중복이라 제거, 여기로 이전) */
+  .c-price{font-size:16px;font-weight:800;color:var(--line9-deep);letter-spacing:-.02em;line-height:1.25;margin-top:1px;}
+  /* 카드 본문 하단 패딩 — 기존엔 인라인 style로 고정이라 데스크톱 전용 밀도 축소가
+     불가능했음(아래 min-width:900px 블록에서 #complexSection 안에서만 축소) */
+  .cx-card-body{padding:0 15px 14px;}
   .cx-empty{padding:24px 16px;text-align:center;font-size:12.5px;color:var(--ink-soft);}
   .cx-dl{margin-bottom:10px;}
   .cx-dl .cx-dt{font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:2px;}
