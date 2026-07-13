@@ -217,3 +217,28 @@ function parseEok(text){
   if(n<100)return n;                       // 억 단위
   return null;                             // 100~999 애매 → null
 }
+
+/* ── B-18: 등급 컷 단일 소스 (면적·세대수·대단지 자동판정 기준) ──
+   state.js(applyGuards 마이그레이션)와 properties.js(렌더) 양쪽에서 공유.
+   utils.js가 두 파일보다 먼저 로드되므로 여기 둠. grades 인자를 안 주거나
+   일부 키가 비어 있으면 이 기본값(= 과거 하드코딩 리터럴과 동일)으로
+   폴백해 등급 판정 결과가 항상 이전과 같게 유지된다 */
+const GRADE_DEFAULTS={area:[85,60],households:[1000,500,300,150],bigComplex:500};
+function calcAreaGrade(areaM2,grades){
+  if(areaM2==null||isNaN(areaM2))return'';
+  const [g1,g2]=(grades&&grades.area)||GRADE_DEFAULTS.area;
+  const v=+areaM2;
+  if(v>=g1)return g1+'㎡+';
+  if(v>=g2)return g2+'~'+(g1-1)+'㎡';
+  return(g2-1)+'㎡ 이하';
+}
+function calcHouseholdGrade(n,grades){
+  if(n==null)return'';
+  const v=parseInt(n); if(isNaN(v))return'';
+  const [h1,h2,h3,h4]=(grades&&grades.households)||GRADE_DEFAULTS.households;
+  if(v>=h1)return h1+'세대+';
+  if(v>=h2)return h2+'세대+';
+  if(v>=h3)return h3+'세대+';
+  if(v>=h4)return'소규모조건부';
+  return'소규모주의';
+}

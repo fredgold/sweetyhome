@@ -602,7 +602,7 @@ function parseNaver(t){
   const ln=t.match(/융자금[\s\S]{0,6}?(없음|있음)/); if(ln)bits.push('융자 '+ln[1]);
   if(bits.length)r.memo=bits.join(' · ');
   r._auto={};
-  if(sedN!=null&&sedN>=500) r._auto.k4=true;
+  if(sedN!=null&&sedN>=state.settings.grades.bigComplex) r._auto.k4=true;
   if(hy) r._auto.k5=true;
   if(nan) r._auto.k6=true;
   if(pk) r._auto.k8=true;
@@ -698,13 +698,23 @@ function subtitleText(p){
   if(p.line) parts.push(esc(p.line));
   return parts.join(' · ')||'정보 없음';
 }
+/* B-18: depositRange("4~5")에서 경고선 상한(마지막 숫자)만 추출 — 파싱 실패
+   시 fallback(과거 하드코딩 5) 유지, 동작 변화 없음 */
+function parseDepositUpper(rangeStr,fallback){
+  const nums=String(rangeStr||'').match(/[\d.]+/g);
+  if(!nums||!nums.length) return fallback;
+  const last=parseFloat(nums[nums.length-1]);
+  return isNaN(last)?fallback:last;
+}
 /* 펼침 본문 메타칩 — 가격·면적은 헤드라인에 이미 있으므로 경고성 신호만 별도 칩으로 */
 function bodyMetaChips(p){
   const chips=[];
   const dn=p.depositNum!=null?p.depositNum:parseFloat(p.deposit);
-  if(!isNaN(dn)&&dn>5) chips.push(`<span class="chip warn tnum">예산↑? · 보증금 ${dn}억</span>`);
+  const depositUpper=parseDepositUpper(state.profile.depositRange,5);
+  if(!isNaN(dn)&&dn>depositUpper) chips.push(`<span class="chip warn tnum">예산↑? · 보증금 ${dn}억</span>`);
   const a=p.area!=null&&p.area!==''?parseFloat(p.area):null;
-  if(a!=null&&!isNaN(a)&&a>85) chips.push(`<span class="chip warn tnum">전용 ${a}㎡ · 청약 영향 ⚠</span>`);
+  const maxArea=state.profile.maxArea!=null?state.profile.maxArea:85;
+  if(a!=null&&!isNaN(a)&&a>maxArea) chips.push(`<span class="chip warn tnum">전용 ${a}㎡ · 청약 영향 ⚠</span>`);
   if(p.householdGrade) chips.push(`<span class="chip">${esc(p.householdGrade)}</span>`);
   else if(p.households) chips.push(`<span class="chip tnum">${p.households}세대</span>`);
   if(p.jeonseRatio!=null) chips.push(`<span class="chip tnum">전세가율 ${p.jeonseRatio}%</span>`);
@@ -1010,7 +1020,7 @@ async function saveAsComplexListing(data){
       id:'cx'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
       complexName:complexName||data.name, loc, geocodeQuery, groupCode, regionGroup:'',
       station:data.station||'', line:data.line||'',
-      yearBuilt:null, households:hh, householdGrade:hh?calcHouseholdGrade(hh):'',
+      yearBuilt:null, households:hh, householdGrade:hh?calcHouseholdGrade(hh,state.settings.grades):'',
       commuteGangnam:null, commuteSinsa:null,
       complexStatus:migComplexStatus(data.status),
       lat:data.lat??null, lng:data.lng??null,
@@ -1205,7 +1215,7 @@ function exportListings(fmt){
   const COLS=['매물ID','단지ID','단지명','동/호','전용면적','면적등급','전세보증금','매물상태','대표매물여부','수집일','최근확인일','링크','메모'];
   const rows=state.listings.map(l=>[
     l.id,l.complexId||'',cxNameById.get(l.complexId)||'',
-    l.dongHo||'',l.areaM2??'',l.areaGrade||getAreaGrade(l.areaM2)||'',
+    l.dongHo||'',l.areaM2??'',l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'',
     l.deposit??'',l.listingStatus||'',l.isRepresentative?'Y':'N',
     l.capturedAt?l.capturedAt.slice(0,10):'',l.lastCheckedAt?l.lastCheckedAt.slice(0,10):'',
     l.url||'',l.memo||''
@@ -1293,11 +1303,10 @@ function readBackup(code){
 function safeUrl(u){
   try{const url=new URL(u);if(!['http:','https:'].includes(url.protocol))return'';return url.href;}catch(e){return'';}
 }
-function calcHouseholdGrade(n){
-  if(n==null)return'';const v=parseInt(n);if(isNaN(v))return'';
-  if(v>=1000)return'1000세대+';if(v>=500)return'500세대+';if(v>=300)return'300세대+';
-  if(v>=150)return'소규모조건부';return'소규모주의';
-}
+/* B-18: calcHouseholdGrade는 utils.js(GRADE_DEFAULTS와 함께 정의)로 이동 —
+   state.js의 applyGuards()에서도 같은 함수를 써야 해서 두 파일보다 먼저
+   로드되는 utils.js가 단일 소스. 여기 정의를 남겨두면 로드 순서상 이 파일이
+   나중에 덮어써 utils.js 쪽이 죽은 코드가 되므로 반드시 제거해야 함 */
 function normalizeStr(s){return String(s||'').trim().replace(/\s+/g,' ').toLowerCase();}
 function mapImportStatus(s){
   const m={'후보확정':'후보','제외':'탈락'};
@@ -1323,7 +1332,7 @@ function parseTSV(text){
     return {
       name:c(0),loc:c(1),station:c(2),line:c(3),
       yearBuilt:parseInt(c(4))||null,
-      households:hh,householdGrade:hh?calcHouseholdGrade(hh):'',
+      households:hh,householdGrade:hh?calcHouseholdGrade(hh,state.settings.grades):'',
       area,deposit,depositNum,jeonseReal,saleReal,jeonseRatio,
       commuteGangnam:c(10)||null,commuteSinsa:c(11)||null,
       status:mapImportStatus(c(12)),
@@ -1750,13 +1759,8 @@ function cxRepOf(cx){
   const ls=state.listings.filter(l=>l.complexId===cx.id);
   return ls.find(l=>l.isRepresentative)||ls[0]||null;
 }
-function getAreaGrade(areaM2){
-  if(areaM2==null||isNaN(areaM2))return'';
-  const v=+areaM2;
-  if(v>=85)return'85㎡+';
-  if(v>=60)return'60~84㎡';
-  return'59㎡ 이하';
-}
+/* B-18: getAreaGrade는 calcAreaGrade(utils.js, GRADE_DEFAULTS와 함께 정의)로
+   이동 — 호출부는 calcAreaGrade(areaM2, state.settings.grades)로 교체 */
 function listingStatusChipClass(st){
   if(st==='게시중')return'ok';
   if(st==='가격변동')return'warn';
@@ -1854,7 +1858,7 @@ function cxMatchesFilters(cx){
   if(cxFilters.listing||cxFilters.area){
     const cxListings=state.listings.filter(l=>l.complexId===cx.id);
     if(cxFilters.listing && !cxListings.some(l=>l.listingStatus===cxFilters.listing)) return false;
-    if(cxFilters.area && !cxListings.some(l=>(l.areaGrade||getAreaGrade(l.areaM2))===cxFilters.area)) return false;
+    if(cxFilters.area && !cxListings.some(l=>(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades))===cxFilters.area)) return false;
   }
   return true;
 }
@@ -1955,7 +1959,7 @@ function renderComplexes(){
     const priceHTML=(rep&&rep.deposit!=null)?`<div class="c-price tnum">보증금 ${rep.deposit}억</div>`:'';
     const repHTML=rep?`<div class="c-meta">
         <span class="chip tnum">${rep.areaM2!=null?'전용 '+rep.areaM2+'㎡':(rep.areaText?esc(rep.areaText):'면적 미정')}</span>
-        <span class="chip">${esc(rep.areaGrade||getAreaGrade(rep.areaM2)||'—')}</span>
+        <span class="chip">${esc(rep.areaGrade||calcAreaGrade(rep.areaM2,state.settings.grades)||'—')}</span>
         <span class="chip ${listingStatusChipClass(rep.listingStatus)}">${esc(rep.listingStatus||'확인필요')}</span>
       </div>
       <div class="cx-listing-meta">최근 확인 ${rep.lastCheckedAt?esc(new Date(rep.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>`
@@ -2231,7 +2235,7 @@ function renderCxListings(complexId){
         <span class="chip ${listingStatusChipClass(l.listingStatus)}">${esc(l.listingStatus||'확인필요')}</span>
         ${l.isRepresentative?'<span class="chip ok">대표매물</span>':''}
       </div>
-      <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||getAreaGrade(l.areaM2)||'—')}</div>
+      <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'—')}</div>
       <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · 확인 ${l.lastCheckedAt?esc(new Date(l.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>
       ${triStateHTML({field:'managementFee', value:l.managementFee, state:l.managementFeeState, caption:mgmtFeeCaption(l), unit:'만원', step:'1', placeholder:'예: 15', lid:l.id})}
       <div class="c-actions">

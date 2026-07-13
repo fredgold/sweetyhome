@@ -9,7 +9,13 @@
  *                     notes, reserve (만원), updatedAt }
  *
  * state.settings  : { targetDeposit (억), weights:{commute,budget,
- *                     area,complex,risk} }
+ *                     area,complex,risk},
+ *                     grades:{area:[85,60], households:[1000,500,300,150],
+ *                             bigComplex:500} }
+ *                    B-18: 등급 컷 단일 소스(utils.js GRADE_DEFAULTS와 동일 값).
+ *                    calcAreaGrade()/calcHouseholdGrade()(utils.js)가 이 값을
+ *                    읽어 면적·세대수 등급을 계산 — 값 변경 시 등급 판정도 함께
+ *                    바뀜(현재는 기본값 그대로라 동작 변화 없음).
  *
  * state.properties: [{id, created, name, loc, station, line, deposit (억),
  *                     depositNum (억), area (㎡), households, householdGrade,
@@ -100,7 +106,7 @@ const CHECKLIST=[
   {id:'k1',t:'동·층 / 일조',s:'로얄동·층 vs 저층, 햇빛'},
   {id:'k2',t:'학군·초품아',s:'배정 초등학교, 통학거리',vl:'지도',vu:n=>nmapUrl(n+' 초등학교')},
   {id:'k3',t:'생활 인프라',s:'마트·병원 + 지하철역 거리',vl:'주변보기',vu:n=>nmapUrl(n)},
-  {id:'k4',t:'세대수(대단지)',s:'500세대+면 관리·보증 유리',vl:'단지정보',vu:n=>landUrl(n)},
+  {id:'k4',t:'세대수(대단지)',s:GRADE_DEFAULTS.bigComplex+'세대+면 관리·보증 유리',vl:'단지정보',vu:n=>landUrl(n)}, // B-18: 하드 문자열 대신 GRADE_DEFAULTS(utils.js) 참조
   {id:'k5',t:'복도식 / 계단식',s:'채광·보안 차이',vl:'단지정보',vu:n=>landUrl(n)},
   {id:'k6',t:'관리비 · 난방',s:'실제 월 관리비 수준'},
   {id:'k7',t:'재건축·정비 리스크',s:'전세 이주 위험! 꼭 확인'},
@@ -130,7 +136,7 @@ const DEFAULT_PROFILE={
 const DEFAULT={
   profile:structuredClone(DEFAULT_PROFILE),
   assets:{items:[],notes:'',reserve:1000},
-  settings:{targetDeposit:4.5,weights:{commute:3,budget:3,area:3,complex:3,risk:3}},
+  settings:{targetDeposit:4.5,weights:{commute:3,budget:3,area:3,complex:3,risk:3},grades:structuredClone(GRADE_DEFAULTS)},
   chatHistory:[],
   actions:[
     {id:'a1',text:'버팀목 전세대출 자가진단 (연정)',priority:1,done:false},
@@ -178,7 +184,7 @@ const GUEST_STATE={
       {label:'(예시) 매수 목표',date:'2028-01-01'},
     ],
   },
-  settings:{targetDeposit:4.0,weights:{commute:3,budget:3,area:3,complex:3,risk:3}},
+  settings:{targetDeposit:4.0,weights:{commute:3,budget:3,area:3,complex:3,risk:3},grades:structuredClone(GRADE_DEFAULTS)},
   chatHistory:[],
   actions:[
     {id:'ga1',text:'(예시) 전세대출 조건 알아보기',priority:1,done:false},
@@ -227,6 +233,9 @@ function applyGuards(raw){
   if(state.assets.reserve==null) state.assets.reserve=1000;
   state.settings=Object.assign(structuredClone(DEFAULT.settings), state.settings||{});
   state.settings.weights=Object.assign(structuredClone(DEFAULT.settings.weights), state.settings.weights||{});
+  /* B-18: settings.grades 없거나(구버전 데이터) 일부 키만 있어도 기본값(과거
+     리터럴과 동일)으로 보정 — 등급 판정 결과가 절대 바뀌지 않게 함 */
+  state.settings.grades=Object.assign(structuredClone(GRADE_DEFAULTS), state.settings.grades||{});
   state.chatHistory=state.chatHistory||[];
   state.actions=state.actions||structuredClone(DEFAULT.actions);
   state.actions=state.actions.map(a=>({category:'',...a}));
@@ -241,9 +250,9 @@ function applyGuards(raw){
     // C) deposit 타입 보호: 계산용 depositNum 보정
     const dn=p.depositNum!=null?p.depositNum:(typeof p.deposit==='number'?p.deposit:(typeof p.deposit==='string'&&p.deposit?parseEok(p.deposit):null));
     const hh=p.households!=null?(parseInt(p.households)||null):null;
-    // householdGrade 인라인 계산
-    const calcG=n=>{if(!n)return'';const v=+n;if(v>=1000)return'1000세대+';if(v>=500)return'500세대+';if(v>=300)return'300세대+';if(v>=150)return'소규모조건부';return'소규모주의';};
-    const hg=p.householdGrade||(hh!=null?calcG(hh):'');
+    // B-18: householdGrade 계산은 calcHouseholdGrade(utils.js)로 단일화 —
+    // 기존 인라인 calcG는 properties.js의 동일 로직과 중복이었음
+    const hg=p.householdGrade||(hh!=null?calcHouseholdGrade(hh,state.settings.grades):'');
     const jr=p.jeonseRatio!=null?p.jeonseRatio:(p.saleReal&&(p.jeonseReal!=null||dn!=null)?Math.round((p.jeonseReal!=null?p.jeonseReal:dn)/p.saleReal*100):null);
     const VALID_ST=['관심','검토중','후보','문의예정','방문예정','보류','탈락'];
     const rawSt=p.status==='후보확정'?'후보':(p.status||'관심');
