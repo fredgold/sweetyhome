@@ -723,7 +723,8 @@
   <!-- 스크랩 붙여넣기 임포트 모달 -->
   <div class="modal" id="scImportModal">
     <div class="box">
-      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg> 붙여넣기 임포트</h3>
+      <div class="mhead"><h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg> 붙여넣기 임포트</h3></div>
+      <div class="mbody">
       <div class="mdesc">마크다운 표(<code>| 제목 | 유형 | ... |</code>) 또는 <b>'항목: 값'</b> 블록을 붙여넣으세요. 파싱 후 확인하고 등록합니다.</div>
       <div id="sc_importTextArea">
         <textarea id="sc_importInput" style="width:100%;min-height:130px;border:1px solid var(--hairline);border-radius:9px;padding:10px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box;margin-top:8px;" placeholder="--- 형식 (권장)&#10;---&#10;제목: 가양역 59㎡ 전세&#10;유형: 전세&#10;위치: 강서구 가양동&#10;가격: 3.6억&#10;면적: 59㎡&#10;일정: 2026-09 입주&#10;조건자격: 보증보험 필수&#10;태그: 9호선, 3억대&#10;적합도: 높음&#10;---&#10;## 본문 메모&#10;- 실거래 확인 필요&#10;&#10;또는 GPT 응답·자유 텍스트 그대로 붙여넣기도 가능합니다."></textarea>
@@ -740,6 +741,7 @@
         </div>
       </div>
       <div id="sc_importErr" style="font-size:12px;color:var(--s-drop);min-height:16px;font-weight:700;margin-top:6px;"></div>
+      </div>
     </div>
   </div>
 
@@ -845,8 +847,9 @@
   </div>
 
   <div class="modal" id="propImportModal">
-    <div class="box" style="max-width:960px;width:96vw;max-height:90vh;overflow-y:auto">
-      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg> 시트 붙여넣기</h3>
+    <div class="box" style="max-width:960px;width:96vw">
+      <div class="mhead"><h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg> 시트 붙여넣기</h3></div>
+      <div class="mbody">
       <p class="mdesc">구글시트 단지 비교표에서 행 선택 후 복사(Ctrl+C) → 아래에 붙여넣기.<br>
         열 순서: 단지명 · 지역 · 역/도보 · 노선 · 준공연도 · 세대수 · 전용면적 · 전세호가 · 전세실거래 · 매매실거래 · 강남역 · 신사역 · 상태 · 링크 · 메모</p>
       <div id="propImportInputArea">
@@ -868,6 +871,7 @@
       </div>
       <div style="text-align:right;margin-top:12px">
         <button class="btn-ghost" data-close="propImportModal">닫기</button>
+      </div>
       </div>
     </div>
   </div>
