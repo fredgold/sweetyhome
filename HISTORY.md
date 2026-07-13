@@ -1104,6 +1104,84 @@ CSS만으로 자연스럽게 한 줄로 합치기 어렵다고 판단 — 세로
 
 ---
 
+## 2026-07-13 — B-28 숫자 3상태(주차·관리비) 값/미확인/해당없음 구분 (`bb3eccc`)
+
+### 목표
+부정확한 `0`이 평가·안전Gate(B-27 선행 작업)를 오염시키지 않도록, 0이 자연발생하는
+숫자 필드(주차·관리비)에 "값 있음 / 미확인 / 해당없음" 3상태를 도입. 범위 확정:
+`complexes[].parking`(신규, 세대당 대수) + `listings[].managementFee`(기존 필드에
+상태 플래그만 추가). `households`/`yearBuilt`/`deposit`/`area`는 0이 자연발생하지
+않아 범위 밖(손대지 않음). 규칙기반, AI 무관.
+
+### 스키마 (`js/state.js`)
+`complexes[]`에 `parking`(세대당 대수, 소수 허용, `null`=값 없음) +
+`parkingState`(`'known'|'unknown'|'na'`, 기본 `'unknown'`) 신규.
+`listings[]`의 기존 `managementFee`(만원 단위)는 필드명·단위 그대로, `managementFeeState`
+만 신규 추가. `applyGuards()`에 `complexes`/`listings` 전용 `.map()` 정규화를
+추가 — 기존엔 `state.complexes=state.complexes||[]`처럼 배열 존재 여부만 보정하고
+개별 아이템 필드는 전혀 정규화하지 않았음(v5 전환 시점 이후 신설된 갭). 기존
+`managementFee` 입력값이 있던 listing은 `managementFeeState:'known'`으로 자동
+승격(값 없으면 `'unknown'`), 기존 complex는 `parking:null`/`parkingState:'unknown'`
+으로 보정. 단지·매물 생성부(붙여넣기 저장·시트 임포트·레거시→v5 마이그레이션,
+각 3곳) 전부 새 필드 동반 추가.
+
+### 파싱 (`js/properties.js` `parseNaver()`)
+기존 "세대당 X대"/"관리비 N만원" 정규식 매치가 memo 텍스트(`bits` 배열) 생성
+용도로만 쓰이던 것을 그대로 유지하면서, 성공 시 `r.parking`/`r.managementFee`로도
+구조화 캡처하도록 확장. 실패 시 `undefined`로 남아 다운스트림에서 자연히
+`'unknown'` 유지. 붙여넣기 자동채움(`fillBtn`→`applyFill`) → 저장
+(`saveAsComplexListing`) 경로는 `tempParking`/`tempManagementFee`(기존
+`tempChecks`와 동일한 모듈 전역 임시 변수 패턴)로 값을 전달, 성공 시 해당
+필드 state를 `'known'`으로 승격. 신규 복합 대상 매칭(기존 단지에 매물만
+추가되는 경우)에는 주차값을 덮어쓰지 않음(`isNewComplex` 블록 안에서만
+`parking` 세팅).
+
+### UI (`index.html`/`js/properties.js`/`style.css`)
+재사용 가능한 3상태 세그먼트 컨트롤(`triStateHTML()`, `[값][미확인][해당없음]`
++ 숫자 입력 1개)을 신설 — 단지 상세 모달의 주차(`#cxDetailParkingWrap`, 세대수/
+준공연도 표시부 바로 아래)와 매물 행의 관리비(`renderCxListings()`가 매물마다
+동적 생성) 양쪽에서 동일 함수를 재사용. `#complexDetailModal`에 위임 클릭/change
+리스너 하나씩만 추가해 두 용도를 `data-tri`(필드명)·`data-lid`(있으면 해당
+listing, 없으면 현재 열린 `cxDetailId` 단지) 조합으로 판정 — 이벤트 핸들러
+중복 없음. 미확인/해당없음 선택 시 숫자 입력 `disabled`+값 `null`, "값" 선택 시
+기존 값이 없으면 0으로 시작(사용자가 바로 편집). 관리비 0원은 "관리비
+0만원(포함)"으로 문구를 달리해 미확인과 시각적으로 구분. 스타일은 기존 토큰
+(`--hairline`, `--line9`/`--line9-wash`/`--line9-deep`, `--ink-faint`)만 재사용,
+새 CSS 파일 없음 — 활성 세그먼트는 매물탭 색 역할(골드)과 일관.
+
+### 검증
+`node --check` (state.js/properties.js) 통과, CSS 중괄호 균형(881=881), `index.html`
+`<div>` 개폐 균형(314=314), `git diff --check` 통과. Playwright로:
+1. **applyGuards 라운드트립**: `managementFee:15`만 있고 상태 필드가 없는 listing
+   로드 → `managementFeeState:'known'` 자동 승격 확인. `parking` 필드 자체가 없는
+   레거시 complex 로드 → `parking:null`/`parkingState:'unknown'` 보정 확인.
+   `complexName`/`households` 등 기존 필드명·값 무변경 확인(Redis 키는 코드
+   수정 자체가 없어 `'sweetyhome'` 그대로).
+2. **parseNaver 구조화 캡처**: "세대당 1.2대 ... 관리비 약 15만원" 포함 샘플 텍스트
+   → `r.parking===1.2`, `r.managementFee===15` 확인, 기존 memo bits 텍스트("주차
+   1.2대/세대 · 관리비 15만" 포함)도 그대로 생성됨 확인(회귀 없음). 매치 없는
+   샘플 → 두 필드 모두 `undefined`(다운스트림에서 `unknown` 유지) 확인.
+3. **3상태 UI 동작**(주차): [값] 클릭 → `parking:0`/`parkingState:'known'`, 입력
+   활성화, 캡션 "세대당 0대" 확인. 입력에 1.2 입력 후 blur → `parking:1.2`, 캡션
+   "세대당 1.2대" 확인. [미확인] 클릭 → `parking:null`/`'unknown'`, 입력
+   비활성화, 캡션 "주차 미확인" 확인. [해당없음] 클릭 → `parking:null`/`'na'`,
+   캡션 "주차 해당없음" 확인 — **값=0과 미확인이 렌더·저장 양쪽에서 명확히
+   구분됨을 확인**.
+4. **3상태 UI 동작**(관리비, 매물 행): [값] 클릭 → `managementFee:0`, 캡션
+   "관리비 0만원(포함)"(미확인과 시각 구분 문구) 확인. 입력에 `-5`(음수) 입력 →
+   `parseFloat+isNaN||v<0` 가드가 거부해 값이 이전 상태(0)로 유지됨 확인(보안
+   요구사항의 숫자 가드 실측 검증).
+5. 스크린샷으로 단지 상세 모달의 주차 세그먼트·매물 행의 관리비 세그먼트가
+   기존 UI(세대수/준공연도, 매물 액션 버튼)와 시각적으로 자연스럽게 통합됨을
+   확인 — 골드 활성 세그먼트, 레이아웃 깨짐 없음.
+
+XSS 무접점: 세그먼트 라벨("값"/"미확인"/"해당없음")은 고정 문자열, 캡션은
+`esc()`로 감싸 방어적 처리(내용 자체는 항상 고정 문구+숫자 조합이라 사용자
+자유 입력 삽입 경로 없음), 숫자 입력은 `parseFloat`+`isNaN`/음수 가드 통과한
+값만 반영. `nav.js` 무접촉(손 B 충돌 없음).
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
