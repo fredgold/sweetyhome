@@ -857,6 +857,60 @@ B-05에서 백업 확인 후 별도 진행 예정.
 
 ---
 
+## 2026-07-13 — B-49 데스크톱 매물탭 지도 하단 여백 제거 (`3a2be9a`)
+
+### 문제
+데스크톱 매물탭 우측 지도(`#overviewMap`/`.mapcard`)와 좌측 컬럼(`.grid>section`)의
+높이가 `calc(100vh - var(--nav-h,64px) - 24px)` 고정값이었는데, 그 위 기준바(`.gates`,
+B-47에서 접이식 도입)의 실제 높이를 전혀 반영하지 못해 기준바만큼 아래로 밀린 채
+고정 높이를 유지 — 지도·리스트가 뷰포트 하단까지 못 닿고 아래에 여백이 남음.
+
+### 수정 (`style.css`, `@media (min-width:900px)`)
+매물탭(`#panel-props.on`)을 뷰포트 고정 flex 컬럼으로 재구성:
+- `#panel-props.on`: `height:calc(100vh - var(--topbar-h,110px) - 20px)` +
+  `display:flex;flex-direction:column` + `overflow:hidden`(뷰포트 고정 컨테이너화).
+- `.gates`: `flex-shrink:0`(고정, 접힘/펼침 높이가 그대로 반영됨).
+- `.grid`: `flex:1;min-height:0`(기준바 제외 남는 높이 전부 차지) +
+  `grid-template-rows:minmax(0,1fr);align-items:stretch`.
+- `.grid>section`·`.mapcard`: 고정 `max-height`/`height` calc 대신 `height:100%`로
+  `.grid` 높이를 꽉 채움. `.mapcard`는 `display:flex;flex-direction:column`으로 바꿔
+  `.mh`(헤더)는 `flex-shrink:0`, `#overviewMap`은 `flex:1;min-height:0`.
+
+**높이 기준 변수 교정**: 기존 `--nav-h`(sticky 탭바 자체 높이만, 헤더와 겹침 —
+`properties.js`의 `updateNavHeightVar()` 주석에 이미 명시돼 있던 함정)를
+`--topbar-h`(헤더+탭바 포함, 이미 JS가 매 `switchPanel('props')` 진입마다 정확히
+재측정)로 교체하고, `.apptabs{margin-bottom:20px}`(`getBoundingClientRect()`엔
+안 잡히는 레이아웃 여백)를 추가로 빼야 `#panel-props`가 실제로 시작하는 지점과
+정확히 일치함을 Playwright 실측으로 확인 후 반영.
+
+**CSS Grid 함정 발견·수정**: 처음엔 `align-items:stretch`/`grid-template-rows` 없이
+`height:100%`만 부여했더니 `.grid`가 상속받은 `align-items:start`(기존 무조건 적용
+베이스 규칙) 때문에 단일 auto 행이 컨텐츠 크기(2000px+, `#complexSection`의 스크롤
+콘텐츠 전체 높이)로 새어버려 지도가 뷰포트를 완전히 벗어나는 회귀를 Playwright
+실측(`mapcardBottom`)으로 발견 → `.grid`에 `grid-template-rows:minmax(0,1fr)`+
+`align-items:stretch`를 명시해 해결.
+
+`.mapcard`의 `position:sticky`는 `#panel-props` 자체가 뷰포트 고정 컨테이너가 되며
+불필요해져 제거(페이지가 스크롤 안 되니 "붙어 있을" 필요가 없음 — 태스크 지시의
+"검토" 요청에 따라 제거로 판단). B-36의 `#complexSection` 자체 스크롤(`flex:1;
+overflow-y:auto`)은 그대로 유지. 모바일(A안, `@media max-width:899.98px`)은 전혀
+손대지 않음.
+
+### 검증
+`node --check`(JS 변경 없음)/CSS 중괄호 균형/`git diff --check` 통과. Playwright로
+데스크톱(1400×900)에 가짜 단지 15건 주입 후: (1) 기준바 기본 접힘 상태에서
+`mapcardBottom`·`gridBottom`·`sectionBottom`·`panelBottom`이 전부 `viewportHeight`
+(900)와 정확히 일치(여백 0) 확인, (2) 기준바를 펼쳐도(`gatesHeight` 45→90px 증가)
+동일하게 전부 900과 일치 — 기준바 상태와 무관하게 항상 하단까지 닿음을 확인,
+(3) `#complexSection`의 `clientHeight`가 기준바 상태에 따라 정확히 조정됨(447↔402,
+차이 45px = 기준바 높이 증가분과 일치) — B-36 내부 스크롤 정합성 확인, (4)
+`#complexSection.scrollTop`을 바꿔도 `window.scrollY`는 0 유지 + `.mapcard`가 전혀
+움직이지 않음 확인. 모바일은 `#panel-props`의 computed `position:fixed`·
+`display:block`이 그대로임을 확인(데스크톱 전용 규칙이 새지 않음)하고 지도뷰/
+리스트뷰 스크린샷으로 무회귀 확인. XSS 무접점(CSS 레이아웃 전용 변경).
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
