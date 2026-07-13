@@ -1916,10 +1916,12 @@ function renderComplexes(){
   if(filterBar) filterBar.style.display='';
   renderCxFilterOptions();
 
-  legacyToggleWrap.style.display='';
-  if(legacyExpanded===null) legacyExpanded=false;
-  legacyWrap.style.display=legacyExpanded?'':'none';
-  updateLegacyToggleLabel();
+  /* B-48: 단지 이관 완료(단지 1개 이상) 후엔 레거시 토글·상태 탭칩(.tabs)·목록(.rail)을
+     통째로 숨겨 단지 카드 공간을 확보 — properties[]/renderList/renderTabs 로직과 ⋯메뉴
+     "레거시 내보내기"(백업 수단)는 그대로 보존, 화면 노출만 제거. 단지 0(미마이그레이션)
+     경로는 위 분기에서 legacyWrap을 이미 마이그레이션 유도 화면으로 그대로 씀 */
+  legacyToggleWrap.style.display='none';
+  legacyWrap.style.display='none';
 
   const _cxBase=state.complexes.filter(cxMatchesFilters);
   const filtered=DESKTOP_MQ.matches?_cxBase:sortComplexes(_cxBase);
