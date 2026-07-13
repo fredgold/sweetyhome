@@ -317,47 +317,60 @@
           </div>
         </div>
 
-        <div id="cxFilterBar" class="sc-filter-bar" style="display:none">
-          <div class="sc-filter-label">탐색그룹</div>
-          <div class="sc-filter-row" id="cxFilterRegion"><span class="sc-filter-chip on" data-fregion="">전체</span></div>
-          <div class="sc-filter-label">단지상태</div>
-          <div class="sc-filter-row" id="cxFilterStatus">
-            <span class="sc-filter-chip on" data-fstatus="">전체</span>
-            <span class="sc-filter-chip" data-fstatus="관심">관심</span>
-            <span class="sc-filter-chip" data-fstatus="검토중">검토중</span>
-            <span class="sc-filter-chip" data-fstatus="후보">후보</span>
-            <span class="sc-filter-chip" data-fstatus="문의예정">문의예정</span>
-            <span class="sc-filter-chip" data-fstatus="임장예정">임장예정</span>
-            <span class="sc-filter-chip" data-fstatus="보류">보류</span>
-            <span class="sc-filter-chip" data-fstatus="탈락">탈락</span>
+        <!-- B-35: 네이버부동산식 그룹별 칩 바 — 그룹당 트리거 칩 하나(탭하면 드롭다운 펼침).
+             탐색그룹(regionGroup)은 실사용 데이터가 항상 빈 값이라(생성부에서 늘 ''로 초기화)
+             칩 노출 대상에서 제외하되, cxFilters.region/cxMatchesFilters 로직 호환을 위해
+             DOM(빈 트리거 없는 숨김 컨테이너)만 유지 -->
+        <div id="cxFilterBar" style="display:none">
+          <div class="cxf-group" data-fgroup="status">
+            <button type="button" class="cxf-trigger" id="cxFilterStatusTrigger">단지상태 <span class="cxf-caret">▾</span></button>
+            <div class="cxf-dropdown" id="cxFilterStatus">
+              <span class="sc-filter-chip on" data-fstatus="">전체</span>
+              <span class="sc-filter-chip" data-fstatus="관심">관심</span>
+              <span class="sc-filter-chip" data-fstatus="검토중">검토중</span>
+              <span class="sc-filter-chip" data-fstatus="후보">후보</span>
+              <span class="sc-filter-chip" data-fstatus="문의예정">문의예정</span>
+              <span class="sc-filter-chip" data-fstatus="임장예정">임장예정</span>
+              <span class="sc-filter-chip" data-fstatus="보류">보류</span>
+              <span class="sc-filter-chip" data-fstatus="탈락">탈락</span>
+            </div>
           </div>
-          <div class="sc-filter-label">매물상태</div>
-          <div class="sc-filter-row" id="cxFilterListingStatus">
-            <span class="sc-filter-chip on" data-flisting="">전체</span>
-            <span class="sc-filter-chip" data-flisting="게시중">게시중</span>
-            <span class="sc-filter-chip" data-flisting="사라짐">사라짐</span>
-            <span class="sc-filter-chip" data-flisting="가격변동">가격변동</span>
-            <span class="sc-filter-chip" data-flisting="다른동호수등장">다른동호수등장</span>
-            <span class="sc-filter-chip" data-flisting="확인필요">확인필요</span>
+          <div class="cxf-group" data-fgroup="listing">
+            <button type="button" class="cxf-trigger" id="cxFilterListingStatusTrigger">매물상태 <span class="cxf-caret">▾</span></button>
+            <div class="cxf-dropdown" id="cxFilterListingStatus">
+              <span class="sc-filter-chip on" data-flisting="">전체</span>
+              <span class="sc-filter-chip" data-flisting="게시중">게시중</span>
+              <span class="sc-filter-chip" data-flisting="사라짐">사라짐</span>
+              <span class="sc-filter-chip" data-flisting="가격변동">가격변동</span>
+              <span class="sc-filter-chip" data-flisting="다른동호수등장">다른동호수등장</span>
+              <span class="sc-filter-chip" data-flisting="확인필요">확인필요</span>
+            </div>
           </div>
-          <div class="sc-filter-label">면적등급</div>
-          <div class="sc-filter-row" id="cxFilterAreaGrade">
-            <span class="sc-filter-chip on" data-farea="">전체</span>
-            <span class="sc-filter-chip" data-farea="85㎡+">85㎡+</span>
-            <span class="sc-filter-chip" data-farea="60~84㎡">60~84㎡</span>
-            <span class="sc-filter-chip" data-farea="59㎡ 이하">59㎡ 이하</span>
+          <div class="cxf-group" data-fgroup="area">
+            <button type="button" class="cxf-trigger" id="cxFilterAreaGradeTrigger">면적 <span class="cxf-caret">▾</span></button>
+            <div class="cxf-dropdown" id="cxFilterAreaGrade">
+              <span class="sc-filter-chip on" data-farea="">전체</span>
+              <span class="sc-filter-chip" data-farea="85㎡+">85㎡+</span>
+              <span class="sc-filter-chip" data-farea="60~84㎡">60~84㎡</span>
+              <span class="sc-filter-chip" data-farea="59㎡ 이하">59㎡ 이하</span>
+            </div>
           </div>
-          <div class="sc-filter-label">세대수등급</div>
-          <div class="sc-filter-row" id="cxFilterHouseholdGrade">
-            <span class="sc-filter-chip on" data-fhh="">전체</span>
-            <span class="sc-filter-chip" data-fhh="1000세대+">1000세대+</span>
-            <span class="sc-filter-chip" data-fhh="500세대+">500세대+</span>
-            <span class="sc-filter-chip" data-fhh="300세대+">300세대+</span>
-            <span class="sc-filter-chip" data-fhh="소규모조건부">소규모조건부</span>
-            <span class="sc-filter-chip" data-fhh="소규모주의">소규모주의</span>
+          <div class="cxf-group" data-fgroup="hh">
+            <button type="button" class="cxf-trigger" id="cxFilterHouseholdGradeTrigger">세대수 <span class="cxf-caret">▾</span></button>
+            <div class="cxf-dropdown" id="cxFilterHouseholdGrade">
+              <span class="sc-filter-chip on" data-fhh="">전체</span>
+              <span class="sc-filter-chip" data-fhh="1000세대+">1000세대+</span>
+              <span class="sc-filter-chip" data-fhh="500세대+">500세대+</span>
+              <span class="sc-filter-chip" data-fhh="300세대+">300세대+</span>
+              <span class="sc-filter-chip" data-fhh="소규모조건부">소규모조건부</span>
+              <span class="sc-filter-chip" data-fhh="소규모주의">소규모주의</span>
+            </div>
           </div>
-          <div class="sc-filter-label">노선</div>
-          <div class="sc-filter-row" id="cxFilterLine"><span class="sc-filter-chip on" data-fline="">전체</span></div>
+          <div class="cxf-group" data-fgroup="line">
+            <button type="button" class="cxf-trigger" id="cxFilterLineTrigger">노선 <span class="cxf-caret">▾</span></button>
+            <div class="cxf-dropdown" id="cxFilterLine"><span class="sc-filter-chip on" data-fline="">전체</span></div>
+          </div>
+          <div id="cxFilterRegion" style="display:none"></div>
         </div>
         <!-- B-12 재수정A: 리스트뷰 전용 sticky 불투명 툴바. 지도뷰의 fixed 오버레이
              정렬칩/뷰토글/⋯버튼을 JS(applyPropViewMode)가 여기로 옮겨 담음 —

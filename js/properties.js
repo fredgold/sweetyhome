@@ -466,9 +466,9 @@ document.getElementById('propRouteBtn').onclick=(e)=>{
 /* 매물탭 툴바 "⋯ 더보기" — 480px 이하(데스크톱)/900px 이하(모바일 풀스크린 지도뷰)에서
    숨겨진 실제 컨트롤을 기존 .status-picker 플로팅 메뉴 안으로 옮겼다가 닫으면 원래
    자리로 되돌림(컨트롤을 복제하지 않고 그대로 이동해 이벤트 핸들러도 그대로 유지).
-   모바일에서는 검색(unisearch)·필터(cxFilterBar)도 함께 옮기는데, 이 둘은 원래
-   부모가 .ph-actions가 아니라 각자 다르므로 요소별로 (parent,next)를 따로 기억해야
-   닫을 때 서로 다른 원래 자리로 정확히 되돌아감 */
+   모바일에서는 검색(unisearch)도 함께 옮기는데, 원래 부모가 .ph-actions가 아니므로
+   요소별로 (parent,next)를 따로 기억해야 닫을 때 서로 다른 원래 자리로 정확히 되돌아감.
+   B-35: 필터(cxFilterBar)는 상단 칩 바로 상시 노출되므로 이 메뉴에서 제외 */
 let _moreMenu=null, _moreSlots=null;
 function closeMoreMenu(){
   if(!_moreMenu) return;
@@ -480,7 +480,7 @@ function showMoreMenu(btn){
   if(_moreMenu){ closeMoreMenu(); return; }
   const ids=DESKTOP_MQ.matches
     ? ['phExportRow','propBulkBtn','propRouteBtn']
-    : ['unisearch','cxFilterBar','phExportRow','propBulkBtn','propRouteBtn'];
+    : ['unisearch','phExportRow','propBulkBtn','propRouteBtn'];
   const els=ids.map(id=>document.getElementById(id)).filter(Boolean);
   _moreSlots=els.map(el=>({el,parent:el.parentElement,next:el.nextSibling}));
   const menu=document.createElement('div');
@@ -1750,6 +1750,65 @@ function renderCxFilterOptions(){
   document.querySelectorAll('#cxFilterListingStatus [data-flisting]').forEach(c=>c.classList.toggle('on',c.dataset.flisting===cxFilters.listing));
   document.querySelectorAll('#cxFilterAreaGrade [data-farea]').forEach(c=>c.classList.toggle('on',c.dataset.farea===cxFilters.area));
   document.querySelectorAll('#cxFilterHouseholdGrade [data-fhh]').forEach(c=>c.classList.toggle('on',c.dataset.fhh===cxFilters.hh));
+  updateCxFilterTriggers();
+}
+/* B-35: 그룹 트리거 칩 라벨(선택값 표시) + 펼침/접힘 */
+const CXF_GROUP_LABELS={status:'단지상태',listing:'매물상태',area:'면적',hh:'세대수',line:'노선'};
+function updateCxFilterTriggers(){
+  [['status','cxFilterStatusTrigger'],['listing','cxFilterListingStatusTrigger'],
+   ['area','cxFilterAreaGradeTrigger'],['hh','cxFilterHouseholdGradeTrigger'],
+   ['line','cxFilterLineTrigger']].forEach(([key,id])=>{
+    const el=document.getElementById(id); if(!el) return;
+    const val=cxFilters[key];
+    el.innerHTML=`${esc(CXF_GROUP_LABELS[key])}${val?': '+esc(val):''} <span class="cxf-caret">▾</span>`;
+    el.classList.toggle('active',!!val);
+  });
+}
+/* cxFilterBar는 좁은 화면에서 가로 스크롤(overflow-x:auto)이 필요한데, 드롭다운을 그
+   안(.cxf-group)에 absolute로 두면 overflow-x:auto가 overflow-y도 auto로 강제해(CSS
+   스펙상 한쪽만 visible이 아니면 둘 다 auto로 계산됨) 바 아래로 나가는 드롭다운이
+   잘려 보이지 않는 문제가 있었음 — showMoreMenu()와 같은 패턴으로 열 때만 body로
+   옮기고 position:fixed로 트리거 좌표 기준 배치, 닫으면 원래 자리로 되돌림 */
+let _cxfOpenSlot=null;
+function closeCxFilterDropdowns(){
+  if(_cxfOpenSlot){
+    const {el,parent,next}=_cxfOpenSlot;
+    el.style.position=''; el.style.display=''; el.style.top=''; el.style.left=''; el.style.zIndex='';
+    parent.insertBefore(el,next);
+    _cxfOpenSlot=null;
+  }
+  document.querySelectorAll('.cxf-group.open').forEach(g=>g.classList.remove('open'));
+}
+function openCxFilterDropdown(group){
+  closeCxFilterDropdowns();
+  const trigger=group.querySelector('.cxf-trigger');
+  const dropdown=group.querySelector('.cxf-dropdown');
+  if(!trigger||!dropdown) return;
+  _cxfOpenSlot={el:dropdown,parent:dropdown.parentElement,next:dropdown.nextSibling};
+  document.body.appendChild(dropdown);
+  const rect=trigger.getBoundingClientRect();
+  const ddW=Math.min(280,window.innerWidth-24);
+  dropdown.style.position='fixed';
+  dropdown.style.display='flex';
+  dropdown.style.top=(rect.bottom+6)+'px';
+  dropdown.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-ddW-8))+'px';
+  dropdown.style.zIndex='30';
+  group.classList.add('open');
+}
+{
+  const bar=document.getElementById('cxFilterBar');
+  if(bar) bar.addEventListener('click',e=>{
+    const trigger=e.target.closest('.cxf-trigger');
+    if(!trigger) return;
+    const group=trigger.closest('.cxf-group');
+    const wasOpen=group.classList.contains('open');
+    closeCxFilterDropdowns();
+    if(!wasOpen) openCxFilterDropdown(group);
+  });
+  document.addEventListener('click',e=>{
+    if(e.target.closest('.cxf-trigger')||e.target.closest('.cxf-dropdown')) return;
+    closeCxFilterDropdowns();
+  });
 }
 function cxMatchesFilters(cx){
   if(cxFilters.region && (cx.regionGroup||'')!==cxFilters.region) return false;
@@ -1763,12 +1822,12 @@ function cxMatchesFilters(cx){
   }
   return true;
 }
-document.getElementById('cxFilterRegion').onclick=e=>{const c=e.target.closest('[data-fregion]');if(!c)return;cxFilters.region=c.dataset.fregion;renderComplexes();};
-document.getElementById('cxFilterStatus').onclick=e=>{const c=e.target.closest('[data-fstatus]');if(!c)return;cxFilters.status=c.dataset.fstatus;renderComplexes();};
-document.getElementById('cxFilterListingStatus').onclick=e=>{const c=e.target.closest('[data-flisting]');if(!c)return;cxFilters.listing=c.dataset.flisting;renderComplexes();};
-document.getElementById('cxFilterAreaGrade').onclick=e=>{const c=e.target.closest('[data-farea]');if(!c)return;cxFilters.area=c.dataset.farea;renderComplexes();};
-document.getElementById('cxFilterHouseholdGrade').onclick=e=>{const c=e.target.closest('[data-fhh]');if(!c)return;cxFilters.hh=c.dataset.fhh;renderComplexes();};
-document.getElementById('cxFilterLine').onclick=e=>{const c=e.target.closest('[data-fline]');if(!c)return;cxFilters.line=c.dataset.fline;renderComplexes();};
+document.getElementById('cxFilterRegion').onclick=e=>{const c=e.target.closest('[data-fregion]');if(!c)return;cxFilters.region=c.dataset.fregion;closeCxFilterDropdowns();renderComplexes();};
+document.getElementById('cxFilterStatus').onclick=e=>{const c=e.target.closest('[data-fstatus]');if(!c)return;cxFilters.status=c.dataset.fstatus;closeCxFilterDropdowns();renderComplexes();};
+document.getElementById('cxFilterListingStatus').onclick=e=>{const c=e.target.closest('[data-flisting]');if(!c)return;cxFilters.listing=c.dataset.flisting;closeCxFilterDropdowns();renderComplexes();};
+document.getElementById('cxFilterAreaGrade').onclick=e=>{const c=e.target.closest('[data-farea]');if(!c)return;cxFilters.area=c.dataset.farea;closeCxFilterDropdowns();renderComplexes();};
+document.getElementById('cxFilterHouseholdGrade').onclick=e=>{const c=e.target.closest('[data-fhh]');if(!c)return;cxFilters.hh=c.dataset.fhh;closeCxFilterDropdowns();renderComplexes();};
+document.getElementById('cxFilterLine').onclick=e=>{const c=e.target.closest('[data-fline]');if(!c)return;cxFilters.line=c.dataset.fline;closeCxFilterDropdowns();renderComplexes();};
 
 /* ---- v5 stage6c: 주간 상태 UX (화면 표시만, 알림·스케줄링 없음) ---- */
 function needsWeeklyCheck(cx,rep){
@@ -1952,14 +2011,15 @@ let propViewMode='map';
    오버레이)이 카드 위에 겹쳐 보이던 문제(B-22) — 리스트뷰에서만 이 셋을 실제로
    #cxListToolbar 안으로 옮겨 position:sticky 불투명 바로 묶음(복제 없이 DOM을
    그대로 이동해 이벤트 핸들러 유지, showMoreMenu()와 같은 패턴). 지도뷰로
-   돌아가면 원래 자리(.grid/.panel-head 안)로 되돌려 기존 fixed 오버레이 동작 복원 */
+   돌아가면 원래 자리(.grid/.panel-head 안)로 되돌려 기존 fixed 오버레이 동작 복원.
+   B-35: cxFilterBar도 같은 방식으로 옮김(CSS에서 flex-basis:100%로 둘째 줄에 배치) */
 let _listToolbarSlots=null;
 function syncListToolbar(){
   const toolbar=document.getElementById('cxListToolbar');
   if(!toolbar) return;
   if(propViewMode==='list'){
     if(_listToolbarSlots) return;
-    const ids=['cxSortChips','propViewToggleBtn','propMoreBtn'];
+    const ids=['cxSortChips','propViewToggleBtn','propMoreBtn','cxFilterBar'];
     const els=ids.map(id=>document.getElementById(id)).filter(Boolean);
     _listToolbarSlots=els.map(el=>({el,parent:el.parentElement,next:el.nextSibling}));
     els.forEach(el=>toolbar.appendChild(el));
@@ -1974,6 +2034,7 @@ function applyPropViewMode(){
   if(panel) panel.dataset.view=propViewMode;
   const btn=document.getElementById('propViewToggleBtn');
   if(btn) btn.textContent=propViewMode==='map'?'목록':'지도';
+  closeCxFilterDropdowns();
   syncListToolbar();
   if(propViewMode==='map') requestAnimationFrame(()=>requestAnimationFrame(()=>{
     waitNaverMaps(()=>overview&&overview.refresh(true));

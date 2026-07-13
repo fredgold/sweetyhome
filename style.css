@@ -224,6 +224,21 @@
      새서 빈 박스가 남을 수 있어 여기(무조건 적용 구간)에 둠 */
   .cx-list-toolbar{display:none;}
   .mapcard.collapsed #overviewMap{display:none;}
+  /* B-35: 네이버부동산식 그룹 칩 바 — 그룹당 트리거 하나, 탭하면 옵션 드롭다운 펼침.
+     기본(데스크톱)은 목록 위 일반 흐름 가로 바. 모바일 오버라이드는 아래 미디어쿼리. */
+  #cxFilterBar{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;scrollbar-width:none;}
+  #cxFilterBar::-webkit-scrollbar{display:none;}
+  .cxf-group{position:relative;flex-shrink:0;}
+  .cxf-trigger{display:flex;align-items:center;gap:4px;font-size:var(--fs-micro);font-weight:700;padding:6px 11px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);background:var(--surface);color:var(--ink-soft);white-space:nowrap;cursor:pointer;}
+  .cxf-trigger.active{border-color:var(--money);background:var(--money-wash);color:var(--money-deep);}
+  .cxf-caret{font-size:9px;transition:transform .15s;}
+  .cxf-group.open .cxf-caret{transform:rotate(180deg);}
+  /* position/top/left/z-index/display는 열 때 JS(openCxFilterDropdown)가 인라인으로
+     부여 — #cxFilterBar의 overflow-x:auto가 overflow-y까지 auto로 강제해(CSS 스펙상
+     한쪽만 visible이면 안 됨) 여기 두면 바 아래로 나가는 드롭다운이 잘리므로, 열릴 때만
+     body로 옮겨 트리거 좌표 기준 position:fixed로 배치(showMoreMenu와 동일 패턴) */
+  .cxf-dropdown{display:none;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);box-shadow:0 4px 20px rgba(0,0,0,.13);padding:8px;min-width:190px;max-width:min(280px,calc(100vw - 24px));flex-wrap:wrap;gap:6px;}
+  .cxf-dropdown .sc-filter-chip{flex-shrink:0;}
   /* 모바일 전용 지도 풀스크린 — 확장 버튼을 누르면 지도가 뷰포트 전체를 채움(단순 70vh 확대가 아님).
      ≥900px에서는 지도가 항상 sticky로 보이므로 이 오버레이 자체가 불필요 → 버튼도 CSS로 숨김 */
   @media (max-width:899.98px){
@@ -238,14 +253,20 @@
        않고 ⋯메뉴(showMoreMenu, propMoreBtn)로만 진입 — 레거시 목록도 계속 숨김 */
     .grid>section>.unisearch,
     .grid>section>.route-bar,
-    .grid>section>#cxFilterBar,
     #legacyToggleWrap,
     #legacyWrap{display:none;}
     .grid>section>.panel-head>div:first-child,
     .grid>section>.panel-head .ph-actions>*{display:none;}
-    /* z-index 체계: 지도 0 < 오버레이(칩·FAB·카드) 10~20 < 바텀시트·폼시트(.modal,기존 1000) <
-       ⋯/필터 팝업(.status-picker,기존 2000) — 팝업이 시트보다 위(둘이 동시에 뜨는 흐름은 없어
-       무해하지만 실측값 기준으로 순서를 정확히 적음) */
+    /* B-35: 필터 칩 바는 더보기(⋯)메뉴가 아니라 지도 위 상단 오버레이 2번째 줄(정렬칩
+       바로 아래)에 항상 노출. 리스트뷰에선 #cxListToolbar로 옮겨져(syncListToolbar)
+       position:static이 되므로 아래 fixed 규칙은 지도뷰에서만 실제 적용됨 */
+    .grid>section>#cxFilterBar{
+      display:flex;position:fixed;top:calc(var(--overlay-top,110px) + 52px);
+      left:10px;right:10px;z-index:8;margin-bottom:0;
+    }
+    /* z-index 체계: 지도 0 < 오버레이(칩·FAB·카드) 10~20 < 필터 드롭다운(30, 위 정의) <
+       바텀시트·폼시트(.modal,기존 1000) < ⋯/필터 팝업(.status-picker,기존 2000) — 팝업이
+       시트보다 위(둘이 동시에 뜨는 흐름은 없어 무해하지만 실측값 기준으로 순서를 정확히 적음) */
     .cx-sort-chips{display:flex;z-index:10;}
     .prop-view-toggle{display:flex;}
     /* ⋯ 더보기 — 지도 우상단 오버레이. #propMoreBtn을 원래 DOM 위치(.panel-head 안)에
@@ -290,11 +311,13 @@
        단지 상세 바텀시트의 지도(#cxDetailMap)로 충분해 지도뷰와 중복하지 않음.
        현위치(.my-loc-btn)는 지도 관련 기능이라 리스트뷰에선 그대로 숨김 유지 —
        정렬칩·뷰토글·⋯버튼만 #cxListToolbar로 옮겨 sticky 불투명 바로 재구성(재수정A,
-       B-22). 지도뷰의 fixed 오버레이(칩 top:10px 등)는 이 블록 밖 base 규칙 그대로 */
+       B-22). B-35: 필터 칩 바도 같은 방식으로 옮기되 flex-basis:100%로 항상 둘째 줄에
+       배치(정렬칩 줄과 겹치지 않음). 지도뷰의 fixed 오버레이(칩 top:10px 등)는 이 블록
+       밖 base 규칙 그대로 */
     #panel-props[data-view="list"]{position:static;overflow:visible;}
     #panel-props[data-view="list"] .mapcard{display:none;}
     #panel-props[data-view="list"] #cxListToolbar{
-      display:flex;align-items:center;gap:8px;padding:10px 12px;
+      display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;
       position:sticky;top:var(--nav-h,64px);z-index:10;
       background:var(--bg);border-bottom:1px solid var(--hairline);
     }
@@ -306,6 +329,10 @@
     #cxListToolbar>.cx-sort-chips{position:static;top:auto;left:auto;}
     #cxListToolbar>.prop-view-toggle{position:static;margin-left:auto;}
     #cxListToolbar>#propMoreBtn{position:static;top:auto;right:auto;}
+    #cxListToolbar>#cxFilterBar{
+      position:static;top:auto;left:auto;right:auto;
+      flex-basis:100%;order:3;margin-top:2px;margin-bottom:0;
+    }
     #panel-props[data-view="list"] #complexSection{
       position:static;display:block;overflow-x:visible;scroll-snap-type:none;padding:12px 12px 10px;
     }
