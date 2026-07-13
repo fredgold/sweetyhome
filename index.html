@@ -786,8 +786,9 @@
 
   <!-- ============ 매물 시트 승격 임포트 모달 ============ -->
   <div class="modal" id="propEditModal">
-    <div class="box" style="max-width:600px;width:96vw;max-height:92vh;overflow-y:auto">
-      <h3 id="propEditTitle">매물 수정</h3>
+    <div class="box" style="max-width:600px;width:96vw">
+      <div class="mhead"><h3 id="propEditTitle">매물 수정</h3></div>
+      <div class="mbody">
       <div class="row">
         <div class="field"><label>단지명 / 주소</label><input id="em_name" placeholder="예: 상도두산위브트레지움"></div>
         <div class="field"><label>가까운 역 / 위치</label><input id="em_loc" placeholder="예: 노량진역 도보 7분"></div>
@@ -835,7 +836,8 @@
           <button type="button" id="em_imgClear" style="display:none;font-size:11px;color:var(--s-drop);border:none;background:none;cursor:pointer;">✕ 제거</button>
         </div>
       </div>
-      <div class="form-actions">
+      </div>
+      <div class="mfoot">
         <button class="btn-ghost" id="em_cancelBtn">취소</button>
         <button class="btn-save" id="em_saveBtn">저장</button>
       </div>
@@ -871,14 +873,15 @@
   </div>
 
   <div class="modal" id="complexDetailModal">
-    <div class="box" style="max-width:460px;width:100%;overflow-y:auto">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+    <div class="box" style="max-width:460px;width:100%">
+      <div class="mhead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
         <h3 id="cxDetailTitle" style="margin:0">단지 상세</h3>
         <div style="display:flex;align-items:center;gap:6px;">
           <button type="button" class="c-fav-btn" id="cxDetailFavBtn" aria-label="즐겨찾기" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.5 5.6 6 .6-4.5 4.1 1.3 6-5.3-3.2-5.3 3.2 1.3-6-4.5-4.1 6-.6z"/></svg></button>
           <button class="btn-ghost" data-close="complexDetailModal">닫기</button>
         </div>
       </div>
+      <div class="mbody">
       <div id="cxDetailMapWrap" style="position:relative">
         <div id="cxDetailMap"></div>
         <div id="cxDetailNoCoord" class="cx-nocoord-overlay" style="display:none">좌표 확인 필요</div>
@@ -947,6 +950,7 @@
 
       <h3 style="font-size:14px;margin-bottom:8px">매물 목록</h3>
       <div id="cxDetailListings"></div>
+      </div>
     </div>
   </div>
 

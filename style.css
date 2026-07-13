@@ -329,7 +329,10 @@
     /* z-index:1100 — .apptabs(1001)보다 위. 기본 .modal(1000)만으론 탭바에 가려짐(B-12 버그1).
        데스크톱(≥900px) 쪽 #complexDetailModal{z-index:1002} 규칙은 별도 미디어쿼리라 무관 */
     #complexDetailModal{align-items:flex-end;justify-content:center;padding:0;z-index:1100;}
-    #complexDetailModal .box{width:100%;max-width:100%;height:auto;max-height:88vh;border-radius:16px 16px 0 0;margin:0;overflow-y:auto;animation:sheetup .22s ease;}
+    /* B-59: overflow는 .box가 아니라 .mbody가 담당(sticky mhead 유지) —
+       overflow-y:auto를 여기 남기면 ID 선택자 특이도가 base .modal .box{overflow:hidden}보다
+       높아 이 규칙이 이겨버려 mhead까지 같이 스크롤돼버림 */
+    #complexDetailModal .box{width:100%;max-width:100%;height:auto;max-height:88vh;border-radius:16px 16px 0 0;margin:0;animation:sheetup .22s ease;}
     #complexDetailModal .box::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--hairline);margin:8px auto 2px;}
     /* 리스트뷰(data-view=list) — 지도를 숨기고 카드를 세로 목록으로. 위치 확인은 카드 탭 →
        단지 상세 바텀시트의 지도(#cxDetailMap)로 충분해 지도뷰와 중복하지 않음.

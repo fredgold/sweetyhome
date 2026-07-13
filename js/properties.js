@@ -2368,10 +2368,13 @@ document.getElementById('cxDetailVerdict').addEventListener('blur',e=>{
 /* B-21: 바텀시트(단지 상세) 드래그다운 닫기. 배경 딤 탭 닫기는 이미 위쪽
    document.querySelectorAll('.modal').forEach(...) 범용 핸들러가 처리하고 있어
    별도 구현 불필요(확인 완료) — 여기선 드래그다운만 추가.
-   핸들(.box::before)+헤더가 .box 맨 위 ~60px 안에 있고 헤더가 sticky가 아니라서
-   본문을 스크롤하면 헤더가 화면 밖으로 밀려나 애초에 그 영역에서 터치가 시작될 수
-   없음 — "상단 ~60px에서 시작" 조건만으로 "시트가 최상단일 때만"이 자연히 보장돼
-   본문 스크롤과 충돌하지 않음(box.scrollTop>0 체크는 안전망으로 추가) */
+   핸들(.box::before)+헤더(.mhead)가 .box 맨 위 ~60px 안에 있고, B-59로 헤더가
+   sticky 구조(flex:0 0 auto)가 되면서 본문(.mbody)을 아무리 스크롤해도 헤더는
+   항상 그 자리에 고정됨 — "상단 ~60px에서 시작"한 터치는 이제 항상 헤더 위에서
+   시작한다는 뜻이라 별도 스크롤 안전망 없이도 본문 스크롤과 충돌하지 않음.
+   (B-59 이전엔 .box 자체가 스크롤 컨테이너라 body가 스크롤되면 헤더가 밀려날 수
+   있었고 그걸 막는 box.scrollTop>0 체크가 있었지만, 지금은 .box가 스크롤되지
+   않고 .mbody만 스크롤되므로 box.scrollTop은 항상 0 — 그 체크는 제거) */
 (()=>{
   const modal=document.getElementById('complexDetailModal');
   const box=modal&&modal.querySelector('.box');
@@ -2382,7 +2385,7 @@ document.getElementById('cxDetailVerdict').addEventListener('blur',e=>{
   box.addEventListener('touchstart',e=>{
     if(e.touches.length!==1){ active=false; return; }
     const rect=box.getBoundingClientRect();
-    if(e.touches[0].clientY-rect.top>HANDLE_ZONE||box.scrollTop>0){ active=false; return; }
+    if(e.touches[0].clientY-rect.top>HANDLE_ZONE){ active=false; return; }
     startX=e.touches[0].clientX; startY=e.touches[0].clientY;
     active=true; dragging=false; curDist=0;
   },{passive:true});
