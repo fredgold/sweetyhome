@@ -1582,6 +1582,78 @@ base `.modal`은 방치돼 있었음.
 
 ---
 
+## 2026-07-13 — B-59 모달 sticky 헤더·푸터 통일 (`44b9850`·`8bc627c`·`4b76ea3`·`a4fe1c6`)
+
+전 모달(9개) 제목·닫기(헤더)와 취소/저장(푸터)이 스크롤과 무관하게 항상
+보이도록 통일. `.box`를 flex 컬럼으로 바꾸고 `.mhead`(고정)/`.mbody`(스크롤)/
+`.mfoot`(고정, 있는 경우만) 3영역으로 정규화 + 흩어져 있던 `.ok`·에러·사진·
+버튼 요소를 올바른 영역으로 재배치. 지시서(DISPATCH-B59)대로 4단계 커밋.
+
+**커밋①** (`44b9850`) — CSS 공통 규격 추가:
+`.modal .box{display:flex;flex-direction:column;padding:0;overflow:hidden}`
++ `.mhead`/`.mbody`(`overflow-y:auto`)/`.mfoot` 3규칙. 모바일 두 breakpoint
+(`@media max-width:760px`·`480px`) 모두 패딩을 mhead/mbody/mfoot로 재분배
+(오버헤드 압축) + `.mfoot`에 `padding-bottom:calc(Npx + env(safe-area-inset-bottom,0))`
+로 홈바 겹침 방지. 단순 단일푸터 모달 4개(exportModal·importModal·
+assetAiModal·profileModal) 구조 적용 — `.ok`/`hint`/`mdesc`를 mbody 안으로,
+`.macts`→`.mfoot`로 교체.
+
+**커밋②** (`8bc627c`) — scEditModal: 기존엔 저장/취소 버튼이 사진첨부·에러
+메시지보다 위(중간)에 있던 순서를 정리 — mbody에 제목·유형·상태·원문·
+더보기필드·사진첨부·에러를 전부 담고, 저장/취소를 맨 끝 mfoot로 이동.
+
+**커밋③** (`4b76ea3`) — 매물 모달 2개: `propEditModal`(mhead=h3, mbody=폼
+전체+지도, `.form-actions`→`.mfoot`), `complexDetailModal`(mhead=기존
+제목+즐겨찾기+닫기 헤더 그대로, mbody=나머지, mfoot 없음—닫기가 헤더에).
+인라인 `max-height`/`overflow-y:auto`는 4곳(scEdit·propEdit·propImport·
+complexDetail) 전부 제거(공통 규격이 처리). **부수 발견·수정**: 모바일
+`#complexDetailModal .box{overflow-y:auto}`(line 332) 규칙이 ID 선택자라
+특이도가 base `.modal .box{overflow:hidden}`보다 높아 그대로 두면 이 모달만
+mhead까지 같이 스크롤되는 문제 — `overflow-y:auto` 제거로 base 규칙이
+정상 적용되게 수정. 또한 `properties.js`의 B-21 바텀시트 드래그다운 닫기
+핸들러가 `box.scrollTop>0`을 안전망으로 쓰고 있었는데, box가 더 이상
+스크롤 컨테이너가 아니게 되면서(이제 mbody가 스크롤) 이 체크가 항상 무의미
+(box.scrollTop 항상 0)해져 제거 — mhead가 이제 항상 고정이라 "상단
+~60px에서 시작한 터치=헤더 위" 조건이 스크롤 상태와 무관하게 항상 참이라
+안전망 자체가 불필요해짐(코드 동작은 기존과 동일, dead code만 정리).
+
+**커밋④** (`a4fe1c6`) — 위저드 모달 2개(scImportModal·propImportModal):
+mhead만 sticky 적용, 위저드 단계별 액션행(`#sc_importPreview`·
+`#propImportPreview` 토글, `.macts`)은 지시대로 통일 없이 mbody 흐름 안에
+그대로 유지(위저드 특성상 단일 sticky 푸터로 강제하지 않음).
+
+**검증**(Playwright, 로컬 정적 서버+게스트모드):
+- 데스크톱 1400px: 9개 모달 전부 — mbody에 3000px 더미 콘텐츠 주입 후
+  강제 스크롤(scrollTop=1000)해도 mhead 위치·mfoot 위치가 스크롤 전후로
+  완전히 동일(0.5px 오차 이내) 확인, `.box` computed overflow가 실제로
+  `hidden`임을 확인.
+- scImportModal/propImportModal: `.macts` 액션행이 여전히 `.mbody` 안에
+  있고 파싱→미리보기 토글(`#sc_importPreview`/`#propImportPreview`
+  display 전환)이 구조적으로 정상 확인.
+- `.status-picker`/모달 z-index(1100)는 B-58 이후 무회귀 확인.
+- 모바일 390px: `complexDetailModal` 풀높이 시트에서 mbody 강제 스크롤 후
+  헤더(제목+즐겨찾기+닫기) 위치 불변·닫기 버튼 항상 화면 안에 위치 확인,
+  드래그다운 닫기 핸들러(touchstart 디스패치)가 에러 없이 동작. scEditModal
+  모바일 패딩 압축(`mhead: 10px 12px 6px`, `mfoot padding-bottom: 8px`
+  = `calc(8px+env(...,0))` 헤드리스 환경에서 0 fallback으로 정확히 8px)
+  확인.
+- `node --check js/properties.js`·CSS 중괄호 균형·`index.html` div 개폐
+  균형·`git diff --check` 전부 통과.
+- **JS 무회귀**: 4개 커밋 전체 diff에서 삭제된 `id=`/`data-close=` 속성
+  집합과 추가된 집합을 비교해 완전히 동일함(개수·내용 둘 다 무손실) 확인
+  — 즉 모든 버튼 ID·닫기 배선이 그대로 보존됨.
+
+**보류(테디 결정 필요)**: 지시서의 "모바일 키보드 충돌 시 `.box`
+`max-height:88vh`→`100dvh` 검토 또는 `.mfoot{position:static}` 폴백"은
+실기기 iOS Safari 키보드 실측이 필요한 항목이라 이번엔 구현하지 않음 —
+헤드리스 테스트로는 재현 불가. 실기기에서 입력 모달(scEdit·assetAi·
+import·propEdit)에 키보드를 올렸을 때 튐 현상이 있으면 후속으로 처리.
+
+수정 파일: `style.css`·`index.html`(모달 9개)·`js/properties.js`(B-21
+드래그다운 핸들러 안전망 정리, 1곳).
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
