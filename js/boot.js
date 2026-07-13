@@ -88,8 +88,12 @@ load().then(restoreLastView);
     setTimeout(()=>{ el.classList.remove('ptr-show','ptr-spin'); el.style.transition=''; },200);
   }
 
+  /* B-52: 매물탭 지도(#overviewMap/.mapcard) 위에서 시작한 터치는 PTR 후보에서
+     제외 — 지도를 아래로 드래그(패닝)하는 제스처도 "세로 우세"라 손대지 않으면
+     PTR로 오판돼 지도를 못 움직이고 새로고침이 발동됨. 시작점만 판정하고 지도
+     밖(리스트뷰 최상단 등)은 그대로 정상 PTR 동작 */
   document.addEventListener('touchstart',e=>{
-    if(e.touches.length!==1||anyModalOpen()||!atTop()){ active=false; return; }
+    if(e.touches.length!==1||anyModalOpen()||!atTop()||e.target.closest('#overviewMap, .mapcard')){ active=false; return; }
     startX=e.touches[0].clientX; startY=e.touches[0].clientY;
     active=true; dragging=false; ready=false;
   },{passive:true});
