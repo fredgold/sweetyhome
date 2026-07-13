@@ -794,6 +794,40 @@ B-36으로 좌측 리스트(`#complexSection`)가 컬럼 내부 자체 스크롤
 
 ---
 
+## 2026-07-13 — B-48 레거시 "기존(미정리) 매물" UI 은퇴 (`886d490`)
+
+### 문제
+E-01(단지·매물 2계층 전환) 이관 완료 후에도 매물탭 좌측 단지 카드 아래에 "▸ 기존(미정리)
+매물 (N)" 토글 + (펼치면) 상태 탭칩(전체/관심/검토중…) + 레거시 목록이 그대로 남아
+공간을 잠식(B-47로 상단을 슬림화해도 이 잔재가 카드 노출 수를 다시 갉아먹음).
+
+### 수정 (`js/properties.js`, `renderComplexes()`)
+`state.complexes.length>0`(이관 완료) 분기에서 기존엔 `legacyToggleWrap.style.display=''`
+(토글 버튼은 항상 노출) + `legacyWrap.style.display=legacyExpanded?'':'none'`(목록은
+펼침 상태에 따라)였던 것을, `legacyExpanded` 값과 무관하게 **둘 다 무조건
+`display:none`**으로 바꿈 — 토글 버튼 자체가 사라지므로 사용자가 실수로 펼쳐놓은
+상태였더라도 이관 완료 후엔 항상 숨겨짐. `state.complexes.length===0`(미마이그레이션)
+분기는 전혀 손대지 않아 `legacyWrap`이 "기존 매물을 단지로 정리" CTA와 함께 유일한
+진입점 역할을 계속 함. `properties[]`/`renderList()`/`renderTabs()` 렌더 로직, `#tabs`/
+`#list` DOM, ⋯메뉴의 "레거시 내보내기"(백업 수단)는 전혀 삭제하지 않음 — 완전 삭제는
+B-05에서 백업 확인 후 별도 진행 예정.
+
+### 검증
+`node --check`/`git diff --check` 통과. Playwright로 데스크톱(1400×900):
+(1) `state.complexes=[]`(GUEST_STATE 기본 레거시 `properties[]` 3건 보유) 상태에서
+`legacyToggleWrap`은 `display:none`, `legacyWrap`은 `display:flex`(마이그레이션 CTA +
+상태 탭칩 + 목록 정상 노출) 확인 — 미마이그레이션 경로 무회귀. (2) 가짜 단지 10건
+주입(이관 완료 시뮬레이션) 후 `legacyToggleWrap`·`legacyWrap` 둘 다 `display:none`
+확인 — 카드 바로 아래에 아무 잔재도 안 남음. (3) `renderTabs`/`renderList` 함수와
+`#tabs`/`#list` DOM이 여전히 존재함을 확인해 로직 삭제 없음 검증. (4) 미마이그레이션
+상태에서 수동으로 `legacyExpanded`를 펼친 뒤 단지를 추가해도(이관 완료) 여전히 둘 다
+숨겨짐 확인(무조건 숨김 로직이 상태와 무관하게 동작함을 재확인). 모바일은 기존에
+이미 `@media(max-width:899.98px){#legacyToggleWrap,#legacyWrap{display:none}}`로
+완전히 숨겨져 있었음을 재확인(이번 변경과 무관, 스크린샷으로 지도뷰/리스트뷰 무회귀
+확인). XSS 무접점(`display` 토글 전용, 신규 사용자 입력 삽입 없음).
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
