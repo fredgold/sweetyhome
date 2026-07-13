@@ -479,8 +479,8 @@ function closeMoreMenu(){
 function showMoreMenu(btn){
   if(_moreMenu){ closeMoreMenu(); return; }
   const ids=DESKTOP_MQ.matches
-    ? ['phExportRow','propBulkBtn','propRouteBtn']
-    : ['unisearch','phExportRow','propBulkBtn','propRouteBtn'];
+    ? ['phExportRow','propBulkBtn','propRouteBtn','migStartBtn']
+    : ['unisearch','phExportRow','propBulkBtn','propRouteBtn','migStartBtn'];
   const els=ids.map(id=>document.getElementById(id)).filter(Boolean);
   _moreSlots=els.map(el=>({el,parent:el.parentElement,next:el.nextSibling}));
   const menu=document.createElement('div');
@@ -1679,6 +1679,27 @@ function migApply(){
   renderProps();
   showPropToast(`단지 ${newComplexes}개 신규 · 매물 ${newListings}건 등록${skippedListings?` · 중복 ${skippedListings}건 건너뜀`:''} (기존 매물 목록은 그대로 유지돼요)`);
 }
+/* B-47: 기준바(.gates) 접이식 — 자주 안 바뀌는 정보라 기본 접힘, 펼침 상태만 localStorage
+   기억(모바일은 .gates 자체가 display:none이라 이 토글은 데스크톱에서만 실제로 보임) */
+(function initGatesToggle(){
+  const box=document.getElementById('gatesBox');
+  const btn=document.getElementById('gatesToggleBtn');
+  if(!box||!btn) return;
+  const KEY='sh_gatesExpanded';
+  let expanded=false;
+  try{ expanded=localStorage.getItem(KEY)==='1'; }catch(e){}
+  const apply=()=>{
+    box.classList.toggle('expanded',expanded);
+    btn.innerHTML=(expanded?'접기':'펼치기')+' <span class="gates-toggle-caret">▾</span>';
+    btn.setAttribute('aria-expanded',String(expanded));
+  };
+  apply();
+  btn.onclick=()=>{
+    expanded=!expanded;
+    apply();
+    try{ localStorage.setItem(KEY,expanded?'1':'0'); }catch(e){}
+  };
+})();
 (function migInjectUI(){
   const phActions=document.querySelector('.ph-actions');
   if(phActions) phActions.insertAdjacentHTML('beforeend',

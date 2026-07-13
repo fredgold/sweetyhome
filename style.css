@@ -193,7 +193,14 @@
 
   /* ================= PROPERTIES (흡수) ================= */
   .gates{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:13px 15px;margin-bottom:18px;box-shadow:var(--shadow);}
-  .gates .gh{font-size:11px;font-weight:700;color:var(--line9-deep);letter-spacing:.06em;margin-bottom:9px;}
+  /* B-47: 기본 접힘(제목 1줄 + 토글) — 자주 안 바뀌는 기준이라 펼쳐둘 필요 없음.
+     펼침 상태는 initGatesToggle()(properties.js)이 localStorage로 기억 */
+  .gates .gh{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;color:var(--line9-deep);letter-spacing:.06em;margin-bottom:9px;}
+  .gates:not(.expanded) .gh{margin-bottom:0;}
+  .gates:not(.expanded) .gatelist{display:none;}
+  .gates-toggle{font-size:11px;font-weight:700;color:var(--ink-soft);letter-spacing:0;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:3px;padding:2px 0;}
+  .gates-toggle-caret{font-size:9px;transition:transform .15s;}
+  .gates.expanded .gates-toggle-caret{transform:rotate(180deg);}
   .gatelist{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
   .gate{display:flex;gap:9px;align-items:flex-start;}
   .gate .ic{font-size:15px;}
@@ -363,6 +370,14 @@
        고정폭으로 유지(레거시 .rail과 동일 패턴) */
     .unisearch,.panel-head,.form,#legacyToggleWrap{flex-shrink:0;}
     #complexSection{flex:1;min-height:0;overflow-y:auto;padding-right:4px;}
+    /* B-47: 모바일(480px 이하)과 동일한 패턴으로 데스크톱도 보조 버튼(내보내기·시트·임장·
+       단지정리)을 ⋯더보기로 묶어 상단을 슬림화. 상시 노출은 검색·필터칩·정렬(select)·
+       매물추가만 — showMoreMenu()의 desktop ids 배열도 함께 갱신(js/properties.js) */
+    .grid>section>.panel-head .ph-actions>.ph-more-btn{display:inline-flex;align-items:center;justify-content:center;}
+    .grid>section>.panel-head .ph-actions>#phExportRow,
+    .grid>section>.panel-head .ph-actions>#propBulkBtn,
+    .grid>section>.panel-head .ph-actions>#propRouteBtn,
+    .grid>section>.panel-head .ph-actions>#migStartBtn{display:none;}
   }
   .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap;}
   .panel-head h2{font-size:15px;font-weight:800;letter-spacing:-.02em;}
