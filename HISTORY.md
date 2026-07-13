@@ -911,6 +911,33 @@ overflow-y:auto`)은 그대로 유지. 모바일(A안, `@media max-width:899.98p
 
 ---
 
+## 2026-07-13 — B-46 매물탭 하단 여백/잔여 스크롤 제거 (`c58d70e`)
+
+### 원인
+B-49 검증 중 발견한 잔여 스크롤(~98px)의 원인을 특정: 전역 컨테이너 `.wrap`의
+`padding:24px 20px 64px`(하단 64px)이 과함. 뷰포트 고정 flex 레이아웃인 매물탭
+(B-49)에선 이 하단 패딩이 그대로 페이지 아래 여백 + 잔여 스크롤로 남았음.
+
+### 수정 (`style.css`)
+1. `.wrap` 기본(무조건 적용) `padding-bottom`을 64px → 24px로 전역 축소.
+2. 데스크톱 매물탭(`#panel-props.on`) 활성 시엔 뷰포트 고정 레이아웃이라 하단
+   패딩 자체가 불필요 — `body:has(#panel-props.on) .wrap{padding-bottom:0}`로
+   조건부 0 적용(`:has()` 사용, 이미 모던 브라우저만 대상인 프로젝트라 지장 없음).
+   `@media(max-width:760px)`의 별도 모바일 `.wrap{padding:14px 12px 60px}` 오버라이드는
+   손대지 않음(범위 밖).
+
+### 검증
+`node --check`(JS 변경 없음)/CSS 중괄호 균형/`git diff --check` 통과. Playwright로
+데스크톱(1400×900): (1) 매물탭에 가짜 단지 15건 주입 후 `.wrap`의 computed
+`padding-bottom`이 `0px`, 잔여 스크롤(`scrollHeight-innerHeight`)이 B-49 시점
+~98px에서 34px로 감소 확인(완전한 0은 아니나 대폭 개선 — 남은 34px는 `.wrap` 밖
+다른 페이지 요소로 추정, 이번 범위 밖), (2) 대시보드·자산·액션·수집함 4개 탭
+전환 시 `.wrap`의 `padding-bottom`이 여전히 `24px`(0으로 안 새어나감) 확인, 각 탭
+풀페이지 스크린샷으로 마지막 요소가 브라우저 하단에 딱 붙지 않고 적당한 여백을
+유지함을 시각 확인(무회귀). XSS 무접점(CSS 레이아웃 전용 변경).
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
