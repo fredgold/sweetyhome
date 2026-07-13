@@ -595,9 +595,9 @@ function parseNaver(t){
   const sed=t.match(/([\d,]+)\s*세대/); const sedN=sed?parseInt(sed[1].replace(/,/g,''),10):null; if(sed)bits.push(sedN+'세대');
   const hy=t.match(/(복도식|계단식|복도혼합|타워형)/); if(hy)bits.push(hy[1]);
   const nan=t.match(/(중앙난방|지역난방|개별난방)/); if(nan)bits.push(nan[1]);
-  const pk=t.match(/세대당\s*([\d.]+)\s*대/); if(pk)bits.push('주차 '+pk[1]+'대/세대');
+  const pk=t.match(/세대당\s*([\d.]+)\s*대/); if(pk){bits.push('주차 '+pk[1]+'대/세대'); r.parking=parseFloat(pk[1]);}
   const yr=t.match(/\((\d+)년차\)/); if(yr)bits.push(yr[1]+'년차');
-  const mg=t.match(/관리비[\s\S]{0,6}?([\d,]+)\s*만원/); if(mg)bits.push('관리비 '+mg[1]+'만');
+  const mg=t.match(/관리비[\s\S]{0,6}?([\d,]+)\s*만원/); if(mg){bits.push('관리비 '+mg[1]+'만'); r.managementFee=parseInt(mg[1].replace(/,/g,''),10);}
   const mv=t.match(/입주가능일[\s\S]{0,15}?(\d{4}년\s*\d{1,2}월\s*\d{1,2}일)/); if(mv)bits.push('입주 '+mv[1].replace(/\s+/g,''));
   const ln=t.match(/융자금[\s\S]{0,6}?(없음|있음)/); if(ln)bits.push('융자 '+ln[1]);
   if(bits.length)r.memo=bits.join(' · ');
@@ -615,6 +615,10 @@ function applyFill(j){
   if(j.area!=null&&j.area!=='') document.getElementById('f_area').value=j.area;
   if(j.memo) document.getElementById('f_memo').value=j.memo;
   if(j._auto) tempChecks=Object.assign(tempChecks||{},j._auto);
+  /* B-28: 파싱이 주차·관리비를 읽었을 때만 저장 — 저장 시점(saveAsComplexListing)에
+     반영, 실패 시 각 state는 기존대로 'unknown' */
+  if(j.parking!=null) tempParking=j.parking;
+  if(j.managementFee!=null) tempManagementFee=j.managementFee;
 }
 document.getElementById('fillBtn').onclick=async()=>{
   const txt=document.getElementById('pasteBox').value.trim();
@@ -807,7 +811,7 @@ const form=document.getElementById('form');
 let propImgData=null;
 function clearForm(){
   ['editId','f_name','f_loc','f_station','f_line','f_deposit','f_area','f_households','f_url','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
-  tempChecks=null;clearFormPin();
+  tempChecks=null;tempParking=null;tempManagementFee=null;clearFormPin();
   propImgData=null;
   document.getElementById('f_img').value='';
   document.getElementById('f_imgLabel').innerHTML=ic('camera')+' 사진 추가';
@@ -1011,6 +1015,10 @@ async function saveAsComplexListing(data){
       complexStatus:migComplexStatus(data.status),
       lat:data.lat??null, lng:data.lng??null,
       memo:data.memo||'',
+      /* B-28: 붙여넣기 파싱이 세대당 주차대수를 읽었을 때만 known으로 승격 —
+         파싱 실패(unknown) 시 사용자가 단지 상세에서 직접 입력 */
+      parking:tempParking!=null?tempParking:null,
+      parkingState:tempParking!=null?'known':'unknown',
       createdAt:now, updatedAt:now,
     };
     state.complexes.push(cx);
@@ -1032,7 +1040,10 @@ async function saveAsComplexListing(data){
     dongHo, areaM2:(areaNum!=null&&!isNaN(areaNum))?areaNum:null,
     areaText:data.area?String(data.area):'', areaGrade:'',
     deposit:data.deposit?parseEok(data.deposit):null,
-    managementFee:null, listingStatus:'게시중',
+    /* B-28: 붙여넣기 파싱이 관리비(만원)를 읽었을 때만 known으로 승격 */
+    managementFee:tempManagementFee!=null?tempManagementFee:null,
+    managementFeeState:tempManagementFee!=null?'known':'unknown',
+    listingStatus:'게시중',
     isRepresentative:isFirstListing,
     memo:data.memo||'',
   });
@@ -1040,6 +1051,7 @@ async function saveAsComplexListing(data){
   showPropToast(isNewComplex
     ? `새 단지 "${cx.complexName}"가 등록됐어요${(cx.lat&&cx.lng)?'':' · 좌표 확인 필요'}`
     : `기존 단지 "${cx.complexName}"에 매물이 추가됐어요`);
+  tempParking=null; tempManagementFee=null;
 }
 function delProp(id){if(!confirm('이 매물을 삭제할까요?'))return;state.properties=state.properties.filter(x=>x.id!==id);save();renderProps();refreshOverview();}
 
@@ -1465,6 +1477,7 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
           commuteGangnam:row.commuteGangnam||null, commuteSinsa:row.commuteSinsa||null,
           complexStatus:mapCxImportStatus(row.status),
           lat:null, lng:null, memo:row.memo||'',
+          parking:null, parkingState:'unknown',
           createdAt:now, updatedAt:now,
         };
         state.complexes.push(cx);
@@ -1481,7 +1494,7 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
       capturedAt:now, lastCheckedAt:'',
       dongHo:row.dongHo||'', areaM2:row.area??null, areaText:row.area!=null?String(row.area):'',
       areaGrade:'', deposit:row.depositNum??null,
-      managementFee:null, listingStatus:'확인필요',
+      managementFee:null, managementFeeState:'unknown', listingStatus:'확인필요',
       isRepresentative:isFirstListing,
       memo:row.memo||'',
     });
@@ -1639,6 +1652,7 @@ function migApply(){
         complexStatus:migComplexStatus(first.status),
         lat:first.lat??null, lng:first.lng??null,
         memo:first.memo||'',
+        parking:null, parkingState:'unknown',
         createdAt:now, updatedAt:now,
       };
       if(first.aiScore!=null) cx.aiScore=first.aiScore;
@@ -1667,6 +1681,7 @@ function migApply(){
         areaGrade:'',
         deposit:depositVal,
         managementFee:null,
+        managementFeeState:'unknown',
         listingStatus:'확인필요',
         isRepresentative:isFirstListing,
         memo:p.memo||'',
@@ -2095,6 +2110,71 @@ function setCxDetailMapPosition(lat,lng){
     cxDetailMarker=new naver.maps.Marker({position:pos,map:cxDetailMapObj});
   });
 }
+/* B-28: 재사용 가능한 3상태(known/unknown/na) 세그먼트 컨트롤 — 부정확한 0이
+   평가·Gate를 오염시키지 않도록 "값 있음/미확인/해당없음"을 명시적으로 구분.
+   단지 상세의 주차(parking)·매물 행의 관리비(managementFee) 양쪽에서 공유해서 씀.
+   o = {field, value, state, caption, unit, step, placeholder, lid?} — lid가 있으면
+   listings[] 대상(해당 행), 없으면 현재 열린 단지(cxDetailId) 대상으로 이벤트 핸들러가
+   판정함. 상태 라벨은 고정 문자열만 삽입(사용자 입력 없음) */
+function triStateHTML(o){
+  const st=o.state||'unknown';
+  const known=st==='known';
+  return `<div class="tri-state" data-tri="${o.field}"${o.lid?` data-lid="${esc(o.lid)}"`:''} data-state="${st}">
+    <div class="tri-caption">${esc(o.caption)}</div>
+    <div class="tri-seg">
+      <button type="button" data-trival="known" class="${known?'on':''}">값</button>
+      <button type="button" data-trival="unknown" class="${st==='unknown'?'on':''}">미확인</button>
+      <button type="button" data-trival="na" class="${st==='na'?'on':''}">해당없음</button>
+    </div>
+    <div class="tri-input-row" style="${known?'':'display:none'}">
+      <input type="number" class="tri-num" data-trifield="${o.field}" step="${o.step||'1'}" min="0" value="${o.value!=null?o.value:''}" placeholder="${o.placeholder||''}">
+      <span class="tri-unit">${esc(o.unit||'')}</span>
+    </div>
+  </div>`;
+}
+function parkingCaption(cx){
+  if(cx.parkingState==='known') return cx.parking!=null?`세대당 ${cx.parking}대`:'세대당 —';
+  if(cx.parkingState==='na') return '주차 해당없음';
+  return '주차 미확인';
+}
+function mgmtFeeCaption(l){
+  if(l.managementFeeState==='known'){
+    if(l.managementFee===0) return '관리비 0만원(포함)';
+    return l.managementFee!=null?`관리비 ${l.managementFee}만원`:'관리비 —';
+  }
+  if(l.managementFeeState==='na') return '관리비 해당없음';
+  return '관리비 미확인';
+}
+/* 단지(parking)·매물(managementFee) 공용 클릭/입력 핸들러 — #complexDetailModal
+   안 어디서든(단지 필드 1개 + 매물 행 N개) 위임 처리 */
+document.getElementById('complexDetailModal').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-trival]'); if(!btn) return;
+  const wrap=btn.closest('[data-tri]'); if(!wrap) return;
+  const field=wrap.dataset.tri, val=btn.dataset.trival, lid=wrap.dataset.lid;
+  const target=lid?state.listings.find(l=>l.id===lid):state.complexes.find(c=>c.id===cxDetailId);
+  if(!target) return;
+  target[field+'State']=val;
+  target[field]=val==='known'?(target[field]!=null?target[field]:0):null;
+  save();
+  if(lid) renderCxListings(target.complexId);
+  else { target.updatedAt=new Date().toISOString(); renderComplexDetailBody(target); }
+  renderComplexes();
+});
+document.getElementById('complexDetailModal').addEventListener('change',e=>{
+  const inp=e.target.closest('.tri-num[data-trifield]'); if(!inp) return;
+  const wrap=inp.closest('[data-tri]'); if(!wrap) return;
+  const field=wrap.dataset.tri, lid=wrap.dataset.lid;
+  const target=lid?state.listings.find(l=>l.id===lid):state.complexes.find(c=>c.id===cxDetailId);
+  if(!target) return;
+  const v=parseFloat(inp.value);
+  if(isNaN(v)||v<0){ inp.value=target[field]!=null?target[field]:''; return; }
+  target[field]=v; target[field+'State']='known';
+  if(!lid) target.updatedAt=new Date().toISOString();
+  save();
+  if(lid) renderCxListings(target.complexId);
+  else renderComplexDetailBody(target);
+  renderComplexes();
+});
 function openComplexDetail(id){
   const cx=state.complexes.find(x=>x.id===id); if(!cx)return;
   cxDetailId=id;
@@ -2112,6 +2192,11 @@ function renderComplexDetailBody(cx){
     cx.commuteGangnam!=null?'강남역 '+cx.commuteGangnam+'분':null,
     cx.commuteSinsa!=null?'신사역 '+cx.commuteSinsa+'분':null
   ].filter(Boolean).join(' · ')||'—';
+  const parkingWrap=document.getElementById('cxDetailParkingWrap');
+  if(parkingWrap) parkingWrap.innerHTML=triStateHTML({
+    field:'parking', value:cx.parking, state:cx.parkingState,
+    caption:parkingCaption(cx), unit:'대/세대', step:'0.1', placeholder:'예: 1.2',
+  });
   document.getElementById('cxDetailStatusSel').value=cx.complexStatus||'관심';
   document.getElementById('cxDetailMemo').value=cx.memo||'';
 
@@ -2148,6 +2233,7 @@ function renderCxListings(complexId){
       </div>
       <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||getAreaGrade(l.areaM2)||'—')}</div>
       <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · 확인 ${l.lastCheckedAt?esc(new Date(l.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>
+      ${triStateHTML({field:'managementFee', value:l.managementFee, state:l.managementFeeState, caption:mgmtFeeCaption(l), unit:'만원', step:'1', placeholder:'예: 15', lid:l.id})}
       <div class="c-actions">
         ${l.isRepresentative?'':`<button data-lact="rep">대표매물로 설정</button>`}
         <button data-lact="check">게시중 확인</button>

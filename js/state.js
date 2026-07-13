@@ -20,13 +20,18 @@
  * state.complexes : [{id, complexName, loc, geocodeQuery, groupCode, regionGroup,
  *                     station, line, yearBuilt, households, householdGrade,
  *                     commuteGangnam, commuteSinsa, complexStatus('관심' 기본),
- *                     lat, lng, memo, createdAt, updatedAt}]
- *                    v5(단지·매물 2계층) 목표 스키마. Stage 1은 빈 배열만 존재 —
- *                    필드 채우기·마이그레이션은 다음 단계. properties[]와 병존, 아직 미사용.
+ *                     lat, lng, memo, createdAt, updatedAt,
+ *                     parking (세대당 대수, 소수 허용, null=값 없음),
+ *                     parkingState ('known'|'unknown'|'na', 기본 'unknown')}]
+ *                    v5(단지·매물 2계층) 스키마. E-01로 마이그레이션·라이브 전환 완료.
+ *                    B-28: parking은 0이 실제 값일 수 있어 parkingState로 값/미확인/
+ *                    해당없음을 명시적으로 구분(0 자연발생 안 하는 households 등과 다름).
  * state.listings  : [{id, complexId, source, url, capturedAt, lastCheckedAt,
- *                     dongHo, areaM2, areaText, areaGrade, deposit, managementFee,
+ *                     dongHo, areaM2, areaText, areaGrade, deposit,
+ *                     managementFee (만원 단위, null=값 없음),
+ *                     managementFeeState ('known'|'unknown'|'na', 기본 'unknown'),
  *                     listingStatus('게시중' 기본), isRepresentative(false), memo}]
- *                    complexes와 같은 v5 Stage 1 — 빈 배열만 존재, 아직 미사용.
+ *                    complexes와 같은 v5 스키마, 라이브 전환 완료.
  *
  * state.scraps    : [{id, createdAt, title, type (SC_TYPE key),
  *                     raw, img (base64), location, price, area,
@@ -203,6 +208,9 @@ const GUEST_STATE={
 
 let state=null, activeTab='전체', activePanel='dash';
 let overview=null, ovMarkers=[], formMapObj=null, formMarker=null, tempLatLng=null, tempChecks=null;
+/* B-28: 붙여넣기 파싱이 주차·관리비 값을 성공적으로 읽었을 때만 잠깐 담아뒀다가
+   저장 시점(saveAsComplexListing)에 반영 — tempChecks와 동일한 패턴 */
+let tempParking=null, tempManagementFee=null;
 
 /* ---- load with migration ---- */
 function applyGuards(raw){
@@ -257,8 +265,18 @@ function applyGuards(raw){
   });
   state.regNews=state.regNews||[];
   state.savedRoutes=state.savedRoutes||[];
-  state.complexes=state.complexes||[];
-  state.listings=state.listings||[];
+  /* B-28: parking(단지)·managementFeeState(매물) 필드 누락 보정 — 기존 데이터
+     무손실. managementFeeState는 없으면 기존 managementFee 입력값으로 상태를
+     역산 승격(값이 있었으면 'known', 없었으면 'unknown') */
+  state.complexes=(state.complexes||[]).map(cx=>({
+    parking:null, parkingState:'unknown',
+    ...cx,
+  }));
+  state.listings=(state.listings||[]).map(l=>({
+    managementFeeState:'unknown',
+    ...l,
+    managementFeeState: l.managementFeeState || (l.managementFee!=null?'known':'unknown'),
+  }));
   state.scraps=(state.scraps||[]).map(s=>{
     const p=s.parsed||{};
     return {
