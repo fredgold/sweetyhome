@@ -13,7 +13,42 @@ function renderCatChips(){
   }).join('');
   el.querySelectorAll('[data-actcat]').forEach(b=>b.onclick=()=>{actCategoryFilter=b.dataset.actcat;renderCatChips();renderActions();});
 }
+/* B-30: 담당 select 옵션은 하드코딩하지 않고 전역 OWNERS 재사용 — 게스트
+   모드 진입 시 OWNERS가 치환되므로(auth.js) 렌더마다 다시 채움(비용 미미).
+   선택값은 유지 시도(옵션 목록이 실제로 바뀌는 경우는 드묾) */
+function syncActOwnerSelect(){
+  const sel=document.getElementById('act_ownerSel'); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">담당 미지정</option>'+OWNERS.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+/* B-30: due는 <input type="date">라 보통 빈 값이거나 유효한 ISO 날짜지만,
+   혹시 모를 손상된 값(예: 수동 JSON 편집)에 대비해 렌더 전 형식 가드 */
+function actDueValid(due){
+  if(!due) return false;
+  const d=new Date(due);
+  return !isNaN(d.getTime());
+}
+/* B-30: nav.js의 dday()는 "YYYY-MM-DD"를 new Date(t)로 파싱하는데, 이는 스펙상
+   UTC 자정으로 해석돼(로컬 자정과 시차만큼 어긋남 — 한국 시간대 KST=UTC+9라
+   매일 어긋남) 마감 당일·경계 부근에서 "지남" 판정이 틀릴 수 있음(실측으로
+   발견). nav.js는 무접촉 대상이라 고치는 대신, 연·월·일을 분해해 3-인자
+   Date 생성자(로컬 자정으로 확정 해석됨)로 직접 조립해 이 함수만 정확하게 함 */
+function actDaysUntilDue(due){
+  const [y,m,d]=due.split('-').map(Number);
+  const dueLocal=new Date(y,m-1,d);
+  const today=new Date(); today.setHours(0,0,0,0);
+  return Math.round((dueLocal-today)/86400000);
+}
+function actDueBadge(a){
+  if(!actDueValid(a.due)) return '';
+  const diff=actDaysUntilDue(a.due);
+  const label=diff>=0?'D-'+diff:'D+'+(-diff);
+  const overdue=!a.done && diff<0;
+  return `<span class="act-due-badge${overdue?' overdue':''}" title="${esc(a.due)}">${esc(label)}</span>`;
+}
 function renderActions(){
+  syncActOwnerSelect();
   const aq=(document.getElementById('act_search')?.value||'').trim().toLowerCase();
   const sorted=[...state.actions].sort((a,b)=>(a.done-b.done)||(a.priority-b.priority));
   let live=sorted.filter(a=>!a.done);
@@ -37,7 +72,7 @@ function renderActions(){
       <div class="actrow" data-done="0" data-id="${a.id}">
         <span class="rank tnum">${i+1}</span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
-        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}</span>
+        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}${a.assignee?`<span class="act-cat-badge">${esc(a.assignee)}</span>`:''}${actDueBadge(a)}</span>
         <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
         <button class="star ${a.priority<=Math.min(...live.map(x=>x.priority))?'on':''}" data-actf-top="${a.id}" title="맨 위로" aria-label="맨 위로">${ic('star')}</button>
         <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
@@ -51,7 +86,7 @@ function renderActions(){
       <div class="actrow" data-done="1" data-id="${a.id}">
         <span class="rank tnum"></span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
-        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}</span>
+        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}${a.assignee?`<span class="act-cat-badge">${esc(a.assignee)}</span>`:''}${actDueBadge(a)}</span>
         <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
         <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
       </div>`).join('');
@@ -75,19 +110,26 @@ function renderActions(){
     const a=state.actions.find(x=>x.id===b.dataset.actfEdit); if(!a)return;
     const row=b.closest('.actrow');
     const cats=ACT_CATS.map(c=>`<option value="${esc(c)}"${a.category===c?' selected':''}>${esc(c)}</option>`).join('');
+    const owners=OWNERS.map(o=>`<option value="${esc(o)}"${a.assignee===o?' selected':''}>${esc(o)}</option>`).join('');
     row.innerHTML=`
       <input class="act-edit-inp" value="${esc(a.text)}" style="flex:1;min-width:0;padding:4px 8px;border:1px solid var(--hairline);border-radius:6px;font-size:14px;">
       <select class="act-edit-cat" style="padding:4px 6px;border:1px solid var(--hairline);border-radius:6px;font-size:12px;">
         <option value=""${!a.category?' selected':''}>일반</option>${cats}
       </select>
+      <select class="act-edit-owner" style="padding:4px 6px;border:1px solid var(--hairline);border-radius:6px;font-size:12px;">
+        <option value=""${!a.assignee?' selected':''}>담당 미지정</option>${owners}
+      </select>
+      <input type="date" class="act-edit-due" value="${actDueValid(a.due)?esc(a.due):''}" style="padding:4px 6px;border:1px solid var(--hairline);border-radius:6px;font-size:12px;">
       <button class="act-edit-ok" style="padding:4px 10px;background:var(--money);color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;">저장</button>
       <button class="act-edit-cancel" style="padding:4px 8px;background:none;border:1px solid var(--hairline);border-radius:6px;font-size:13px;cursor:pointer;">취소</button>`;
     const inp=row.querySelector('.act-edit-inp');
     const cat=row.querySelector('.act-edit-cat');
+    const owner=row.querySelector('.act-edit-owner');
+    const due=row.querySelector('.act-edit-due');
     inp.focus(); inp.select();
     const save_=()=>{
       const t=inp.value.trim(); if(!t){inp.focus();return;}
-      a.text=t; a.category=cat.value;
+      a.text=t; a.category=cat.value; a.assignee=owner.value; a.due=due.value;
       save(); renderActions(); renderTop3();
     };
     row.querySelector('.act-edit-ok').onclick=save_;
@@ -101,8 +143,10 @@ function renderActions(){
 function addActionFull(){
   const inp=document.getElementById('act_input'); const t=inp.value.trim(); if(!t){inp.focus();return;}
   const cat=document.getElementById('act_catSel')?.value||'';
+  const owner=document.getElementById('act_ownerSel')?.value||'';
+  const due=document.getElementById('act_dueInp')?.value||'';
   const max=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;
-  state.actions.push({id:'a'+Date.now(),text:t,priority:max+1,done:false,category:cat});
+  state.actions.push({id:'a'+Date.now(),text:t,priority:max+1,done:false,category:cat,assignee:owner,due:actDueValid(due)?due:''});
   inp.value=''; save(); renderActions(); renderTop3();
 }
 document.getElementById('act_addBtn').onclick=addActionFull;
@@ -132,7 +176,7 @@ document.getElementById('act_suggestBtn').onclick=async()=>{
       box.querySelectorAll('[data-suggest]').forEach(b=>b.onclick=()=>{
         const max=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;
         const cat=document.getElementById('act_catSel')?.value||'';
-        state.actions.push({id:'a'+Date.now(),text:b.dataset.suggest,priority:max+1,done:false,category:cat});
+        state.actions.push({id:'a'+Date.now(),text:b.dataset.suggest,priority:max+1,done:false,category:cat,assignee:'',due:''});
         b.closest('.act-suggest-card').remove();
         save(); renderActions(); renderTop3();
       });

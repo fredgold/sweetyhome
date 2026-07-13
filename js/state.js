@@ -54,7 +54,10 @@
  *                     schedule, condition, source, status (SC_STATUS key),
  *                     tags:[], fit, parsed}]
  *
- * state.actions   : [{id, text, priority, done, category}]  category: ''|'매물준비'|'계약'
+ * state.actions   : [{id, text, priority, done, category, assignee, due}]
+ *                    category: ''|'매물준비'|'계약', assignee: ''|OWNERS 값(하드코딩
+ *                    금지, 전역 OWNERS 재사용), due: ''|'YYYY-MM-DD'(마감 — B-30:
+ *                    표시 전용, 정렬 기준 아님. 기존 done→priority 정렬 그대로 유지)
  * state.chatHistory: [{role:'user'|'assistant', text, think?}]
  * state.regNews   : [{id, title, summary, date, source}]
  * state.savedRoutes: [{id, name, propertyIds:[], createdAt}]  임장 루트(방문 순서) 저장 목록
@@ -248,7 +251,9 @@ function applyGuards(raw){
   state.settings.grades=Object.assign(structuredClone(GRADE_DEFAULTS), state.settings.grades||{});
   state.chatHistory=state.chatHistory||[];
   state.actions=state.actions||structuredClone(DEFAULT.actions);
-  state.actions=state.actions.map(a=>({category:'',...a}));
+  /* B-30: assignee(담당)·due(마감) 필드 누락 보정, 기본 '' — 기존 액션
+     무손실(미지정/마감없음으로 자연 해석됨) */
+  state.actions=state.actions.map(a=>({category:'',assignee:'',due:'',...a}));
   if(!state._prepMigrated){
     const ids=new Set(state.actions.map(a=>a.id));
     let p=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;

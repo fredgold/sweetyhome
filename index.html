@@ -431,7 +431,11 @@
           <option value="매물준비">매물준비</option>
           <option value="계약">계약</option>
         </select>
+        <!-- B-30: 옵션은 하드코딩하지 않고 renderActions()가 전역 OWNERS로 채움
+             (게스트 모드에선 OWNERS가 본인/배우자/공동으로 치환됨) -->
+        <select id="act_ownerSel" class="prop-filter-sel"><option value="">담당 미지정</option></select>
         <input id="act_input" placeholder="할 일을 적고 Enter">
+        <input type="date" id="act_dueInp" class="act-due-input" aria-label="마감일">
         <button id="act_addBtn">＋ 추가</button>
       </div>
       <div id="act_suggestions" style="margin-top:14px"></div>
