@@ -537,6 +537,9 @@
   /* 카드 본문 하단 패딩 — 기존엔 인라인 style로 고정이라 데스크톱 전용 밀도 축소가
      불가능했음(아래 min-width:900px 블록에서 #complexSection 안에서만 축소) */
   .cx-card-body{padding:0 15px 14px;}
+  /* B-38: 단지 카드엔 한줄 판단(verdict)만 노출(장점·단점은 상세에서만) — 길면
+     말줄임해 카드 밀도(B-44) 유지. 기존 토큰만 재사용, 새 색상 없음 */
+  .c-verdict{font-size:13px;font-weight:600;color:var(--ink);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;}
   .cx-empty{padding:24px 16px;text-align:center;font-size:12.5px;color:var(--ink-soft);}
   .cx-dl{margin-bottom:10px;}
   .cx-dl .cx-dt{font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:2px;}

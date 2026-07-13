@@ -1029,6 +1029,7 @@ async function saveAsComplexListing(data){
          파싱 실패(unknown) 시 사용자가 단지 상세에서 직접 입력 */
       parking:tempParking!=null?tempParking:null,
       parkingState:tempParking!=null?'known':'unknown',
+      pros:'', cons:'', verdict:'',
       createdAt:now, updatedAt:now,
     };
     state.complexes.push(cx);
@@ -1128,7 +1129,7 @@ function updateUnisearch(matchCount){
 
 function renderProps(){renderStats();renderTabs();renderList();renderWeights();renderComplexes();}
 
-(()=>{ const ps=document.getElementById('prop_search'); if(ps) ps.addEventListener('input',()=>renderList()); })();
+(()=>{ const ps=document.getElementById('prop_search'); if(ps) ps.addEventListener('input',()=>{renderList();renderComplexes();}); })();
 
 
 /* ============ v2: 가중치 · 자동 평가 · 정렬 ============ */
@@ -1487,6 +1488,7 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
           complexStatus:mapCxImportStatus(row.status),
           lat:null, lng:null, memo:row.memo||'',
           parking:null, parkingState:'unknown',
+          pros:'', cons:'', verdict:'',
           createdAt:now, updatedAt:now,
         };
         state.complexes.push(cx);
@@ -1662,6 +1664,7 @@ function migApply(){
         lat:first.lat??null, lng:first.lng??null,
         memo:first.memo||'',
         parking:null, parkingState:'unknown',
+        pros:'', cons:'', verdict:'',
         createdAt:now, updatedAt:now,
       };
       if(first.aiScore!=null) cx.aiScore=first.aiScore;
@@ -1862,6 +1865,15 @@ function cxMatchesFilters(cx){
   }
   return true;
 }
+/* B-38: 검색창(#prop_search, "단지·역·호선·메모 검색")이 단지 이름/위치/역/노선은
+   원래도 검색 대상이어야 했는데 v5 전환(단지 카드) 이후 실제로 연결된 적이 없었음
+   — verdict(한줄 판단)를 검색 대상에 추가하는 김에 최소한으로 연결. pros/cons
+   본문은 노이즈 방지를 위해 검색 대상에서 제외(지시 사항) */
+function cxMatchesSearch(cx){
+  const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
+  if(!pq) return true;
+  return [cx.complexName,cx.loc,cx.station,cx.line,cx.verdict].some(v=>String(v??'').toLowerCase().includes(pq));
+}
 document.getElementById('cxFilterRegion').onclick=e=>{const c=e.target.closest('[data-fregion]');if(!c)return;cxFilters.region=c.dataset.fregion;closeCxFilterDropdowns();renderComplexes();};
 document.getElementById('cxFilterStatus').onclick=e=>{const c=e.target.closest('[data-fstatus]');if(!c)return;cxFilters.status=c.dataset.fstatus;closeCxFilterDropdowns();renderComplexes();};
 document.getElementById('cxFilterListingStatus').onclick=e=>{const c=e.target.closest('[data-flisting]');if(!c)return;cxFilters.listing=c.dataset.flisting;closeCxFilterDropdowns();renderComplexes();};
@@ -1942,7 +1954,7 @@ function renderComplexes(){
   legacyToggleWrap.style.display='none';
   legacyWrap.style.display='none';
 
-  const _cxBase=state.complexes.filter(cxMatchesFilters);
+  const _cxBase=state.complexes.filter(cxMatchesFilters).filter(cxMatchesSearch);
   const filtered=DESKTOP_MQ.matches?_cxBase:sortComplexes(_cxBase);
   if(!filtered.length){
     wrap.innerHTML=`<div class="cx-empty">필터 조건에 맞는 단지가 없어요.</div>`;
@@ -1984,6 +1996,7 @@ function renderComplexes(){
         </div>
       </div>
       <div class="cx-card-body">
+        ${cx.verdict?`<div class="c-verdict">${esc(cx.verdict)}</div>`:''}
         ${repHTML}
         ${weeklyBadge?`<div class="c-actions">${weeklyBadge}</div>`:''}
       </div>
@@ -2202,6 +2215,9 @@ function renderComplexDetailBody(cx){
     caption:parkingCaption(cx), unit:'대/세대', step:'0.1', placeholder:'예: 1.2',
   });
   document.getElementById('cxDetailStatusSel').value=cx.complexStatus||'관심';
+  document.getElementById('cxDetailPros').value=cx.pros||'';
+  document.getElementById('cxDetailCons').value=cx.cons||'';
+  document.getElementById('cxDetailVerdict').value=cx.verdict||'';
   document.getElementById('cxDetailMemo').value=cx.memo||'';
 
   const repForWeekly=cxRepOf(cx);
@@ -2294,6 +2310,25 @@ document.getElementById('cxDetailMemo').addEventListener('blur',e=>{
   const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
   cx.memo=e.target.value.trim(); cx.updatedAt=new Date().toISOString();
   save();
+});
+/* B-38: 판단메모(장점·단점·한줄판단) — cxDetailMemo와 동일한 blur 저장 패턴
+   재사용(새 저장 경로 없음). verdict만 단지 카드에도 노출되므로 저장 후
+   renderComplexes() 추가 호출 */
+document.getElementById('cxDetailPros').addEventListener('blur',e=>{
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
+  cx.pros=e.target.value.trim(); cx.updatedAt=new Date().toISOString();
+  save();
+});
+document.getElementById('cxDetailCons').addEventListener('blur',e=>{
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
+  cx.cons=e.target.value.trim(); cx.updatedAt=new Date().toISOString();
+  save();
+});
+document.getElementById('cxDetailVerdict').addEventListener('blur',e=>{
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
+  cx.verdict=e.target.value.trim(); cx.updatedAt=new Date().toISOString();
+  save();
+  renderComplexes();
 });
 
 /* B-21: 바텀시트(단지 상세) 드래그다운 닫기. 배경 딤 탭 닫기는 이미 위쪽

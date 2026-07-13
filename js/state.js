@@ -28,10 +28,16 @@
  *                     commuteGangnam, commuteSinsa, complexStatus('관심' 기본),
  *                     lat, lng, memo, createdAt, updatedAt,
  *                     parking (세대당 대수, 소수 허용, null=값 없음),
- *                     parkingState ('known'|'unknown'|'na', 기본 'unknown')}]
+ *                     parkingState ('known'|'unknown'|'na', 기본 'unknown'),
+ *                     pros (장점, 멀티라인 텍스트, 기본 ''),
+ *                     cons (단점, 멀티라인 텍스트, 기본 ''),
+ *                     verdict (한줄 판단/우리 결론, 기본 '')}]
  *                    v5(단지·매물 2계층) 스키마. E-01로 마이그레이션·라이브 전환 완료.
  *                    B-28: parking은 0이 실제 값일 수 있어 parkingState로 값/미확인/
  *                    해당없음을 명시적으로 구분(0 자연발생 안 하는 households 등과 다름).
+ *                    B-38: pros/cons/verdict는 "단지 스펙"이 아니라 "우리 판단"을
+ *                    구조화 기록하는 필드 — 순위·등급·점수 아님(자동 평가 없음, 순수
+ *                    기록). 기존 자유 memo와 병존(대체 아님).
  * state.listings  : [{id, complexId, source, url, capturedAt, lastCheckedAt,
  *                     dongHo, areaM2, areaText, areaGrade, deposit,
  *                     managementFee (만원 단위, null=값 없음),
@@ -276,9 +282,12 @@ function applyGuards(raw){
   state.savedRoutes=state.savedRoutes||[];
   /* B-28: parking(단지)·managementFeeState(매물) 필드 누락 보정 — 기존 데이터
      무손실. managementFeeState는 없으면 기존 managementFee 입력값으로 상태를
-     역산 승격(값이 있었으면 'known', 없었으면 'unknown') */
+     역산 승격(값이 있었으면 'known', 없었으면 'unknown').
+     B-38: pros/cons/verdict(판단메모) 필드 누락 보정, 기본 '' — 기존 memo는
+     이 map에서 손대지 않아(스프레드로 그대로 통과) 무손실 */
   state.complexes=(state.complexes||[]).map(cx=>({
     parking:null, parkingState:'unknown',
+    pros:'', cons:'', verdict:'',
     ...cx,
   }));
   state.listings=(state.listings||[]).map(l=>({
