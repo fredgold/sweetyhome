@@ -828,6 +828,35 @@ B-05에서 백업 확인 후 별도 진행 예정.
 
 ---
 
+## 2026-07-13 — B-44① 단지 카드 "이번 주 확인 완료" 버튼 제거 (`dd0df50`)
+
+### 문제
+단지 카드(`renderComplexes()`)에 "이번 주 확인 완료" 버튼(`weeklyBtn`)이 있었는데,
+동일 기능이 단지 상세 모달(`cxDetailWeeklyCheckBtn`)에 이미 있어 중복 — 카드 높이만
+불필요하게 키워 노출 수를 잠식.
+
+### 수정 (`js/properties.js`)
+카드 템플릿에서 `weeklyBtn` 변수·렌더를 제거하고 `weeklyBadge`("7일+ 미확인" 경고
+칩)와 "최근 확인 [날짜]"만 유지. `c-actions` 줄의 조건부 렌더링을
+`(weeklyBadge||weeklyBtn)?...`에서 `weeklyBadge?...`로 단순화해 버튼이 빠져도 빈 줄이
+안 남게 함. 카드에서 사라진 버튼이 쓰던 delegated 클릭 핸들러
+(`#complexSection`의 `[data-weeklycheck]` 분기)도 함께 정리 — `weeklyCheckComplex()`
+함수 자체는 상세 모달 버튼이 계속 호출하므로 그대로 보존.
+
+### 검증
+`node --check`/`git diff --check` 통과. Playwright로 데스크톱(1400×900)·모바일
+(390×844) 양쪽에서 단지 2건(하나는 대표매물 `lastCheckedAt` 10일 전 = 미확인 뱃지
+대상, 하나는 방금 확인 = 뱃지 없음) 주입 후: (1) 카드에 `[data-weeklycheck]` 버튼이
+전혀 없음(`hasWeeklyBtn:false`) 확인, (2) 미확인 카드엔 "7일+ 미확인" 뱃지 +
+"최근 확인 2026. 7. 3." 유지, 최근확인 카드엔 뱃지 없이 날짜만 표시 확인(스크린샷으로
+빈 줄·여백 없음 시각 확인), (3) 단지 상세 모달을 열어 `cxDetailWeeklyCheckBtn` 클릭 →
+`state.listings`의 `lastCheckedAt`이 즉시 갱신되고 상세 뱃지가 사라짐 확인, (4) 상세에서
+확인 처리한 직후 카드 쪽도 뱃지가 사라지고 날짜가 갱신됨을 재확인해 카드·상세가 같은
+데이터 파이프라인을 공유함(회귀 없음)을 검증. XSS 무접점(신규 사용자 입력 삽입 없음,
+코드 삭제·조건식 변경 전용).
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
