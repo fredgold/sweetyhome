@@ -1029,7 +1029,7 @@ async function saveAsComplexListing(data){
          파싱 실패(unknown) 시 사용자가 단지 상세에서 직접 입력 */
       parking:tempParking!=null?tempParking:null,
       parkingState:tempParking!=null?'known':'unknown',
-      pros:'', cons:'', verdict:'',
+      pros:'', cons:'', verdict:'', favorite:false,
       createdAt:now, updatedAt:now,
     };
     state.complexes.push(cx);
@@ -1488,7 +1488,7 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
           complexStatus:mapCxImportStatus(row.status),
           lat:null, lng:null, memo:row.memo||'',
           parking:null, parkingState:'unknown',
-          pros:'', cons:'', verdict:'',
+          pros:'', cons:'', verdict:'', favorite:false,
           createdAt:now, updatedAt:now,
         };
         state.complexes.push(cx);
@@ -1664,7 +1664,7 @@ function migApply(){
         lat:first.lat??null, lng:first.lng??null,
         memo:first.memo||'',
         parking:null, parkingState:'unknown',
-        pros:'', cons:'', verdict:'',
+        pros:'', cons:'', verdict:'', favorite:false,
         createdAt:now, updatedAt:now,
       };
       if(first.aiScore!=null) cx.aiScore=first.aiScore;
@@ -1779,7 +1779,7 @@ function updateLegacyToggleLabel(){
 }
 
 /* ---- v5 stage6c: 단지 목록 필터 (6종) ---- */
-let cxFilters={region:'',status:'',listing:'',area:'',hh:'',line:''};
+let cxFilters={region:'',status:'',listing:'',area:'',hh:'',line:'',favorite:false};
 function renderCxFilterOptions(){
   const regionSet=new Set(state.complexes.map(c=>c.regionGroup).filter(Boolean));
   const regionWrap=document.getElementById('cxFilterRegion');
@@ -1793,6 +1793,8 @@ function renderCxFilterOptions(){
   document.querySelectorAll('#cxFilterListingStatus [data-flisting]').forEach(c=>c.classList.toggle('on',c.dataset.flisting===cxFilters.listing));
   document.querySelectorAll('#cxFilterAreaGrade [data-farea]').forEach(c=>c.classList.toggle('on',c.dataset.farea===cxFilters.area));
   document.querySelectorAll('#cxFilterHouseholdGrade [data-fhh]').forEach(c=>c.classList.toggle('on',c.dataset.fhh===cxFilters.hh));
+  const favBtn=document.getElementById('cxFilterFavoriteBtn');
+  if(favBtn) favBtn.classList.toggle('active',cxFilters.favorite);
   updateCxFilterTriggers();
 }
 /* B-35: 그룹 트리거 칩 라벨(선택값 표시) + 펼침/접힘 */
@@ -1854,6 +1856,7 @@ function openCxFilterDropdown(group){
   });
 }
 function cxMatchesFilters(cx){
+  if(cxFilters.favorite && !cx.favorite) return false;
   if(cxFilters.region && (cx.regionGroup||'')!==cxFilters.region) return false;
   if(cxFilters.status && (cx.complexStatus||'관심')!==cxFilters.status) return false;
   if(cxFilters.hh && (cx.householdGrade||'')!==cxFilters.hh) return false;
@@ -1880,6 +1883,7 @@ document.getElementById('cxFilterListingStatus').onclick=e=>{const c=e.target.cl
 document.getElementById('cxFilterAreaGrade').onclick=e=>{const c=e.target.closest('[data-farea]');if(!c)return;cxFilters.area=c.dataset.farea;closeCxFilterDropdowns();renderComplexes();};
 document.getElementById('cxFilterHouseholdGrade').onclick=e=>{const c=e.target.closest('[data-fhh]');if(!c)return;cxFilters.hh=c.dataset.fhh;closeCxFilterDropdowns();renderComplexes();};
 document.getElementById('cxFilterLine').onclick=e=>{const c=e.target.closest('[data-fline]');if(!c)return;cxFilters.line=c.dataset.fline;closeCxFilterDropdowns();renderComplexes();};
+document.getElementById('cxFilterFavoriteBtn').onclick=()=>{cxFilters.favorite=!cxFilters.favorite;renderComplexes();};
 
 /* ---- v5 stage6c: 주간 상태 UX (화면 표시만, 알림·스케줄링 없음) ---- */
 function needsWeeklyCheck(cx,rep){
@@ -1898,10 +1902,19 @@ function weeklyCheckComplex(cxId){
 
 let cxSort='new', myLoc=null, myLocMarker=null;
 function cxDistM(cx){ return (myLoc&&cx.lat&&cx.lng)?haversineM(myLoc,{lat:cx.lat,lng:cx.lng}):Infinity; }
+/* B-39: 즐겨찾기(favorite)를 항상 최상단으로 — 기존 정렬 위에 1차 키로만 얹음.
+   Array.sort는 안정 정렬(ES2019+)이라 이미 정렬된 배열에 이 비교자만 다시
+   적용하면 각 그룹(즐겨찾기/일반) 내부의 기존 순서는 그대로 유지된 채
+   즐겨찾기만 앞으로 이동함 */
+function favoritesFirst(arr){
+  return arr.slice().sort((a,b)=>(b.favorite?1:0)-(a.favorite?1:0));
+}
 function sortComplexes(arr){
-  if(cxSort==='price') return arr.slice().sort((a,b)=>((cxRepOf(a)?.deposit??Infinity)-(cxRepOf(b)?.deposit??Infinity)));
-  if(cxSort==='dist'&&myLoc) return arr.slice().sort((a,b)=>cxDistM(a)-cxDistM(b));
-  return arr.slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  let sorted;
+  if(cxSort==='price') sorted=arr.slice().sort((a,b)=>((cxRepOf(a)?.deposit??Infinity)-(cxRepOf(b)?.deposit??Infinity)));
+  else if(cxSort==='dist'&&myLoc) sorted=arr.slice().sort((a,b)=>cxDistM(a)-cxDistM(b));
+  else sorted=arr.slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  return favoritesFirst(sorted);
 }
 function syncSortChips(){
   document.querySelectorAll('[data-cxsort]').forEach(b=>b.classList.toggle('on',b.dataset.cxsort===cxSort));
@@ -1955,7 +1968,7 @@ function renderComplexes(){
   legacyWrap.style.display='none';
 
   const _cxBase=state.complexes.filter(cxMatchesFilters).filter(cxMatchesSearch);
-  const filtered=DESKTOP_MQ.matches?_cxBase:sortComplexes(_cxBase);
+  const filtered=DESKTOP_MQ.matches?favoritesFirst(_cxBase):sortComplexes(_cxBase);
   if(!filtered.length){
     wrap.innerHTML=`<div class="cx-empty">필터 조건에 맞는 단지가 없어요.</div>`;
     refreshOverview([]);
@@ -1992,6 +2005,7 @@ function renderComplexes(){
           <div class="c-sub">${esc([cx.station,cx.line,cx.householdGrade].filter(Boolean).join(' · ')||'정보 없음')}${(myLoc&&cx.lat&&cx.lng)?' · <span class="cx-dist">'+(cxDistM(cx)/1000).toFixed(1)+'km</span>':''}</div>
         </div>
         <div class="c-badge-col">
+          <button type="button" class="c-fav-btn${cx.favorite?' on':''}" data-favtoggle="${cx.id}" aria-label="즐겨찾기" aria-pressed="${cx.favorite?'true':'false'}">${ic('star')}</button>
           <span class="pill" style="border-left-color:${color}"><i class="pill-dot" style="background:${color}"></i>${esc(st)}</span>
         </div>
       </div>
@@ -2009,8 +2023,22 @@ document.getElementById('legacyToggleBtn').onclick=()=>{
   document.getElementById('legacyWrap').style.display=legacyExpanded?'':'none';
   updateLegacyToggleLabel();
 };
+/* B-39: 즐겨찾기 토글 — 카드(delegated)·상세(cxDetailFavBtn) 공용. 새 저장
+   경로 없이 기존 cx 필드 갱신 + save() + 재렌더 패턴 재사용 */
+function toggleFavorite(id){
+  const cx=state.complexes.find(c=>c.id===id); if(!cx) return;
+  cx.favorite=!cx.favorite; cx.updatedAt=new Date().toISOString();
+  save();
+  renderComplexes();
+  if(cxDetailId===id){
+    const btn=document.getElementById('cxDetailFavBtn');
+    if(btn){ btn.classList.toggle('on',cx.favorite); btn.setAttribute('aria-pressed',cx.favorite?'true':'false'); }
+  }
+}
 document.getElementById('complexSection').addEventListener('click',e=>{
   if(e.target.closest('.c-routecheck-wrap')) return;
+  const favBtn=e.target.closest('[data-favtoggle]');
+  if(favBtn){ toggleFavorite(favBtn.dataset.favtoggle); return; }
   const el=e.target.closest('[data-cxopen]'); if(!el)return;
   openComplexDetail(el.dataset.cxopen);
 });
@@ -2201,6 +2229,8 @@ function openComplexDetail(id){
 }
 function renderComplexDetailBody(cx){
   document.getElementById('cxDetailTitle').textContent=cx.complexName||'(이름 없음)';
+  const favBtn=document.getElementById('cxDetailFavBtn');
+  if(favBtn){ favBtn.classList.toggle('on',!!cx.favorite); favBtn.setAttribute('aria-pressed',cx.favorite?'true':'false'); }
   document.getElementById('cxDetailLoc').textContent=cx.loc||'주소 정보 없음';
   document.getElementById('cxDetailStationLine').textContent=[cx.station,cx.line].filter(Boolean).join(' · ')||'—';
   document.getElementById('cxDetailYear').textContent=cx.yearBuilt?cx.yearBuilt+'년 준공':'—';
@@ -2299,6 +2329,10 @@ document.getElementById('cxDetailStatusSel').onchange=e=>{
   const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
   cx.complexStatus=e.target.value; cx.updatedAt=new Date().toISOString();
   save(); renderComplexes();
+};
+document.getElementById('cxDetailFavBtn').onclick=()=>{
+  if(!cxDetailId) return;
+  toggleFavorite(cxDetailId);
 };
 document.getElementById('cxDetailWeeklyCheckBtn').onclick=()=>{
   if(!cxDetailId) return;

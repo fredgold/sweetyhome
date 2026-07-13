@@ -373,6 +373,9 @@
             <button type="button" class="cxf-trigger" id="cxFilterLineTrigger">노선 <span class="cxf-caret">▾</span></button>
             <div class="cxf-dropdown" id="cxFilterLine"><span class="sc-filter-chip on" data-fline="">전체</span></div>
           </div>
+          <!-- B-39: favorite은 boolean이라 드롭다운 없는 단순 on/off 토글 칩(cxf-group
+               감싸지 않음) — 다른 그룹처럼 옵션 목록이 필요 없음 -->
+          <button type="button" class="cxf-trigger" id="cxFilterFavoriteBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.5 5.6 6 .6-4.5 4.1 1.3 6-5.3-3.2-5.3 3.2 1.3-6-4.5-4.1 6-.6z"/></svg> 즐겨찾기</button>
           <div id="cxFilterRegion" style="display:none"></div>
         </div>
         <!-- B-12 재수정A: 리스트뷰 전용 sticky 불투명 툴바. 지도뷰의 fixed 오버레이
@@ -857,7 +860,10 @@
     <div class="box" style="max-width:460px;width:100%;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
         <h3 id="cxDetailTitle" style="margin:0">단지 상세</h3>
-        <button class="btn-ghost" data-close="complexDetailModal">닫기</button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button type="button" class="c-fav-btn" id="cxDetailFavBtn" aria-label="즐겨찾기" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.5 5.6 6 .6-4.5 4.1 1.3 6-5.3-3.2-5.3 3.2 1.3-6-4.5-4.1 6-.6z"/></svg></button>
+          <button class="btn-ghost" data-close="complexDetailModal">닫기</button>
+        </div>
       </div>
       <div id="cxDetailMapWrap" style="position:relative">
         <div id="cxDetailMap"></div>

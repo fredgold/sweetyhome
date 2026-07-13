@@ -493,6 +493,13 @@
   .c-sub{font-size:13px;color:var(--ink-soft);font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .card.expanded .c-sub{white-space:normal;overflow:visible;text-overflow:clip;}
   .c-badge-col{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:7px;}
+  /* B-39: 즐겨찾기 토글 — .ic 기본값(fill:none, stroke만)이 이미 "off=외곽선"을
+     충족해 별도 off 스타일 불필요. on일 때만 골드(--line9)로 채움. 카드·상세
+     모달 양쪽에서 재사용, 새 색상 없음 */
+  .c-fav-btn{border:none;background:none;padding:2px;cursor:pointer;color:var(--ink-faint);line-height:1;}
+  .c-fav-btn:hover{color:var(--ink-soft);}
+  .c-fav-btn.on{color:var(--line9-deep);}
+  .c-fav-btn.on .ic{fill:var(--line9);}
   .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:var(--radius-pill);background:var(--surface);border:1px solid var(--hairline);border-left:3px solid var(--hairline);color:var(--ink);white-space:nowrap;cursor:pointer;}
   .pill-dot{width:7px;height:7px;border-radius:50%;flex:none;}
   .c-progress{display:flex;align-items:center;gap:6px;}
