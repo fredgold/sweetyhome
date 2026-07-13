@@ -1326,6 +1326,87 @@ structuredClone(GRADE_DEFAULTS), state.settings.grades||{})` 가드 추가 —
 
 ---
 
+## 2026-07-13 — B-39 후보 즐겨찾기 토글(상단 고정+필터) (`d943fd5`)
+
+### 목표
+후보 단지 중 "지금 집중해서 보는 것"을 즐겨찾기(핀)로 표시하고 상단에 띄움.
+`complexStatus`(관심~탈락)가 이미 후보 우선순위 축을 거치고 있어 별점·순위·
+등급 같은 별도 축은 중복 — boolean 하나로 축소. 순수 기록·관리(자동판정
+없음). "기록·관리 중심 CRM(P0)" 그룹의 마지막 항목(B-28→B-18→B-38→**B-39**
+→B-37).
+
+### 스키마 (`js/state.js`)
+`complexes[]`에 `favorite`(boolean, 기본 `false`) 신설. STATE SCHEMA JSDoc에
+"별점·순위·등급이 아니라 boolean 하나뿐" 취지 명시. `applyGuards()` 기존
+`complexes` 정규화 `.map()`에 기본값 추가, 단지 생성부 3곳(B-28/B-38에서 이미
+특정해둔 동일 3곳) 전부 반영.
+
+### 토글 UI (`js/properties.js` + `index.html`)
+단지 카드(`c-badge-col` 안, 상태 칩과 함께 세로로)와 단지 상세 모달 헤더에
+별 아이콘 버튼. 공용 `toggleFavorite(id)` 함수 하나로 카드·상세 양쪽 처리
+(새 저장경로 없음 — `favorite` 갱신 + `save()` + `renderComplexes()` 재사용,
+상세가 열려 있으면 그 버튼도 함께 동기화). 아이콘은 기존 `ICSVG.star` 재사용
+— `.ic` 기본값(`fill:none;stroke:currentColor`)이 이미 "off=외곽선"을
+충족해 별도 off 스타일이 불필요했고, `on`일 때만 골드(`--line9`)로 채우는
+CSS 3줄만 추가(새 색상 없음).
+
+**이벤트 버블링 분리**: 카드 전체(`.c-top`)가 `data-cxopen`(상세 열기)
+클릭 타깃이라, 별 버튼도 그 안에 있으면 클릭이 상세를 열어버림. 기존
+`.c-routecheck-wrap`(임장 루트 체크박스)이 쓰던 "delegated 핸들러 안에서
+먼저 걸러서 `return`" 패턴을 그대로 재사용해 `[data-favtoggle]`을
+`[data-cxopen]`보다 먼저 체크 — `stopPropagation()` 없이도 상세 진입과
+완전히 분리됨.
+
+### 정렬 (`js/properties.js`)
+`favoritesFirst(arr)` 신설 — `Array.sort`가 ES2019+부터 안정 정렬이 보장되는
+점을 이용해, 이미 정렬된 배열에 `(b.favorite?1:0)-(a.favorite?1:0)` 비교자만
+다시 적용하면 각 그룹(즐겨찾기/일반) **내부의 기존 순서는 그대로 유지된 채**
+즐겨찾기만 최상단으로 이동함. 기존 `sortComplexes()`(모바일 `cxSort` 경로)
+끝에 추가. **조사 중 발견**: 데스크톱은 `cxSort`(최신순/가격순/거리순)
+자체가 애초에 적용 안 되고 `state.complexes`의 자연 배열 순서(`_cxBase`)를
+그대로 쓰고 있었음 — 데스크톱에도 즐겨찾기가 상단에 오게 하려면
+`favoritesFirst()`를 그 경로에도 별도로 적용해야 했음(데스크톱의 기존
+"정렬 없음" 특성 자체는 그대로 두고, 즐겨찾기만 위에 얹음).
+
+### 필터 (`js/properties.js` + `index.html`)
+`favorite`는 boolean이라 다른 그룹(단지상태·매물상태 등, B-35에서 만든
+드롭다운 패턴)과 달리 옵션 목록이 필요 없어 `cxf-group`으로 감싸지 않은
+단순 on/off 토글 칩으로 `cxFilterBar`에 추가. `cxFilters.favorite` +
+`cxMatchesFilters()` 조건 추가, 기존 트리거 활성 스타일
+(`.cxf-trigger.active`, 그린 `--money` 계열)을 그대로 재사용.
+
+### 검증
+`node --check`/CSS 중괄호 균형/`index.html` div 개폐 균형/`git diff --check`
+통과. Playwright로:
+1. **applyGuards 라운드트립**: `favorite` 없는 기존 단지 로드 → `false` 보정,
+   B-38의 `verdict` 등 기존 필드도 무손실 확인(회귀 없음).
+2. **버블링 분리 실측**: 카드의 별 버튼 클릭 → `complexDetailModal`이 열리지
+   않음(`modalOpen: false`) + `favorite`는 정상적으로 `true`로 바뀜 확인.
+3. **정렬 실측**: 3개 단지(자연 순서 A→B→C) 중 마지막(C)을 즐겨찾기 → 카드
+   순서가 `[C, A, B]`로 바뀜(C가 최상단, A·B는 상대 순서 유지) 확인 — "1차
+   키로만 얹기"가 정확히 동작함을 검증.
+4. **토글 on/off + 저장·재로드**: 토글 후 `applyGuards()`로 재로드
+   시뮬레이션해도 `favorite` 값 유지 확인.
+5. **카드↔상세 동기화**: 상세 모달의 별 버튼 클릭 → `favorite` 갱신 +
+   `aria-pressed` 갱신 + 같은 단지의 카드 버튼도 즉시 `.on` 클래스로 동기화됨
+   확인.
+6. **"즐겨찾기만" 필터**: 단지 2개(1개 즐겨찾기) 중 필터 클릭 → 1개만 노출,
+   필터 버튼이 `.active`로 표시됨 확인.
+7. 스크린샷으로 카드의 채워진 골드 별 아이콘과 활성화된 "즐겨찾기" 필터 칩이
+   기존 UI와 자연스럽게 통합됨을 시각 확인.
+
+(테스트 중 여러 `applyGuards()`를 불완전한 픽스처로 연속 호출하는 스트레스
+시나리오에서 산발적 `TypeError`가 관찰됐으나, 단일 사이클의 깨끗한 재현
+테스트로는 전혀 발생하지 않음을 확인해 테스트 하네스 자체의 아티팩트로
+판단(이번 세션에서 반복 확인된 패턴, Naver SDK 관련 아티팩트와 동일한
+성격) — 실제 사용자 흐름(페이지 로드 시 `applyGuards()` 1회만 호출)에서는
+해당 안 됨.)
+
+`js/nav.js` 무접촉. `style.css`는 `.c-fav-btn` 관련 규칙만 최소 추가(기존
+`--line9`/`--line9-deep`/`--ink-faint` 토큰만 재사용).
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
