@@ -357,6 +357,12 @@
     .rail{flex:1;min-height:0;overflow-y:auto;padding-right:4px;}
     #legacyWrap{display:flex;flex-direction:column;flex:1;min-height:0;}
     #cxFilterBar{flex-shrink:0;}
+    /* B-36: 좌측 컬럼(.grid>section)은 max-height로 뷰포트에 고정되지만 #complexSection
+       (단지 카드 목록)엔 overflow가 없어 카드가 많으면 컬럼 자체가 늘어나 페이지 전체가
+       스크롤되던 문제 — 카드 목록만 컬럼 내부에서 스크롤되게 하고 검색·필터·통계·폼은
+       고정폭으로 유지(레거시 .rail과 동일 패턴) */
+    .unisearch,.panel-head,.form,#legacyToggleWrap{flex-shrink:0;}
+    #complexSection{flex:1;min-height:0;overflow-y:auto;padding-right:4px;}
   }
   .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap;}
   .panel-head h2{font-size:15px;font-weight:800;letter-spacing:-.02em;}
