@@ -16,7 +16,18 @@ document.querySelectorAll('[data-goto]').forEach(a=>a.onclick=()=>switchPanel(a.
 
 
 /* ============ DASHBOARD ============ */
-function dday(t){const n=new Date();n.setHours(0,0,0,0);const d=Math.ceil((new Date(t)-n)/86400000);return d>=0?'D-'+d:'D+'+(-d);}
+/* B-56: 'YYYY-MM-DD'를 new Date(t)로 그대로 넘기면 스펙상 UTC 자정으로 해석돼
+   KST(UTC+9)에서 하루 밀림(B-30 actions.js의 actDaysUntilDue와 동일 함정·동일 우회) —
+   연·월·일을 뽑아 3인자 Date 생성자(로컬 자정 확정 해석)로 조립. 형식이 안 맞으면
+   기존 new Date(t) 폴백으로 하위호환 유지 */
+function dday(t){
+  const n=new Date(); n.setHours(0,0,0,0);
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(t));
+  const target=m?new Date(+m[1],+m[2]-1,+m[3]):new Date(t);
+  target.setHours(0,0,0,0);
+  const d=Math.ceil((target-n)/86400000);
+  return d>=0?'D-'+d:'D+'+(-d);
+}
 function assetItems(){return (state.assets&&state.assets.items)||[];}
 function sumAmount(){return assetItems().reduce((s,it)=>s+(+it.amount||0),0);}
 function sumMob(){return assetItems().reduce((s,it)=>s+(+it.mobilizable||0),0);}
