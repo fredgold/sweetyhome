@@ -66,6 +66,20 @@
 
   /* ---- app tabs ---- */
   .apptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid var(--hairline);padding-bottom:14px;position:sticky;top:0;background:var(--bg);z-index:1001;padding-top:6px;}
+  /* B-50: 데스크톱 상단(헤더+탭바) 세로 압축 — 뷰포트 고정 매물탭(B-49)에서
+     이 세로 공간이 곧 지도·리스트 크기를 잠식하므로 절약. header와 .apptabs는
+     별개 형제 요소(.apptabs는 독립적 position:sticky)라 마크업 변경 없이 같은
+     줄로 합치는 건 무리 — 세로 여백·크기만 압축(같은 줄 배치는 후속 과제로 남김).
+     모바일은 이미 별도(≤760px) 압축 규칙이 있어 여기선 안 건드림(무회귀) */
+  @media (min-width:900px){
+    header{margin-bottom:8px;}
+    .brand .mark{width:32px;height:32px;border-radius:9px;}
+    .brand h1{font-size:20px;}
+    .brand .sub{font-size:10.5px;margin-top:0;}
+    .btn-mini{padding:6px 10px;}
+    .apptabs{padding-top:4px;padding-bottom:9px;margin-bottom:12px;}
+    .atab{padding:7px 13px;}
+  }
   .atab{font-size:14px;font-weight:700;color:var(--ink-soft);padding:9px 15px;border-radius:11px;border:1px solid transparent;transition:.12s;display:inline-flex;align-items:center;gap:6px;}
   .atab:hover{background:var(--hairline-soft);}
   .atab[data-on="1"]{background:var(--ink);color:#fff;}
