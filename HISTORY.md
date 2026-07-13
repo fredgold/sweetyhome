@@ -1255,6 +1255,77 @@ structuredClone(GRADE_DEFAULTS), state.settings.grades||{})` 가드 추가 —
 
 ---
 
+## 2026-07-13 — B-38 단지 판단메모 구조화(장점·단점·한줄판단) (`f4506b8`)
+
+### 목표
+단지의 스펙(세대수·연식 등)이 아닌 "우리 판단"을 자유 메모 한 덩어리가 아니라
+구조화된 필드(장점/단점/한줄 판단)로 기록 — "저장판 → 후보 비교·판단 도구"로
+가는 핵심. 순수 기록·관리(자동 점수화·판정 없음). 순위·등급·별점은 범위 밖
+(B-39). B-18 커밋 직후 착수(같은 `state.js`/`properties.js`를 건드려 순차
+진행 필요 — B-38 지시서 자체에 이 선행 조건이 명시돼 있었고, 실제로 B-18이
+아직 커밋 전이라 먼저 완료한 뒤 진행함).
+
+### 스키마 (`js/state.js`)
+`complexes[]`에 `pros`(장점, 멀티라인)·`cons`(단점, 멀티라인)·`verdict`(한줄
+판단, 전부 기본 `''`) 신설. STATE SCHEMA JSDoc 반영. `applyGuards()`의 기존
+`complexes` 정규화 `.map()`(B-28에서 만든 자리)에 세 필드 기본값을 추가 —
+기존 `memo`는 같은 스프레드 패턴으로 손대지 않아 무손실. 단지 생성부 3곳
+(붙여넣기 저장·시트 임포트·레거시→v5 마이그레이션, B-28에서 이미 특정해둔
+동일한 3곳)에 전부 새 필드 동반 추가.
+
+### 입력 UI (`index.html` + `js/properties.js`)
+단지 상세 모달의 기존 `cxDetailMemo`(자유 메모) 바로 위에 "판단메모" 섹션
+(장점 textarea·단점 textarea·한줄 판단 input) 추가. 저장은 `cxDetailMemo`의
+기존 `blur` 저장 패턴을 그대로 복제(새 저장 경로 만들지 않음) — 다만
+`verdict`만 단지 카드에도 노출되므로 그 필드의 blur 핸들러에만
+`renderComplexes()`를 추가 호출해 카드가 즉시 갱신되게 함.
+
+### 렌더
+상세 모달은 값이 없으면 textarea/input의 `placeholder`가 자연히 뮤트
+표시되므로 별도 "값 없으면 생략" 로직이 불필요(기존 `cxDetailMemo`와 동일한
+특성 재사용). 단지 카드는 `verdict`가 있을 때만 `.c-verdict` 한 줄로 노출,
+`white-space:nowrap;text-overflow:ellipsis`로 길면 말줄임 — 장점·단점은
+상세에서만(B-44 카드 밀도 기조 유지, 새 CSS는 기존 토큰만 쓰는 규칙 3줄
+추가로 최소화).
+
+### 검색 — 조사 중 발견한 기존 갭
+`#prop_search` 입력창의 플레이스홀더는 "단지·역·호선·메모 검색"이지만, 실제
+이벤트 리스너는 레거시 `state.properties[]` 목록(`renderList()`)만 필터링하고
+있었고 v5 단지 카드(`renderComplexes()`)에는 검색이 전혀 연결돼 있지 않았음
+(B-48로 레거시 목록이 통상 숨겨진 이후로는 사실상 죽어있던 기능). `verdict`를
+검색 대상에 포함하라는 지시를 이행하려면 최소한의 단지 검색 자체가 필요해서,
+`cxMatchesSearch(cx)`를 신설해 `complexName`/`loc`/`station`/`line` +
+`verdict`를 검색 대상에 포함(지시대로 `pros`/`cons` 본문은 노이즈 방지 위해
+제외)하고 `renderComplexes()`의 필터 체인 + 검색 입력 리스너에 연결.
+
+### 검증
+`node --check`(state.js/properties.js)/CSS 중괄호 균형/`index.html` div 개폐
+균형/`git diff --check` 통과. Playwright로:
+1. **applyGuards 라운드트립**: `pros`/`cons`/`verdict` 없는 기존 단지 데이터
+   로드 → 전부 `''` 보정, 기존 `memo`("기존메모유지테스트")·`complexName`
+   무손실 확인.
+2. **입력→blur→저장→재로드**: 장점(멀티라인)·단점·긴 한줄판단을 입력·blur 후
+   `state.complexes`에 정확히 반영됨을 확인, 이어서 그 데이터를
+   `applyGuards()`에 다시 태워(저장→재로드 시뮬레이션) 세 필드가 그대로
+   유지됨을 확인. `.c-verdict` 요소가 `text-overflow:ellipsis`/
+   `white-space:nowrap`로 렌더됨을 computed style로 확인(말줄임 동작).
+3. **XSS**: `<script>window.__xssFired=true;</script><img src=x
+   onerror="window.__xssFired2=true">`를 장점·단점·한줄판단 세 필드 모두에
+   입력해 저장·재렌더 — `window.__xssFired`/`__xssFired2` 둘 다 `false`(스크립트
+   미실행), 저장된 원본 값은 이스케이프 없는 raw 페이로드 그대로(저장은 원본,
+   이스케이프는 렌더 시점에만 하는 기존 패턴과 일치), 카드에 렌더된
+   `.c-verdict`의 `innerHTML`은 `&lt;script&gt;...`로 완전히 이스케이프돼
+   실제 `<script>`/`<img>` 태그가 DOM에 전혀 없음을 확인. `alert()` 등
+   dialog도 전혀 트리거되지 않음 확인.
+4. 스크린샷으로 "판단메모" 섹션(장점/단점/한줄 판단 라벨)과 카드의 말줄임된
+   verdict 한 줄이 기존 UI와 자연스럽게 통합됨을 시각 확인, XSS 페이로드가
+   상세 폼·카드 양쪽에서 순수 텍스트로만 노출됨(태그 해석 없음)을 시각 확인.
+
+`js/nav.js` 무접촉. `style.css`는 지시서가 허용한 예외("불가피하면 기존
+토큰만")로 `.c-verdict` 규칙 1개만 추가(새 색상 없이 기존 `--ink` 재사용).
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |

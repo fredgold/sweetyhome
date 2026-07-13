@@ -1,72 +1,76 @@
-# HANDOFF — B-18 등급컷·경고선 settings 정지 (2026-07-13)
+# HANDOFF — B-38 단지 판단메모 구조화(장점·단점·한줄판단) (2026-07-13)
 
 ## 1. 목표
-`BACKLOG.md`의 B-18 처리(B-38의 선행 조건 — 같은 `state.js`/`properties.js`를
-건드려 순차 진행 필요했음). 하드코딩된 등급 임계값·경고선을 `settings`/`profile`
-로 이행하고, 감사(2026-07-13)에서 발견된 중복(`calcHouseholdGrade`↔`calcG`)·
-미연동(경고선이 profile과 안 연결됨) 버그를 함께 제거. **핵심 제약: 동작 변화 0
-(무회귀 리팩터)**.
+`BACKLOG.md`의 B-38 처리. 단지의 스펙이 아닌 "우리 판단"을 자유 메모 한
+덩어리가 아니라 구조화된 필드(장점/단점/한줄 판단)로 기록 — "저장판 →
+후보 비교·판단 도구"로 가는 핵심. 순수 기록·관리(자동 점수화·판정 없음),
+순위·등급·별점은 범위 밖(B-39). B-38 지시서 자체가 "B-18 커밋 이후 착수"를
+선행 조건으로 명시했는데 실제 B-18이 아직 안 끝난 상태였어서, 이번 세션
+안에서 B-18을 먼저 완료(`4181bd1`)한 뒤 이어서 B-38을 진행함.
 
 ## 2. 완료
-**커밋 완료. push 대기 없이 바로 push함(사용자가 이전 턴에서 "일단 Push하자"로
-push 기본 선호를 밝힘).**
+**커밋·push 완료.**
 
 ```
-4181bd1 refactor: B-18 등급컷·경고선 settings 정지 + 세대수컷 중복 제거
+f4506b8 feat: B-38 단지 판단메모 구조화(장점·단점·한줄판단)
 ```
 
-- **중복 제거**: `state.js`의 인라인 `calcG`와 `properties.js`의
-  `calcHouseholdGrade`가 완전히 동일한 로직으로 중복 존재하던 것을 `utils.js`
-  (두 파일보다 먼저 로드)로 단일화. `getAreaGrade`도 같은 자리로 이동하며
-  `calcAreaGrade`로 이름 통합. 둘 다 `grades` 인자를 받는 순수함수(인자 없으면
-  `GRADE_DEFAULTS` 폴백)로 재설계.
-- **`settings.grades` 신설**: `{area:[85,60], households:[1000,500,300,150],
-  bigComplex:500}`. `DEFAULT`/`GUEST_STATE` 양쪽 + `applyGuards()` 개별 키
-  보정 가드.
-- **경고선 참조화**: 보증금 `dn>5`→`profile.depositRange` 상한 파싱값(신설
-  `parseDepositUpper()`, 실패 시 기존 5 폴백), 면적 `a>85`→`profile.maxArea`,
-  대단지 자동판정 `sedN>=500`→`settings.grades.bigComplex`.
-- **문구 연동**: `CHECKLIST` k4 설명문의 하드 문자열 `500`을
-  `GRADE_DEFAULTS.bigComplex` 참조로.
+- **스키마**(`js/state.js`): `complexes[]`에 `pros`/`cons`/`verdict`(전부
+  기본 `''`) 신설. `applyGuards()` 정규화 + 단지 생성부 3곳 전부 반영.
+  기존 `memo` 무손실.
+- **입력 UI**: 단지 상세의 `cxDetailMemo` 바로 위에 "판단메모" 섹션(장점/
+  단점 textarea + 한줄 판단 input). 저장은 `cxDetailMemo`의 기존 blur
+  패턴을 그대로 복제(새 저장 경로 없음), `verdict`만 카드 갱신을 위해
+  `renderComplexes()` 추가 호출.
+- **렌더**: 상세는 placeholder로 빈 값 자연 처리, 카드는 `verdict`만
+  한 줄 노출(길면 ellipsis 말줄임, 장점·단점은 상세에서만 — 카드 밀도 유지).
+- **검색**: `cxMatchesSearch()` 신설, `verdict` 포함(`pros`/`cons` 제외,
+  지시대로).
+
+### 조사 중 발견한 것
+`#prop_search`의 플레이스홀더는 "단지·역·호선·메모 검색"인데, 실제로는
+레거시 목록(`renderList()`)만 필터링하고 v5 단지 카드(`renderComplexes()`)
+에는 검색이 전혀 연결돼 있지 않았음(B-48로 레거시 목록이 보통 숨겨진
+이후로는 사실상 죽어있던 기능). `verdict` 검색 요구를 이행하려면 최소한의
+단지 검색 자체가 필요해서 `cxMatchesSearch()`에 `complexName`/`loc`/
+`station`/`line`도 함께 포함시켜 이 기존 갭을 같이 메움.
 
 ### 검증 방법
-`node --check`(3개 파일)/`git diff --check` 통과. Playwright로 리팩터 전/후
-**경계값 실측 비교**(전부 exact match):
-- 면적 등급 4개 경계(85/84/60/59), 세대수 등급 8개 경계(1000/999/500/499/300/
-  299/150/149) — 전부 기존 텍스트와 정확히 일치.
-- 보증금 경고선(5.0/5.1억), 면적 경고선(85/86㎡), k4 자동판정(500/499세대) —
-  전부 기존과 동일한 on/off 경계.
-- `applyGuards({})`(완전 빈 raw) → `settings.grades`가 `GRADE_DEFAULTS`와
-  완전 동일. `applyGuards({settings:{grades:{bigComplex:999}}})`(일부 키만
-  있는 구버전 시뮬레이션) → 나머지 키는 기본값 보정, 커스텀 값은 유지.
-- 레거시 `state.properties[]` 마이그레이션 경로(750세대 매물)도 여전히
-  `'500세대+'`로 정확히 계산됨을 확인.
-- `grep`으로 `state.js`에서 세대수컷 리터럴(1000/500/300/150)이 등급 계산
-  로직상 완전히 사라졌음을 확인(남은 매치는 JSDoc·무관한 필드·데모 텍스트뿐).
+`node --check`/CSS 중괄호 균형/`index.html` div 개폐 균형/`git diff --check`
+통과. Playwright로:
+- **applyGuards 라운드트립**: 필드 없는 기존 단지 → `''` 보정, 기존
+  `memo`/`complexName` 무손실.
+- **입력→blur→저장→재로드**: 세 필드가 저장·재로드(시뮬레이션) 후에도 유지,
+  카드의 `.c-verdict`가 ellipsis 말줄임 스타일로 렌더됨을 computed style로
+  확인.
+- **XSS**: `<script>`+`<img onerror>` 페이로드를 세 필드 모두에 입력 →
+  스크립트 미실행(`window.__xssFired` 등 전부 false), 저장값은 raw(저장은
+  원본, 이스케이프는 렌더 시점), 카드 렌더 결과는 완전히 이스케이프된
+  텍스트(`&lt;script&gt;...`)로만 존재, `alert()` dialog 트리거 없음.
+- 스크린샷으로 "판단메모" 섹션과 카드의 말줄임 verdict가 기존 UI와 자연스럽게
+  통합됨을 시각 확인.
 - 임시 설치한 `playwright`는 `npm install --no-save` → `npm uninstall`로 제거,
-  테스트 스크립트·임시 서버는 세션 종료 전 삭제.
+  테스트 스크립트·임시 서버·스크린샷은 세션 종료 전 삭제.
 
 ## 3. 미완 / 다음 단계
-- **B-38(단지 판단메모 구조화) 착수 준비 완료** — 이번 B-18이 그 선행 조건이었음.
-  사용자가 이미 B-38 지시서를 전달했으므로 이어서 진행 예정.
-- 실기기 시각 검증 필요(로컬 정적 서버+게스트모드+Playwright로만 확인, 리팩터라
-  화면 변화는 없음 — 회귀 없는지가 핵심이었고 이는 위 경계값 테스트로 검증됨).
-- B-27(안전Gate)이 이 `settings.grades` 위에 올라갈 예정 — 다음 단계에서 참고.
+- 실기기 시각 검증 필요(로컬 정적 서버+게스트모드+Playwright 합성 데이터로만
+  확인).
+- "기록·관리 중심 CRM(P0)" 그룹: B-28 → B-18 → **B-38(이번 세션 완료)** →
+  B-39(후보 우선순위, 다음) → B-37(대표매물 최저가).
+- 검색 갭 보수(`cxMatchesSearch` 신설)는 B-38 범위를 살짝 넘는 최소 보강이었음
+  — 필요하면 커맨드센터가 별도 항목으로 공식화할지 판단.
 
 ## 4. 주의점
 - PIN·API 키·실제 금액 데이터는 이 문서 어디에도 기록 안 함.
 - **BACKLOG.md는 커맨드센터 소유(읽기 전용)** — 이번 세션에서도 전혀 수정·커밋 안 함.
-- **js/nav.js·style.css 무접촉** — 지시서대로 `state.js`/`utils.js`/`properties.js`
-  3개 파일만 수정.
-- `calcHouseholdGrade`/`calcAreaGrade`는 이제 `utils.js`가 유일한 정의처 —
-  향후 다른 파일에 같은 이름으로 재정의하면 로드 순서상 나중 파일이 이겨
-  utils.js 버전이 죽은 코드가 되므로 절대 재정의하지 말 것.
+- **js/nav.js 무접촉**. `style.css`는 지시서가 허용한 예외로 `.c-verdict`
+  규칙 1개만(기존 `--ink` 토큰 재사용, 새 색상 없음) 추가.
+- `pros`/`cons`는 카드나 다른 어디에도 노출 안 함(상세에서만) — 지시대로.
 
 ## 5. 컨텍스트
 - 이 레포는 "머리(커맨드센터, 코드 미수정) — 손 A(Claude Code, 나) — 손 B(Codex)" 3자 협업
   구조. SSOT는 `CLAUDE.md`, 실행 규칙은 `AGENTS.md`, 이력은 `HISTORY.md`, 백로그는
   `BACKLOG.md`(커맨드센터 전용).
-- "기록·관리 중심 CRM(P0)" 그룹 순서: B-28(완료) → **B-18(이번 세션 완료)** →
-  B-38(단지 판단메모, 다음) → B-39(후보 우선순위) → B-37(대표매물 최저가).
 - 직전 세션들: v5 단지·매물 2계층 전환(E-01) → B-12 관련 다수 작업 → ... →
-  B-50 → B-51 → B-28(`bb3eccc`) → **이번 세션(B-18, `4181bd1`)** → (다음: B-38).
+  B-51 → B-28(`bb3eccc`) → B-18(`4181bd1`) → **이번 세션(B-38, `f4506b8`,
+  push 완료)** → (다음: B-39).
