@@ -724,6 +724,39 @@ sticky 불투명 바 메커니즘 그대로 재사용). ⋯메뉴엔 검색·내
 
 ---
 
+## 2026-07-13 — B-36 데스크톱 매물탭 좌측 리스트 자체 스크롤 (`4ff752a`)
+
+### 문제
+데스크톱 매물탭 좌측 컬럼(`.grid>section`)엔 `max-height:calc(100vh - var(--nav-h) - 24px)`가
+있지만 `#complexSection`(v5 단지 카드 목록)엔 데스크톱 overflow 설정이 전혀 없어, 카드가
+많으면 컬럼 자체가 max-height를 무시하고 늘어나 페이지 전체가 세로로 길어짐. 우측 지도는
+`position:sticky`라 화면에 고정돼 있는데 옆의 리스트만 계속 길어지는 비대칭이 어색했음.
+레거시 목록(`.rail`)은 이미 같은 `@media (min-width:900px)` 블록에서
+`flex:1;min-height:0;overflow-y:auto`를 받고 있어 문제가 없었고, v5 전환 이후 신설된
+`#complexSection`만 이 처리가 누락돼 있었음.
+
+### 수정 (`style.css`, `@media (min-width:900px)` 블록만)
+`#complexSection`에 `.rail`과 동일한 `flex:1;min-height:0;overflow-y:auto;padding-right:4px`를
+부여해 카드 목록만 좌측 컬럼 내부에서 스크롤되게 함. 검색창(`.unisearch`)·`.panel-head`
+(통계·버튼)·`.form`(매물 추가 폼)·`#legacyToggleWrap`에 `flex-shrink:0`을 명시해 목록이
+자라도 위쪽 고정 영역이 눌리지 않게 함(`#cxFilterBar`는 B-35에서 이미 `flex-shrink:0`
+적용됨). 모바일(`@media (max-width:899.98px)`)의 `#complexSection{position:absolute;...}`
+(지도 위 가로 스트립)는 별개 블록이라 전혀 손대지 않음.
+
+### 검증
+`node --check`/CSS 중괄호 균형/`git diff --check` 통과. Playwright로 데스크톱(1400px)에
+가짜 단지 30건 주입 후 (1) `#complexSection.scrollHeight`(6048px) ≫ `clientHeight`(476px)로
+내부 스크롤 필요 확인, (2) 카드 수를 2/30/80으로 바꿔도 `document.documentElement.
+scrollHeight`가 1236px로 동일 — 페이지 자체는 더 이상 카드 수에 비례해 늘어나지 않음(남은
+1236px는 `.gates`/`.wcard` 등 그리드 위쪽 요소 때문인 베이스라인으로, 리스트와 무관), (3)
+`#complexSection.scrollTop`을 800으로 바꿔도 `window.scrollY`는 0 유지 + `.mapcard`의
+`getBoundingClientRect()`가 스크롤 전후 완전히 동일(지도가 전혀 움직이지 않음) 확인, (4)
+레거시 목록(`legacyToggleBtn`) 펼침 상태에서도 페이지 높이 불변 확인. 모바일 지도뷰/리스트뷰
+스크린샷으로 `#complexSection`의 `position`(absolute/static)·`display`가 기존과 동일함을
+확인해 무회귀 검증. XSS 무접점(CSS 전용 변경).
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
