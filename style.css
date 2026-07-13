@@ -382,6 +382,15 @@
     /* B-46: 매물탭(뷰포트 고정 flex 컬럼)은 .wrap의 하단 padding이 불필요 —
        활성화 시 .wrap 하단 여백을 0으로(다른 탭은 위에서 24px로 축소한 값 그대로 유지) */
     body:has(#panel-props.on) .wrap{padding-bottom:0;}
+    /* B-51: 대형 모니터(1920/2560/4K)에서 .wrap max-width:1440px 제한 때문에
+       양옆에 큰 여백이 남던 문제 — 매물탭 활성 시에만 사실상 전체폭으로 확대해
+       지도(.grid의 minmax(0,1fr) 트랙)가 늘어난 폭을 그대로 흡수하게 함.
+       사이드바(--sidebar-w)는 고정 트랙이라 폭 영향 없음. 문서형 탭(대시·자산·
+       액션·수집함)은 가독성 위해 1440 유지 — body:has(#panel-props.on) 스코프
+       라 다른 탭엔 전혀 적용 안 됨. 1440 이하 뷰포트에선 max-width 자체가
+       원래도 제약 요인이 아니라(뷰포트가 더 좁으면 width:auto가 이미 더 작게
+       잡힘) 기존 레이아웃과 완전히 동일 */
+    body:has(#panel-props.on) .wrap{max-width:none;}
     #panel-props.on .grid{flex:1;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch;}
     .grid{grid-template-columns:minmax(0,var(--sidebar-w,360px)) 24px minmax(0,1fr);gap:0;}
     .grid>section{order:1;display:flex;flex-direction:column;height:100%;}
