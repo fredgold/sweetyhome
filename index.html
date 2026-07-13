@@ -607,28 +607,32 @@
   <!-- 백업 모달 -->
   <div class="modal" id="exportModal">
     <div class="box">
-      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg> 전체 내보내기 (백업)</h3>
-      <div class="mdesc">아래 백업 코드를 복사해서 <b>메모장·카톡 나에게·구글 문서</b> 등에 보관하세요. 대화가 사라져도 이 코드만 있으면 <b>자산·매물·액션</b> 전부 그대로 복원됩니다.</div>
-      <textarea id="exportText" readonly></textarea>
-      <div class="macts">
+      <div class="mhead"><h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg> 전체 내보내기 (백업)</h3></div>
+      <div class="mbody">
+        <div class="mdesc">아래 백업 코드를 복사해서 <b>메모장·카톡 나에게·구글 문서</b> 등에 보관하세요. 대화가 사라져도 이 코드만 있으면 <b>자산·매물·액션</b> 전부 그대로 복원됩니다.</div>
+        <textarea id="exportText" readonly></textarea>
+        <div class="ok" id="exportOk"></div>
+      </div>
+      <div class="mfoot">
         <button class="btn-ghost" data-close="exportModal">닫기</button>
         <button class="btn-save" id="copyExport"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg> 복사하기</button>
       </div>
-      <div class="ok" id="exportOk"></div>
     </div>
   </div>
 
   <div class="modal" id="importModal">
     <div class="box">
-      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M8.5 11.5 12 15l3.5-3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg> 전체 가져오기 (복원)</h3>
-      <div class="hint">⚠ 가져오면 <b>지금 보드 내용이 백업 코드로 교체</b>됩니다. 새 보드에 복원할 때 쓰세요.</div>
-      <div class="mdesc">보관해둔 <b>백업 코드</b>를 아래에 붙여넣고 가져오기를 누르세요. (예전 ‘집구하기맵’ 백업도 매물만 불러올 수 있어요.)</div>
-      <textarea id="importText" placeholder="여기에 백업 코드를 붙여넣으세요…"></textarea>
-      <div class="macts">
+      <div class="mhead"><h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M8.5 11.5 12 15l3.5-3.5"/><path d="M5 14v4a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"/></svg> 전체 가져오기 (복원)</h3></div>
+      <div class="mbody">
+        <div class="hint">⚠ 가져오면 <b>지금 보드 내용이 백업 코드로 교체</b>됩니다. 새 보드에 복원할 때 쓰세요.</div>
+        <div class="mdesc">보관해둔 <b>백업 코드</b>를 아래에 붙여넣고 가져오기를 누르세요. (예전 ‘집구하기맵’ 백업도 매물만 불러올 수 있어요.)</div>
+        <textarea id="importText" placeholder="여기에 백업 코드를 붙여넣으세요…"></textarea>
+        <div class="ok" id="importOk"></div>
+      </div>
+      <div class="mfoot">
         <button class="btn-ghost" data-close="importModal">닫기</button>
         <button class="btn-save" id="doImport">복원하기</button>
       </div>
-      <div class="ok" id="importOk"></div>
     </div>
   </div>
 
@@ -739,35 +743,39 @@
 
   <div class="modal" id="assetAiModal">
     <div class="box">
-      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg> 자산 채우기 — AI 또는 시트 붙여넣기</h3>
-      <div class="mdesc"><b>① 시트 붙여넣기:</b> 구글시트/엑셀에서 행을 복사해 그대로 붙여넣으면(소유자·항목·금액·형태·유동성·동원가능액·메모 순) 자동 인식돼요.<br><b>② 자유 입력:</b> "본인 국민은행 1485만 현금 즉시, 배우자 청약통장 280만…"처럼 적어도 AI가 정리해줍니다.</div>
-      <textarea id="assetAiText" placeholder="여기에 시트 행을 붙여넣거나 자유롭게 적으세요…"></textarea>
-      <div class="macts">
+      <div class="mhead"><h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg> 자산 채우기 — AI 또는 시트 붙여넣기</h3></div>
+      <div class="mbody">
+        <div class="mdesc"><b>① 시트 붙여넣기:</b> 구글시트/엑셀에서 행을 복사해 그대로 붙여넣으면(소유자·항목·금액·형태·유동성·동원가능액·메모 순) 자동 인식돼요.<br><b>② 자유 입력:</b> "본인 국민은행 1485만 현금 즉시, 배우자 청약통장 280만…"처럼 적어도 AI가 정리해줍니다.</div>
+        <textarea id="assetAiText" placeholder="여기에 시트 행을 붙여넣거나 자유롭게 적으세요…"></textarea>
+        <div class="ok" id="assetAiOk"></div>
+      </div>
+      <div class="mfoot">
         <button class="btn-ghost" data-close="assetAiModal">닫기</button>
         <button class="btn-save" id="assetAiRun">정리해서 채우기</button>
       </div>
-      <div class="ok" id="assetAiOk"></div>
     </div>
   </div>
 
   <div class="modal" id="profileModal">
     <div class="box">
-      <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg> 프로필 & 일정 설정</h3>
-      <div class="mdesc">여기서 바꾸면 타임라인·게이트·AI 상담에 자동 반영돼요.</div>
-      <div class="pf-grid">
-        <label>이름<input id="pf_names" placeholder="예: OO ♥ XX"></label>
-        <label>출생연도<input id="pf_birthYear" type="number" placeholder="1995"></label>
-        <label>고용형태<input id="pf_employment" placeholder="맞벌이"></label>
-        <label>주거상태<input id="pf_housing" placeholder="무주택"></label>
-        <label>필수 지역<input id="pf_city" placeholder="서울"></label>
-        <label>전용면적 상한(㎡)<input id="pf_maxArea" type="number" placeholder="85"></label>
-        <label>보증금 범위(억)<input id="pf_depositRange" placeholder="4~5"></label>
-        <label>선호 교통<input id="pf_transport" placeholder="9호선"></label>
+      <div class="mhead"><h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg> 프로필 & 일정 설정</h3></div>
+      <div class="mbody">
+        <div class="mdesc">여기서 바꾸면 타임라인·게이트·AI 상담에 자동 반영돼요.</div>
+        <div class="pf-grid">
+          <label>이름<input id="pf_names" placeholder="예: OO ♥ XX"></label>
+          <label>출생연도<input id="pf_birthYear" type="number" placeholder="1995"></label>
+          <label>고용형태<input id="pf_employment" placeholder="맞벌이"></label>
+          <label>주거상태<input id="pf_housing" placeholder="무주택"></label>
+          <label>필수 지역<input id="pf_city" placeholder="서울"></label>
+          <label>전용면적 상한(㎡)<input id="pf_maxArea" type="number" placeholder="85"></label>
+          <label>보증금 범위(억)<input id="pf_depositRange" placeholder="4~5"></label>
+          <label>선호 교통<input id="pf_transport" placeholder="9호선"></label>
+        </div>
+        <h4 style="font-size:13px;font-weight:800;margin:16px 0 8px;"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></svg> 마일스톤 (타임라인)</h4>
+        <div id="pf_milestones"></div>
+        <button class="btn-ghost" id="pf_addMs" style="font-size:12px;margin-top:6px;">＋ 마일스톤 추가</button>
       </div>
-      <h4 style="font-size:13px;font-weight:800;margin:16px 0 8px;"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></svg> 마일스톤 (타임라인)</h4>
-      <div id="pf_milestones"></div>
-      <button class="btn-ghost" id="pf_addMs" style="font-size:12px;margin-top:6px;">＋ 마일스톤 추가</button>
-      <div class="macts">
+      <div class="mfoot">
         <button class="btn-ghost" data-close="profileModal">취소</button>
         <button class="btn-save" id="pf_save">저장</button>
       </div>
