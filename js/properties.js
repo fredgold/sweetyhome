@@ -1943,8 +1943,9 @@ function renderComplexes(){
       </div>
       <div class="cx-listing-meta">최근 확인 ${rep.lastCheckedAt?esc(new Date(rep.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>`
       :`<div class="c-meta"><span class="chip warn">현재 대표매물 없음</span></div>`;
+    /* B-44①: "이번 주 확인 완료" 버튼은 단지 상세(cxDetailWeeklyCheckBtn)에 이미 있어
+       카드에선 제거 — 뱃지·최근확인 날짜만 유지해 카드 높이를 줄이고 노출 수를 늘림 */
     const weeklyBadge=needsWeeklyCheck(cx,rep)?'<span class="chip warn">7일+ 미확인</span>':'';
-    const weeklyBtn=rep?`<button data-weeklycheck="${cx.id}">${ic('sync')} 이번 주 확인 완료</button>`:'';
     const routeCheckHTML = routeMode!=='select' ? '' :
       (cx.lat&&cx.lng
         ? `<label class="c-routecheck-wrap"><input type="checkbox" class="c-routecheck" aria-label="임장 루트에 포함" data-routecheck="${cx.id}"${routeSelected.has(cx.id)?' checked':''}></label>`
@@ -1962,7 +1963,7 @@ function renderComplexes(){
       </div>
       <div style="padding:0 15px 14px">
         ${repHTML}
-        ${(weeklyBadge||weeklyBtn)?`<div class="c-actions">${weeklyBadge}${weeklyBtn}</div>`:''}
+        ${weeklyBadge?`<div class="c-actions">${weeklyBadge}</div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1974,8 +1975,6 @@ document.getElementById('legacyToggleBtn').onclick=()=>{
   updateLegacyToggleLabel();
 };
 document.getElementById('complexSection').addEventListener('click',e=>{
-  const wc=e.target.closest('[data-weeklycheck]');
-  if(wc){ weeklyCheckComplex(wc.dataset.weeklycheck); return; }
   if(e.target.closest('.c-routecheck-wrap')) return;
   const el=e.target.closest('[data-cxopen]'); if(!el)return;
   openComplexDetail(el.dataset.cxopen);
