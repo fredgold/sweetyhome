@@ -1733,6 +1733,77 @@ mhead 위치 불변) 확인. `node --check` 양쪽 파일·CSS 중괄호 균형 
 
 ---
 
+## 2026-07-14 — B-61 출퇴근 2인 설정 + 기록 (`43640e1`+`dee9064`)
+
+R-07(통근 기준지) 구조 해소. B-27-lite와 같은 원칙 — 자동 경로계산·판정
+없음, 기록·표시만. `js/nav.js` 무접촉.
+
+**커밋①**(`43640e1`, `state.js`+`profile.js`+`index.html`) —
+`state.settings.commuters = [{name, dest}, {name, dest}]` 고정 2개
+(기본 테디→강남역/연정→신사역). `applyGuards()`가 항목별 병합이라 구
+데이터(필드 자체가 없거나 1개뿐이거나 name/dest 일부만 있어도) 정확히
+2개로 보정. 프로필 모달에 "통근 기준지" 섹션 추가(`pf_commuter0_name`·
+`pf_commuter0_dest`·`pf_commuter1_name`·`pf_commuter1_dest`, 다른
+프로필 필드와 동일하게 빈 입력은 기존값 유지). **하드코딩 없음** — 기본
+값도 `DEFAULT.settings.commuters`를 통해서만 존재, 코드 다른 곳에서
+"강남역"/"신사역" 참조 없음.
+
+**커밋②**(`dee9064`, `state.js`+`properties.js`+`style.css`+
+`index.html`) — `complexes[].commutes = [{minutes, transfers,
+destSnapshot}, {...}]`(index 0/1 = `settings.commuters[0/1]`) +
+`complexes[].commuteMemo`. 단지 상세에 인별 소요시간(분)·환승 횟수
+입력 추가(`commutesInputHTML()`), 저장 시 `destSnapshot`에 그 시점의
+`settings.commuters[i].dest`를 자동 스냅샷. 표시(`commuteSummaryHTML()`)
+는 계산만: "테디 37분 · 연정 34분 (차이 3분)" 형태, `destSnapshot`이
+있고 현재 `dest`와 다르면 그 사람 시간 옆에만 "기준지 변경됨 · 재확인
+필요"(기존 `.chip.warn` 토큰) 표시. `minutes`가 `null`(미입력)이면
+"미확인", `0`이면 "0분"으로 명확히 구분(엄격 비교). 기존
+`commuteGangnam`/`commuteSinsa`(레거시 강남역/신사역 전용 필드)는
+전혀 건드리지 않음 — 완전히 별개의 신규 필드. 신규 단지 생성 경로
+3곳 모두 `defaultComplexCommutes()`로 초기화.
+
+**검증**(Playwright, 게스트모드+모바일 390px):
+- (①) 기본값 테디/강남역·연정/신사역 노출, 이름·목적지 수정 후 저장 →
+  `state.settings.commuters` 정확히 반영. `applyGuards()` 마이그레이션
+  2케이스(commuters 필드 자체 없음 / 1개·일부 필드만 있는 malformed
+  데이터) 모두 정확히 2개로 보정 확인.
+- (②) 두 사람 모두 미확인 상태에서 시작 → 소요시간 입력 시 요약이
+  실시간으로 정확히 갱신(차이 계산 포함) 확인. 저장 시 `destSnapshot`이
+  그 순간의 목적지로 정확히 기록됨 확인. 프로필에서 목적지만 변경 →
+  기존 소요시간·환승 기록은 그대로 유지된 채 그 사람 옆에만 "기준지
+  변경됨" 배지가 뜨는 것 확인(다른 사람은 영향 없음). 이름만 변경(테디→
+  규범) → 표시 라벨만 바뀌고 소요시간 등 기록은 index 매칭이라 완전히
+  무손실 확인. `minutes` 0과 빈 값(null)이 각각 "0분"/"미확인"으로
+  정확히 구분 렌더 확인(`=== 0` 엄격 비교). `applyGuards()`로 보정되는
+  구 단지(commutes 필드 자체가 없던 데이터)도 무손실·무크래시 확인
+  (`commuteMemo` 등 다른 필드도 그대로 보존). 모바일 390px 입력·요약
+  표시 정상, 가로 스크롤 없음, B-59 sticky 헤더 무회귀 확인.
+- `node --check js/state.js`·`node --check js/properties.js`·`node
+  --check js/profile.js`·CSS 중괄호 균형·`index.html` div 개폐 균형
+  전부 통과.
+
+**구현 안 함(지시대로)**: 경로 API 자동 계산, 시간·차이 기준 부적합
+판정, 정렬·필터 자동 연동. 전부 기록·표시만.
+
+**부수 발견**: 없음.
+
+**작업 방식 메모**: 커밋①과 커밋② 모두 스키마(`state.js`) 변경이 서로
+다른 최상위 키(`settings.commuters` vs `complexes[].commutes`)를
+건드려서, 한 세션에서 먼저 전체 구현 후 `git checkout`으로 되돌렸다가
+커밋①분만 재적용→커밋, 이어서 커밋②분을 재적용→커밋하는 방식으로 두
+커밋의 diff를 깨끗하게 분리함(중간에 임시로 정의되지 않은 함수를
+참조하는 상태가 잠깐 있었으나 스테이징 전에 정리, 커밋 시점엔 항상
+`node --check` 통과 상태만 커밋).
+
+수정 파일: `js/state.js`(양쪽 커밋에 걸쳐 스키마+상수+applyGuards)·
+`js/profile.js`(①)·`js/properties.js`(②)·`style.css`(②, 최소 신규
+규칙만)·`index.html`(양쪽, 프로필 섹션+단지상세 섹션).
+
+**→ B-61 완료**. R-07 해소. BACKLOG.md ⭐ 섹션은 커맨드센터가 확인 후
+정리할 차례.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
