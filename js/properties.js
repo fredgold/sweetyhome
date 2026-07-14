@@ -2195,8 +2195,21 @@ function mgmtFeeCaption(l){
   if(l.managementFeeState==='na') return '관리비 해당없음';
   return '관리비 미확인';
 }
+/* B-27-lite②: 안전 체크 9항목 요약 배지 — SAFETY_ITEMS(state.js) 재사용,
+   집계만 함(정렬·필터·숨김·자동판정 없음). 전부 '문제없음'일 때만 예외
+   문구, 그 외엔 미확인/주의 개수 + 최신 확인일을 그대로 보여줌 */
+function safetyBadgeChip(l){
+  const items=SAFETY_ITEMS.map(({key})=>l.safety[key]);
+  const uncheckedCnt=items.filter(s=>s.status==='unchecked').length;
+  const warningCnt=items.filter(s=>s.status==='warning').length;
+  const dates=items.map(s=>s.checkedAt).filter(Boolean).sort();
+  const lastCheckedAt=dates.length?dates[dates.length-1].replace(/-/g,'.'):'';
+  const allOk=items.every(s=>s.status==='ok');
+  if(allOk) return `<span class="chip ok">안전 체크 완료${lastCheckedAt?` · 마지막 확인 ${esc(lastCheckedAt)}`:''}</span>`;
+  return `<span class="chip${warningCnt?' warn':''}">미확인 ${uncheckedCnt} · 주의 ${warningCnt}${lastCheckedAt?` · 마지막 확인 ${esc(lastCheckedAt)}`:''}</span>`;
+}
 /* B-27-lite: 전세 안전 체크 9항목 — 기록·표시만(자동 판정·차단 없음). 기본
-   접힘, 매물 행 안에서 토글해서 펼침. 카드 배지 요약은 다음 커밋(②)에서 추가 */
+   접힘, 매물 행 안에서 토글해서 펼침 */
 function safetySectionHTML(l){
   const expanded=cxSafetyExpanded.has(l.id);
   return `<div class="safety-wrap${expanded?' expanded':''}">
@@ -2238,6 +2251,7 @@ document.getElementById('cxDetailListings').addEventListener('change',e=>{
   const listing=state.listings.find(l=>l.id===lid); if(!listing) return;
   listing.safety[safekey][safefield]=el.value;
   save();
+  renderCxListings(listing.complexId);
 });
 /* 단지(parking)·매물(managementFee) 공용 클릭/입력 핸들러 — #complexDetailModal
    안 어디서든(단지 필드 1개 + 매물 행 N개) 위임 처리 */
@@ -2329,6 +2343,7 @@ function renderCxListings(complexId){
         <span class="cx-listing-dongho">${esc(l.dongHo||'동/호 미상')}</span>
         <span class="chip ${listingStatusChipClass(l.listingStatus)}">${esc(l.listingStatus||'확인필요')}</span>
         ${l.isRepresentative?'<span class="chip ok">대표매물</span>':''}
+        ${safetyBadgeChip(l)}
       </div>
       <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'—')}</div>
       <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · 확인 ${l.lastCheckedAt?esc(new Date(l.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>
