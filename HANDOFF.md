@@ -1,87 +1,84 @@
-# HANDOFF — B-27-lite① 전세 안전 체크 기록 스키마+입력 UI (2026-07-14)
+# HANDOFF — B-27-lite 전체 완료(①스키마+입력 UI, ②카드 요약 배지) (2026-07-14)
 
 ## 1. 목표
-`BACKLOG.md` ⭐ 섹션 B-27-lite 커밋①. `listings[]`에 전세 안전 항목 9종의
-기록 필드(상태·메모·출처·확인일)를 추가하고, 매물 상세에서 입력·편집
-가능하게 한다. 판정·차단·점수 없음 — 기록·표시만. 카드 배지(미확인 N·
-주의 N)는 다음 커밋(②).
+`BACKLOG.md` ⭐ 섹션 B-27-lite. `listings[]`에 전세 안전 항목 9종의 기록
+필드를 추가하고(커밋①), 매물 상세에서 입력·편집 가능하게 한 뒤, 매물
+행에 "미확인 N · 주의 N" 요약 배지 + 마지막 확인일을 표시(커밋②). 판정·
+차단·자동평가 없음 — 기록·표시만.
 
 ## 2. 완료
-**커밋 완료, push는 보류.**
+**커밋 2개 모두 완료, push는 보류.**
 
 ```
 6d4c01c feat: 매물 전세 안전 체크 기록 필드 추가 (B-27-lite ①)
+e9563c2 feat: 매물 카드 안전 체크 요약 배지 (B-27-lite ②)
 ```
 
-- **스키마**(`js/state.js`): `listings[].safety = { [9개 key]:
-  {status('unchecked'|'ok'|'warning', 기본 'unchecked'), memo, source,
-  checkedAt} }`. 9개 항목 = 전입신고·확정일자·반환보증·전세대출·서울시
-  이자지원·근저당선순위·신탁압류·임대인대리인확인·특약협의. 키/라벨/상태
-  라벨/출처 옵션을 `SAFETY_ITEMS`·`SAFETY_STATUS_LABEL`·`SAFETY_SOURCES`
-  상수로 정의(`CHECKLIST` 근처, state.js·properties.js 양쪽에서 공유).
-- **applyGuards() 마이그레이션**: 항목별 병합이라 safety 필드가 아예
-  없던 구 데이터도, 9개 중 일부만 저장된 데이터도 나머지가
-  `defaultSafetyItem()`으로 채워지며 기존 값은 무손실 보존.
-- **신규 리스팅 생성 경로 3곳** 전부 `safety:defaultListingSafety()`로
-  초기화: 수동 추가(`js/properties.js:1047` 근처)·시트 임포트
-  (`:1502` 근처)·마이그레이션 프리뷰(`:1683` 근처).
-- **UI**(`js/properties.js`): 단지 상세(`complexDetailModal`) 매물 행
-  안에 "전세 안전 체크" 접이식 섹션(`safetySectionHTML()`) 추가. 기본
-  접힘, 기존 `.gates-toggle`/`.gates-toggle-caret` 토글 패턴 재사용(새
-  토글 CSS 만들지 않음). 펼치면 9항목별 상태 select·메모 텍스트(esc()
-  이스케이프)·출처 select·확인일 date input. 이벤트는 `#cxDetailListings`
-  위임(click for 토글, change for 값 저장) — 기존 tri-state 위임 핸들러
-  패턴과 동일 구조.
-- **CSS**(`style.css`): `.safety-wrap`·`.safety-list`·`.safety-item*`
-  신규 최소 규칙, 기존 토큰(`--hairline`, `--ink`, `--ink-soft`,
-  `--radius-sm`, `--surface`)만 재사용.
+**커밋①** — 스키마(`js/state.js`): `listings[].safety = { [9개 key]:
+{status('unchecked'|'ok'|'warning', 기본 'unchecked'), memo, source,
+checkedAt} }`. 9개 항목 = 전입신고·확정일자·반환보증·전세대출·서울시
+이자지원·근저당선순위·신탁압류·임대인대리인확인·특약협의.
+`SAFETY_ITEMS`·`SAFETY_STATUS_LABEL`·`SAFETY_SOURCES` 상수(`CHECKLIST`
+근처)로 정의, state.js·properties.js 공유. `applyGuards()`가 항목별
+병합이라 구 데이터도 무손실 보정. 신규 리스팅 생성 경로 3곳(수동 추가·
+시트 임포트·마이그레이션 프리뷰) 전부 `defaultListingSafety()`로 초기화.
+UI는 단지 상세 매물 행 안에 접이식 섹션(`safetySectionHTML()`, 기본
+접힘, `.gates-toggle` 패턴 재사용) — 9항목별 상태 select·메모(esc()
+이스케이프)·출처 select·확인일 date input.
+
+**커밋②** — `safetyBadgeChip(l)`(`js/properties.js`) 신규: `SAFETY_ITEMS`
+순회해 unchecked/warning 개수 집계 + `checkedAt` 최신값 계산. 9개 전부
+`ok`면 "안전 체크 완료 · 마지막 확인 YYYY.MM.DD", 그 외엔 "미확인 N ·
+주의 N"(+ 있으면 마지막 확인일). 주의 1개 이상이면 기존 `.chip.warn`
+토큰(경고색 1가지, 새 CSS 없음) 적용. `cx-listing-top`(단지상태·대표매물
+칩 옆)에 배지 삽입. 안전 체크 섹션 `change` 핸들러에 `renderCxListings()`
+호출 추가해 상태 변경 시 배지가 즉시 갱신되도록 함. **스키마·CSS 변경
+없음**, 상수 재사용만.
+
 - **검증**(Playwright, 로컬 정적 서버+게스트모드 — python http.server
-  기본 charset이 UTF-8이 아니라 한글 리터럴이 깨지는 문제가 있어 임시로
-  `guess_type` override한 서버 사용):
-  - 토글 기본 접힘→클릭 시 펼침 정상.
-  - 9항목 중 1개(전입신고) 상태/메모/출처/확인일을 각각 편집 → 해당
-    항목에만 정확히 반영, 나머지 8항목은 기본값(`unchecked`/빈값) 유지
-    확인.
-  - 메모에 `<script>window.__xss=1</script>` 입력 → 실행 안 됨
-    (`window.__xss` 미설정 확인), DOM에 `<script>` 태그 원문 없음, input
-    value로 텍스트 그대로 보존 확인(esc() 정상 동작).
-  - `applyGuards()` 마이그레이션 케이스 2종 직접 호출 검증: (a) safety
-    필드 자체가 없는 구 리스팅 → 9개 키 전부 기본값 생성, 기존 memo
-    등 다른 필드 무손실. (b) 9개 중 moveInReport 1개만 저장된 리스팅 →
-    그 값 그대로 보존 + 나머지(fixedDate 등) 기본값 채움.
-  - 모바일 390px: 매물 상세 풀높이 시트에서 토글 탭 동작 정상, B-59
-    sticky 헤더 무회귀(mbody 강제 스크롤 전후 mhead 위치 완전 동일)
-    확인.
+  기본 charset이 UTF-8이 아니라 한글 리터럴이 깨지는 문제가 있어 매
+  세션 `guess_type` override한 임시 서버 사용):
+  - (①) 토글 기본 접힘→펼침, 9항목 중 1개 편집 시 그 항목에만 반영,
+    나머지 기본값 유지, XSS(`<script>`) 메모 입력 시 미실행+이스케이프
+    확인. `applyGuards()` 마이그레이션 2케이스(safety 없음/일부만 있음)
+    무손실 보정 확인.
+  - (②) 배지 조합 3종(전부 미확인/혼합·주의포함/전부 문제없음) 문구·
+    클래스 정확성, 안전 체크 섹션에서 상태 변경 시 배지 즉시 갱신(1개
+    unchecked→warning, 이후 9개 전부 ok로 전환하는 두 시나리오 모두),
+    구 데이터(safety 필드 자체가 없는 리스팅)도 `applyGuards()` 이후
+    크래시 없이 "미확인 9 · 주의 0" 정상 렌더 확인.
+  - 모바일 390px 양쪽 커밋 모두 확인(토글 동작·배지 노출), B-59 sticky
+    헤더 무회귀(mbody 강제 스크롤 전후 mhead 위치 완전 동일) 확인.
   - `node --check js/state.js`·`node --check js/properties.js`·CSS
     중괄호 균형 전부 통과.
-  - 임시 설치·사용한 python 테스트 서버·Playwright 스크립트는 세션
+  - 임시 python 테스트 서버·Playwright 스크립트는 두 커밋 모두 세션
     종료 전 전부 삭제. `package.json` 변경 없음, repo에 테스트 파일
     남기지 않음.
 
 ## 3. 미완 / 다음 단계
-- **B-27-lite 커밋②(다음 세션)**: 매물 카드에 "미확인 N · 주의 N" 배지
-  + 마지막 확인일 표시. 이번 커밋의 `safety` 데이터를 그대로 읽기만
-  하면 됨(스키마 변경 없음). 카드 렌더 위치는 `js/properties.js`
-  `renderCxListings()`의 `cx-listing-top`/`cx-listing-meta` 부근 참고.
-- **B-61(출퇴근 2인)**: 이 커밋과 독립적이지만 같은 ⭐ 섹션 다음 순서.
-  `profile.js`+`properties.js`+스키마.
-- localStorage 저장 자체는 게스트/데모 모드라 이번 세션에서 직접 확인
-  못 함(데모 모드는 `save()`가 `데모 모드 — 저장되지 않아요`로 조기
-  반환하는 기존 설계 — 버그 아님). 기존 `managementFee` 등과 동일한
-  `save()` 경로를 그대로 타므로 별도 리스크로 보지 않음. 실사용(PIN
-  로그인) 환경에서 저장→새로고침 유지는 테디가 실제 사용 중 확인 요망.
+- **B-27-lite 전체 완료** — BACKLOG.md ⭐ 섹션에서 커맨드센터가 삭제
+  처리할 차례.
+- **다음 지시 예정: B-61(출퇴근 2인)** — `profile.js`+`properties.js`
+  +스키마. settings에 통근 기준지 2개(기본 강남역/신사역, 프로필
+  모달에서 편집), `complexes[]`에 인별 소요시간·환승횟수·스냅샷. "기준지
+  변경됨·재확인 필요" 표시 로직 필요.
+- localStorage 실제 저장은 게스트/데모 모드 특성상 이번에도 직접
+  확인 못 함(데모 모드는 `save()`가 조기 반환하는 기존 설계 — 버그
+  아님, 기존 필드들과 동일 경로). 실사용 환경에서 저장→새로고침 유지는
+  테디가 실제 사용 중 확인 요망.
 
 ## 4. 주의점
 - PIN·API 키·실제 금액 데이터는 이 문서 어디에도 기록 안 함.
 - **BACKLOG.md는 커맨드센터 소유(읽기 전용)** — 이번 세션에서도 전혀
   수정·커밋 안 함.
-- `js/nav.js` 무접촉 원칙 유지 — 이번 작업은 `state.js`+`properties.js`
-  +`style.css`만 건드림, nav.js 무관.
-- 스키마 변경(`listings[].safety` 신규 필드)이라 `applyGuards()` 기본값
-  보정 + `state.js` 상단 JSDoc 동시 갱신 완료(지시서 필수 요구사항).
-- 기존 필드명·단위 변경 없음, 기존 데이터 손실 없음(마이그레이션 검증
-  완료).
-- 착수 전 `git status`로 Codex와의 미커밋 충돌 여부 확인함(당시 관련
+- `js/nav.js` 무접촉 원칙 유지 — 이번 두 커밋 모두 `state.js`+
+  `properties.js`(+커밋①만 `style.css`)만 건드림, nav.js 무관.
+- 커밋①은 스키마 변경(`listings[].safety` 신규 필드)이라 `applyGuards()`
+  기본값 보정 + JSDoc 동시 갱신 완료. 커밋②는 스키마 변경 없음(읽기
+  전용 집계).
+- 기존 필드명·단위 변경 없음, 기존 데이터 손실 없음(양쪽 다 마이그레이션
+  검증 완료).
+- 착수 전 `git status`로 Codex와의 미커밋 충돌 여부 확인함(매번 관련
   없는 untracked 문서 3개만 있었고 clean, 충돌 없었음).
 
 ## 5. 컨텍스트
@@ -89,6 +86,6 @@
   손 B(Codex)" 3자 협업 구조. SSOT는 `CLAUDE.md`, 실행 규칙은
   `AGENTS.md`, 이력은 `HISTORY.md`, 백로그는 `BACKLOG.md`(커맨드센터
   전용).
-- 직전 세션들: ... → B-56(`21cb4b9`) → B-57(`2b79d16`) →
-  B-58(`e9d3531`) → B-59(`44b9850`~`a4fe1c6` 4단계) →
-  **이번 세션(B-27-lite①, `6d4c01c`, push 보류)**.
+- 직전 세션들: ... → B-58(`e9d3531`) → B-59(`44b9850`~`a4fe1c6` 4단계)
+  → B-27-lite①(`6d4c01c`) → **이번 세션(B-27-lite②, `e9563c2`, push
+  보류) — B-27-lite 전체 완료**.
