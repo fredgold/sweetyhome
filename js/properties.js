@@ -1030,6 +1030,7 @@ async function saveAsComplexListing(data){
       parking:tempParking!=null?tempParking:null,
       parkingState:tempParking!=null?'known':'unknown',
       pros:'', cons:'', verdict:'', favorite:false,
+      commutes:defaultComplexCommutes(), commuteMemo:'',
       createdAt:now, updatedAt:now,
     };
     state.complexes.push(cx);
@@ -1490,6 +1491,7 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
           lat:null, lng:null, memo:row.memo||'',
           parking:null, parkingState:'unknown',
           pros:'', cons:'', verdict:'', favorite:false,
+          commutes:defaultComplexCommutes(), commuteMemo:'',
           createdAt:now, updatedAt:now,
         };
         state.complexes.push(cx);
@@ -1667,6 +1669,7 @@ function migApply(){
         memo:first.memo||'',
         parking:null, parkingState:'unknown',
         pros:'', cons:'', verdict:'', favorite:false,
+        commutes:defaultComplexCommutes(), commuteMemo:'',
         createdAt:now, updatedAt:now,
       };
       if(first.aiScore!=null) cx.aiScore=first.aiScore;
@@ -2290,6 +2293,56 @@ function openComplexDetail(id){
   openModal('complexDetailModal');
   reselectCxMarker(id);
 }
+/* B-61: 출퇴근 2인 기록 — 자동 경로계산·판정 없음, 사용자가 직접 입력한
+   소요시간(분)·환승 횟수만 기록. destSnapshot은 입력 시점의 기준지를 그대로
+   복사해두고, 표시 시점에 현재 settings.commuters[i].dest와 다르면 "기준지
+   변경됨" 안내만 덧붙임(기록 삭제·초기화 없음). 이름은 index로만 매칭돼
+   이름을 바꿔도 기록은 그대로 유지됨 */
+function commutesInputHTML(cx){
+  const commuters=state.settings.commuters;
+  return commuters.map((commuter,i)=>{
+    const c=cx.commutes[i]||{minutes:null,transfers:null,destSnapshot:''};
+    return `<div class="commute-row" data-ci="${i}">
+      <div class="commute-name">${esc(commuter.name)} → ${esc(commuter.dest)}</div>
+      <div class="commute-row-inputs">
+        <input type="number" class="commute-minutes" data-cfield="minutes" data-ci="${i}" min="0" placeholder="소요시간(분)" value="${c.minutes!=null?c.minutes:''}">
+        <input type="number" class="commute-transfers" data-cfield="transfers" data-ci="${i}" min="0" placeholder="환승 횟수" value="${c.transfers!=null?c.transfers:''}">
+      </div>
+    </div>`;
+  }).join('')+`<div class="commute-summary">${commuteSummaryHTML(cx)}</div>`;
+}
+function commuteSummaryHTML(cx){
+  const commuters=state.settings.commuters;
+  const parts=commuters.map((commuter,i)=>{
+    const c=cx.commutes[i]||{minutes:null,transfers:null,destSnapshot:''};
+    const timeText=c.minutes!=null?`${c.minutes}분`:'미확인';
+    const changed=c.destSnapshot&&c.destSnapshot!==commuter.dest;
+    return `${esc(commuter.name)} ${timeText}${changed?' <span class="chip warn">기준지 변경됨 · 재확인 필요</span>':''}`;
+  });
+  const c0=cx.commutes[0]||{}, c1=cx.commutes[1]||{};
+  const diffText=(c0.minutes!=null&&c1.minutes!=null)?` (차이 ${Math.abs(c0.minutes-c1.minutes)}분)`:'';
+  return parts.join(' · ')+diffText;
+}
+function renderCxDetailCommutes(cx){
+  const wrap=document.getElementById('cxDetailCommutes'); if(!wrap) return;
+  wrap.innerHTML=commutesInputHTML(cx);
+}
+document.getElementById('cxDetailCommutes').addEventListener('change',e=>{
+  const el=e.target.closest('[data-cfield]'); if(!el) return;
+  const i=+el.dataset.ci;
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx) return;
+  const v=el.value===''?null:parseInt(el.value,10);
+  cx.commutes[i][el.dataset.cfield]=(v!=null&&!isNaN(v))?v:null;
+  cx.commutes[i].destSnapshot=state.settings.commuters[i].dest||'';
+  cx.updatedAt=new Date().toISOString();
+  save();
+  renderCxDetailCommutes(cx);
+});
+document.getElementById('cxDetailCommuteMemo').addEventListener('blur',e=>{
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
+  cx.commuteMemo=e.target.value.trim(); cx.updatedAt=new Date().toISOString();
+  save();
+});
 function renderComplexDetailBody(cx){
   document.getElementById('cxDetailTitle').textContent=cx.complexName||'(이름 없음)';
   const favBtn=document.getElementById('cxDetailFavBtn');
@@ -2307,6 +2360,8 @@ function renderComplexDetailBody(cx){
     field:'parking', value:cx.parking, state:cx.parkingState,
     caption:parkingCaption(cx), unit:'대/세대', step:'0.1', placeholder:'예: 1.2',
   });
+  renderCxDetailCommutes(cx);
+  document.getElementById('cxDetailCommuteMemo').value=cx.commuteMemo||'';
   document.getElementById('cxDetailStatusSel').value=cx.complexStatus||'관심';
   document.getElementById('cxDetailPros').value=cx.pros||'';
   document.getElementById('cxDetailCons').value=cx.cons||'';

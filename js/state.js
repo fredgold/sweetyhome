@@ -38,7 +38,11 @@
  *                     pros (장점, 멀티라인 텍스트, 기본 ''),
  *                     cons (단점, 멀티라인 텍스트, 기본 ''),
  *                     verdict (한줄 판단/우리 결론, 기본 ''),
- *                     favorite (즐겨찾기, boolean, 기본 false)}]
+ *                     favorite (즐겨찾기, boolean, 기본 false),
+ *                     commutes: [{minutes, transfers, destSnapshot}, {...}]
+ *                       (index 0/1 = settings.commuters[0/1], 기본 각각
+ *                       {minutes:null, transfers:null, destSnapshot:''}),
+ *                     commuteMemo (출퇴근 메모, 기본 '')}]
  *                    v5(단지·매물 2계층) 스키마. E-01로 마이그레이션·라이브 전환 완료.
  *                    B-28: parking은 0이 실제 값일 수 있어 parkingState로 값/미확인/
  *                    해당없음을 명시적으로 구분(0 자연발생 안 하는 households 등과 다름).
@@ -48,6 +52,12 @@
  *                    B-39: favorite은 별점·순위·등급이 아니라 boolean 하나뿐인
  *                    "지금 집중해서 보는 것" 표시 — complexStatus가 이미 우선순위를
  *                    거치므로 별도 등급축 없음. 목록 정렬 1차 키 + 필터로만 사용.
+ *                    B-61: commutes는 기존 commuteGangnam/commuteSinsa(레거시,
+ *                    유지)와 별개인 신규 2인 기록 필드 — 자동 경로계산·판정 없음,
+ *                    사용자가 직접 입력한 소요시간·환승만 기록. destSnapshot은
+ *                    입력 시점의 settings.commuters[i].dest를 그대로 복사해두는
+ *                    값 — 이후 기준지가 바뀌어도 과거 기록은 손대지 않고, 표시
+ *                    시점에 스냅샷≠현재값이면 "기준지 변경됨" 안내만 덧붙임.
  * state.listings  : [{id, complexId, source, url, capturedAt, lastCheckedAt,
  *                     dongHo, areaM2, areaText, areaGrade, deposit,
  *                     managementFee (만원 단위, null=값 없음),
@@ -158,6 +168,10 @@ function defaultListingSafety(){
   const safety={};
   SAFETY_ITEMS.forEach(({key})=>{ safety[key]=defaultSafetyItem(); });
   return safety;
+}
+/* B-61: 통근 기준지 2인 — complexes[].commutes 기본값(신규 단지 생성 시) */
+function defaultComplexCommutes(){
+  return [0,1].map(()=>({minutes:null,transfers:null,destSnapshot:''}));
 }
 
 let OWNERS=['규범','연정','공동'];
@@ -331,13 +345,21 @@ function applyGuards(raw){
      역산 승격(값이 있었으면 'known', 없었으면 'unknown').
      B-38: pros/cons/verdict(판단메모) 필드 누락 보정, 기본 '' — 기존 memo는
      이 map에서 손대지 않아(스프레드로 그대로 통과) 무손실.
-     B-39: favorite 필드 누락 보정, 기본 false */
-  state.complexes=(state.complexes||[]).map(cx=>({
-    parking:null, parkingState:'unknown',
-    pros:'', cons:'', verdict:'',
-    favorite:false,
-    ...cx,
-  }));
+     B-39: favorite 필드 누락 보정, 기본 false
+     B-61: commutes(2인 소요시간·환승·기준지 스냅샷)·commuteMemo 필드 누락
+     보정 — commutes는 항목별 병합이라 구 데이터 무손실(safety와 동일 패턴) */
+  state.complexes=(state.complexes||[]).map(cx=>{
+    const commutesRaw=Array.isArray(cx.commutes)?cx.commutes:[];
+    const commutes=[0,1].map(i=>({minutes:null,transfers:null,destSnapshot:'', ...(commutesRaw[i]||{})}));
+    return {
+      parking:null, parkingState:'unknown',
+      pros:'', cons:'', verdict:'',
+      favorite:false,
+      commuteMemo:'',
+      ...cx,
+      commutes,
+    };
+  });
   /* B-27-lite: safety 필드 누락 보정 — 항목별로 병합해 일부만 저장된 기존
      데이터도 나머지 항목이 defaultSafetyItem()으로 채워지게 함(무손실) */
   state.listings=(state.listings||[]).map(l=>{

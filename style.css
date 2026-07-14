@@ -585,6 +585,14 @@
   .safety-memo{flex:1 1 140px;min-width:0;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:12.5px;color:var(--ink);}
   .safety-source-sel{border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:12px;color:var(--ink-soft);}
   .safety-date{border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:12px;color:var(--ink-soft);}
+  /* B-61: 출퇴근 2인 기록 — 기록·표시 전용(자동 경로계산·판정 없음).
+     입력은 .field input 기본 스타일 상속, 레이아웃만 최소 지정 */
+  .commute-row{margin-bottom:10px;}
+  .commute-row:last-child{margin-bottom:0;}
+  .commute-name{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+  .commute-row-inputs{display:flex;gap:8px;}
+  .commute-row-inputs input{width:auto;flex:1 1 0;min-width:0;}
+  .commute-summary{margin-top:8px;font-size:12.5px;font-weight:600;color:var(--ink-soft);}
   .cx-nocoord-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--hairline-soft);border-radius:var(--radius-md);border:1px solid var(--hairline);font-size:12px;color:var(--ink-soft);font-weight:600;}
   .cx-hover-tip{pointer-events:none;padding:8px 10px;min-width:0;white-space:nowrap;}
   .cx-hover-name{font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:2px;}
