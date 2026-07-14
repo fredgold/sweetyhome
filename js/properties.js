@@ -1057,6 +1057,7 @@ async function saveAsComplexListing(data){
     listingStatus:'게시중',
     isRepresentative:isFirstListing,
     memo:data.memo||'',
+    safety:defaultListingSafety(),
   });
 
   showPropToast(isNewComplex
@@ -1508,6 +1509,7 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
       managementFee:null, managementFeeState:'unknown', listingStatus:'확인필요',
       isRepresentative:isFirstListing,
       memo:row.memo||'',
+      safety:defaultListingSafety(),
     });
     newListingCount++;
   });
@@ -1697,6 +1699,7 @@ function migApply(){
         listingStatus:'확인필요',
         isRepresentative:isFirstListing,
         memo:p.memo||'',
+        safety:defaultListingSafety(),
       });
       newListings++;
     });
@@ -2132,6 +2135,8 @@ applyPropViewMode();
 
 /* ---- (4) 단지 상세 + 매물 목록 ---- */
 let cxDetailId=null, cxDetailMapObj=null, cxDetailMarker=null;
+/* B-27-lite: 전세 안전 체크 섹션 기본 접힘 — 펼친 매물 id만 기억(모달 재열림 시 초기화) */
+let cxSafetyExpanded=new Set();
 /* #cxDetailMap은 formMap/propEditMap과 동일하게 컨테이너를 절대 display:none 처리하지 않고
    인스턴스를 한 번만 만들어 재사용한다 — 지도 div를 숨겼다 다시 보이면 네이버 지도 SDK
    내부(비동기 타일 onload 콜백)에서 널 참조 에러가 남(실측 확인). 좌표 없을 땐 지도 위에
@@ -2190,6 +2195,50 @@ function mgmtFeeCaption(l){
   if(l.managementFeeState==='na') return '관리비 해당없음';
   return '관리비 미확인';
 }
+/* B-27-lite: 전세 안전 체크 9항목 — 기록·표시만(자동 판정·차단 없음). 기본
+   접힘, 매물 행 안에서 토글해서 펼침. 카드 배지 요약은 다음 커밋(②)에서 추가 */
+function safetySectionHTML(l){
+  const expanded=cxSafetyExpanded.has(l.id);
+  return `<div class="safety-wrap${expanded?' expanded':''}">
+    <button type="button" class="gates-toggle" data-safetoggle="${esc(l.id)}">전세 안전 체크 ${expanded?'접기':'펼치기'} <span class="gates-toggle-caret">▾</span></button>
+    <div class="safety-list" style="${expanded?'':'display:none'}">
+      ${SAFETY_ITEMS.map(item=>{
+        const s=l.safety[item.key];
+        return `<div class="safety-item">
+          <div class="safety-item-head">
+            <span class="safety-item-label">${esc(item.label)}</span>
+            <select class="safety-status-sel" data-safefield="status" data-safekey="${item.key}" data-lid="${esc(l.id)}">
+              ${Object.entries(SAFETY_STATUS_LABEL).map(([v,lb])=>`<option value="${v}" ${s.status===v?'selected':''}>${lb}</option>`).join('')}
+            </select>
+          </div>
+          <div class="safety-item-row">
+            <input type="text" class="safety-memo" data-safefield="memo" data-safekey="${item.key}" data-lid="${esc(l.id)}" value="${esc(s.memo)}" placeholder="메모">
+            <select class="safety-source-sel" data-safefield="source" data-safekey="${item.key}" data-lid="${esc(l.id)}">
+              <option value="">출처 선택</option>
+              ${SAFETY_SOURCES.map(src=>`<option value="${src}" ${s.source===src?'selected':''}>${src}</option>`).join('')}
+            </select>
+            <input type="date" class="safety-date" data-safefield="checkedAt" data-safekey="${item.key}" data-lid="${esc(l.id)}" value="${s.checkedAt||''}">
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+document.getElementById('cxDetailListings').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-safetoggle]'); if(!btn) return;
+  const lid=btn.dataset.safetoggle;
+  if(cxSafetyExpanded.has(lid)) cxSafetyExpanded.delete(lid);
+  else cxSafetyExpanded.add(lid);
+  const listing=state.listings.find(l=>l.id===lid); if(!listing) return;
+  renderCxListings(listing.complexId);
+});
+document.getElementById('cxDetailListings').addEventListener('change',e=>{
+  const el=e.target.closest('[data-safefield]'); if(!el) return;
+  const {safefield,safekey,lid}=el.dataset;
+  const listing=state.listings.find(l=>l.id===lid); if(!listing) return;
+  listing.safety[safekey][safefield]=el.value;
+  save();
+});
 /* 단지(parking)·매물(managementFee) 공용 클릭/입력 핸들러 — #complexDetailModal
    안 어디서든(단지 필드 1개 + 매물 행 N개) 위임 처리 */
 document.getElementById('complexDetailModal').addEventListener('click',e=>{
@@ -2284,6 +2333,7 @@ function renderCxListings(complexId){
       <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'—')}</div>
       <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · 확인 ${l.lastCheckedAt?esc(new Date(l.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>
       ${triStateHTML({field:'managementFee', value:l.managementFee, state:l.managementFeeState, caption:mgmtFeeCaption(l), unit:'만원', step:'1', placeholder:'예: 15', lid:l.id})}
+      ${safetySectionHTML(l)}
       <div class="c-actions">
         ${l.isRepresentative?'':`<button data-lact="rep">대표매물로 설정</button>`}
         <button data-lact="check">게시중 확인</button>

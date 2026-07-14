@@ -46,8 +46,13 @@
  *                     dongHo, areaM2, areaText, areaGrade, deposit,
  *                     managementFee (만원 단위, null=값 없음),
  *                     managementFeeState ('known'|'unknown'|'na', 기본 'unknown'),
- *                     listingStatus('게시중' 기본), isRepresentative(false), memo}]
+ *                     listingStatus('게시중' 기본), isRepresentative(false), memo,
+ *                     safety: { [SAFETY_ITEMS[].key]: {status('unchecked'|'ok'|
+ *                       'warning', 기본 'unchecked'), memo, source, checkedAt} }}]
  *                    complexes와 같은 v5 스키마, 라이브 전환 완료.
+ *                    B-27-lite: safety는 전세 안전 체크 9항목(SAFETY_ITEMS, 이
+ *                    파일 상단 상수) 기록 전용 — 자동 판정·차단 없음, 사용자가
+ *                    직접 입력한 값을 그대로 보여줄 뿐.
  *
  * state.scraps    : [{id, createdAt, title, type (SC_TYPE key),
  *                     raw, img (base64), location, price, area,
@@ -126,6 +131,28 @@ const CHECKLIST=[
   {id:'k8',t:'세대당 주차',s:'세대당 몇 대인지',vl:'단지정보',vu:n=>landUrl(n)},
   {id:'k9',t:'입주민 후기',s:'하자·집주인·실거주 평판'},
 ];
+
+/* B-27-lite: 전세 안전 체크 9항목 — listings[].safety의 키 목록. 판정 없음,
+   기록만(상태·메모·출처·확인일). state.js·properties.js 양쪽에서 공유. */
+const SAFETY_ITEMS=[
+  {key:'moveInReport',label:'전입신고'},
+  {key:'fixedDate',label:'확정일자'},
+  {key:'depositInsurance',label:'반환보증'},
+  {key:'jeonseLoan',label:'전세대출'},
+  {key:'interestSupport',label:'서울시 이자지원'},
+  {key:'seniorLiens',label:'근저당·선순위'},
+  {key:'trustSeizure',label:'신탁·압류 등 권리관계'},
+  {key:'lessorIdentity',label:'임대인·대리인 확인'},
+  {key:'specialTerms',label:'계약 특약 협의'},
+];
+const SAFETY_STATUS_LABEL={unchecked:'미확인',ok:'문제없음',warning:'주의'};
+const SAFETY_SOURCES=['매물광고','중개사','임대인','현장','등기부','건축물대장','은행','보증기관','기타'];
+function defaultSafetyItem(){ return {status:'unchecked',memo:'',source:'',checkedAt:''}; }
+function defaultListingSafety(){
+  const safety={};
+  SAFETY_ITEMS.forEach(({key})=>{ safety[key]=defaultSafetyItem(); });
+  return safety;
+}
 
 let OWNERS=['규범','연정','공동'];
 const ATYPES=['현금','적금','예금','주식','펀드','청약통장','기타'];
@@ -301,11 +328,20 @@ function applyGuards(raw){
     favorite:false,
     ...cx,
   }));
-  state.listings=(state.listings||[]).map(l=>({
-    managementFeeState:'unknown',
-    ...l,
-    managementFeeState: l.managementFeeState || (l.managementFee!=null?'known':'unknown'),
-  }));
+  /* B-27-lite: safety 필드 누락 보정 — 항목별로 병합해 일부만 저장된 기존
+     데이터도 나머지 항목이 defaultSafetyItem()으로 채워지게 함(무손실) */
+  state.listings=(state.listings||[]).map(l=>{
+    const safety=defaultListingSafety();
+    SAFETY_ITEMS.forEach(({key})=>{
+      safety[key]={...safety[key], ...(l.safety&&l.safety[key])};
+    });
+    return {
+      managementFeeState:'unknown',
+      ...l,
+      managementFeeState: l.managementFeeState || (l.managementFee!=null?'known':'unknown'),
+      safety,
+    };
+  });
   state.scraps=(state.scraps||[]).map(s=>{
     const p=s.parsed||{};
     return {
