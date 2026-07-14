@@ -15,6 +15,11 @@ function openProfile(){
   document.getElementById('pf_maxArea').value=p.maxArea||'';
   document.getElementById('pf_depositRange').value=p.depositRange||'';
   document.getElementById('pf_transport').value=p.transport||'';
+  const commuters=state.settings.commuters;
+  document.getElementById('pf_commuter0_name').value=commuters[0].name||'';
+  document.getElementById('pf_commuter0_dest').value=commuters[0].dest||'';
+  document.getElementById('pf_commuter1_name').value=commuters[1].name||'';
+  document.getElementById('pf_commuter1_dest').value=commuters[1].dest||'';
   renderProfileMilestones();
   openModal('profileModal');
 }
@@ -38,6 +43,11 @@ document.getElementById('pf_save').onclick=()=>{
   p.maxArea=+document.getElementById('pf_maxArea').value||p.maxArea;
   p.depositRange=document.getElementById('pf_depositRange').value.trim()||p.depositRange;
   p.transport=document.getElementById('pf_transport').value.trim()||p.transport;
+  const commuters=state.settings.commuters;
+  commuters[0].name=document.getElementById('pf_commuter0_name').value.trim()||commuters[0].name;
+  commuters[0].dest=document.getElementById('pf_commuter0_dest').value.trim()||commuters[0].dest;
+  commuters[1].name=document.getElementById('pf_commuter1_name').value.trim()||commuters[1].name;
+  commuters[1].dest=document.getElementById('pf_commuter1_dest').value.trim()||commuters[1].dest;
   document.querySelectorAll('#pf_milestones .ms-row').forEach(row=>{
     const i=+row.querySelector('.ms-label').dataset.i;
     p.milestones[i].label=row.querySelector('.ms-label').value.trim();

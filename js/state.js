@@ -11,11 +11,17 @@
  * state.settings  : { targetDeposit (억), weights:{commute,budget,
  *                     area,complex,risk},
  *                     grades:{area:[85,60], households:[1000,500,300,150],
- *                             bigComplex:500} }
+ *                             bigComplex:500},
+ *                     commuters: [{name, dest}, {name, dest}] (통근 기준지
+ *                       2인, 기본 [{name:'테디',dest:'강남역'},
+ *                       {name:'연정',dest:'신사역'}], 프로필 모달에서 편집) }
  *                    B-18: 등급 컷 단일 소스(utils.js GRADE_DEFAULTS와 동일 값).
  *                    calcAreaGrade()/calcHouseholdGrade()(utils.js)가 이 값을
  *                    읽어 면적·세대수 등급을 계산 — 값 변경 시 등급 판정도 함께
  *                    바뀜(현재는 기본값 그대로라 동작 변화 없음).
+ *                    B-61: commuters는 정확히 2개 고정(추가·삭제 UI 없음),
+ *                    index로 complexes[].commutes와 매칭. 이름 변경은 표시만
+ *                    바꿀 뿐 기록과 무관(매칭은 이름이 아니라 index).
  *
  * state.properties: [{id, created, name, loc, station, line, deposit (억),
  *                     depositNum (억), area (㎡), households, householdGrade,
@@ -176,7 +182,7 @@ const DEFAULT_PROFILE={
 const DEFAULT={
   profile:structuredClone(DEFAULT_PROFILE),
   assets:{items:[],notes:'',reserve:1000},
-  settings:{targetDeposit:4.5,weights:{commute:3,budget:3,area:3,complex:3,risk:3},grades:structuredClone(GRADE_DEFAULTS)},
+  settings:{targetDeposit:4.5,weights:{commute:3,budget:3,area:3,complex:3,risk:3},grades:structuredClone(GRADE_DEFAULTS),commuters:[{name:'테디',dest:'강남역'},{name:'연정',dest:'신사역'}]},
   chatHistory:[],
   actions:[
     {id:'a1',text:'버팀목 전세대출 자가진단 (연정)',priority:1,done:false},
@@ -276,6 +282,10 @@ function applyGuards(raw){
   /* B-18: settings.grades 없거나(구버전 데이터) 일부 키만 있어도 기본값(과거
      리터럴과 동일)으로 보정 — 등급 판정 결과가 절대 바뀌지 않게 함 */
   state.settings.grades=Object.assign(structuredClone(GRADE_DEFAULTS), state.settings.grades||{});
+  /* B-61: 통근 기준지 2인 — 항상 정확히 2개, 항목별 병합(구 데이터가 아예
+     없거나 1개뿐이거나 name/dest 일부만 있어도 나머지는 기본값으로 채움) */
+  const commutersRaw=Array.isArray(state.settings.commuters)?state.settings.commuters:[];
+  state.settings.commuters=DEFAULT.settings.commuters.map((def,i)=>({...def, ...(commutersRaw[i]||{})}));
   state.chatHistory=state.chatHistory||[];
   state.actions=state.actions||structuredClone(DEFAULT.actions);
   /* B-30: assignee(담당)·due(마감) 필드 누락 보정, 기본 '' — 기존 액션
