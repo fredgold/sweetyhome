@@ -1912,6 +1912,153 @@ sessionStorage(탭 닫히면 소멸) → localStorage(만료시각 별도 저장
 
 ---
 
+## 2026-07-17 — HTML/마크다운 렌더링 깨짐 진단 (B-64 ①, 코드 무변경)
+
+`BACKLOG.md` ⭐ 섹션 B-64. 사용자 실사용 보고: "HTML 양식이 3곳에서
+깨짐 — ①붙여넣기 임포트 ②수집함 카드 표시 ③매물 상세 표시". 이 커밋은
+**진단 전용**(코드 무변경) — `scraps-import.js`·`scraps-render.js`·
+`properties.js`·`utils.js`의 렌더 경로를 전수 확인하고, Playwright로
+실제 `<script>`·`onerror`·`javascript:` payload를 렌더시켜 실행 여부를
+실측함.
+
+### ⚠️ 보안 최우선 — XSS 실행 가능 지점 2건 발견 (보고된 3곳과 무관한 별도 위치)
+
+**신고된 3곳 자체에서는 XSS 실행 지점을 찾지 못함.** 대신 전수 조사
+과정에서 **프로필 마일스톤 라벨**(`state.profile.milestones[].label`,
+프로필 모달의 자유 텍스트 입력) 필드가 두 곳에서 `esc()` 없이
+`innerHTML`에 삽입되는 것을 발견 — Playwright로 실제 `<img src=x
+onerror="...">` 를 이 필드에 넣고 렌더시켜 **실행됨을 확인**:
+
+1. **`js/nav.js:61`** — `renderJourney()`(대시보드 "우리의 여정" 타임라인,
+   `<div class="jt">${s.t}</div>`, `s.t=m.label`). `renderDash()`가
+   `renderAll()`(모든 `load()`/렌더 사이클)마다 호출되므로 **로그인 시
+   기본 탭(대시보드)에서 매번 자동 실행** — 가장 심각.
+2. **`js/ai.js:26`** — `renderChat()`(AI 채팅 빠른질문 칩,
+   `chips.innerHTML=chatChips().map(c=>'<button>${c}</button>')`,
+   `chatChips()`의 `chip4`가 다음 마일스톤 라벨을 그대로 사용). AI
+   탭을 열 때 실행.
+
+같은 `state.profile.milestones[].label` 필드가 **프로필 모달 자체
+편집 UI**(`js/profile.js:5`, `value="${esc(m.label)}"`)에서는 정확히
+`esc()` 처리돼 있어 안전함 — 딱 이 표시(read-only 렌더) 경로 2곳만
+빠짐. 실제 악용 가능성은 PIN으로 이미 접근 권한이 있는 사람(본인)이
+자기 프로필에 넣는 셀프-XSS 형태라 외부 공격 표면은 좁지만, 실행되면
+`localStorage`의 `sh_token`(B-65로 방금 이전한 로그인 토큰) 등 페이지가
+접근 가능한 모든 것에 접근 가능 — 발견 즉시 보고. **수정은 각각
+`esc(s.t)`/`esc(c)` 1줄씩, 매우 작고 안전한 패치** — 별도 지시로
+착수 권장.
+
+### 1. 재현 — ①붙여넣기 임포트 (`scraps-import.js`)
+
+`scAutoDetect()`가 frontmatter(`---`) → 마크다운 표(`|`) → `key: val`
+블록 → 자유텍스트 순으로 시도. 임포트 입력창(`#sc_importInput`)이
+일반 `<textarea>`라 붙여넣기 시 브라우저가 자동으로 `text/plain`만
+넣음(HTML 태그가 raw로 살아남을 경로 자체가 없음 — 이 파일엔 HTML
+태그 문자열이 존재해도 항상 "문자"로만 취급됨). 네이버 매물 페이지처럼
+구조화 안 된 실제 웹페이지를 통째로 복사해 붙여넣으면 frontmatter·표·
+`key:val` 패턴에 전혀 안 맞아 거의 항상 `scFreeText()`로 폴백 —
+첫 번째 비어있지 않은 줄을 제목으로 추측하는데, 페이지 전체 복사본의
+첫 줄은 보통 네비게이션·광고 등 실제 매물명과 무관한 텍스트라 **"제목
+추측 실패 + 전체가 raw 한 덩어리로 뭉침"** 형태로 깨짐 — HTML 렌더
+문제가 아니라 **파싱 휴리스틱이 실제 웹 카피 형태를 못 맞추는 문제**.
+미리보기 표(`scShowImportPreview`)의 모든 필드는 `esc()` 처리됨
+(`js/scraps-import.js:138-141`) — 표시 자체는 안전.
+
+### 2. 렌더 경로 전수 — ②수집함 카드 표시 (`scraps-render.js`)
+
+`s.raw`(원문)만 `renderMd()`(marked.js parse → DOMPurify.sanitize,
+`js/utils.js:134-141`)를 거쳐 `sc-card-raw`에 삽입
+(`js/scraps-render.js:68`). 나머지 필드(title·location·price·area·
+schedule·tags 등)는 전부 `esc()`. **DOMPurify가 로드돼 있고
+(`index.html:14`) 정상 동작 확인** — `<script>`·이벤트 핸들러 속성·
+위험 태그 전부 제거됨(아래 3번 실측 참고). 다만 marked.js는 일반
+마크다운 파서라 붙여넣은 실제 매물 텍스트에 흔한 문자(줄 맨 앞
+`#`(해시태그), `-`/`1.`(목록 오인식), `>`(인용 오인식))가 있으면
+의도치 않게 제목·목록·인용으로 변환돼 레이아웃이 깨져 보임 — 이것도
+보안 문제가 아니라 **마크다운 오인식에 의한 시각적 깨짐**.
+
+### 2-계속. 매물 상세 표시 (`properties.js`) — 구체적 원인 특정
+
+`properties[].memo`(레거시 매물 카드) 편집 모달의 `em_memo`에는
+마크다운 서식 툴바(굵게·기울임·제목·목록·인용, `index.html:829-836`)가
+붙어있어 사용자가 마크다운 문법으로 서식을 넣도록 유도함. 그런데 카드
+표시(`js/properties.js:774`, `${p.memo?'<div class="c-memo">${esc(p.memo)}</div>':''}`)는
+`esc(p.memo)`만 쓰고 `renderMd()`를 호출하지 않음 — 입력한
+`**굵게**`·`## 제목`·`- 목록` 문법이 절대 렌더되지 않고 별표·해시
+문자 그대로 노출됨. **에디터가 약속한 서식과 실제 표시가 어긋나는
+WYSIWYG 불일치가 "매물 상세 표시 깨짐"의 구체적 원인으로 확인됨**
+(보안 문제 아님 — `esc()`가 걸려있어 오히려 안전한 쪽으로 깨짐).
+`listings[].memo`(B-63 신규 필드)는 서식 툴바 자체가 없어 이 불일치가
+해당 없음.
+
+### 3. ⚠️ 보안 실측 — renderMd()의 방어 범위 (Playwright로 실제 DOM 삽입 후 실행 확인)
+
+`<script>`·`onerror`·`onload`·`javascript:` URL·`<svg>`·`<iframe>`·
+`ontoggle` 등 7종 payload를 `renderMd()`에 통과시켜 실제 DOM에 삽입
+후 실행 여부 확인 — **전부 무력화됨**:
+- `<script>...</script>` → 태그 전체 제거, 텍스트만 남음
+- `<img src=x onerror="...">` → `onerror` 속성 제거, `<img src="x">`만 남음(깨진 이미지 아이콘, 무해)
+- `<svg onload="...">` → `<svg>` 자체가 허용 태그 목록에 없어 전체 제거
+- `<a href="javascript:...">` → `href` 속성 자체가 제거됨(`<a>텍스트</a>`만 남음)
+- `<iframe src="javascript:...">` → 전체 제거
+- `<details open ontoggle="...">` → `ontoggle`만 제거, `open` 속성은 유지(무해)
+
+CLAUDE.md엔 "XSS `<script>` 태그 제거 포함"이라고만 적혀있으나 실제로는
+DOMPurify(`USE_PROFILES:{html:true}`)가 이벤트 핸들러 속성·`javascript:`
+URL·비허용 태그까지 포괄적으로 막고 있음을 실측으로 확인 — 문서 설명이
+실제 방어 범위를 과소평가하고 있었을 뿐, 코드 자체는 이미 안전한 설계.
+
+### 4. 수정 방안 제안
+
+**A. 보안 수정(최우선, 별도 지시로 즉시 착수 권장)** — `js/nav.js` 1줄
+(`${s.t}`→`${esc(s.t)}`) + `js/ai.js` 1줄(`chatChips()`가 반환하는
+`c`를 삽입할 때 `esc(c)}`). 스키마·구조 변경 없음, 초소형 패치.
+렌더 시 정화(esc) 방식을 그대로 유지 — 이미 전체 코드베이스에
+일관되게 쓰이는 패턴이고 이번 결함도 "빠뜨림" 문제일 뿐 설계 결함이
+아니므로, 저장 시 정화로 바꿀 필요 없음(오히려 저장 시 정화는 원본
+데이터 손실 위험 + 향후 모든 저장 경로에서 빠짐없이 챙겨야 하는 부담이
+더 큼).
+
+**B. ③매물 상세 렌더 수정(작음)** — `js/properties.js:774`의
+`esc(p.memo)` → `renderMd(p.memo)` 1줄 교체로 `em_memo` 툴바가
+약속한 마크다운 서식이 실제로 렌더되게 함. `renderMd()`는 이미
+DOMPurify로 안전 확인됨(위 3번). 영향 범위: 레거시 `properties[]`
+카드 뷰 1곳.
+
+**C. ②수집함 카드 마크다운 오인식(중간, 제품 판단 필요)** — 스트레이
+`#`/`-`/`>` 등이 서식으로 오인식되는 문제는 마크다운 파서의 본질적
+동작이라 코드만으로 "완전 해결"은 어려움. 후보안: (i) 원문 앞에
+"입력 그대로 보기" 토글 추가, (ii) 리스트·헤딩 트리거를 줄 시작
+공백 요구 등으로 더 엄격화, (iii) 붙여넣기 시 자동 이스케이프 제안.
+실제 네이버 매물 붙여넣기 샘플로 테디 확인 후 방향 결정 권장.
+
+**D. ①붙여넣기 임포트 파싱 개선(가장 큼, 제품 판단 필요)** — 구조화
+안 된 실제 웹 카피 텍스트에 대한 파싱 정확도 개선은 휴리스틱 재설계가
+필요해 범위가 큼. 최소 대안: 자유텍스트 폴백 시 "인식 실패, 제목을
+직접 입력해주세요" 안내 + 제목 필드를 프리뷰 단계에서 바로 수정
+가능하게. 전체 재설계(예: 네이버 부동산 특화 파서)는 별도 스코프 논의
+필요.
+
+**예상 수정 파일**: A(보안)=`js/nav.js`+`js/ai.js`, B=`js/properties.js`,
+C=`js/scraps-render.js`(+`style.css` 소폭), D=`js/scraps-import.js`.
+A는 이번 진단 직후 별도의 작은 보안 패치 커밋으로 즉시 처리 권장,
+B~D는 B-64 ②(수정 단계) 지시 발급 시 착수.
+
+- **검증 방법**: Playwright로 로컬 정적 서버 기동 후 게스트 모드
+  진입, `renderMd()`/`esc()` 각 싱크에 7종 payload를 실제 주입해
+  DOM에 삽입 후 `window.__xss*` 플래그로 실행 여부 확인(코드는
+  일절 수정하지 않고 브라우저 콘솔 동작만 관찰). 마일스톤 라벨
+  XSS는 `renderDash()`(대시보드) 및 `renderChat()`(AI 채팅) 두
+  경로 모두에서 재현. 로컬 python 테스트 서버·Playwright 스크립트는
+  레포 바깥 scratchpad에서만 실행, 세션 종료 전 전부 삭제. 이번
+  커밋은 문서(`HISTORY.md`)만 변경 — `js/`·`css/` 무변경, `node --check`
+  대상 코드 자체가 없음(진단 전용 커밋).
+
+**→ B-64 ① 진단 완료**. 보안 수정(A)은 최우선 별도 지시 권장. ②~④(B/C/D)는
+BACKLOG.md B-64 "수정" 단계 지시 대기.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
