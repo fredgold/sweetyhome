@@ -120,3 +120,4 @@ function addAction(){
 }
 document.getElementById('d_actAdd').onclick=addAction;
 document.getElementById('d_actInput').addEventListener('keydown',e=>{if(e.key==='Enter')addAction();});
+document.getElementById('d_actMore').onclick=()=>switchPanel('actions');
