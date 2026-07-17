@@ -1804,6 +1804,73 @@ destSnapshot}, {...}]`(index 0/1 = `settings.commuters[0/1]`) +
 
 ---
 
+## 2026-07-17 — 매물 필드 편집 기능 (B-63)
+
+`BACKLOG.md` ⭐ 섹션 B-63. 단지 상세의 매물 행에서 dongHo(동/호수)·
+areaM2(전용면적)·areaText(면적 텍스트)·deposit(보증금)·listingStatus
+(매물상태)·memo(메모) — 추가 후 편집 불가능하던 6개 필드에 편집 수단을
+추가. `js/properties.js` 1개 파일, 커밋 1개.
+
+**착수 전 진단**: 편집 가능하던 필드는 managementFee(triState 세그먼트
+버튼)·safety(9항목, B-27-lite 접이식)·isRepresentative(대표매물 설정
+버튼)뿐이었음. 나머지(dongHo·areaM2·areaText·deposit·memo)는 추가 시점
+값이 고정이었고, listingStatus는 3개 버튼(게시중 확인/사라짐 처리/
+가격변동 기록)의 부수효과로만 간접 변경 가능해 5개 상태값 중
+`다른동호수등장`은 UI에서 도달 불가능한 상태였음(필터 드롭다운에는
+있었지만 설정할 방법이 없었음).
+
+**구현**: B-27-lite의 접이식 패턴(`safety-wrap`/`gates-toggle`) 그대로
+재사용한 `listingEditHTML(l)` — 기본 접힘, 매물 행 안에서 토글해서
+펼침(`cxListingEditExpanded` Set, 안전체크와 동일 방식). 안에 dongHo/
+areaText(텍스트), areaM2/deposit(숫자, `.tri-num` 재사용), listingStatus
+(select, 필터 드롭다운과 동일한 5개 값 — `LISTING_STATUS_OPTIONS`),
+memo(textarea) — 전부 `data-editfield`+`data-lid`로 마킹해 `#cxDetailListings`
+위임 change 핸들러 하나가 처리(safety 필드 저장과 동일 패턴). areaM2·
+deposit은 triState 숫자 입력과 동일하게 빈 값→null(미입력), 0은 그대로
+숫자 0 저장(0 vs null 엄격 구분), 음수·NaN은 입력값을 이전 값으로 되돌리고
+저장하지 않음. listingStatus 직접 편집은 게시중확인/사라짐처리/
+가격변동기록 버튼의 기존 부수효과(lastCheckedAt 갱신 등)와 무관한 별도
+경로 — 두 방식 공존, 서로 방해 없음. areaGrade는 별도 저장 없이 기존과
+동일하게 항상 `calcAreaGrade(l.areaM2,...)`로 실시간 계산.
+
+**스키마 변경 없음** — dongHo/areaM2/areaText/deposit/listingStatus/memo
+모두 `state.js` 스키마와 `applyGuards()`에 이미 존재하던 필드(v5 매물
+스키마 최초 설계 시점부터 있었으나 편집 UI만 없었음). `js/state.js`
+무접촉.
+
+- **검증**(Playwright, 로컬 정적 서버+게스트모드, 데스크톱 1280px+
+  모바일 390px):
+  - 6개 필드 각각 수정 → `state.listings[]`에 정확히 반영 + 매물 행
+    요약(동호수 라벨·`보증금 X억 · 전용 Y㎡` 헤드라인·상태 칩)에 즉시
+    반영 확인.
+  - areaM2·deposit: 빈 값→null, `0` 입력→숫자 0(둘 다 정확히 구분 저장),
+    음수 입력 시 거부(입력값 원복, 저장 안 됨) 확인.
+  - listingStatus를 select로 `다른동호수등장`(기존엔 도달 불가능하던
+    상태)으로 직접 설정 → 정확히 저장 + 칩 텍스트 갱신 확인.
+  - memo에 `<script>` 태그 입력 → `state.listings[].memo`엔 원본 그대로
+    저장되지만(저장 계층에서 임의로 자르지 않음), 렌더링된 textarea
+    HTML은 `esc()`로 이스케이프되어 스크립트가 실행되지 않음 확인(XSS
+    없음).
+  - 회귀 없음 확인: managementFee triState·안전 체크 9항목 토글·
+    대표매물 배지 전부 정상 동작.
+  - 모바일 390px: 편집 섹션 펼침 정상, 가로 스크롤 없음, B-59 sticky
+    헤더(`.mhead`) 스크롤 중 위치 불변 확인(`.box` 자체는 스크롤 안 됨,
+    `.mbody`만 스크롤).
+  - `node --check js/properties.js`·중괄호 균형 통과.
+  - 로컬 python 테스트 서버·Playwright 스크립트는 세션 종료 전 전부
+    삭제(레포 바깥 scratchpad에서만 실행, 레포에 흔적 없음).
+
+**localStorage 실제 저장(새로고침 유지)은 이번에도 게스트/데모 모드
+특성상 직접 확인 못 함**(데모 모드는 `save()`가 조기 반환 — 기존 설계,
+버그 아님). 실사용 환경에서 저장→새로고침 유지는 테디가 실제 사용 중
+확인 요망. 다만 편집 대상 필드는 모두 기존 스키마 필드 그대로이고 저장
+경로(`save()`→localStorage+Redis)도 기존 안전 체크·관리비 편집과 완전히
+동일한 코드 경로를 타므로 회귀 위험은 낮음.
+
+**→ B-63 완료**. BACKLOG.md ⭐ 섹션은 커맨드센터가 확인 후 정리할 차례.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
