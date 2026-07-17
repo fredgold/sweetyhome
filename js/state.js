@@ -71,8 +71,11 @@
  *                    직접 입력한 값을 그대로 보여줄 뿐.
  *
  * state.scraps    : [{id, createdAt, title, type (SC_TYPE key),
- *                     raw, img (base64), location, price, area,
- *                     schedule, condition, source, status (SC_STATUS key),
+ *                     raw, img (base64, 레거시 1장 — B-67 이후 imgs[0]과
+ *                       항상 동기화되는 대표사진 미러, 삭제·개명 금지),
+ *                     imgs (base64[], 최대 SC_MAX_IMGS장 — B-67 신규,
+ *                       렌더는 이 필드 기준 · 첫 장이 대표), location, price,
+ *                     area, schedule, condition, source, status (SC_STATUS key),
  *                     tags:[], fit, parsed}]
  *
  * state.actions   : [{id, text, priority, done, category, assignee, due}]
@@ -392,6 +395,10 @@ function applyGuards(raw){
       tags: Array.isArray(s.tags)?s.tags:[],
       fit: s.fit||'',
       img: s.img||'',
+      /* B-67: img(1장)→imgs[](배열) 확장. img만 있던 구 데이터는 imgs=[img]로
+         무손실 이관(원본 img 필드도 그대로 보존 — 하위호환). 이미 imgs가 있으면
+         그대로 사용 */
+      imgs: Array.isArray(s.imgs)?s.imgs:(s.img?[s.img]:[]),
       parsed: s.parsed||null,
     };
   });

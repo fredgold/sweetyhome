@@ -28,7 +28,7 @@ function renderScraps(){
       const stCls='st-'+(s.status||'new');
       const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
       return `<div class="sc-gallery-card" data-scid="${s.id}">
-        ${s.img?`<img src="${s.img}" class="sc-gallery-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진">`:`<div class="sc-gallery-no-img"><span class="sc-badge ${tCls}">${tLabel}</span></div>`}
+        ${(s.imgs||[]).length?`<img src="${s.imgs[0]}" class="sc-gallery-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진">`:`<div class="sc-gallery-no-img"><span class="sc-badge ${tCls}">${tLabel}</span></div>`}
         <div class="sc-gallery-body">
           <div class="sc-gallery-title">${esc(s.title||'(제목 없음)')}</div>
           <div class="sc-gallery-meta">
@@ -65,7 +65,7 @@ function renderScraps(){
       ${metaParts.length?`<div class="sc-card-meta">${metaParts.join(' &nbsp;·&nbsp; ')}</div>`:''}
       ${(s.tags||[]).length?`<div class="sc-card-tags">${s.tags.map(t=>`<span class="sc-card-tag">${esc(t)}</span>`).join('')}</div>`:''}
       ${s.fit?`<span class="sc-fit-badge ${fitCls}">${fitLbl}</span>`:''}
-      ${s.img?`<img src="${s.img}" class="sc-card-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진">`:''}      ${rawText?`<div class="sc-card-raw sc-md-content" onclick="this.classList.toggle('expand')">${renderMd(rawText)}</div>`:''}
+      ${(s.imgs||[]).length?`<img src="${s.imgs[0]}" class="sc-card-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진">`:''}      ${rawText?`<div class="sc-card-raw sc-md-content" onclick="this.classList.toggle('expand')">${renderMd(rawText)}</div>`:''}
       <div class="sc-card-actions">
         <select class="sc-status-sel" data-scst="${s.id}">
           ${Object.entries(SC_STATUS).map(([v,l])=>`<option value="${v}"${s.status===v?' selected':''}>${l}</option>`).join('')}

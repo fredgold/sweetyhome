@@ -1,11 +1,26 @@
 /* ============ 스크랩 ============ */
-let scrapImgData=null;
+/* B-67: img(1장)→imgs[](배열). scrapImgsData/semImgsData는 항상 배열(작업 중
+   사본), 저장 시 imgs 그대로 쓰고 img는 imgs[0] 미러(하위호환). 장수 상한은
+   Redis 용량 고려해 compressImage 기존 압축 스펙(max 600px, JPEG 0.65) 유지한
+   채 상수로 제한 */
+const SC_MAX_IMGS=5;
+let scrapImgsData=[];
 let scFilterType='', scFilterStatus='', scEditId=null;
 const SC_TYPE={subscription:'청약공고',jeonse:'전세',sale:'매매',area:'동네·시세',policy:'정책·뉴스',review:'임장후기',note:'메모',ai_log:'AI기록'};
 /* ── 이미지 압축 유틸 (max 600px, JPEG 0.65) ── */
 
 const SC_STATUS={new:'신규',review:'검토중',interested:'관심',hold:'보류',promoted:'매물등록',dropped:'제외'};
 const SC_PROPLESS=new Set(['note','ai_log']);
+/* B-67: 다중 사진 썸네일 그리드 렌더 — 추가폼(sc_preview)·편집모달(sem_imgs)
+   공용. 각 썸네일에 개별 삭제(✕) 버튼, data-idx로 배열 인덱스 매칭 */
+function scRenderImgThumbs(containerId,arr){
+  document.getElementById(containerId).innerHTML=arr.map((src,i)=>
+    `<div class="sc-img-thumb"><img src="${src}" alt="첨부 사진 ${i+1}"><button type="button" class="sc-img-thumb-del" data-idx="${i}">✕</button></div>`
+  ).join('');
+}
+function scUpdateImgUploadLabel(labelId,arr,emptyText){
+  document.getElementById(labelId).innerHTML=ic('camera')+(arr.length?` 사진 ${arr.length}장`:' '+emptyText);
+}
 
 function scUpdatePropFields(type){
   const hide=SC_PROPLESS.has(type);
@@ -175,21 +190,25 @@ document.getElementById('sc_text').addEventListener('focus',()=>{
 });
 
 document.getElementById('sc_file').onchange=e=>{
-  const f=e.target.files[0]; if(!f)return;
-  compressImage(f,dataUrl=>{
-    scrapImgData=dataUrl;
-    document.getElementById('sc_preview').innerHTML=`<img src="${dataUrl}" class="sc-card-img" alt="첨부 사진 미리보기">`;
-    document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' '+esc(f.name);
-    document.getElementById('sc_imgClear').style.display='';
+  const files=[...e.target.files]; if(!files.length)return;
+  const room=SC_MAX_IMGS-scrapImgsData.length;
+  const err=document.getElementById('sc_formErr');
+  if(files.length>room) err.textContent=`사진은 최대 ${SC_MAX_IMGS}장까지 첨부할 수 있어요.`;
+  files.slice(0,room).forEach(f=>{
+    compressImage(f,dataUrl=>{
+      scrapImgsData.push(dataUrl);
+      scRenderImgThumbs('sc_preview',scrapImgsData);
+      scUpdateImgUploadLabel('sc_uploadLabel',scrapImgsData,'스크린샷 첨부');
+    });
   });
+  e.target.value='';
 };
-document.getElementById('sc_imgClear').onclick=()=>{
-  scrapImgData='';
-  document.getElementById('sc_preview').innerHTML='';
-  document.getElementById('sc_file').value='';
-  document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' 스크린샷 첨부';
-  document.getElementById('sc_imgClear').style.display='none';
-};
+document.getElementById('sc_preview').addEventListener('click',e=>{
+  const btn=e.target.closest('.sc-img-thumb-del'); if(!btn)return;
+  scrapImgsData.splice(+btn.dataset.idx,1);
+  scRenderImgThumbs('sc_preview',scrapImgsData);
+  scUpdateImgUploadLabel('sc_uploadLabel',scrapImgsData,'스크린샷 첨부');
+});
 
 document.getElementById('sc_typeChips').onclick=e=>{
   const chip=e.target.closest('.sc-type-chip'); if(!chip)return;
@@ -212,13 +231,14 @@ document.getElementById('sc_saveBtn').onclick=()=>{
   const raw=(scEl.dataset.raw||scEl.innerText||'').trim();
   const err=document.getElementById('sc_formErr');
   if(!title){err.textContent='제목을 입력해주세요.';document.getElementById('sc_title').focus();return;}
-  if(!raw&&!scrapImgData){err.textContent='원문·메모를 입력하거나 스크린샷을 첨부해주세요.';scEl.focus();return;}
+  if(!raw&&!scrapImgsData.length){err.textContent='원문·메모를 입력하거나 스크린샷을 첨부해주세요.';scEl.focus();return;}
   err.textContent='';
   const tagsRaw=document.getElementById('sc_tags').value;
   const fields={
     title,type,
     raw:raw||'',
-    img:scrapImgData||'',
+    img:scrapImgsData[0]||'',
+    imgs:scrapImgsData.slice(),
     location:document.getElementById('sc_location').value.trim(),
     price:document.getElementById('sc_price').value.trim(),
     area:document.getElementById('sc_area').value.trim(),
@@ -247,13 +267,12 @@ function scClearForm(){
   document.getElementById('sc_preview').innerHTML='';
   document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' 스크린샷 첨부';
   document.getElementById('sc_file').value='';
-  document.getElementById('sc_imgClear').style.display='none';
   document.getElementById('sc_ogPreview').style.display='none';
   const scEl=document.getElementById('sc_text');
   scEl.innerHTML=''; scEl.dataset.raw=''; scEl.classList.add('is-empty');
   document.getElementById('sc_mdToolbar').style.display='';
   scCloseSlash();
-  scrapImgData=null; scEditId=null;
+  scrapImgsData=[]; scEditId=null;
   document.getElementById('sc_formTitle').textContent='＋ 추가';
   document.getElementById('sc_cancelBtn').style.display='none';
   document.querySelectorAll('.sc-type-chip').forEach((c,i)=>c.classList.toggle('on',i===0));
@@ -268,7 +287,7 @@ document.getElementById('sc_cancelBtn').onclick=()=>{scCloseForm();renderScraps(
 document.getElementById('sc_analyzeBtn').onclick=()=>{};
 
 /* ── 수정 모달 ── */
-let scModalEditId=null, semImgData=null;
+let scModalEditId=null, semImgsData=[];
 function semUpdatePropFields(type){
   const hide=SC_PROPLESS.has(type);
   const fp=document.getElementById('sem_fieldPrice');
@@ -306,12 +325,9 @@ function openScEdit(id){
   const sn=document.getElementById('savedNote');
   if(sn){sn.textContent='저장 버튼으로 반영됩니다';sn.style.color='var(--ink-soft)';}
   // 이미지 초기화
-  semImgData=null;
-  const semPrev=document.getElementById('sem_imgPreview');
-  const semClr=document.getElementById('sem_imgClear');
-  if(s.img){semPrev.src=s.img;semPrev.style.display='';semClr.style.display='';}
-  else{semPrev.style.display='none';semClr.style.display='none';}
-  document.getElementById('sem_imgLabel').innerHTML=ic('camera')+' 첨부/변경';
+  semImgsData=(Array.isArray(s.imgs)&&s.imgs.length)?s.imgs.slice():(s.img?[s.img]:[]);
+  scRenderImgThumbs('sem_imgs',semImgsData);
+  scUpdateImgUploadLabel('sem_imgLabel',semImgsData,'사진 추가');
   document.getElementById('sem_img').value='';
   openModal('scEditModal');
 }
@@ -395,29 +411,32 @@ document.getElementById('sem_text').addEventListener('keydown',e=>{
   }
 });
 document.getElementById('sem_img').onchange=e=>{
-  const f=e.target.files[0]; if(!f)return;
-  compressImage(f,dataUrl=>{
-    semImgData=dataUrl;
-    const prev=document.getElementById('sem_imgPreview');
-    prev.src=dataUrl; prev.style.display='';
-    document.getElementById('sem_imgLabel').innerHTML=ic('camera')+' '+esc(f.name);
-    document.getElementById('sem_imgClear').style.display='';
+  const files=[...e.target.files]; if(!files.length)return;
+  const room=SC_MAX_IMGS-semImgsData.length;
+  const err=document.getElementById('sem_err');
+  if(files.length>room) err.textContent=`사진은 최대 ${SC_MAX_IMGS}장까지 첨부할 수 있어요.`;
+  files.slice(0,room).forEach(f=>{
+    compressImage(f,dataUrl=>{
+      semImgsData.push(dataUrl);
+      scRenderImgThumbs('sem_imgs',semImgsData);
+      scUpdateImgUploadLabel('sem_imgLabel',semImgsData,'사진 추가');
+    });
   });
+  e.target.value='';
 };
-document.getElementById('sem_imgClear').onclick=()=>{
-  semImgData=''; // empty string = remove image
-  document.getElementById('sem_imgPreview').style.display='none';
-  document.getElementById('sem_img').value='';
-  document.getElementById('sem_imgLabel').innerHTML=ic('camera')+' 첨부/변경';
-  document.getElementById('sem_imgClear').style.display='none';
-};
+document.getElementById('sem_imgs').addEventListener('click',e=>{
+  const btn=e.target.closest('.sc-img-thumb-del'); if(!btn)return;
+  semImgsData.splice(+btn.dataset.idx,1);
+  scRenderImgThumbs('sem_imgs',semImgsData);
+  scUpdateImgUploadLabel('sem_imgLabel',semImgsData,'사진 추가');
+});
 function semResetSavedNote(){
   const sn=document.getElementById('savedNote');
   if(sn){sn.textContent='변경사항은 자동 저장됩니다';sn.style.color='';}
 }
 document.getElementById('scEditModal').addEventListener('click',e=>{if(e.target===document.getElementById('scEditModal'))semResetSavedNote();});
 document.getElementById('sem_cancel').onclick=()=>{
-  semImgData=null;
+  semImgsData=[];
   semResetSavedNote();
   closeModal('scEditModal');
 };
@@ -440,9 +459,10 @@ document.getElementById('sem_save').onclick=()=>{
     source:document.getElementById('sem_source').value.trim(),
     fit:document.getElementById('sem_fit').value,
     tags:tagsRaw?tagsRaw.split(/[,、]+/).map(t=>t.trim()).filter(Boolean):[],
-    img:semImgData===null?s.img:(semImgData||''),
+    img:semImgsData[0]||'',
+    imgs:semImgsData.slice(),
   });
-  semImgData=null;
+  semImgsData=[];
   save();renderScraps();closeModal('scEditModal');
 };
 
