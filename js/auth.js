@@ -1,6 +1,24 @@
 /* ============ 로그인 ============ */
 let isGuestMode=false;
-function getToken(){ return sessionStorage.getItem('sh_token'); }
+/* B-65: sessionStorage(탭 닫히면 소멸) → localStorage 전환 + 만료시각(sh_token_exp)
+   별도 저장. 서버 세션 TTL(api/_auth.js SESSION_TTL=86400초=24h)과 동일한 값 —
+   TTL 자체는 시크릿이 아니라 상수로 코드에 둠. 서버 TTL이 바뀌면 이 값도 같이 바꿔야 함 */
+const SH_TOKEN_TTL_MS=24*60*60*1000;
+function setToken(token){
+  localStorage.setItem('sh_token',token);
+  localStorage.setItem('sh_token_exp',String(Date.now()+SH_TOKEN_TTL_MS));
+}
+function clearToken(){
+  localStorage.removeItem('sh_token');
+  localStorage.removeItem('sh_token_exp');
+}
+function getToken(){
+  const t=localStorage.getItem('sh_token');
+  if(!t) return null;
+  const exp=+localStorage.getItem('sh_token_exp');
+  if(!exp||Date.now()>exp){ clearToken(); return null; }
+  return t;
+}
 function authHeaders(extra){
   const h=Object.assign({'Content-Type':'application/json'},extra||{});
   const t=getToken(); if(t) h['Authorization']='Bearer '+t;
@@ -18,7 +36,7 @@ function unlockApp(isGuest){
   load();
 }
 function forceLogin(){
-  sessionStorage.removeItem('sh_token');
+  clearToken();
   document.getElementById('loginOverlay').classList.remove('hidden');
 }
 async function tryLogin(){
@@ -35,7 +53,7 @@ async function tryLogin(){
       body:JSON.stringify({pin:v})
     });
     const d=await r.json();
-    if(d.ok&&d.token){ sessionStorage.setItem('sh_token',d.token); unlockApp(false); return; }
+    if(d.ok&&d.token){ setToken(d.token); unlockApp(false); return; }
     errEl.textContent=d.error||'비밀번호가 틀렸어요.';
     if(d.locked){
       input.disabled=true; btn.disabled=true;
@@ -53,7 +71,7 @@ async function tryLogin(){
       const r=await fetch('/api/state',{headers:{'Authorization':'Bearer '+token}});
       if(r.ok){ document.getElementById('loginOverlay').classList.add('hidden'); return; }
     }catch(e){}
-    sessionStorage.removeItem('sh_token');
+    clearToken();
   }
   document.getElementById('loginBtn').onclick=tryLogin;
   document.getElementById('loginInput').addEventListener('keydown',e=>{
@@ -63,6 +81,6 @@ async function tryLogin(){
 })();
 document.getElementById('goHome').onclick=()=>switchPanel('dash');
 document.getElementById('logoutBtn').onclick=()=>{
-  sessionStorage.removeItem('sh_token');
+  clearToken();
   location.reload();
 };
