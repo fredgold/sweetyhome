@@ -58,9 +58,9 @@ function renderJourney(){
   el.innerHTML=steps.map(s=>`
     <div class="jstop ${s.now?'now':''}">
       <div class="dot">${s.now?ic('pin'):'◆'}</div>
-      <div class="jt">${s.t}</div>
-      <div class="jd">${s.d}</div>
-      ${s.date?`<div class="jdday tnum">${dday(s.date)}</div>`:''}
+      <div class="jt">${esc(s.t)}</div>
+      <div class="jd">${esc(s.d)}</div>
+      ${s.date?`<div class="jdday tnum">${esc(dday(s.date))}</div>`:''}
     </div>`).join('');
 }
 function renderDashSummaries(){

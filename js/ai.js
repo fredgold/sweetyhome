@@ -23,7 +23,7 @@ function chatSystem(){
 function renderChat(){
   const m=document.getElementById('msgs');
   const chips=document.getElementById('chatchips');
-  chips.innerHTML=chatChips().map(c=>`<button>${c}</button>`).join('');
+  chips.innerHTML=chatChips().map(c=>`<button>${esc(c)}</button>`).join('');
   chips.querySelectorAll('button').forEach(b=>b.onclick=()=>{document.getElementById('chatInput').value=b.textContent;sendChat();});
   const h=state.chatHistory||[];
   if(!h.length){ m.innerHTML=`<div class="chatempty">안녕하세요 👋 우리 자산·매물·액션을 보고 있어요.<br>아래 버튼을 누르거나 직접 물어보세요.</div>`; return; }
