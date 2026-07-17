@@ -180,7 +180,15 @@ document.getElementById('sc_file').onchange=e=>{
     scrapImgData=dataUrl;
     document.getElementById('sc_preview').innerHTML=`<img src="${dataUrl}" class="sc-card-img" alt="첨부 사진 미리보기">`;
     document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' '+esc(f.name);
+    document.getElementById('sc_imgClear').style.display='';
   });
+};
+document.getElementById('sc_imgClear').onclick=()=>{
+  scrapImgData='';
+  document.getElementById('sc_preview').innerHTML='';
+  document.getElementById('sc_file').value='';
+  document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' 스크린샷 첨부';
+  document.getElementById('sc_imgClear').style.display='none';
 };
 
 document.getElementById('sc_typeChips').onclick=e=>{
@@ -239,6 +247,7 @@ function scClearForm(){
   document.getElementById('sc_preview').innerHTML='';
   document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' 스크린샷 첨부';
   document.getElementById('sc_file').value='';
+  document.getElementById('sc_imgClear').style.display='none';
   document.getElementById('sc_ogPreview').style.display='none';
   const scEl=document.getElementById('sc_text');
   scEl.innerHTML=''; scEl.dataset.raw=''; scEl.classList.add('is-empty');
