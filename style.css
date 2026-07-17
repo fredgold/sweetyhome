@@ -1138,8 +1138,11 @@ html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
 .rm-del{flex:none;padding:6px 8px;border-radius:var(--radius-sm);font-size:12px;color:var(--ink-faint);}
 .rm-del:hover{background:var(--hairline-soft);color:var(--s-drop);}
 @media (max-width:480px){
-  /* iOS Safari가 16px 미만 입력 포커스 시 자동 확대하는 것 방지 */
-  input,select,textarea{font-size:16px !important;}
+  /* iOS Safari가 16px 미만 입력 포커스 시 자동 확대하는 것 방지 —
+     .sc-md-editor(sc_text·sem_text)는 <textarea>가 아니라 contenteditable
+     div라 이 규칙 대상에서 빠져있었음(B-66에서 발견: 수집함 입력폼·편집모달
+     탭 시 확대 튐) */
+  input,select,textarea,.sc-md-editor{font-size:16px !important;}
   .ph-actions{gap:4px;}
   .ph-actions .prop-filter-sel,.ph-actions .addbtn{font-size:11px;padding:5px 8px;}
   /* 매물탭 툴바 더보기 접기 — 정렬/매물추가만 상시 노출, 나머지는 ⋯ 메뉴로 */
