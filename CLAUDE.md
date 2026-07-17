@@ -78,7 +78,7 @@ state.assets.items[] — amount/mobilizable 단위: 원
 
 **이미지 압축**: `compressImage(file, cb)` → max 600px, JPEG 0.65 → base64 저장
 
-**마크다운**: `renderMd(text)` (marked.js v9) — XSS `<script>` 태그 제거 포함
+**마크다운**: `renderMd(text)` — marked.js v9 + DOMPurify(`USE_PROFILES:{html:true}`) — `<script>` 태그·이벤트 핸들러 속성(onerror 등)·`javascript:` URL·비허용 태그(svg/iframe 등) 포괄 차단(B-64 실측 확인)
 
 **슬래시 커맨드**: `sc_text` 줄 처음 `/` 입력 → `scDetectSlash()` → `scShowSlash()` → 방향키·Enter 선택
 

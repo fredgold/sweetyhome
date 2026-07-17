@@ -771,7 +771,7 @@ function renderList(){
     <div class="c-body" id="cbody-${p.id}">
       <div class="c-meta">${bodyMetaChips(p)}</div>
       ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy" alt="${esc(p.name||'매물')} 사진">`:''}
-      ${p.memo?`<div class="c-memo">${esc(p.memo)}</div>`:''}
+      ${p.memo?`<div class="c-memo sc-md-content">${renderMd(p.memo)}</div>`:''}
       ${actionsHTML(p, urlSafe)}
       ${aiBlock(p)}${checklistHTML(p)}
     </div></div>`;
