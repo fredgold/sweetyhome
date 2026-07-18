@@ -144,15 +144,18 @@ let scImportItems=[];
 
 function scShowImportPreview(items){
   scImportItems=items;
+  /* B-97: 제목 추측 실패(임포트 자유텍스트 폴백)를 파서를 더 똑똑하게
+     만들어 근절하는 대신, 사용자가 이 단계에서 바로 고칠 수 있게 함
+     (기록 우선 원칙) — esc()로 표시하던 읽기전용 셀을 입력으로 교체 */
   const rows=items.map((it,i)=>`<tr>
     <td><input type="checkbox" class="sc-imp-chk" data-idx="${i}" checked></td>
-    <td class="sc-it">${esc(it.title||'(제목 없음)')}</td>
+    <td class="sc-it"><input type="text" class="safety-memo sc-imp-title" data-idx="${i}" value="${esc(it.title||'')}" placeholder="(제목 없음)" style="width:100%;box-sizing:border-box;"></td>
     <td>${it.type?`<span class="sc-badge type-${it.type}" style="font-size:10px;">${SC_TYPE[it.type]||it.type}</span>`:'-'}</td>
     <td class="sc-im">${[it.location,it.price].filter(Boolean).map(esc).join(' / ')||'-'}</td>
     <td class="sc-im">${esc(it.schedule||'-')}</td>
   </tr>`).join('');
   document.getElementById('sc_importPreviewContent').innerHTML=`
-    <div style="font-size:12px;font-weight:700;color:var(--money-deep);margin:8px 0 6px;">${items.length}개 파싱됨 — 등록할 항목을 선택하세요.</div>
+    <div style="font-size:12px;font-weight:700;color:var(--money-deep);margin:8px 0 6px;">${items.length}개 파싱됨 — 등록할 항목을 선택하세요. 제목은 바로 고칠 수 있어요.</div>
     <div style="overflow-x:auto;">
     <table class="sc-import-tbl">
       <thead><tr>
@@ -168,6 +171,9 @@ function scShowImportPreview(items){
   const allChk=document.getElementById('sc_checkAll');
   allChk.onchange=()=>document.querySelectorAll('.sc-imp-chk').forEach(c=>c.checked=allChk.checked);
   document.querySelectorAll('.sc-imp-chk').forEach(c=>c.onchange=scUpdateConfirmBtn);
+  document.querySelectorAll('.sc-imp-title').forEach(inp=>inp.oninput=()=>{
+    scImportItems[+inp.dataset.idx].title=inp.value;
+  });
   scUpdateConfirmBtn();
 }
 
