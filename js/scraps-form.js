@@ -39,7 +39,7 @@ document.getElementById('sc_text').addEventListener('input',e=>{
   el.dataset.raw=raw;
   el.classList.toggle('is-empty',!raw.trim());
   if(e.isComposing)return;
-  ceRender(el);
+  ceRenderDebounced(el);
   const ogPrev=document.getElementById('sc_ogPreview');
   if(/instagram\.com\/(p|reel)\//.test(raw)){
     ogPrev.style.display='block';
@@ -48,11 +48,17 @@ document.getElementById('sc_text').addEventListener('input',e=>{
   scDetectSlash(el,'sc_slashMenu');
 });
 
+/* B-105: 한글 조합 중간에 이전 compositionend의 지연 렌더가 끼어들어
+   DOM을 갈아엎지 않도록, 새 조합이 시작되면 예약된 렌더를 취소 —
+   그 조합이 끝나는 compositionend가 다시 렌더를 예약한다 */
+document.getElementById('sc_text').addEventListener('compositionstart',e=>{
+  ceCancelDebounced(e.target);
+});
 document.getElementById('sc_text').addEventListener('compositionend',e=>{
   const el=e.target;
   const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
-  ceRender(el); scDetectSlash(el,'sc_slashMenu');
+  ceRenderDebounced(el); scDetectSlash(el,'sc_slashMenu');
 });
 document.getElementById('sc_text').addEventListener('paste',e=>{
   e.preventDefault();
@@ -353,13 +359,17 @@ document.getElementById('sem_text').addEventListener('input',e=>{
   const el=e.target; const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
   if(e.isComposing)return;
-  ceRender(el);
+  ceRenderDebounced(el);
   scDetectSlash(el,'sem_slashMenu');
+});
+/* B-105: sc_text와 동일한 조합 중 렌더 취소 패턴 */
+document.getElementById('sem_text').addEventListener('compositionstart',e=>{
+  ceCancelDebounced(e.target);
 });
 document.getElementById('sem_text').addEventListener('compositionend',e=>{
   const el=e.target;
   const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
-  el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim()); ceRender(el);
+  el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim()); ceRenderDebounced(el);
   scDetectSlash(el,'sem_slashMenu');
 });
 document.getElementById('sem_text').addEventListener('paste',e=>{

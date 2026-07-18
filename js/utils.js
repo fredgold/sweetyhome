@@ -120,10 +120,31 @@ function ceRenderLine(line){
 }
 function ceRender(el){
   const raw=el.dataset.raw!=null?el.dataset.raw:el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
+  /* B-105: 직전 렌더와 raw가 같으면 innerHTML 재조립·커서 전체 순회를
+     스킵 — 이 파이프라인은 B-103(에디터 교체)이 대체할 예정이라 구조는
+     안 바꾸고 비용만 줄인다. focus/blur 등 ceRender를 거치지 않는
+     수동 렌더 경로도 있어 이 캐시가 완벽히 최신은 아닐 수 있지만,
+     불일치해도 "생략해야 할 렌더를 한 번 더 하는" 방향으로만 어긋나
+     안전하다(반대 방향, 즉 필요한 렌더를 건너뛰는 경우는 없음 —
+     불일치 시 항상 raw!==renderedRaw가 되어 렌더가 그대로 진행됨) */
+  if(raw===el.dataset.renderedRaw) return;
   const isActive=document.activeElement===el;
   const off=isActive?ceGetOffset(el):0;
   el.innerHTML=raw?raw.split('\n').map(ceRenderLine).join(''):'';
+  el.dataset.renderedRaw=raw;
   if(isActive&&raw)ceSetOffset(el,off);
+}
+/* B-105: 연속 키 입력 중 프레임당 1회로 묶어 렌더 — 매 keystroke마다
+   ceGetOffset(전체 순회)+innerHTML 재조립+ceSetOffset(전체 순회)를
+   반복하던 비용을 줄인다. 같은 엘리먼트에 대해 이미 예약된 프레임이
+   있으면 취소하고 다시 예약(코얼레싱) — 마지막 raw 기준으로 딱 한 번만
+   렌더된다. el에 직접 rAF id를 붙여 두 함수가 같은 엘리먼트를 공유 */
+function ceRenderDebounced(el){
+  if(el._ceRafId) cancelAnimationFrame(el._ceRafId);
+  el._ceRafId=requestAnimationFrame(()=>{ el._ceRafId=null; ceRender(el); });
+}
+function ceCancelDebounced(el){
+  if(el._ceRafId){ cancelAnimationFrame(el._ceRafId); el._ceRafId=null; }
 }
 function ceWrap(el,open,close){
   const s=ceGetOffset(el);
