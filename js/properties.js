@@ -921,9 +921,14 @@ document.getElementById('em_findBtn').onclick=async function(){
       editMapObj.setCenter(pos); editMapObj.setZoom(15);
       if(editMapMarker) editMapMarker.setMap(null);
       editMapMarker=new naver.maps.Marker({position:pos,map:editMapObj});
+      this.textContent='✓ 찾았어요';
+    } else {
+      /* B-90: 예전엔 실패 시 아무 표시 없이 조용히 원상복구돼 클릭이 씹힌
+         것처럼 보였다 — findBtn(추가 폼)과 동일하게 사람이 읽을 문구로 표시 */
+      this.textContent='못 찾음 — 지도 탭';
     }
-  }catch(e){}
-  this.disabled=false; this.innerHTML=ic('pin')+' 위치 자동 찾기';
+  }catch(e){ this.textContent='검색 실패 — 지도 직접 탭'; }
+  setTimeout(()=>{ this.disabled=false; this.innerHTML=ic('pin')+' 위치 자동 찾기'; },1600);
 };
 document.getElementById('em_img').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
@@ -1019,17 +1024,27 @@ document.getElementById('saveBtn').onclick=async()=>{
     lng:tempLatLng?tempLatLng.lng:(existing?existing.lng:null),
     checks:Object.assign({}, existing?existing.checks:{}, tempChecks||{}),
   };
-  if(existing){
-    Object.assign(existing,data);
-  } else {
-    /* v5 stage5a: 신규 매물은 properties[]가 아니라 단지(complexes)/매물(listings)
-       2계층으로 라우팅. properties[]는 기존 데이터 백업용으로 손대지 않는다 */
-    const saved=await saveAsComplexListing(data);
-    /* B-19확: 매칭 제안에서 "취소"를 고르면 저장을 중단하고 폼을 그대로 둔다
-       (입력값 유실 방지) */
-    if(saved===false) return;
+  /* B-90: 매칭 제안 모달이 뜨면 사용자 선택을 기다리는 동안(그리고 예전엔
+     지오코딩 응답까지) 버튼에 아무 표시가 없어 클릭이 무시된 것처럼 보였고,
+     그 사이 버튼이 계속 눌려 있어 두 번 클릭하면 매물이 중복 생성됐다 —
+     disabled로 막고 진행 중임을 표시, finally로 취소·에러 시에도 항상 복구 */
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=true; const old=btn.textContent; btn.textContent='처리 중…';
+  try{
+    if(existing){
+      Object.assign(existing,data);
+    } else {
+      /* v5 stage5a: 신규 매물은 properties[]가 아니라 단지(complexes)/매물(listings)
+         2계층으로 라우팅. properties[]는 기존 데이터 백업용으로 손대지 않는다 */
+      const saved=await saveAsComplexListing(data);
+      /* B-19확: 매칭 제안에서 "취소"를 고르면 저장을 중단하고 폼을 그대로 둔다
+         (입력값 유실 방지) */
+      if(saved===false) return;
+    }
+    closeForm(); save(); renderProps(); refreshOverview();
+  } finally {
+    btn.disabled=false; btn.textContent=old;
   }
-  closeForm(); save(); renderProps(); refreshOverview();
 };
 /* 파싱·입력 UX는 그대로, 저장 목적지만 단지/매물로 변경(Stage2 규칙 재사용) */
 /* B-19확: 완전일치(mergeKey) 실패 시에만 퍼지 후보를 확인, 있으면 사용자에게
@@ -1073,11 +1088,15 @@ async function saveAsComplexListing(data){
       createdAt:now, updatedAt:now,
     };
     state.complexes.push(cx);
+    /* B-90: 예전엔 이 지오코딩 응답을 기다린 뒤에야 폼이 닫히고 목록에
+       반영됐다 — 네이버 API가 느리거나(레이트리밋 등) 오류를 반환하면
+       저장 자체가 몇 초씩 멈춘 것처럼 보였다("추가해도 반영 안 됨"·
+       "스크롤 안 먹음" 신고와 일치). 좌표는 미확정으로 먼저 저장하고,
+       지오코딩은 백그라운드에서 마저 진행해 성공하면 그때 반영 */
     if(!(cx.lat&&cx.lng)){
-      try{
-        const j=await geocode(geocodeQuery);
-        if(j.found){ cx.lat=j.lat; cx.lng=j.lng; }
-      }catch(e){/* 좌표 확인 필요 상태로 남음 */}
+      geocode(geocodeQuery).then(j=>{
+        if(j.found){ cx.lat=j.lat; cx.lng=j.lng; save(); renderComplexes(); refreshOverview(); }
+      }).catch(()=>{/* 좌표 확인 필요 상태로 남음 */});
     }
   }
 
