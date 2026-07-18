@@ -807,6 +807,30 @@
   .sc-card-raw.expand{max-height:none;}
   .sc-card-raw::after{content:'▾ 더보기';display:block;font-size:10px;font-weight:700;color:var(--ink-faint);margin-top:4px;}
   .sc-card-raw.expand::after{content:'▴ 접기';}
+
+  /* B-95: 데스크톱의 긴 단일 목록만 행 우선 2열로 밀도 개선.
+     태블릿 세로와 모바일은 기존 1열, 수집함 갤러리는 별도 그리드 유지. */
+  @media (min-width:1200px){
+    #panel-actions .actfull,
+    #panel-actions .done-body{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      column-gap:18px;
+      align-items:start;
+    }
+    #panel-actions .actfull>.done-section,
+    #panel-actions .actfull>.empty,
+    #panel-actions .actrow:has(.act-edit-inp){grid-column:1 / -1;}
+    #panel-actions .actfull>.actrow:nth-of-type(-n+2),
+    #panel-actions .done-body>.actrow:nth-of-type(-n+2){border-top:none;}
+    #panel-scraps .sc-list{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px 14px;
+      align-items:start;
+    }
+  }
+
   /* 마크다운 에디터 */
   .sc-md-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
   .sc-md-header label{margin-bottom:0;font-size:11.5px;font-weight:700;color:var(--ink-soft);}
