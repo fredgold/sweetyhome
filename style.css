@@ -1172,9 +1172,11 @@ html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
   .modal .mhead{padding:10px 12px 6px;}
   .modal .mbody{padding:10px 12px;}
   .modal .mfoot{padding:8px 12px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0));}
-  /* 자산 테이블: 소규모 화면에서 1컬럼 */
-  .regrow{grid-template-columns:1fr;gap:6px;}
-  .regrow .del{position:absolute;top:8px;right:8px;}
+  /* 자산 카드: 이름·메모는 전체폭, 나머지는 2열 유지해 세로 길이 절감 */
+  .regrow{grid-template-columns:1fr 1fr;gap:8px;padding-top:14px;}
+  .regrow input,.regrow select{min-height:44px;}
+  .regrow .del{position:absolute;top:2px;right:4px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;padding:0;}
+  .regadd button{min-height:44px;}
   /* sc-md-toolbar 좁은 화면 — 줄바꿈 대신 가로 스크롤 스트립 */
   .sc-md-toolbar{gap:2px;padding:4px 5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   .sc-md-toolbar::-webkit-scrollbar{display:none;}
