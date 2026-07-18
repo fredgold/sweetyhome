@@ -12,7 +12,9 @@ export { redis, SESSION_TTL };
 
 export function cors(req, res) {
   const origin = req.headers.origin || '';
-  const allowed = origin.startsWith('http://localhost:') || ALLOWED_ORIGINS.includes(origin);
+  const localDev = process.env.VERCEL_ENV !== 'production'
+    && /^http:\/\/localhost(?::\d+)?$/.test(origin);
+  const allowed = localDev || ALLOWED_ORIGINS.includes(origin);
   if (allowed) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');

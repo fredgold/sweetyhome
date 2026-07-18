@@ -2897,6 +2897,25 @@ scraps)은 `||[]`(또는 `||기본값`)만 있어 **falsy만 걸렀고 truthy
 
 ---
 
+## 2026-07-18 — 프로덕션 CORS localhost 허용 제거 (B-89)
+
+- 배포 도메인 허용 목록은 유지하고, `http://localhost` 오리진은
+  `VERCEL_ENV !== 'production'`인 로컬·프리뷰 환경에서만 허용하도록
+  제한했다. 완전한 localhost 오리진 형식을 검사해 접두가 비슷한
+  외부 호스트는 허용하지 않는다.
+- CORS 단위 검증: 프로덕션 배포 도메인 허용, 프로덕션 localhost
+  거부, 개발 환경 localhost 허용, 유사 악성 호스트 거부, Origin 없는
+  게스트·로컬 파일 경로의 기존 처리 유지 확인.
+- Playwright 데스크톱·390px 모바일에서 게스트 진입과 전체 탭 스모크
+  통과.
+- `node --check api/_auth.js` 및 `git diff --check` 통과.
+- 병행 작업 중인 `state.js`·`auth.js`·`api/state.js`는 수정하지
+  않았다.
+
+**→ B-89 완료**. 배포 도메인과 앱 기능에는 변경이 없다.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |

@@ -1,4 +1,20 @@
-# HANDOFF — B-88 수집함 임포트 ID 충돌 방지 완료 (2026-07-18)
+# HANDOFF — B-88+B-89 감사 후속 2건 완료 (2026-07-18)
+
+## 최신 작업: B-89
+
+- 커밋 예정: `fix: 프로덕션 CORS localhost 오리진 제거 (B-89)`
+- 배포 도메인은 계속 허용하고 localhost는
+  `VERCEL_ENV !== 'production'`인 경우에만 정확한 오리진 형식으로
+  허용한다.
+- CORS 단위 검증과 Playwright 데스크톱·390px 모바일 게스트 전체 탭
+  스모크 통과.
+- `node --check api/_auth.js`, `git diff --check` 통과.
+- 손 A의 `state.js`·`auth.js`·`api/state.js`는 수정·스테이징하지
+  않았다.
+
+---
+
+# 이전 핸드오프 — B-88 수집함 임포트 ID 충돌 방지 완료 (2026-07-18)
 
 ## 최신 작업: B-88
 
