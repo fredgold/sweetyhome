@@ -2667,17 +2667,32 @@ function renderComplexDetailBody(cx){
   }
   renderCxListings(cx.id);
 }
-/* B-92: 단지 좌표가 없을 때(#cxDetailNoCoord) 재검색 버튼 — ADD 폼 findBtn과
-   동일한 B-90 패턴(진행 표시·실패 문구, 지오코딩 실패가 다른 저장을 막지
-   않음). 단지는 이미 저장된 상태라 여기선 성공 시에만 즉시 반영·재렌더 */
+/* B-99: 단지 상세 "위치 재검색" — 좌표 유무와 무관하게 상시 노출(신규 UI
+   원칙, [[avoid-collapsible-hidden-features]] — B-92의 "좌표 없을 때만"
+   조건부 노출을 확장). B-90 패턴(진행 표시·비차단·실패 문구) 그대로 재사용.
+   B-92 자동채우기와 동일 원칙: 이미 좌표가 있는데 재검색이 다른 좌표를
+   찾으면 조용히 덮어쓰지 않고 confirm()으로 변경 내역을 보여준 뒤에만
+   반영 — 좌표가 없던 경우(hadCoords=false)는 확인할 기존값이 없으므로
+   즉시 반영(B-92 이전과 동일) */
 document.getElementById('cxDetailFindLocBtn')?.addEventListener('click',async function(){
   const cx=state.complexes.find(c=>c.id===cxDetailId); if(!cx) return;
+  const hadCoords=cx.lat!=null&&cx.lng!=null;
   this.disabled=true; const old=this.textContent; this.textContent='찾는 중…';
   try{
     const j=await geocode(cx.geocodeQuery||buildGeocodeQuery(cx.loc,cx.complexName));
     if(j.found){
+      if(hadCoords){
+        const same=Math.abs(cx.lat-j.lat)<1e-6&&Math.abs(cx.lng-j.lng)<1e-6;
+        if(!same&&!confirm(`기존 좌표를 새로 찾은 위치로 바꿀까요?\n기존: ${cx.lat.toFixed(5)}, ${cx.lng.toFixed(5)}\n신규: ${j.lat.toFixed(5)}, ${j.lng.toFixed(5)}`)){
+          this.disabled=false; this.textContent=old; return;
+        }
+      }
       cx.lat=j.lat; cx.lng=j.lng; cx.updatedAt=new Date().toISOString();
       save(); renderComplexDetailBody(cx); renderComplexes(); refreshOverview();
+      /* B-99: 버튼이 이제 좌표 유무와 무관하게 상시 노출이라(더 이상
+         #cxDetailNoCoord 뒤로 숨겨지지 않음) 성공 경로에서도 반드시
+         원복해야 다음 재검색에 다시 쓸 수 있다 */
+      this.disabled=false; this.textContent=old;
       return;
     }
     this.textContent='못 찾음 — 주소를 확인해주세요';
