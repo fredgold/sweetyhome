@@ -3285,6 +3285,44 @@ memo) 입력폼이 나타나고, "저장"/"취소" 명시 버튼으로 종료.
 
 ---
 
+## 2026-07-18 — 매물탭 높이 좌표계 일원화·스크롤 복구 (B-98)
+
+- 데스크톱 매물탭 진입·resize 때 `#panel-props`의 실제
+  `getBoundingClientRect().top`을 문서 좌표로 정규화해
+  `--props-panel-top`에 기록하고, 높이를
+  `100dvh - --props-panel-top`으로 계산하도록 변경했다. 기존
+  `--topbar-h - 20px` 조립식 보정은 제거했다.
+- panel fade 애니메이션 중간값이 높이에 들어가지 않도록
+  `animationend`에서 최종 top을 다시 측정한다. 매물 활성 데스크톱
+  `.wrap`은 `height:100dvh; overflow:hidden`인 viewport shell로
+  제한해 document 자체의 잔여 스크롤도 없앴다.
+- `#complexSection`, `.rail`, `.modal .mbody`에
+  `overscroll-behavior:contain`을 적용했다.
+- 데스크톱 추가 폼이 열리면 좌측 grid section이 세로 스크롤을
+  담당한다. 모바일 fixed 지도 모드는 기존 하단 시트의
+  `overflow-y:auto`를 유지하면서 `80dvh`, overscroll contain,
+  momentum scroll을 명시했다.
+
+### 검증
+
+- Playwright 데스크톱 1440×900: document maxScroll **0px**,
+  panel top 144.5px, panel bottom **900px** 실측.
+- 데스크톱 추가 폼: 좌측 section `clientHeight=693`,
+  `scrollHeight=1191`, 498px 스크롤 후 저장 버튼 bottom=820.5px로
+  viewport 안 도달.
+- 모바일 390×844 지도 모드: document maxScroll 0. 추가 폼
+  `clientHeight=673`, `scrollHeight=1281`, 608px 스크롤 후 저장 버튼
+  bottom=829.3px로 viewport 안 도달.
+- 양쪽 모두 폼 개폐와 프로필 모달 개폐 통과. 모바일 지도↔목록 모드
+  왕복 통과.
+- 세 대상의 computed `overscroll-behavior=contain` 확인.
+- `node --check js/nav.js`, `git diff --check` 통과.
+- 병행 작업 대상 `properties.js`는 수정하지 않았다.
+
+**→ B-98 완료**. 스키마·저장 데이터 변경 없음.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |

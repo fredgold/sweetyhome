@@ -1,4 +1,22 @@
-# HANDOFF — B-91+B-92 매물 수정모드 전환 완료 (2026-07-18)
+# HANDOFF — B-98 매물탭 높이·스크롤 복구 완료 (2026-07-18)
+
+## 최신 작업: B-98
+
+- 데스크톱 `#panel-props` 높이를 실제 panel top 기반
+  `100dvh - --props-panel-top`으로 일원화하고 과거 `-20px` 보정을
+  제거했다. 매물 활성 `.wrap`은 정확한 viewport shell로 제한했다.
+- `#complexSection`, `.rail`, `.modal .mbody`에 overscroll contain.
+- 추가 폼은 데스크톱 좌측 section, 모바일 하단 시트가 각각 독립
+  스크롤해 저장 버튼까지 도달한다.
+- Playwright 1440×900 document maxScroll=0, panel bottom=900px.
+  모바일 390×844 폼 608px 스크롤 후 저장 버튼 도달. 폼 개폐,
+  지도↔목록, 모달 왕복 통과.
+- 변경 파일: `style.css`, `js/nav.js`, 기록 문서. `properties.js`
+  무접촉.
+
+---
+
+# 이전 핸드오프 — B-91+B-92 매물 수정모드 전환 완료 (2026-07-18)
 
 ## 최신 작업: B-91+B-92 (신규 UI 원칙 적용 1호)
 

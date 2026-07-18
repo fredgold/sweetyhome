@@ -1,4 +1,21 @@
 /* ============ tab switching ============ */
+let propsPanelHeightRaf=null;
+function syncPropsPanelHeight(){
+  const panel=document.getElementById('panel-props');
+  if(!panel?.classList.contains('on')||window.innerWidth<900) return;
+  const top=panel.getBoundingClientRect().top+window.scrollY;
+  document.documentElement.style.setProperty('--props-panel-top',top+'px');
+}
+function schedulePropsPanelHeight(){
+  if(propsPanelHeightRaf) cancelAnimationFrame(propsPanelHeightRaf);
+  propsPanelHeightRaf=requestAnimationFrame(()=>{
+    propsPanelHeightRaf=null;
+    syncPropsPanelHeight();
+  });
+}
+document.getElementById('panel-props').addEventListener('animationend',e=>{
+  if(e.target===e.currentTarget) schedulePropsPanelHeight();
+});
 function switchPanel(name){
   activePanel=name;
   if(name!=='props' && typeof exitRouteMode==='function' && routeMode!=='off') exitRouteMode();
@@ -6,11 +23,12 @@ function switchPanel(name){
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+name));
   if(name==='dash') renderDash();
   if(name==='assets') renderAssets();
-  if(name==='props'){ initOverview(); setTimeout(()=>{overview&&overview.refresh(true);autoGeocode();},80); }
+  if(name==='props'){ schedulePropsPanelHeight(); initOverview(); setTimeout(()=>{overview&&overview.refresh(true);autoGeocode();},80); }
   if(name==='actions') renderActions();
   if(name==='scraps') renderScraps();
   window.scrollTo({top:0,behavior:'smooth'});
 }
+window.addEventListener('resize',schedulePropsPanelHeight);
 document.querySelectorAll('.atab[data-panel]').forEach(b=>b.onclick=()=>switchPanel(b.dataset.panel));
 document.querySelectorAll('[data-goto]').forEach(a=>a.onclick=()=>switchPanel(a.dataset.goto));
 
