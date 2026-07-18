@@ -585,6 +585,7 @@ function updateAiButtons(){
     if(s){s.className='ai-status warn';s.textContent='⚠️ AI 기능은 크레딧 충전이 필요해요. → console.anthropic.com';}
   }
 }
+let tempComplexPromotion=null;
 function parseNaver(t){
   const r={};
   const firstLine=(t.trim().split('\n')[0]||'').trim();
@@ -613,6 +614,70 @@ function parseNaver(t){
   if(pk) r._auto.k8=true;
   return r;
 }
+function createComplexPromotion(j){
+  const values={};
+  if(j.loc) values.loc=String(j.loc).trim();
+  if(j.parking!=null&&!isNaN(j.parking)&&j.parking>=0) values.parking=+j.parking;
+  return Object.keys(values).length?{values,handled:{}}:null;
+}
+function applyComplexPromotion(cx,promotion){
+  if(!cx||!promotion||promotion.handled[cx.id]) return;
+  const direct=[], overwrite=[];
+  const addChange=(field,label,current,next,empty)=>{
+    if(current===next) return;
+    (empty?direct:overwrite).push({field,label,current,next});
+  };
+  if(promotion.values.loc){
+    addChange('loc','주소',cx.loc||'—',promotion.values.loc,!cx.loc);
+  }
+  if(promotion.values.parking!=null){
+    const same=cx.parkingState==='known'&&cx.parking===promotion.values.parking;
+    if(!same) addChange(
+      'parking','주차',parkingCaption(cx),
+      `세대당 ${promotion.values.parking}대`,
+      cx.parkingState==='unknown'
+    );
+  }
+  let approved=true;
+  if(overwrite.length){
+    const lines=overwrite.map(change=>`${change.label}: ${change.current} → ${change.next}`);
+    approved=confirm(`단지 정보에도 반영할까요?\n${lines.join('\n')}`);
+  }
+  const accepted=direct.concat(approved?overwrite:[]);
+  accepted.forEach(change=>{
+    if(change.field==='loc'){
+      cx.loc=promotion.values.loc;
+      cx.geocodeQuery=buildGeocodeQuery(cx.loc,cx.complexName);
+    } else if(change.field==='parking'){
+      cx.parking=promotion.values.parking;
+      cx.parkingState='known';
+    }
+  });
+  promotion.handled[cx.id]=true;
+  if(!accepted.length) return;
+  cx.updatedAt=new Date().toISOString();
+  save();
+  renderComplexes();
+  if(cxDetailId===cx.id){
+    renderComplexDetailInfo(cx);
+    const parkingWrap=document.getElementById('cxDetailParkingWrap');
+    if(parkingWrap) parkingWrap.innerHTML=triStateHTML({
+      field:'parking',value:cx.parking,state:cx.parkingState,
+      caption:parkingCaption(cx),unit:'대/세대',step:'0.1',placeholder:'예: 1.2',
+    });
+  }
+}
+function queueAddFormComplexPromotion(j){
+  tempComplexPromotion=createComplexPromotion(j);
+  if(!tempComplexPromotion) return;
+  const {complexName}=migParseName(document.getElementById('f_name').value);
+  const id=findExistingComplexId(
+    complexName,
+    document.getElementById('f_loc').value.trim(),
+    document.getElementById('f_station').value.trim()
+  );
+  if(id) applyComplexPromotion(state.complexes.find(cx=>cx.id===id),tempComplexPromotion);
+}
 function applyFill(j){
   if(j.name) document.getElementById('f_name').value=j.name;
   if(j.loc) document.getElementById('f_loc').value=j.loc;
@@ -624,13 +689,14 @@ function applyFill(j){
      반영, 실패 시 각 state는 기존대로 'unknown' */
   if(j.parking!=null) tempParking=j.parking;
   if(j.managementFee!=null) tempManagementFee=j.managementFee;
+  queueAddFormComplexPromotion(j);
 }
 document.getElementById('fillBtn').onclick=async()=>{
   const txt=document.getElementById('pasteBox').value.trim();
   if(!txt){document.getElementById('pasteBox').focus();return;}
   const btn=document.getElementById('fillBtn'); const old=btn.innerHTML;
   const j=parseNaver(txt);
-  const got=(j.name||j.deposit!=null||j.area!=null);
+  const got=(j.name||j.deposit!=null||j.area!=null||createComplexPromotion(j));
   if(got){
     applyFill(j);
     const auto=Object.keys(j._auto||{}).length;
@@ -845,7 +911,7 @@ const form=document.getElementById('form');
 let propImgData=null;
 function clearForm(){
   ['editId','f_name','f_loc','f_station','f_line','f_deposit','f_area','f_households','f_url','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
-  tempChecks=null;tempParking=null;tempManagementFee=null;clearFormPin();
+  tempChecks=null;tempParking=null;tempManagementFee=null;tempComplexPromotion=null;clearFormPin();
   propImgData=null;
   document.getElementById('f_img').value='';
   document.getElementById('f_imgLabel').innerHTML=ic('camera')+' 사진 추가';
@@ -1098,6 +1164,8 @@ async function saveAsComplexListing(data){
         if(j.found){ cx.lat=j.lat; cx.lng=j.lng; save(); renderComplexes(); refreshOverview(); }
       }).catch(()=>{/* 좌표 확인 필요 상태로 남음 */});
     }
+  } else {
+    applyComplexPromotion(cx,tempComplexPromotion);
   }
 
   const areaNum=data.area!=null&&data.area!==''?parseFloat(data.area):null;
@@ -1129,7 +1197,7 @@ async function saveAsComplexListing(data){
   showPropToast(isNewComplex
     ? `새 단지 "${cx.complexName}"가 등록됐어요${(cx.lat&&cx.lng)?'':' · 좌표 확인 필요'}`
     : `기존 단지 "${cx.complexName}"에 매물이 추가됐어요`);
-  tempParking=null; tempManagementFee=null;
+  tempParking=null; tempManagementFee=null; tempComplexPromotion=null;
   return true;
 }
 function delProp(id){if(!confirm('이 매물을 삭제할까요?'))return;state.properties=state.properties.filter(x=>x.id!==id);save();renderProps();refreshOverview();}
@@ -2499,7 +2567,8 @@ document.getElementById('cxDetailListings').addEventListener('click',async e=>{
   if(!txt){ if(ta) ta.focus(); return; }
   const old=fillBtn.innerHTML;
   let j=parseNaver(txt);
-  let got=(j.deposit!=null||j.area!=null||j.memo);
+  let promotion=createComplexPromotion(j);
+  let got=(j.deposit!=null||j.area!=null||j.memo||promotion);
   if(!got){
     fillBtn.disabled=true; fillBtn.textContent='읽는 중…';
     try{
@@ -2508,7 +2577,7 @@ document.getElementById('cxDetailListings').addEventListener('click',async e=>{
         `형식:{"deposit":보증금억숫자,"area":전용면적㎡숫자,"memo":"한줄"}\n`+
         `보증금 '2억7천'→2.7. 모르면 null.\n\n${txt}`}]);
       const aj=parseJSON(out);
-      if(aj){ j=aj; got=(j.deposit!=null||j.area!=null||j.memo); }
+      if(aj){ j=aj; promotion=createComplexPromotion(j); got=(j.deposit!=null||j.area!=null||j.memo||promotion); }
     }catch(err){/* AI 실패 시 아래에서 못 읽었어요 표시 */}
     fillBtn.disabled=false; fillBtn.innerHTML=old;
     if(!got){ fillBtn.textContent='못 읽었어요 — 직접 입력'; setTimeout(()=>{fillBtn.innerHTML=old;},2000); return; }
@@ -2524,6 +2593,9 @@ document.getElementById('cxDetailListings').addEventListener('click',async e=>{
   if(j.deposit!=null) depositInp.value=j.deposit;
   if(j.area!=null) areaInp.value=j.area;
   if(j.memo) memoInp.value=j.memo;
+  const listing=state.listings.find(l=>l.id===fillBtn.dataset.lstfill);
+  const cx=listing&&state.complexes.find(c=>c.id===listing.complexId);
+  applyComplexPromotion(cx,promotion);
 });
 document.getElementById('cxDetailListings').addEventListener('click',e=>{
   const btn=e.target.closest('[data-safetoggle]'); if(!btn) return;
