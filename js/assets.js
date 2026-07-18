@@ -1,12 +1,17 @@
 /* ============ ASSETS ============ */
-function ownerSel(v){return OWNERS.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
+function assetOwnerLabel(owner){return owner&&!OWNERS.includes(owner)?`(이전: ${owner})`:owner;}
+function ownerSel(v){
+  const legacy=v&&!OWNERS.includes(v)?`<option value="${esc(v)}" selected>${esc(assetOwnerLabel(v))}</option>`:'';
+  return legacy+OWNERS.map(o=>`<option value="${esc(o)}" ${o===v?'selected':''}>${esc(o)}</option>`).join('');
+}
 function typeSel(v){return ATYPES.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
 function liqSel(v){return LIQUIDITY.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
 function renderAssets(){
   const ownerFilterSel=document.getElementById('asset_ownerFilter');
   if(ownerFilterSel && ownerFilterSel.dataset.owners!==OWNERS.join(',')){
     const prev=ownerFilterSel.value;
-    ownerFilterSel.innerHTML='<option value="">전체 소유자</option>'+OWNERS.map(o=>`<option>${o}</option>`).join('');
+    const historical=[...new Set(assetItems().map(it=>it.owner).filter(o=>o&&!OWNERS.includes(o)))];
+    ownerFilterSel.innerHTML='<option value="">전체 소유자</option>'+OWNERS.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')+historical.map(o=>`<option value="${esc(o)}">${esc(assetOwnerLabel(o))}</option>`).join('');
     ownerFilterSel.dataset.owners=OWNERS.join(',');
     if(OWNERS.includes(prev)) ownerFilterSel.value=prev;
   }
@@ -73,11 +78,12 @@ function renderAssetSummary(){
   document.getElementById('s_total').textContent=won(total)+'원';
   document.getElementById('s_total_won').textContent='₩'+comma(total);
   document.getElementById('s_mob').textContent=won(mob);
-  document.getElementById('s_owners').innerHTML=OWNERS.map(o=>{const v=sumByOwner(o);return v>0?`<span class="ownerpill">${o} <b>${won(v)}</b></span>`:'';}).join('')||'<span class="ownerpill" style="color:var(--ink-faint)">소유자별 합계가 여기 표시돼요</span>';
+  const summaryOwners=[...new Set([...OWNERS,...assetItems().map(it=>it.owner).filter(Boolean)])];
+  document.getElementById('s_owners').innerHTML=summaryOwners.map(o=>{const v=sumByOwner(o);return v>0?`<span class="ownerpill">${esc(assetOwnerLabel(o))} <b>${won(v)}</b></span>`:'';}).join('')||'<span class="ownerpill" style="color:var(--ink-faint)">소유자별 합계가 여기 표시돼요</span>';
 }
 function addAssetRow(prefill){
   state.assets.items=assetItems();
-  state.assets.items.push(Object.assign({id:'as'+Date.now()+Math.random().toString(36).slice(2,5),owner:'규범',name:'',amount:0,type:'현금',liquidity:'즉시',mobilizable:0,memo:''},prefill||{}));
+  state.assets.items.push(Object.assign({id:'as'+Date.now()+Math.random().toString(36).slice(2,5),owner:OWNERS[0],name:'',amount:0,type:'현금',liquidity:'즉시',mobilizable:0,memo:''},prefill||{}));
   save(); renderAssets();
 }
 document.getElementById('addAssetRow').onclick=()=>{ addAssetRow(); const rows=document.querySelectorAll('#a_rows .regrow'); const last=rows[rows.length-1]; if(last){const nm=last.querySelector('[data-f="name"]'); if(nm)nm.focus();} };
@@ -150,7 +156,7 @@ function parseAssetPaste(text){
     while(cells.length && cells[cells.length-1]==='') cells.pop();
     if(cells.length<2) continue;
 
-    let owner='규범',name='',amount=0,type='현금',liquidity='즉시',mob=null,memo='';
+    let owner=OWNERS[0],name='',amount=0,type='현금',liquidity='즉시',mob=null,memo='';
 
     if(cells.length>=5){ // 위치 기반 매핑 (시트 열 순서: 소유자·항목·금액·형태·유동성·동원가능액·메모)
       let k=0;
@@ -198,11 +204,11 @@ document.getElementById('assetAiRun').onclick=async()=>{
   try{
     const out=await claudeAPI([{role:"user",content:txt}],null,
       `사용자가 적은 자산 정보를 JSON 배열로 정리해. 설명·마크다운 금지, JSON 배열만 출력.\n`+
-      `각 원소:{"owner":"규범|연정|공동","name":"항목명","amount":원숫자,"type":"현금|적금|예금|주식|펀드|청약통장|기타","liquidity":"즉시|만기·장기","mobilizable":원숫자,"memo":"한줄"}\n`+
-      `금액은 원 단위 숫자(콤마 없이). 예:'1485만'→14850000, '5억'→500000000. mobilizable 모르면 amount와 동일. 소유자 모르면 "규범".`);
+      `각 원소:{"owner":"${OWNERS.join('|')}","name":"항목명","amount":원숫자,"type":"현금|적금|예금|주식|펀드|청약통장|기타","liquidity":"즉시|만기·장기","mobilizable":원숫자,"memo":"한줄"}\n`+
+      `금액은 원 단위 숫자(콤마 없이). 예:'1485만'→14850000, '5억'→500000000. mobilizable 모르면 amount와 동일. 소유자 모르면 "${OWNERS[0]}".`);
     const arr=parseJSON(out);
     if(Array.isArray(arr)&&arr.length){
-      const rows=arr.map(o=>({id:'as'+Date.now()+Math.random().toString(36).slice(2,6),owner:OWNERS.includes(o.owner)?o.owner:'규범',name:o.name||'(이름)',amount:+o.amount||0,type:ATYPES.includes(o.type)?o.type:'기타',liquidity:o.liquidity==='만기·장기'?'만기·장기':'즉시',mobilizable:o.mobilizable!=null?+o.mobilizable:(+o.amount||0),memo:o.memo||''}));
+      const rows=arr.map(o=>({id:'as'+Date.now()+Math.random().toString(36).slice(2,6),owner:OWNERS.includes(o.owner)?o.owner:OWNERS[0],name:o.name||'(이름)',amount:+o.amount||0,type:ATYPES.includes(o.type)?o.type:'기타',liquidity:o.liquidity==='만기·장기'?'만기·장기':'즉시',mobilizable:o.mobilizable!=null?+o.mobilizable:(+o.amount||0),memo:o.memo||''}));
       const replace=assetItems().length ? confirm(`${rows.length}개 항목으로 정리했어요.\n확인=교체 / 취소=추가`) : true;
       state.assets.items = replace ? rows : assetItems().concat(rows);
       save(); renderAssets();

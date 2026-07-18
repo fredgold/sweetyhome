@@ -5,6 +5,16 @@ function renderProfileMilestones(){
   box.innerHTML=ms.map((m,i)=>`<div class="ms-row"><input class="ms-label" data-i="${i}" value="${esc(m.label)}" placeholder="이름"><input class="ms-date" data-i="${i}" type="date" value="${m.date||''}"><button class="ms-del" data-i="${i}" aria-label="마일스톤 삭제">✕</button></div>`).join('');
   box.querySelectorAll('.ms-del').forEach(b=>b.onclick=()=>{ms.splice(+b.dataset.i,1);renderProfileMilestones();});
 }
+let profileOwnersDraft=[];
+function renderProfileOwners(){
+  const box=document.getElementById('pf_owners');
+  box.innerHTML=profileOwnersDraft.map((owner,i)=>`<div class="ms-row"><input class="pf-owner-name" data-i="${i}" value="${esc(owner)}" maxlength="20" placeholder="담당자 이름"><button class="ms-del" data-owner-del="${i}" aria-label="담당자 삭제">✕</button></div>`).join('');
+  box.querySelectorAll('[data-owner-del]').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#pf_owners .pf-owner-name').forEach(input=>{profileOwnersDraft[+input.dataset.i]=input.value;});
+    profileOwnersDraft.splice(+b.dataset.ownerDel,1);
+    renderProfileOwners();
+  });
+}
 function openProfile(){
   const p=state.profile;
   document.getElementById('pf_names').value=p.names||'';
@@ -20,6 +30,8 @@ function openProfile(){
   document.getElementById('pf_commuter0_dest').value=commuters[0].dest||'';
   document.getElementById('pf_commuter1_name').value=commuters[1].name||'';
   document.getElementById('pf_commuter1_dest').value=commuters[1].dest||'';
+  profileOwnersDraft=[...state.settings.owners];
+  renderProfileOwners();
   renderProfileMilestones();
   openModal('profileModal');
 }
@@ -32,6 +44,12 @@ document.getElementById('pf_addMs').onclick=()=>{
   });
   state.profile.milestones.push({label:'',date:''});
   renderProfileMilestones();
+};
+document.getElementById('pf_addOwner').onclick=()=>{
+  document.querySelectorAll('#pf_owners .pf-owner-name').forEach(input=>{profileOwnersDraft[+input.dataset.i]=input.value;});
+  profileOwnersDraft.push('');
+  renderProfileOwners();
+  document.querySelector('#pf_owners .ms-row:last-child input').focus();
 };
 document.getElementById('pf_save').onclick=()=>{
   const p=state.profile;
@@ -48,6 +66,9 @@ document.getElementById('pf_save').onclick=()=>{
   commuters[0].dest=document.getElementById('pf_commuter0_dest').value.trim()||commuters[0].dest;
   commuters[1].name=document.getElementById('pf_commuter1_name').value.trim()||commuters[1].name;
   commuters[1].dest=document.getElementById('pf_commuter1_dest').value.trim()||commuters[1].dest;
+  const owners=[...new Set([...document.querySelectorAll('#pf_owners .pf-owner-name')].map(input=>input.value.trim()).filter(Boolean))];
+  state.settings.owners=owners.length?owners:[...DEFAULT_OWNERS];
+  syncOwners();
   document.querySelectorAll('#pf_milestones .ms-row').forEach(row=>{
     const i=+row.querySelector('.ms-label').dataset.i;
     p.milestones[i].label=row.querySelector('.ms-label').value.trim();
@@ -84,12 +105,7 @@ document.getElementById('doImport').onclick=()=>{
   if(!o){ ok.style.color='var(--s-drop)'; ok.textContent='백업 코드를 읽을 수 없어요. 코드 전체를 정확히 붙여넣었는지 확인해주세요.'; return; }
   if(o.kind==='full'){
     if(!confirm('지금 보드 내용을 백업본으로 전부 교체할까요?')) return;
-    state=Object.assign(structuredClone(DEFAULT), o.state);
-    state.profile=Object.assign(structuredClone(DEFAULT_PROFILE), state.profile||{});
-    state.assets=Object.assign(structuredClone(DEFAULT.assets), state.assets||{});
-    state.settings=Object.assign(structuredClone(DEFAULT.settings), state.settings||{});
-    state.actions=state.actions||structuredClone(DEFAULT.actions);
-    state.properties=(state.properties||[]).map(p=>(p.checks=p.checks||{},p));
+    applyGuards(o.state);
     save(); renderAll();
     ok.style.color='var(--s-final)'; ok.textContent=`✓ 전체 보드를 복원했어요. (매물 ${state.properties.length}곳)`;
   } else {

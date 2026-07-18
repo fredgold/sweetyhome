@@ -9,7 +9,8 @@ function stateSnapshot(){
   const aLine=items.length?items.map(it=>`  · ${it.owner} ${it.name} ${comma(it.amount)}원 (${it.type}/${it.liquidity})`).join('\n'):'  (없음)';
   const props=state.properties.map(p=>`- ${p.name||'무명'} | ${p.status} | 보증금 ${p.deposit||'?'}억 | 전용 ${p.area||'?'}㎡ | ${p.loc||''}${p.aiScore!=null?` | AI ${p.aiScore}점`:''}`).join('\n')||'(없음)';
   const acts=state.actions.filter(x=>!x.done).map(x=>`- ${x.text}`).join('\n')||'(없음)';
-  return `[자산] 즉시 동원 가능액 ${won(sumMobImmediate())}(=지금 집 자금 실투입 가능), 총 자산 ${won(sumAmount())}, 만기 포함 전체 동원 ${won(sumMob())}. 소유자별 규범 ${won(sumByOwner('규범'))}/연정 ${won(sumByOwner('연정'))}/공동 ${won(sumByOwner('공동'))}. 예비비 ${state.assets.reserve||0}만원.\n${aLine}\n메모:${state.assets.notes||'없음'}\n[매물]\n${props}\n[미완료 액션]\n${acts}`;
+  const ownerTotals=OWNERS.map(owner=>`${owner} ${won(sumByOwner(owner))}`).join('/');
+  return `[자산] 즉시 동원 가능액 ${won(sumMobImmediate())}(=지금 집 자금 실투입 가능), 총 자산 ${won(sumAmount())}, 만기 포함 전체 동원 ${won(sumMob())}. 소유자별 ${ownerTotals}. 예비비 ${state.assets.reserve||0}만원.\n${aLine}\n메모:${state.assets.notes||'없음'}\n[매물]\n${props}\n[미완료 액션]\n${acts}`;
 }
 function profileLine(){
   const p=state.profile;

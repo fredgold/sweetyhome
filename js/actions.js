@@ -13,9 +13,7 @@ function renderCatChips(){
   }).join('');
   el.querySelectorAll('[data-actcat]').forEach(b=>b.onclick=()=>{actCategoryFilter=b.dataset.actcat;renderCatChips();renderActions();});
 }
-/* B-30: 담당 select 옵션은 하드코딩하지 않고 전역 OWNERS 재사용 — 게스트
-   모드 진입 시 OWNERS가 치환되므로(auth.js) 렌더마다 다시 채움(비용 미미).
-   선택값은 유지 시도(옵션 목록이 실제로 바뀌는 경우는 드묾) */
+function actOwnerLabel(owner){return owner&&!OWNERS.includes(owner)?`(이전: ${owner})`:owner;}
 function syncActOwnerSelect(){
   const sel=document.getElementById('act_ownerSel'); if(!sel) return;
   const cur=sel.value;
@@ -72,7 +70,7 @@ function renderActions(){
       <div class="actrow" data-done="0" data-id="${a.id}">
         <span class="rank tnum">${i+1}</span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
-        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}${a.assignee?`<span class="act-cat-badge">${esc(a.assignee)}</span>`:''}${actDueBadge(a)}</span>
+        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}${a.assignee?`<span class="act-cat-badge">${esc(actOwnerLabel(a.assignee))}</span>`:''}${actDueBadge(a)}</span>
         <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
         <button class="star ${a.priority<=Math.min(...live.map(x=>x.priority))?'on':''}" data-actf-top="${a.id}" title="맨 위로" aria-label="맨 위로">${ic('star')}</button>
         <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
@@ -86,7 +84,7 @@ function renderActions(){
       <div class="actrow" data-done="1" data-id="${a.id}">
         <span class="rank tnum"></span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
-        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}${a.assignee?`<span class="act-cat-badge">${esc(a.assignee)}</span>`:''}${actDueBadge(a)}</span>
+        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}${a.assignee?`<span class="act-cat-badge">${esc(actOwnerLabel(a.assignee))}</span>`:''}${actDueBadge(a)}</span>
         <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
         <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
       </div>`).join('');
@@ -110,7 +108,8 @@ function renderActions(){
     const a=state.actions.find(x=>x.id===b.dataset.actfEdit); if(!a)return;
     const row=b.closest('.actrow');
     const cats=ACT_CATS.map(c=>`<option value="${esc(c)}"${a.category===c?' selected':''}>${esc(c)}</option>`).join('');
-    const owners=OWNERS.map(o=>`<option value="${esc(o)}"${a.assignee===o?' selected':''}>${esc(o)}</option>`).join('');
+    const legacyOwner=a.assignee&&!OWNERS.includes(a.assignee)?`<option value="${esc(a.assignee)}" selected>${esc(actOwnerLabel(a.assignee))}</option>`:'';
+    const owners=legacyOwner+OWNERS.map(o=>`<option value="${esc(o)}"${a.assignee===o?' selected':''}>${esc(o)}</option>`).join('');
     row.innerHTML=`
       <input class="act-edit-inp" value="${esc(a.text)}" style="flex:1;min-width:0;padding:4px 8px;border:1px solid var(--hairline);border-radius:6px;font-size:14px;">
       <select class="act-edit-cat" style="padding:4px 6px;border:1px solid var(--hairline);border-radius:6px;font-size:12px;">

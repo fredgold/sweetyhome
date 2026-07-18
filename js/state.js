@@ -8,7 +8,8 @@
  *                               liquidity, mobilizable, memo}],
  *                     notes, reserve (만원), updatedAt }
  *
- * state.settings  : { targetDeposit (억), weights:{commute,budget,
+ * state.settings  : { targetDeposit (억), owners:['규범','연정','공동'],
+ *                     weights:{commute,budget,
  *                     area,complex,risk},
  *                     grades:{area:[85,60], households:[1000,500,300,150],
  *                             bigComplex:500},
@@ -19,6 +20,9 @@
  *                    calcAreaGrade()/calcHouseholdGrade()(utils.js)가 이 값을
  *                    읽어 면적·세대수 등급을 계산 — 값 변경 시 등급 판정도 함께
  *                    바뀜(현재는 기본값 그대로라 동작 변화 없음).
+ *                    B-69: owners는 프로필 모달에서 추가·이름변경·삭제.
+ *                    기존 actions[].assignee/assets.items[].owner 문자열은
+ *                    자동 치환하지 않고 그대로 보존.
  *                    B-61: commuters는 정확히 2개 고정(추가·삭제 UI 없음),
  *                    index로 complexes[].commutes와 매칭. 이름 변경은 표시만
  *                    바꿀 뿐 기록과 무관(매칭은 이름이 아니라 index).
@@ -177,7 +181,9 @@ function defaultComplexCommutes(){
   return [0,1].map(()=>({minutes:null,transfers:null,destSnapshot:''}));
 }
 
-let OWNERS=['규범','연정','공동'];
+const DEFAULT_OWNERS=['규범','연정','공동'];
+let OWNERS=[...DEFAULT_OWNERS];
+function syncOwners(){ OWNERS=state.settings.owners; }
 const ATYPES=['현금','적금','예금','주식','펀드','청약통장','기타'];
 const LIQUIDITY=['즉시','만기·장기'];
 
@@ -199,7 +205,7 @@ const DEFAULT_PROFILE={
 const DEFAULT={
   profile:structuredClone(DEFAULT_PROFILE),
   assets:{items:[],notes:'',reserve:1000},
-  settings:{targetDeposit:4.5,weights:{commute:3,budget:3,area:3,complex:3,risk:3},grades:structuredClone(GRADE_DEFAULTS),commuters:[{name:'테디',dest:'강남역'},{name:'연정',dest:'신사역'}]},
+  settings:{targetDeposit:4.5,owners:[...DEFAULT_OWNERS],weights:{commute:3,budget:3,area:3,complex:3,risk:3},grades:structuredClone(GRADE_DEFAULTS),commuters:[{name:'테디',dest:'강남역'},{name:'연정',dest:'신사역'}]},
   chatHistory:[],
   actions:[
     {id:'a1',text:'버팀목 전세대출 자가진단 (연정)',priority:1,done:false},
@@ -247,7 +253,7 @@ const GUEST_STATE={
       {label:'(예시) 매수 목표',date:'2028-01-01'},
     ],
   },
-  settings:{targetDeposit:4.0,weights:{commute:3,budget:3,area:3,complex:3,risk:3},grades:structuredClone(GRADE_DEFAULTS)},
+  settings:{targetDeposit:4.0,owners:['본인','배우자','공동'],weights:{commute:3,budget:3,area:3,complex:3,risk:3},grades:structuredClone(GRADE_DEFAULTS)},
   chatHistory:[],
   actions:[
     {id:'ga1',text:'(예시) 전세대출 조건 알아보기',priority:1,done:false},
@@ -295,6 +301,10 @@ function applyGuards(raw){
   }
   if(state.assets.reserve==null) state.assets.reserve=1000;
   state.settings=Object.assign(structuredClone(DEFAULT.settings), state.settings||{});
+  const ownersRaw=Array.isArray(state.settings.owners)?state.settings.owners:[];
+  state.settings.owners=[...new Set(ownersRaw.filter(o=>typeof o==='string').map(o=>o.trim()).filter(Boolean))];
+  if(!state.settings.owners.length) state.settings.owners=[...DEFAULT_OWNERS];
+  syncOwners();
   state.settings.weights=Object.assign(structuredClone(DEFAULT.settings.weights), state.settings.weights||{});
   /* B-18: settings.grades 없거나(구버전 데이터) 일부 키만 있어도 기본값(과거
      리터럴과 동일)으로 보정 — 등급 판정 결과가 절대 바뀌지 않게 함 */

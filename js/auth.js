@@ -28,7 +28,6 @@ function unlockApp(isGuest){
   document.getElementById('loginOverlay').classList.add('hidden');
   if(isGuest){
     isGuestMode=true;
-    OWNERS=['본인','배우자','공동'];
     document.body.classList.add('guest');
     document.getElementById('guestBadge').textContent='데모';
     document.querySelector('.brand .sub').textContent='예비부부 · 결혼 & 내집마련 준비 보드 (체험판)';
