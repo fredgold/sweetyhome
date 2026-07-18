@@ -786,7 +786,12 @@
   .sc-fit-badge.high{background:#E8F1EA;color:#3C7A4C;}
   .sc-fit-badge.mid{background:var(--line9-wash);color:var(--line9-deep);}
   .sc-fit-badge.low{background:#FBEDE5;color:#B5602F;}
-  .sc-card-meta{font-size:12px;color:var(--ink-soft);font-weight:600;line-height:1.7;margin-bottom:5px;}
+  /* B-72: 위치·가격·면적·일정을 한 줄 텍스트로 이어붙이던 걸 개별
+     칩(.chip 재사용)으로 분리 — 값 텍스트는 --ink(진한 색)로 강조해
+     아이콘(라벨 역할)과 구분, 긴 값은 칩별로 말줄임 + title 툴팁 */
+  .sc-card-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:5px;}
+  .sc-meta-chip{display:inline-flex;align-items:center;gap:4px;max-width:220px;color:var(--ink);}
+  .sc-meta-chip-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
   .sc-card-tags{display:flex;gap:5px;flex-wrap:wrap;margin:5px 0;}
   .sc-card-tag{font-size:10.5px;font-weight:700;background:var(--line9-wash);color:var(--line9-deep);border-radius:var(--radius-sm);padding:2px 7px;}
   .sc-card-raw{font-size:12px;color:var(--ink-soft);margin-top:8px;border-top:1px dashed var(--hairline);padding-top:8px;max-height:80px;overflow:hidden;cursor:pointer;line-height:1.65;position:relative;}
@@ -1182,6 +1187,8 @@ html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
   .sc-md-toolbar::-webkit-scrollbar{display:none;}
   .sc-md-toolbar button{padding:7px 10px;min-height:38px;flex-shrink:0;}
   .sc-md-toolbar .tb-sep{flex-shrink:0;}
+  /* B-72: 좁은 화면에서 칩 1개가 카드 폭을 과점하지 않도록 축소 */
+  .sc-meta-chip{max-width:150px;}
   /* tabs: 더 작은 탭 */
   .tab{font-size:11px;padding:5px 8px;}
   /* addact 줄바꿈 */

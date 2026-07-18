@@ -52,7 +52,10 @@ function renderScraps(){
     else if(s.fit==='low'||s.fit==='불가'){fitCls='low';fitLbl='✕ 부적합';}
     else if(s.fit){fitCls='mid';fitLbl='⚠ '+esc(s.fit);}
     const isPropLess=SC_PROPLESS.has(s.type);
-    const metaParts=[s.location&&`${ic('pin','ic-muted')} ${esc(s.location)}`,!isPropLess&&s.price&&`${ic('price','ic-muted')} ${esc(s.price)}`,!isPropLess&&s.area&&`${ic('area','ic-muted')} ${esc(s.area)}`,!isPropLess&&s.schedule&&`${ic('calendar','ic-muted')} ${esc(s.schedule)}`].filter(Boolean);
+    /* B-72: 위치·가격·면적·일정을 한 줄로 이어붙이면 안 읽혀서 칩으로 분리 —
+       값마다 title 툴팁을 달아 CSS 말줄임(.sc-meta-chip-text)으로 잘려도
+       전체 텍스트를 확인할 수 있게 함 */
+    const metaParts=[s.location&&{icon:'pin',text:s.location},!isPropLess&&s.price&&{icon:'price',text:s.price},!isPropLess&&s.area&&{icon:'area',text:s.area},!isPropLess&&s.schedule&&{icon:'calendar',text:s.schedule}].filter(Boolean);
     const rawText=s.raw||'';
     const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
     return `<div class="sc-card" data-scid="${s.id}">
@@ -62,7 +65,7 @@ function renderScraps(){
         <span class="sc-badge ${stCls}">${stLabel}</span>
         ${dateStr?`<span style="font-size:10px;color:var(--ink-faint);margin-left:auto;flex-shrink:0;">${dateStr}</span>`:''}
       </div>
-      ${metaParts.length?`<div class="sc-card-meta">${metaParts.join(' &nbsp;·&nbsp; ')}</div>`:''}
+      ${metaParts.length?`<div class="sc-card-meta">${metaParts.map(m=>`<span class="chip sc-meta-chip" title="${esc(m.text)}">${ic(m.icon,'ic-muted')}<span class="sc-meta-chip-text">${esc(m.text)}</span></span>`).join('')}</div>`:''}
       ${(s.tags||[]).length?`<div class="sc-card-tags">${s.tags.map(t=>`<span class="sc-card-tag">${esc(t)}</span>`).join('')}</div>`:''}
       ${s.fit?`<span class="sc-fit-badge ${fitCls}">${fitLbl}</span>`:''}
       ${(s.imgs||[]).length?`<img src="${s.imgs[0]}" class="sc-card-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진">`:''}      ${rawText?`<div class="sc-card-raw sc-md-content" onclick="this.classList.toggle('expand')">${renderMd(rawText)}</div>`:''}
