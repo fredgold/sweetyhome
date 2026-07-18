@@ -115,13 +115,20 @@ function setSyncState(s){
   if(msg){ msg.textContent=SYNC_MSGS[s]||''; msg.style.whiteSpace='pre-line'; }
   if(retry) retry.style.display=(s==='ok')?'none':'block';
 }
+/* B-84: Redis 동기화 성공/실패를 localStorage 플래그로도 남김 — 탭 UI(syncChip)만
+   보고 있지 않아도(예: 다음 로드 시) "마지막 시도가 실패했다"를 알 수 있게. 자동
+   정리는 하지 않음(B-80에서 이 플래그를 사람이 보는 표시로 연결할 예정, 이번엔
+   플래그만 정확히 남기는 것까지만 범위) */
+const SH_UNSYNCED_KEY='sh_unsynced';
+function markUnsynced(){ try{ localStorage.setItem(SH_UNSYNCED_KEY,'1'); }catch(e){} }
+function clearUnsyncedFlag(){ try{ localStorage.removeItem(SH_UNSYNCED_KEY); }catch(e){} }
 async function syncToRedis(){
   try{
     const res=await fetch('/api/state',{method:'POST',headers:authHeaders(),body:JSON.stringify({state})});
     const j=await res.json();
-    if(j.ok) setSyncState('ok');
-    else setSyncState('local');
-  }catch(e){ setSyncState('offline'); }
+    if(j.ok){ setSyncState('ok'); clearUnsyncedFlag(); }
+    else{ setSyncState('local'); markUnsynced(); }
+  }catch(e){ setSyncState('offline'); markUnsynced(); }
 }
 document.getElementById('syncChip').addEventListener('click',function(e){
   e.stopPropagation();
@@ -446,14 +453,46 @@ async function load(){
   applyGuards(raw);
   renderAll();
 }
-let syncTimer;
+/* B-84: localStorage는 항상 즉시(save() 호출마다), Redis는 800ms 디바운스 —
+   단 연타 입력이 계속되면 clearTimeout이 매번 리셋돼 최초 편집 후 Redis
+   반영이 무한정 밀릴 수 있어(예: 10초간 타이핑) maxWait 도입. 최초 save() 시점
+   기준 5초가 지나면 디바운스를 무시하고 다음 tick에 강제 전송 — 800ms 기본
+   디바운스 값 자체는 무변경(일반 편집은 기존과 동일하게 800ms 후 1회 전송) */
+const SYNC_DEBOUNCE_MS=800, SYNC_MAX_WAIT_MS=5000;
+let syncTimer=null, syncBurstStartedAt=null;
 async function save(){
   if(isGuestMode){ const n=document.getElementById('savedNote'); n.textContent='데모 모드 — 저장되지 않아요'; n.style.color='var(--ink-faint)'; return; }
   const n=document.getElementById('savedNote'); n.textContent='저장 중…'; n.style.color='var(--ink-soft)';
   try{ localStorage.setItem('sweetyhome',JSON.stringify(state)); }catch(e){}
+  const now=Date.now();
+  if(syncTimer==null) syncBurstStartedAt=now;
   clearTimeout(syncTimer);
+  const waited=now-syncBurstStartedAt;
+  const delay=waited>=SYNC_MAX_WAIT_MS?0:Math.min(SYNC_DEBOUNCE_MS,SYNC_MAX_WAIT_MS-waited);
   syncTimer=setTimeout(async()=>{
+    syncTimer=null; syncBurstStartedAt=null;
     n.textContent='변경사항은 자동 저장됩니다'; n.style.color='';
     await syncToRedis();
-  },800);
+  },delay);
 }
+/* B-84: 페이지 이탈 시 대기 중인 Redis 동기화(디바운스 타이머가 아직 안 울린
+   상태)가 있으면 즉시 전송 — 안 그러면 마지막 편집 후 800ms(또는 maxWait
+   대기 중) 안에 탭을 닫거나 당겨서 새로고침하면 그 편집이 Redis엔 영영
+   반영 안 됨(localStorage엔 이미 있으니 기기 안에서는 안 없어짐).
+   Bearer 토큰 헤더가 필요해 sendBeacon은 못 쓰고 fetch keepalive 사용 —
+   keepalive 요청은 본문 64KB 제한이 있어 사진 포함 state는 실패할 수 있음.
+   응답을 못 받고 페이지가 사라질 가능성이 있어 "성공 확인 전까지는
+   미동기로 간주"하는 보수적 순서로 처리(실패를 조용히 삼키지 않음) */
+function flushPendingSync(){
+  if(isGuestMode||syncTimer==null) return;
+  clearTimeout(syncTimer); syncTimer=null; syncBurstStartedAt=null;
+  markUnsynced();
+  try{
+    fetch('/api/state',{method:'POST',headers:authHeaders(),keepalive:true,body:JSON.stringify({state})})
+      .then(res=>res.json())
+      .then(j=>{ if(j.ok) clearUnsyncedFlag(); })
+      .catch(()=>{});
+  }catch(e){}
+}
+window.addEventListener('pagehide',flushPendingSync);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flushPendingSync(); });
