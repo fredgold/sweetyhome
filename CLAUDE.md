@@ -8,12 +8,11 @@
 
 - **프론트엔드**: Vanilla JS (빌드 없음), `index.html` + `style.css` + `js/`
 - **배포**: Vercel (정적 파일 + `api/` serverless functions)
-- **스토리지**: Upstash Redis (`/api/state`) + localStorage fallback
-- **인증**: PIN → `/api/login` → UUID Bearer token → `sessionStorage sh_token` (24h TTL)
+- **스토리지**: Upstash Redis (`/api/state`, 서버 키 `'sweetyhome:state'`) + localStorage(`'sweetyhome'`, 즉시 저장 캐시·오프라인 백업) — 두 키는 이름이 다르므로 혼동 금지, 둘 다 절대 변경 금지
+- **인증**: PIN → `/api/login` → UUID Bearer token → `localStorage sh_token`+`sh_token_exp`(만료시각, 24h TTL) — 서버 `api/_auth.js` SESSION_TTL과 수동 동기화 필요
 - **지도**: 네이버 지도 JS API v3 (CDN) — 지오코딩은 `/api/geocode` 서버리스 프록시(네이버 Geocoding API)
 - **마크다운**: marked.js v9 (CDN, `renderMd()` in utils.js)
 - **AI**: Anthropic Claude API (`/api/messages` 서버리스 프록시)
-- **Redis 키**: `'sweetyhome'` — 절대 변경 금지
 
 ---
 
@@ -58,14 +57,30 @@ js/
 
 ## 상태 스키마 요약
 
-`js/state.js` 상단 주석에 전체 스키마 기록됨. 핵심:
+`js/state.js` 상단 주석에 전체 스키마 기록됨(SSOT는 그 JSDoc, 아래는 요약). 핵심:
 
 ```
-state.scraps[]   — SC_TYPE: subscription|jeonse|sale|area|policy|review|note|ai_log
-                   SC_STATUS: new|review|interested|hold|promoted|dropped
-                   SC_PROPLESS: new Set(['note','ai_log']) → 가격·면적·일정 필드 숨김
-state.properties[] — deposit(억), area(㎡), households, img(base64 JPEG)
+state.complexes[]  — 단지(2계층 중 상위). loc, station, households, householdGrade,
+                     parking/parkingState('known'|'unknown'|'na'), pros/cons/verdict,
+                     favorite(bool), commutes:[{minutes,transfers,destSnapshot}, {...}]
+                       (index 0/1 = settings.commuters[0/1] 매칭, 자동계산 없음),
+                     commuteMemo
+state.listings[]   — 매물(2계층 중 하위, complexId로 단지 참조). dongHo, areaM2, deposit,
+                     managementFee/managementFeeState, listingStatus, isRepresentative,
+                     safety: { [SAFETY_ITEMS 9개 key]: {status('unchecked'|'ok'|'warning'),
+                       memo, source, checkedAt} } — 기록 전용, 자동 판정·차단 없음
+state.properties[] — 레거시 flat 스키마(E-01로 2계층 전환 완료, B-05 삭제 대기).
+                     은퇴 예정이지만 수정 경로 일부 아직 활성(properties.js:1002
+                     saveBtn) — 신규 기능은 여기 손대지 말고 complexes/listings에
+state.scraps[]     — SC_TYPE: subscription|jeonse|sale|area|policy|review|note|ai_log
+                     SC_STATUS: new|review|interested|hold|promoted|dropped
+                     SC_PROPLESS: new Set(['note','ai_log']) → 가격·면적·일정 필드 숨김
+                     img(base64, 레거시 1장) — imgs[0]과 항상 동기화되는 미러, 삭제·
+                       개명 금지. imgs[](base64[], 최대 SC_MAX_IMGS장) — 렌더 기준
 state.assets.items[] — amount/mobilizable 단위: 원
+state.settings      — owners(담당자 목록, 프로필에서 편집 가능·하드코딩 금지),
+                     commuters:[{name,dest}, {name,dest}](통근 기준지 2인 고정,
+                       index로 complexes[].commutes와 매칭 — 이름 변경은 표시만 바뀜)
 ```
 
 `applyGuards(raw)` : 새 필드 추가 시 반드시 여기서 기본값 보정 → 기존 데이터 절대 깨지지 않음
@@ -74,7 +89,7 @@ state.assets.items[] — amount/mobilizable 단위: 원
 
 ## 핵심 패턴
 
-**저장**: `save()` → localStorage 즉시 + Redis 800ms 디바운스
+**저장**: `save()` → localStorage 즉시(`'sweetyhome'` 키) + Redis 800ms 디바운스(`syncToRedis()`, maxWait 5s — 연타 입력 중에도 최초 편집 후 5초 넘으면 강제 발화). 페이지 이탈(`pagehide`/`visibilitychange` hidden) 시 대기 중인 동기화는 `flushPendingSync()`가 `keepalive:true`로 즉시 전송. 실패·미확인 시 `localStorage.sh_unsynced` 플래그를 남기고(성공 확인 시에만 해제) 다음 로드에서 배너로 안내 — 실패를 자동 삭제·자동 복구하지 않고 표시만 함(B-84/B-80). 동기화 칩 상태(`setSyncState`): `ok`|`local`(Redis 실패)|`offline`|`localfail`(localStorage 자체 실패)|`expired`(토큰 만료, `forceLogin()` 재호출)|`toolarge`(서버 4MB 상한 초과, `api/state.js` 413)
 
 **이미지 압축**: `compressImage(file, cb)` → max 600px, JPEG 0.65 → base64 저장
 
@@ -98,6 +113,10 @@ state.assets.items[] — amount/mobilizable 단위: 원
 | 매물 form | `form`, `f_name`, `f_deposit`, `f_area`, `f_households` |
 | 자산 노트 | `a_notes`, `an_mdPreview` |
 | AI 채팅 | `msgs`, `chatInput`, `chatSend` |
+| 단지 매칭 제안 모달 | `cxMatchModal`, `cxMatchDesc`, `cxMatchCandidates`, `cxMatchNewBtn`, `cxMatchCancelBtn`(properties.js 동적 삽입) |
+| 단지 상세 출퇴근 | `cxDetailCommute`, `cxDetailCommutes`, `cxDetailCommuteMemo` |
+| 통근 기준지 설정(프로필) | `pf_commuter0_name`, `pf_commuter0_dest`, `pf_commuter1_name`, `pf_commuter1_dest` |
+| 안전 체크(매물 상세, class+data속성 기반) | `.safety-status-sel`/`.safety-memo`/`.safety-source-sel`/`.safety-date` (data-safekey, data-lid) |
 
 ---
 
