@@ -34,6 +34,11 @@
 </div>
 
 <div class="wrap">
+  <!-- B-80: 지난 세션 미동기 안내(1회성) — state.js load()가 sh_unsynced 플래그 있을 때만 노출 -->
+  <div class="unsynced-banner" id="unsyncedBanner" style="display:none">
+    <span>⚠ 지난 세션의 변경사항이 서버에 반영되지 않았을 수 있어요. 네트워크가 연결되면 자동으로 다시 시도해요.</span>
+    <button type="button" id="unsyncedBannerClose" aria-label="닫기">✕</button>
+  </div>
   <header>
     <div class="brand" id="goHome" style="cursor:pointer">
       <span class="mark"><svg width="26" height="26" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M9 16.5 Q9 15.3 9.7 14.7 L18.9 7.8 Q20.2 6.8 21.5 7.8 L29 13.5 L38.5 23 L38.5 37 Q38.5 41 34.5 41 L13 41 Q9 41 9 37 Z" fill="#C7A14A"/><path d="M29 13.5 L38.5 23 L29 23 Z" fill="#FFFFFF"/><path d="M20.3 41 L20.3 31 Q20.3 27.5 24 27.5 Q27.7 27.5 27.7 31 L27.7 41 Z" fill="#9A7B2E"/></svg></span>

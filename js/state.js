@@ -99,11 +99,17 @@
 /* ===== 동기화 상태 칩 ===== */
 /* setSyncState는 UI 갱신이지만 state.js 자체의 save/sync 흐름에서만 호출되므로
    (다른 파일에서 호출 없음) 정의부·호출부를 붙여두기 위해 의도적으로 여기 둠 */
-const SYNC_LABELS={ok:'동기화됨',local:'⚠ 로컬만',offline:'✕ 오프라인'};
+/* B-80: localfail(로컬 저장 자체 실패)·expired(토큰 만료)·toolarge(서버 크기
+   상한 초과) 3개 상태 추가 — 전부 기존 'local'로 뭉뚱그려지던 것을 원인별로
+   구분 표시(자동 복구·삭제는 안 함, 표시만) */
+const SYNC_LABELS={ok:'동기화됨',local:'⚠ 로컬만',offline:'✕ 오프라인',localfail:'⚠ 저장 실패',expired:'⚠ 재로그인 필요',toolarge:'⚠ 용량 초과'};
 const SYNC_MSGS={
   ok:'클라우드에 동기화되었습니다.',
   local:'클라우드 저장 실패 — 이 기기에만 저장됨.\n잠시 후 다시 시도하세요.',
-  offline:'네트워크 연결 없음 — 이 기기에만 저장됨.\n연결 후 다시 시도하세요.'
+  offline:'네트워크 연결 없음 — 이 기기에만 저장됨.\n연결 후 다시 시도하세요.',
+  localfail:'이 기기 저장(브라우저 로컬)이 실패했어요 — 저장공간이 가득 찼거나 브라우저 제한일 수 있어요.\n중요한 내용은 따로 복사해두세요.',
+  expired:'로그인이 만료됐어요. 다시 로그인해주세요.',
+  toolarge:'저장할 데이터가 너무 커요(서버 상한 초과) — 사진 등 큰 항목을 정리한 뒤 다시 시도하세요.',
 };
 function setSyncState(s){
   const chip=document.getElementById('syncChip');
@@ -117,14 +123,25 @@ function setSyncState(s){
 }
 /* B-84: Redis 동기화 성공/실패를 localStorage 플래그로도 남김 — 탭 UI(syncChip)만
    보고 있지 않아도(예: 다음 로드 시) "마지막 시도가 실패했다"를 알 수 있게. 자동
-   정리는 하지 않음(B-80에서 이 플래그를 사람이 보는 표시로 연결할 예정, 이번엔
-   플래그만 정확히 남기는 것까지만 범위) */
+   정리는 하지 않음(성공 동기화 시에만 해제) */
 const SH_UNSYNCED_KEY='sh_unsynced';
 function markUnsynced(){ try{ localStorage.setItem(SH_UNSYNCED_KEY,'1'); }catch(e){} }
-function clearUnsyncedFlag(){ try{ localStorage.removeItem(SH_UNSYNCED_KEY); }catch(e){} }
+/* B-80: 플래그를 지울 때 "지난 세션 미동기" 배너도 같이 숨김 — 실제로 동기화가
+   확인된 시점에만 안내를 거둬들임(배너 닫기 버튼은 이 플래그 자체는 안 지움,
+   아래 배너 wiring 참고) */
+function clearUnsyncedFlag(){
+  try{ localStorage.removeItem(SH_UNSYNCED_KEY); }catch(e){}
+  const banner=document.getElementById('unsyncedBanner');
+  if(banner) banner.style.display='none';
+}
 async function syncToRedis(){
   try{
     const res=await fetch('/api/state',{method:'POST',headers:authHeaders(),body:JSON.stringify({state})});
+    /* B-80: 토큰 만료(401)를 기존처럼 'local'로 뭉뚱그리지 않고 재로그인 안내로
+       분리 — load()의 401 처리와 동일하게 forceLogin() 재사용(조용히 로컬
+       저장으로만 안 빠지게). 서버 크기 상한 초과(413)도 별도 표시 */
+    if(res.status===401){ setSyncState('expired'); markUnsynced(); forceLogin(); return; }
+    if(res.status===413){ setSyncState('toolarge'); markUnsynced(); return; }
     const j=await res.json();
     if(j.ok){ setSyncState('ok'); clearUnsyncedFlag(); }
     else{ setSyncState('local'); markUnsynced(); }
@@ -143,6 +160,12 @@ document.getElementById('syncRetry').addEventListener('click',async function(){
   this.disabled=false; this.textContent='↻ 다시 시도';
   if(document.getElementById('syncChip').dataset.sync==='ok')
     document.getElementById('syncPanel').classList.remove('open');
+});
+/* B-80: 닫기는 이번 표시만 숨김(플래그 자체는 안 지움) — 실제 동기화 성공
+   전까지는 다음 저장 시도 때도 여전히 미동기 상태이므로, 사람이 닫아도
+   데이터가 실제로 안전해진 건 아님. 배너를 다시 보고 싶으면 새로고침 */
+document.getElementById('unsyncedBannerClose')?.addEventListener('click',()=>{
+  document.getElementById('unsyncedBanner').style.display='none';
 });
 
 const CHECK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
@@ -487,6 +510,15 @@ async function load(){
   }
   applyGuards(raw);
   renderAll();
+  /* B-80: 지난 세션의 flushPendingSync/syncToRedis가 미동기로 끝났으면(플래그
+     남아있음) 이번 로드에서 안내 — 자동으로 뭔가 하지 않고 표시만. 성공
+     동기화가 확인되면(clearUnsyncedFlag) 자동으로 사라짐 */
+  try{
+    if(localStorage.getItem(SH_UNSYNCED_KEY)==='1'){
+      const banner=document.getElementById('unsyncedBanner');
+      if(banner) banner.style.display='';
+    }
+  }catch(e){}
 }
 /* B-84: localStorage는 항상 즉시(save() 호출마다), Redis는 800ms 디바운스 —
    단 연타 입력이 계속되면 clearTimeout이 매번 리셋돼 최초 편집 후 Redis
@@ -498,7 +530,17 @@ let syncTimer=null, syncBurstStartedAt=null;
 async function save(){
   if(isGuestMode){ const n=document.getElementById('savedNote'); n.textContent='데모 모드 — 저장되지 않아요'; n.style.color='var(--ink-faint)'; return; }
   const n=document.getElementById('savedNote'); n.textContent='저장 중…'; n.style.color='var(--ink-soft)';
-  try{ localStorage.setItem('sweetyhome',JSON.stringify(state)); }catch(e){}
+  const json=JSON.stringify(state);
+  try{
+    localStorage.setItem('sweetyhome',json);
+  }catch(e){
+    /* B-80: 조용히 삼키지 않고 칩 상태 반영 + 원인 추적용 크기 로그(용량 초과가
+       흔한 원인이라 KB를 같이 남김). Redis 동기화는 로컬 저장과 무관하게
+       그대로 시도(로컬이 실패했다면 오히려 Redis가 유일한 백업이 됨) */
+    const kb=(new Blob([json]).size/1024).toFixed(1);
+    console.warn(`save(): localStorage 저장 실패(state 크기 ${kb}KB) — ${e&&e.message}`);
+    setSyncState('localfail');
+  }
   const now=Date.now();
   if(syncTimer==null) syncBurstStartedAt=now;
   clearTimeout(syncTimer);
