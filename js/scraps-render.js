@@ -1,4 +1,9 @@
 let scSearchQuery='';
+/* B-97: 카드별 "원문 보기" 토글 — 렌더가 입력 의도와 달라질 때(lazy
+   continuation 등, 1단계 진단) 사용자가 원문과 즉시 대조할 수 있는
+   탈출구. 뷰 상태일 뿐이라 state 스키마엔 저장하지 않음(세션 내에만
+   유지, 새로고침하면 초기화) — cxListingEditMode 등과 동일한 패턴 */
+let scRawViewIds=new Set();
 function renderScraps(){
   document.querySelectorAll('[data-ftype]').forEach(c=>c.classList.toggle('on',c.dataset.ftype===scFilterType));
   document.querySelectorAll('[data-fstatus]').forEach(c=>c.classList.toggle('on',c.dataset.fstatus===scFilterStatus));
@@ -58,6 +63,7 @@ function renderScraps(){
     const metaParts=[s.location&&{icon:'pin',text:s.location},!isPropLess&&s.price&&{icon:'price',text:s.price},!isPropLess&&s.area&&{icon:'area',text:s.area},!isPropLess&&s.schedule&&{icon:'calendar',text:s.schedule}].filter(Boolean);
     const rawText=s.raw||'';
     const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
+    const rawMode=scRawViewIds.has(s.id);
     return `<div class="sc-card" data-scid="${s.id}">
       <div class="sc-card-head">
         <div class="sc-card-title">${esc(s.title||'(제목 없음)')}</div>
@@ -68,7 +74,11 @@ function renderScraps(){
       ${metaParts.length?`<div class="sc-card-meta">${metaParts.map(m=>`<span class="chip sc-meta-chip" title="${esc(m.text)}">${ic(m.icon,'ic-muted')}<span class="sc-meta-chip-text">${esc(m.text)}</span></span>`).join('')}</div>`:''}
       ${(s.tags||[]).length?`<div class="sc-card-tags">${s.tags.map(t=>`<span class="sc-card-tag">${esc(t)}</span>`).join('')}</div>`:''}
       ${s.fit?`<span class="sc-fit-badge ${fitCls}">${fitLbl}</span>`:''}
-      ${(s.imgs||[]).length?`<img src="${esc(s.imgs[0])}" class="sc-card-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진">`:''}      ${rawText?`<div class="sc-card-raw sc-md-content" onclick="this.classList.toggle('expand')">${renderMd(rawText)}</div>`:''}
+      ${(s.imgs||[]).length?`<img src="${esc(s.imgs[0])}" class="sc-card-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진">`:''}
+      ${rawText?`<div style="display:flex;justify-content:flex-end;margin-top:8px;">
+        <button type="button" class="sc-preview-toggle" data-scraw="${s.id}">${rawMode?ic('eye')+' 서식 보기':ic('edit')+' 원문 보기'}</button>
+      </div>
+      <div class="sc-card-raw sc-md-content" onclick="this.classList.toggle('expand')">${rawMode?`<pre style="white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;">${esc(rawText)}</pre>`:renderMd(rawText)}</div>`:''}
       <div class="sc-card-actions">
         <select class="sc-status-sel" data-scst="${s.id}">
           ${Object.entries(SC_STATUS).map(([v,l])=>`<option value="${v}"${s.status===v?' selected':''}>${l}</option>`).join('')}
@@ -87,6 +97,11 @@ function renderScraps(){
   el.querySelectorAll('[data-sc-del]').forEach(b=>b.onclick=()=>{
     if(!confirm('이 항목을 삭제할까요?'))return;
     state.scraps=state.scraps.filter(x=>x.id!==b.dataset.scDel);save();renderScraps();
+  });
+  el.querySelectorAll('[data-scraw]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.scraw;
+    if(scRawViewIds.has(id)) scRawViewIds.delete(id); else scRawViewIds.add(id);
+    renderScraps();
   });
 }
 
