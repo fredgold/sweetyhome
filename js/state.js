@@ -418,6 +418,8 @@ function applyGuards(raw){
 async function load(){
   if(isGuestMode){
     applyGuards(structuredClone(GUEST_STATE));
+    state.settings.owners=['본인','배우자','공동'];
+    syncOwners();
     renderAll();
     return;
   }
