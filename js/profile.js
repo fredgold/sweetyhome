@@ -77,6 +77,7 @@ document.getElementById('pf_save').onclick=()=>{
   p.milestones=p.milestones.filter(m=>m.label||m.date);
   save(); renderJourney(); renderAll();
   closeModal('profileModal');
+  toast('저장했어요');
 };
 
 document.getElementById('exportBtn').onclick=()=>{

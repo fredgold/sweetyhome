@@ -248,6 +248,7 @@ document.getElementById('sc_saveBtn').onclick=()=>{
     fit:document.getElementById('sc_fit').value,
     tags:tagsRaw?tagsRaw.split(/[,、]+/).map(t=>t.trim()).filter(Boolean):[],
   };
+  const isEdit=!!scEditId;
   if(scEditId){
     const s=state.scraps.find(x=>x.id===scEditId);
     if(s) Object.assign(s,fields);
@@ -258,6 +259,7 @@ document.getElementById('sc_saveBtn').onclick=()=>{
     });
   }
   scCloseForm();save();renderScraps();
+  toast(isEdit?'저장했어요':'추가했어요');
 };
 
 function scClearForm(){
@@ -464,6 +466,7 @@ document.getElementById('sem_save').onclick=()=>{
   });
   semImgsData=[];
   save();renderScraps();closeModal('scEditModal');
+  toast('저장했어요');
 };
 
 async function checkFit(id){

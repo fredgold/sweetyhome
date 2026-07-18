@@ -86,7 +86,7 @@ function addAssetRow(prefill){
   state.assets.items.push(Object.assign({id:'as'+Date.now()+Math.random().toString(36).slice(2,5),owner:OWNERS[0],name:'',amount:0,type:'현금',liquidity:'즉시',mobilizable:0,memo:''},prefill||{}));
   save(); renderAssets();
 }
-document.getElementById('addAssetRow').onclick=()=>{ addAssetRow(); const rows=document.querySelectorAll('#a_rows .regrow'); const last=rows[rows.length-1]; if(last){const nm=last.querySelector('[data-f="name"]'); if(nm)nm.focus();} };
+document.getElementById('addAssetRow').onclick=()=>{ addAssetRow(); toast('추가했어요'); const rows=document.querySelectorAll('#a_rows .regrow'); const last=rows[rows.length-1]; if(last){const nm=last.querySelector('[data-f="name"]'); if(nm)nm.focus();} };
 
 function updateTargetMsg(){
   const total=sumMobImmediate(), tgt=(+state.settings.targetDeposit||0)*100000000;
@@ -114,6 +114,7 @@ document.getElementById('an_saveBtn').onclick=function(){
   state.assets.notes=document.getElementById('a_notes').value;
   state.assets.updatedAt=Date.now();
   save();
+  toast('저장했어요');
   const btn=this; const old=btn.textContent;
   btn.textContent='저장됨'; btn.disabled=true;
   setTimeout(()=>{btn.textContent=old; btn.disabled=false;},1200);

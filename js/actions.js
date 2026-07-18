@@ -147,6 +147,7 @@ function addActionFull(){
   const max=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;
   state.actions.push({id:'a'+Date.now(),text:t,priority:max+1,done:false,category:cat,assignee:owner,due:actDueValid(due)?due:''});
   inp.value=''; save(); renderActions(); renderTop3();
+  toast('추가했어요');
 }
 document.getElementById('act_addBtn').onclick=addActionFull;
 document.getElementById('act_search').addEventListener('input',e=>{actSearchQuery=e.target.value.trim();renderActions();});
