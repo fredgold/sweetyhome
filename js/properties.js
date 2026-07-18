@@ -479,8 +479,8 @@ function closeMoreMenu(){
 function showMoreMenu(btn){
   if(_moreMenu){ closeMoreMenu(); return; }
   const ids=DESKTOP_MQ.matches
-    ? ['phExportRow','propBulkBtn','propRouteBtn','migStartBtn']
-    : ['unisearch','phExportRow','propBulkBtn','propRouteBtn','migStartBtn'];
+    ? ['phExportRow','propBulkBtn','propRouteBtn']
+    : ['unisearch','phExportRow','propBulkBtn','propRouteBtn'];
   const els=ids.map(id=>document.getElementById(id)).filter(Boolean);
   _moreSlots=els.map(el=>({el,parent:el.parentElement,next:el.nextSibling}));
   const menu=document.createElement('div');
@@ -1733,10 +1733,11 @@ function migApply(){
     try{ localStorage.setItem(KEY,expanded?'1':'0'); }catch(e){}
   };
 })();
+/* B-68: 이관 완료 후 진입 버튼 노출 제거 — 모달·마이그레이션 코드 본체(migApply·
+   renderMigPreview 등)는 B-05(레거시 일괄 삭제 예정) 전까지 그대로 유지, 여기서는
+   진입 버튼(migStartBtn)만 주입하지 않는다. 모달 자체는 코드상 남아있지만 여는
+   경로가 없어 사실상 비활성 */
 (function migInjectUI(){
-  const phActions=document.querySelector('.ph-actions');
-  if(phActions) phActions.insertAdjacentHTML('beforeend',
-    `<button class="addbtn" id="migStartBtn">${ic('listings')} 기존 매물을 단지로 정리</button>`);
   document.body.insertAdjacentHTML('beforeend',`
     <div class="modal" id="migPreviewModal">
       <div class="box" style="max-width:1080px;width:96vw;max-height:90vh;overflow-y:auto">
@@ -1757,7 +1758,6 @@ function migApply(){
   modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('open'); });
   document.getElementById('migCloseBtn').onclick=()=>closeModal('migPreviewModal');
   document.getElementById('migApplyBtn').onclick=migApply;
-  document.getElementById('migStartBtn').onclick=()=>{ renderMigPreview(); openModal('migPreviewModal'); };
 })();
 
 /* ============ v5 Stage 3+4: 단지 카드 목록 + 단지 상세·매물 목록 (properties[] 뷰 공존) ============ */
@@ -1954,11 +1954,8 @@ function renderComplexes(){
 
   if(!state.complexes.length){
     wrap.innerHTML=`<div class="cx-empty">
-      아직 정리된 단지가 없어요. 기존 매물을 단지로 정리하면 여기 카드로 모여요.<br>
-      <button class="btn-save" id="cxGoMigrateBtn" style="margin-top:10px">${ic('listings')} 기존 매물을 단지로 정리</button>
+      아직 등록된 단지가 없어요. 매물 탭에서 단지를 추가해보세요.
     </div>`;
-    const goBtn=document.getElementById('cxGoMigrateBtn');
-    if(goBtn) goBtn.onclick=()=>{ renderMigPreview(); openModal('migPreviewModal'); };
     if(filterBar) filterBar.style.display='none';
     legacyToggleWrap.style.display='none';
     legacyWrap.style.display='';
