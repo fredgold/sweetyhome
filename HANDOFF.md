@@ -1,4 +1,43 @@
-# HANDOFF — B-80 저장 실패·미동기·만료 상태 표시 완료 (2026-07-18)
+# HANDOFF — B-82 CLAUDE.md(SSOT) 갱신 완료 (2026-07-18)
+
+## 최신 작업: B-82
+
+코드 무변경, `CLAUDE.md` 1파일만 수정.
+
+```
+87ebb2e docs: CLAUDE.md 스키마·저장·인증 서술 실코드 동기화 (B-82)
+```
+
+- **상태 스키마 요약**을 flat `properties[]` 단일 서술 → 2계층
+  (`complexes[]`/`listings[]`) 기준으로 교체. `listings[].safety`
+  9항목, `complexes[].commutes`/`commuteMemo`, `scraps[].imgs`+`img`
+  미러 규칙, `settings.owners`/`commuters` 반영. 레거시
+  `properties[]`는 "은퇴 예정(B-05)·수정 경로 일부 활성" 명시.
+- **Redis 키**: 서버 `'sweetyhome:state'`와 localStorage
+  `'sweetyhome'` 분리 명기(기존 문서는 혼동 소지 있었음).
+- **저장 패턴**: B-84/B-80 반영 — 디바운스 800ms+maxWait 5s, 이탈
+  flush(keepalive), `sh_unsynced` 플래그, 동기화 칩 6개 상태 전부
+  나열, 서버 4MB 상한(413).
+- **주요 ID 레퍼런스**: 단지 매칭 제안 모달·단지 상세 출퇴근·통근
+  기준지 설정 3영역 4행만 소량 보충(안전 체크는 class+data속성
+  패턴으로 기록, 과도한 확장 자제).
+- **인증**: `sessionStorage` → `localStorage sh_token`+
+  `sh_token_exp`로 서술 갱신.
+- renderMd 방어범위 서술(B-64 갱신분)은 그대로 유지.
+
+**검증**: 갱신 내용 전부(파일명·키·필드명·함수명)를 실코드와
+교차 확인 — `js/state.js` 상단 JSDoc, `js/auth.js`, `api/state.js`
+KEY/MAX_STATE_BYTES, `index.html`+`js/properties.js`의 신규 ID
+grep 실존 확인. 문서만 변경이라 별도 실행 검증 불필요.
+
+- **B-82 완료**. push는 검증 완료 후 진행(지시대로).
+- BACKLOG.md "코드 점검 발견" 섹션의 감사 발견 트랙(B-80~B-89)
+  전부 완료 — B-81(AI 크레딧 복구 시)·B-85(사용자 결정 대기)만
+  잔여.
+
+---
+
+# 이전 핸드오프 — B-80 저장 실패·미동기·만료 상태 표시 완료 (2026-07-18)
 
 ## 최신 작업: B-80
 
