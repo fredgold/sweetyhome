@@ -3118,6 +3118,103 @@ raw `{"ok":false}` 노출")를 하나씩 재현 시도. 지시서가 의심한 B
 
 ---
 
+## 2026-07-18 — 스크롤 아키텍처 진단 (B-94, 코드 변경 없음)
+
+Playwright로 데스크톱 1440×900과 모바일 390×844에서 각 탭에 긴
+콘텐츠를 넣고 document·panel·내부 목록의 `clientHeight`,
+`scrollHeight`, `scrollTop`, computed `position/overflow/z-index`를
+계측했다.
+
+### 현재 스크롤 컨테이너 지도
+
+| 영역 | 데스크톱 | 모바일 |
+|---|---|---|
+| 대시보드 | document 세로 스크롤 | document 세로 스크롤 |
+| 자산 | document 세로 스크롤. 표 자체는 세로 컨테이너 아님 | document 세로 스크롤. 2열 카드 행이 페이지를 늘림 |
+| 액션 | document 세로 스크롤 | document 세로 스크롤 |
+| 수집함 | document 세로 스크롤. 필터·탭은 가로 overflow만 사용 | document 세로 스크롤. 필터·탭은 가로 overflow만 사용 |
+| 매물 지도 | `#panel-props` 고정 높이+`overflow:hidden`; 좌측 `#complexSection`과 레거시 `.rail`만 `overflow-y:auto`; 지도는 overflow hidden | `#panel-props`가 viewport fixed+overflow hidden, 지도 absolute; 단지 카드는 하단 `#complexSection` 가로 스크롤 |
+| 매물 목록 | 데스크톱 지도형과 동일한 내부 세로 스크롤 | panel·`#complexSection` 모두 일반 흐름으로 돌아가 document 세로 스크롤 |
+| 모달 | fixed overlay 안의 `.box`는 overflow hidden, `.mbody`만 세로 스크롤 | 동일. header/footer는 sticky 선언이 아니라 flex 비축소 형제로 고정 효과 |
+
+### 상단 고정·높이·z-index
+
+- `header`는 sticky가 아닌 일반 흐름이라 스크롤 시 사라진다. 실측
+  높이는 데스크톱 47px, 모바일 86px.
+- `.apptabs`만 `position:sticky; top:0; z-index:1001`로 남는다.
+  실측 높이는 데스크톱 54px, 모바일 55px. 따라서 스크롤 전에는
+  header+탭(콘텐츠 시작 y=약 145/179), 스크롤 후에는 탭 54/55px만
+  남아 상단 점유 높이가 크게 바뀐다. 사용자가 느낀 “상단 고정영역이
+  애매함”과 일치한다.
+- 기준바 `.gates`는 sticky가 아니며 데스크톱 매물 panel 안에서
+  비축소 영역으로 남는다. 모바일 지도에서는 숨고, 모바일 목록에서는
+  현재도 숨은 상태다.
+- 모바일 매물 목록의 `#cxListToolbar`는 global 탭 바로 아래
+  `top:var(--nav-h)`에 별도 sticky(z=10)라 두 고정 바가 쌓인다.
+- 모달 overlay는 z=1100으로 탭(1001)보다 위, 상태/더보기 picker는
+  z=2000으로 모달보다 위, 토스트는 z=9999다. 겹침 순서는 의도적으로
+  정의돼 있으나 picker와 modal을 동시에 열면 picker가 최상단이다.
+
+### 확인된 문제 지점
+
+1. **B-46 잔여 재현 — 최우선**: 데스크톱 매물에서 viewport 900px인데
+   document `scrollHeight=953px`, 즉 바깥 페이지 스크롤이 53px
+   남았다(기존 보고 34px와 같은 계열, viewport·현재 상단 높이에 따라
+   변동). 동시에 `#complexSection`은 268px viewport 안에서 독립
+   스크롤했고, 내부를 300px 움직여도 document는 0에 남았다.
+   바깥 53px과 안쪽 목록이 휠 경계에서 전환되는 것이 직접적인
+   “페이지/일부 리스트 경합”이다.
+2. **원인**: `#panel-props`는 normal flow에서 실제 y=148px에
+   시작하지만 높이는 `100vh - --topbar-h(105.5px) - 20px`로 별도
+   좌표계에서 계산된다. `--topbar-h`는 `.apptabs`의 viewport bottom만
+   담고, `.wrap` 상단 padding·panel 앞 실제 간격은 높이식과 일치하지
+   않는다. 게다가 데스크톱 탭 margin은 현재 12px인데 높이식에는
+   과거 상수 20px가 남아 있다. panel bottom이 viewport 아래로
+   내려가면서 잔여 document scroll이 생긴다.
+3. **문서형 탭 ↔ 매물탭 전환 시 스크롤 모델 변경**: 대시보드·자산·
+   액션·수집함은 document 하나만 스크롤하지만 매물 데스크톱은 내부
+   목록을 스크롤한다. 같은 휠 제스처의 대상과 스크롤바 위치가 탭마다
+   달라 학습 비용이 있다.
+4. **모바일은 지도/목록 모드도 모델이 바뀜**: 지도에서는 document
+   maxScroll=0으로 완전 고정, 목록에서는 document 스크롤
+   (계측 maxScroll=1149px)로 전환된다. 기능상 타당하지만 전환 시
+   스크롤 위치·상단 바가 바뀌는 느낌을 명시적으로 관리해야 한다.
+5. **모달은 구조적으로 정상**: `.mbody`를 300px 스크롤해도 document
+   scrollTop은 그대로였고 head/footer 위치도 유지됐다. 다만 실제
+   `position:sticky`가 아니라 flex 구조이므로 문서·주석에서 “sticky
+   header”로 부르면 구현 오해가 생긴다.
+
+### 후속 수정안과 예상 규모
+
+1. **작은 수정, 우선 권장(B-46/B-94-a, 약 10~20줄)**:
+   매물 진입·resize 때 `#panel-props.getBoundingClientRect().top`을
+   기준으로 남은 viewport 높이를 계산하거나, 상위 `.wrap`을 매물
+   활성 시 정확한 viewport flex shell로 만들고 panel은 `flex:1;
+   height:auto`로 전환한다. 하드코딩 `20px` 보정은 제거한다.
+   이후 데스크톱 document maxScroll=0을 회귀 기준으로 고정한다.
+2. **작은 보완(약 2~6줄)**: 데스크톱 내부 목록
+   `#complexSection,.rail`과 모달 `.mbody`에
+   `overscroll-behavior:contain`을 적용해 끝점 휠 체이닝을 막는다.
+   단, B-46 바깥 스크롤 제거가 먼저다.
+3. **중간 구조 수정(B-53 연계, 약 30~70줄)**: header와 `.apptabs`를
+   하나의 app topbar wrapper로 묶고 “둘 다 고정” 또는 “브랜드는
+   사라지고 탭만 고정” 중 한 정책을 명시한다. 현재처럼 고정 높이가
+   105~165px에서 54~55px로 도중 변하는 상태를 없애고, 단일
+   `--app-top-h`를 매물·overlay·모바일 목록 toolbar가 공유하게 한다.
+4. **대규모 재편(약 80~150줄+, 지금은 비권장)**: body를 잠그고
+   공통 `.app-main` 하나를 모든 탭의 세로 스크롤 컨테이너로 만드는
+   app-shell 방식. 탭별 스크롤 복원, pull-to-refresh, 모바일 키보드,
+   지도 fixed/모달까지 재검증해야 해 현재 증상에는 과하다.
+
+**판정**: 먼저 B-46 높이 좌표계 일원화+overscroll 차단을 작은 후속
+작업으로 하고, 상단 고정 감각은 B-53에서 topbar wrapper로 정리하는
+2단계가 위험 대비 효율적이다. 전 탭 app-shell 재작성은 두 수정 후에도
+실사용 불편이 남을 때만 검토한다.
+
+**→ B-94 진단 완료**. `properties.js` 포함 제품 코드는 변경하지 않았다.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
