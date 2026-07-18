@@ -2417,9 +2417,16 @@ function safetySectionHTML(l){
 /* B-91: 매물 필드 편집 — dongHo/areaM2/areaText/deposit/listingStatus/memo.
    areaGrade는 저장하지 않음(항상 calcAreaGrade(l.areaM2,...)로 실시간 계산,
    기존 표시 로직과 동일). "저장" 클릭 전까지는 이 입력값들이 listing 객체에
-   전혀 반영되지 않는다(버퍼는 DOM 자체 — "취소"는 그냥 재렌더해서 폐기) */
+   전혀 반영되지 않는다(버퍼는 DOM 자체 — "취소"는 그냥 재렌더해서 폐기).
+   B-92: 붙여넣기 자동채우기(.paste, ADD 폼 fillBtn과 동일 패턴)를 이 안에
+   추가 — 보증금·전용면적·메모 3필드만 대상(파싱이 신뢰성 있게 뽑는 값) */
 function listingEditFieldsHTML(l){
-  return `<div class="safety-item-row">
+  return `<div class="paste">
+      <label>매물 정보 붙여넣기 (선택)</label>
+      <textarea class="lst-pastebox" placeholder="네이버 매물 글을 붙여넣으면 보증금·전용면적·메모를 자동으로 채워요"></textarea>
+      <div class="pa"><button type="button" class="btn-fill" data-lstfill="${esc(l.id)}">정보 자동 채우기</button></div>
+    </div>
+    <div class="safety-item-row">
       <input type="text" class="safety-memo" data-editfield="dongHo" value="${esc(l.dongHo||'')}" placeholder="동/호 (예: 101동 502호)">
     </div>
     <div class="safety-item-row">
@@ -2478,6 +2485,44 @@ document.getElementById('cxDetailListings').addEventListener('click',e=>{
     renderComplexes();
     return;
   }
+});
+/* B-92: 정보 자동 채우기 — ADD 폼 fillBtn과 동일하게 정규식 파싱(parseNaver)
+   우선, 실패 시 AI 폴백. ADD 폼과 달리 필드가 이미 값을 갖고 있을 수 있어
+   덮어쓰기 전 확인([[기록 보존 원칙]]) — listing 객체가 아니라 아직 DOM
+   입력값만 바꾼다(저장 전까지 미반영은 위 편집 흐름과 동일) */
+document.getElementById('cxDetailListings').addEventListener('click',async e=>{
+  const fillBtn=e.target.closest('[data-lstfill]'); if(!fillBtn) return;
+  const row=fillBtn.closest('[data-lid]'); if(!row) return;
+  const ta=row.querySelector('.lst-pastebox');
+  const txt=(ta&&ta.value||'').trim();
+  if(!txt){ if(ta) ta.focus(); return; }
+  const old=fillBtn.innerHTML;
+  let j=parseNaver(txt);
+  let got=(j.deposit!=null||j.area!=null||j.memo);
+  if(!got){
+    fillBtn.disabled=true; fillBtn.textContent='읽는 중…';
+    try{
+      const out=await claudeAPI([{role:"user",content:
+        `다음 한국 부동산(전세) 매물 글에서 핵심만 JSON으로. 설명·마크다운 금지.\n`+
+        `형식:{"deposit":보증금억숫자,"area":전용면적㎡숫자,"memo":"한줄"}\n`+
+        `보증금 '2억7천'→2.7. 모르면 null.\n\n${txt}`}]);
+      const aj=parseJSON(out);
+      if(aj){ j=aj; got=(j.deposit!=null||j.area!=null||j.memo); }
+    }catch(err){/* AI 실패 시 아래에서 못 읽었어요 표시 */}
+    fillBtn.disabled=false; fillBtn.innerHTML=old;
+    if(!got){ fillBtn.textContent='못 읽었어요 — 직접 입력'; setTimeout(()=>{fillBtn.innerHTML=old;},2000); return; }
+  }
+  const depositInp=row.querySelector('[data-editfield="deposit"]');
+  const areaInp=row.querySelector('[data-editfield="areaM2"]');
+  const memoInp=row.querySelector('[data-editfield="memo"]');
+  const diffs=[];
+  if(j.deposit!=null&&depositInp.value!==''&&parseFloat(depositInp.value)!==j.deposit) diffs.push(`보증금 ${depositInp.value}억→${j.deposit}억`);
+  if(j.area!=null&&areaInp.value!==''&&parseFloat(areaInp.value)!==j.area) diffs.push(`전용면적 ${areaInp.value}㎡→${j.area}㎡`);
+  if(j.memo&&memoInp.value.trim()&&memoInp.value.trim()!==j.memo) diffs.push('메모 내용 변경');
+  if(diffs.length&&!confirm(`다음 값을 덮어쓸까요?\n${diffs.join('\n')}`)) return;
+  if(j.deposit!=null) depositInp.value=j.deposit;
+  if(j.area!=null) areaInp.value=j.area;
+  if(j.memo) memoInp.value=j.memo;
 });
 document.getElementById('cxDetailListings').addEventListener('click',e=>{
   const btn=e.target.closest('[data-safetoggle]'); if(!btn) return;
@@ -2622,6 +2667,23 @@ function renderComplexDetailBody(cx){
   }
   renderCxListings(cx.id);
 }
+/* B-92: 단지 좌표가 없을 때(#cxDetailNoCoord) 재검색 버튼 — ADD 폼 findBtn과
+   동일한 B-90 패턴(진행 표시·실패 문구, 지오코딩 실패가 다른 저장을 막지
+   않음). 단지는 이미 저장된 상태라 여기선 성공 시에만 즉시 반영·재렌더 */
+document.getElementById('cxDetailFindLocBtn')?.addEventListener('click',async function(){
+  const cx=state.complexes.find(c=>c.id===cxDetailId); if(!cx) return;
+  this.disabled=true; const old=this.textContent; this.textContent='찾는 중…';
+  try{
+    const j=await geocode(cx.geocodeQuery||buildGeocodeQuery(cx.loc,cx.complexName));
+    if(j.found){
+      cx.lat=j.lat; cx.lng=j.lng; cx.updatedAt=new Date().toISOString();
+      save(); renderComplexDetailBody(cx); renderComplexes(); refreshOverview();
+      return;
+    }
+    this.textContent='못 찾음 — 주소를 확인해주세요';
+  }catch(e){ this.textContent='검색 실패 — 잠시 후 다시 시도'; }
+  setTimeout(()=>{ this.disabled=false; this.textContent=old; },1600);
+});
 function renderCxListings(complexId){
   const wrap=document.getElementById('cxDetailListings'); if(!wrap)return;
   const listings=state.listings.filter(l=>l.complexId===complexId)
