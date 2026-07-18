@@ -1057,16 +1057,23 @@ async function saveAsComplexListing(data){
     }
   }
 
-  const isFirstListing=state.listings.filter(l=>l.complexId===cx.id).length===0;
   const areaNum=data.area!=null&&data.area!==''?parseFloat(data.area):null;
+  const areaVal=(areaNum!=null&&!isNaN(areaNum))?areaNum:null;
+  const depositVal=data.deposit?parseEok(data.deposit):null;
+  /* B-20: 임포트 경로가 이미 쓰는 listingExists() 재사용 — 자동 차단이 아니라
+     확인만, 사용자가 강행 가능(취소 시 저장 중단, 폼 유지) */
+  if(listingExists(cx.id,data.url||'',dongHo,areaVal,depositVal)){
+    if(!confirm('같은 동호수·보증금 매물이 있어요. 그래도 추가할까요?')) return false;
+  }
+  const isFirstListing=state.listings.filter(l=>l.complexId===cx.id).length===0;
   const now2=new Date().toISOString();
   state.listings.push({
     id:'lst'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
     complexId:cx.id, source:'', url:data.url||'',
     capturedAt:now2, lastCheckedAt:now2,
-    dongHo, areaM2:(areaNum!=null&&!isNaN(areaNum))?areaNum:null,
+    dongHo, areaM2:areaVal,
     areaText:data.area?String(data.area):'', areaGrade:'',
-    deposit:data.deposit?parseEok(data.deposit):null,
+    deposit:depositVal,
     /* B-28: 붙여넣기 파싱이 관리비(만원)를 읽었을 때만 known으로 승격 */
     managementFee:tempManagementFee!=null?tempManagementFee:null,
     managementFeeState:tempManagementFee!=null?'known':'unknown',
