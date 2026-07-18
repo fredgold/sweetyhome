@@ -2307,10 +2307,13 @@ applyPropViewMode();
 let cxDetailId=null, cxDetailMapObj=null, cxDetailMarker=null;
 /* B-27-lite: 전세 안전 체크 섹션 기본 접힘 — 펼친 매물 id만 기억(모달 재열림 시 초기화) */
 let cxSafetyExpanded=new Set();
-/* B-63: 매물 필드(동호수·면적·보증금·매물상태·메모) 편집 — B-27-lite 접이식
-   패턴 재사용, 기본 접힘. 편집만 할 뿐 자동 판정·상태 부수효과 없음(기존
-   게시중확인/사라짐처리/가격변동기록 버튼과 별개 경로) */
-let cxListingEditExpanded=new Set();
+/* B-91: 매물 필드(동호수·면적·보증금·매물상태·메모) 편집 — B-63 접이식(기본
+   접힘)을 상시 노출 "수정" 버튼→명시적 모드 전환으로 교체(신규 UI 원칙,
+   [[avoid-collapsible-hidden-features]]). 편집만 할 뿐 자동 판정·상태
+   부수효과 없음(기존 게시중확인/사라짐처리/가격변동기록 버튼과 별개 경로).
+   편집모드 진입 id만 기억 — 값은 "저장" 클릭 전까지 listing 객체에 반영
+   안 됨("취소" 시 재렌더로 DOM 폐기, 값 무손실) */
+let cxListingEditMode=new Set();
 /* #cxDetailMap은 formMap/propEditMap과 동일하게 컨테이너를 절대 display:none 처리하지 않고
    인스턴스를 한 번만 만들어 재사용한다 — 지도 div를 숨겼다 다시 보이면 네이버 지도 SDK
    내부(비동기 타일 onload 콜백)에서 널 참조 에러가 남(실측 확인). 좌표 없을 땐 지도 위에
@@ -2411,60 +2414,70 @@ function safetySectionHTML(l){
     </div>
   </div>`;
 }
-/* B-63: 매물 필드 편집 — dongHo/areaM2/areaText/deposit/listingStatus/memo.
+/* B-91: 매물 필드 편집 — dongHo/areaM2/areaText/deposit/listingStatus/memo.
    areaGrade는 저장하지 않음(항상 calcAreaGrade(l.areaM2,...)로 실시간 계산,
-   기존 표시 로직과 동일). deposit·areaM2는 숫자 검증 + 0 vs null(미입력)
-   엄격 구분(triState 숫자 입력과 동일 패턴) */
-function listingEditHTML(l){
-  const expanded=cxListingEditExpanded.has(l.id);
-  return `<div class="safety-wrap${expanded?' expanded':''}">
-    <button type="button" class="gates-toggle" data-edittoggle="${esc(l.id)}">매물 정보 수정 ${expanded?'접기':'펼치기'} <span class="gates-toggle-caret">▾</span></button>
-    <div class="safety-list" style="${expanded?'':'display:none'}">
-      <div class="safety-item-row">
-        <input type="text" class="safety-memo" data-editfield="dongHo" data-lid="${esc(l.id)}" value="${esc(l.dongHo||'')}" placeholder="동/호 (예: 101동 502호)">
-      </div>
-      <div class="safety-item-row">
-        <input type="number" class="tri-num" data-editfield="areaM2" data-lid="${esc(l.id)}" min="0" step="0.01" value="${l.areaM2!=null?l.areaM2:''}" placeholder="전용면적(㎡)">
-        <input type="text" class="safety-memo" data-editfield="areaText" data-lid="${esc(l.id)}" value="${esc(l.areaText||'')}" placeholder="면적 텍스트(예: 24평)">
-      </div>
-      <div class="safety-item-row">
-        <input type="number" class="tri-num" data-editfield="deposit" data-lid="${esc(l.id)}" min="0" step="0.01" value="${l.deposit!=null?l.deposit:''}" placeholder="보증금(억)">
-        <select class="safety-status-sel" data-editfield="listingStatus" data-lid="${esc(l.id)}">
-          ${LISTING_STATUS_OPTIONS.map(st=>`<option value="${st}" ${(l.listingStatus||'확인필요')===st?'selected':''}>${st}</option>`).join('')}
-        </select>
-      </div>
-      <div class="safety-item-row">
-        <textarea class="safety-memo" data-editfield="memo" data-lid="${esc(l.id)}" placeholder="매물 메모">${esc(l.memo||'')}</textarea>
-      </div>
+   기존 표시 로직과 동일). "저장" 클릭 전까지는 이 입력값들이 listing 객체에
+   전혀 반영되지 않는다(버퍼는 DOM 자체 — "취소"는 그냥 재렌더해서 폐기) */
+function listingEditFieldsHTML(l){
+  return `<div class="safety-item-row">
+      <input type="text" class="safety-memo" data-editfield="dongHo" value="${esc(l.dongHo||'')}" placeholder="동/호 (예: 101동 502호)">
     </div>
-  </div>`;
+    <div class="safety-item-row">
+      <input type="number" class="tri-num" data-editfield="areaM2" min="0" step="0.01" value="${l.areaM2!=null?l.areaM2:''}" placeholder="전용면적(㎡)">
+      <input type="text" class="safety-memo" data-editfield="areaText" value="${esc(l.areaText||'')}" placeholder="면적 텍스트(예: 24평)">
+    </div>
+    <div class="safety-item-row">
+      <input type="number" class="tri-num" data-editfield="deposit" min="0" step="0.01" value="${l.deposit!=null?l.deposit:''}" placeholder="보증금(억)">
+      <select class="safety-status-sel" data-editfield="listingStatus">
+        ${LISTING_STATUS_OPTIONS.map(st=>`<option value="${st}" ${(l.listingStatus||'확인필요')===st?'selected':''}>${st}</option>`).join('')}
+      </select>
+    </div>
+    <div class="safety-item-row">
+      <textarea class="safety-memo" data-editfield="memo" placeholder="매물 메모">${esc(l.memo||'')}</textarea>
+    </div>
+    <div class="c-actions">
+      <button type="button" data-lstsave="${esc(l.id)}">저장</button>
+      <button type="button" data-lstcancel="${esc(l.id)}">취소</button>
+    </div>`;
 }
 document.getElementById('cxDetailListings').addEventListener('click',e=>{
-  const btn=e.target.closest('[data-edittoggle]'); if(!btn) return;
-  const lid=btn.dataset.edittoggle;
-  if(cxListingEditExpanded.has(lid)) cxListingEditExpanded.delete(lid);
-  else cxListingEditExpanded.add(lid);
-  const listing=state.listings.find(l=>l.id===lid); if(!listing) return;
-  renderCxListings(listing.complexId);
-});
-document.getElementById('cxDetailListings').addEventListener('change',e=>{
-  const el=e.target.closest('[data-editfield]'); if(!el) return;
-  const {editfield,lid}=el.dataset;
-  const listing=state.listings.find(l=>l.id===lid); if(!listing) return;
-  if(editfield==='areaM2'||editfield==='deposit'){
-    if(el.value===''){ listing[editfield]=null; }
-    else{
-      const v=parseFloat(el.value);
-      if(isNaN(v)||v<0){ el.value=listing[editfield]!=null?listing[editfield]:''; return; }
-      listing[editfield]=v;
-    }
-  } else if(editfield==='listingStatus'){
-    listing.listingStatus=el.value;
-  } else {
-    listing[editfield]=el.value.trim();
+  const editBtn=e.target.closest('[data-lstedit]');
+  if(editBtn){
+    cxListingEditMode.add(editBtn.dataset.lstedit);
+    const listing=state.listings.find(l=>l.id===editBtn.dataset.lstedit); if(listing) renderCxListings(listing.complexId);
+    return;
   }
-  save();
-  renderCxListings(listing.complexId);
+  const cancelBtn=e.target.closest('[data-lstcancel]');
+  if(cancelBtn){
+    cxListingEditMode.delete(cancelBtn.dataset.lstcancel);
+    const listing=state.listings.find(l=>l.id===cancelBtn.dataset.lstcancel); if(listing) renderCxListings(listing.complexId);
+    return;
+  }
+  const saveBtn=e.target.closest('[data-lstsave]');
+  if(saveBtn){
+    const lid=saveBtn.dataset.lstsave;
+    const listing=state.listings.find(l=>l.id===lid); if(!listing) return;
+    const row=saveBtn.closest('[data-lid]'); if(!row) return;
+    row.querySelectorAll('[data-editfield]').forEach(el=>{
+      const field=el.dataset.editfield;
+      if(field==='areaM2'||field==='deposit'){
+        if(el.value===''){ listing[field]=null; }
+        else{
+          const v=parseFloat(el.value);
+          if(!isNaN(v)&&v>=0) listing[field]=v;
+        }
+      } else if(field==='listingStatus'){
+        listing.listingStatus=el.value;
+      } else {
+        listing[field]=el.value.trim();
+      }
+    });
+    cxListingEditMode.delete(lid);
+    save();
+    renderCxListings(listing.complexId);
+    renderComplexes();
+    return;
+  }
 });
 document.getElementById('cxDetailListings').addEventListener('click',e=>{
   const btn=e.target.closest('[data-safetoggle]'); if(!btn) return;
@@ -2619,6 +2632,7 @@ function renderCxListings(complexId){
   }
   wrap.innerHTML=listings.map(l=>{
     const safeHref=l.url?safeUrl(l.url):'';
+    const editing=cxListingEditMode.has(l.id);
     return `<div class="cx-listing-row" data-lid="${l.id}">
       <div class="cx-listing-top">
         <span class="cx-listing-dongho">${esc(l.dongHo||'동/호 미상')}</span>
@@ -2629,9 +2643,10 @@ function renderCxListings(complexId){
       <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'—')}</div>
       <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · 확인 ${l.lastCheckedAt?esc(new Date(l.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>
       ${triStateHTML({field:'managementFee', value:l.managementFee, state:l.managementFeeState, caption:mgmtFeeCaption(l), unit:'만원', step:'1', placeholder:'예: 15', lid:l.id})}
-      ${listingEditHTML(l)}
+      ${editing?listingEditFieldsHTML(l):''}
       ${safetySectionHTML(l)}
       <div class="c-actions">
+        ${editing?'':`<button type="button" data-lstedit="${l.id}">수정</button>`}
         ${l.isRepresentative?'':`<button data-lact="rep">대표매물로 설정</button>`}
         <button data-lact="check">게시중 확인</button>
         <button data-lact="gone">사라짐 처리</button>
