@@ -2794,6 +2794,93 @@ B-83 대상 5개 파일 전부 무접촉(착수 전·커밋 전 매번 `git stat
 
 ---
 
+## 2026-07-18 — applyGuards 배열 타입 가드 + 부수 가드 (B-86)
+
+`BACKLOG.md` "코드 점검 발견" 섹션 B-86(감사 발견, 중·견고성). 손 B가
+`properties.js`로 B-87 작업 중이라 `properties.js` 무접촉 —
+`state.js` 1파일만 수정.
+
+### 문제(감사 발견 그대로)
+
+`applyGuards`의 핵심 배열 5종(actions·properties·complexes·listings·
+scraps)은 `||[]`(또는 `||기본값`)만 있어 **falsy만 걸렀고 truthy
+비배열(문자열·객체 오염)은 그대로 통과**시켰음 — 통과된 값에 뒤이어
+`.map()`을 호출하는 순간 `TypeError`가 나 `applyGuards()` 자체가
+중단되고 `renderAll()`도 실행 안 돼 **앱 전체가 빈 화면으로 멈춤**
+(단일 실패점). 배열 가드는 milestones·owners·commuters·tags·imgs
+에만 있고 이 5종엔 없었음.
+
+### 구현
+
+1. **배열 5종 가드** — 공용 헬퍼 `guardArr(val,fallback,label)` 신설.
+   `Array.isArray`로 실제 검사해 아니면 안전한 기본값으로 대체(값이
+   있는데 타입이 틀린 경우만 `console.warn` 1줄, 단순 누락은 정상
+   케이스라 조용히 기본값 적용). `actions`는 기존처럼
+   `DEFAULT.actions`(시드 3건)로, `properties`/`complexes`/
+   `listings`/`scraps`는 기존처럼 `[]`로 폴백해 falsy 케이스의 기존
+   동작은 그대로 유지 — truthy 비배열만 새로 막음.
+2. **`settings.grades.area`/`households` 비배열 가드** —
+   `calcAreaGrade`/`calcHouseholdGrade`(utils.js)가 `[g1,g2]=grades.area`
+   처럼 배열 구조분해를 쓰는데, `grades.area`가 오염돼 있으면
+   `Object.assign`으로 병합된 후에도 오염값이 그대로 남아 구조분해에서
+   크래시 — `guardArr`로 동일하게 방어. utils.js 자체는 안 건드리고
+   데이터가 이미 안전한 형태로 들어가게 `applyGuards`에서 막음.
+3. **`listings[].safety[key]` 비객체 가드** — `{...safety[key],
+   ...(l.safety&&l.safety[key])}`가 크래시는 안 나지만(문자열 스프레드는
+   인덱스 키로, 숫자·불린 스프레드는 무시됨) 조용히 이상한 모양의
+   객체를 만들 수 있어 — 객체(배열 제외)일 때만 병합하고 아니면 기본값
+   유지, 오염 시 경고.
+4. **`actions` priority 이관부 NaN 방지** — `Math.max(...state.actions
+   .map(x=>x.priority))`가 priority 비숫자 항목 하나로도 NaN에
+   오염되면 이후 `++p`로 이관되는 모든 prep/steps 항목이 `priority:NaN`
+   이 돼 정렬이 깨짐 — 숫자인 priority만 필터링해 최댓값 계산, 하나도
+   없으면 0.
+5. **`milestone.label` 누락·오염 보정** — `ai.js`의 `profileLine()`이
+   `m.label.includes(...)`를 호출하는데 `label`이 없거나 문자열이
+   아니면 크래시. **`ai.js`는 건드리지 않고** `applyGuards`에서
+   milestone마다 `label`을 문자열로 강제(누락은 조용히 `''`, 값이
+   있는데 타입이 틀리면 경고 후 `''`).
+
+가드 원칙은 "대체 후 유지"만 — 오염 데이터를 그대로 화면에 흘려보내지
+않되, 조용히 삭제하지도 않고 `console.warn` 1줄로 원인 추적 가능하게
+남김(자동 정리·알림 UI는 범위 밖).
+
+### 검증(Playwright, 73개 체크)
+
+- **배열 5종 × 오염 3종(문자열/객체/null) = 15개 시나리오**: 전부
+  `applyGuards` 무크래시, 필드가 정확히 배열로 복구, truthy 오염
+  (문자열·객체)일 때만 `console.warn` 발생(null은 정상 누락이라
+  무경고), 페이지 레벨 미처리 예외 없음 확인.
+- **grades 오염**: `area`/`households`를 객체·문자열로 오염 → 무크래시,
+  `calcAreaGrade`/`calcHouseholdGrade` 정상 호출 확인.
+- **safety 오염**: `moveInReport`를 문자열로, `fixedDate`를 배열로
+  오염 → 무크래시, 기본 `{status:'unchecked',memo:'',source:'',
+  checkedAt:''}` 형태로 정확히 복구 확인.
+- **priority 오염**: 비숫자 priority 액션 + 미이관 prep/steps 존재 →
+  무크래시, 이관된 항목의 priority가 NaN 아닌 유효 숫자(1) 확인.
+- **milestone 오염**: label 누락 1건 + 숫자로 오염된 1건 + 정상 1건
+  혼재 → `applyGuards`+`profileLine()`+`chatChips()` 전부 무크래시,
+  누락·오염 항목은 `''`로, 정상 항목("결혼식")은 그대로 보존 확인.
+- **라운드트립 무손실**: 정상적으로 구성된 전체 state(프로필·자산·
+  설정·액션·단지·수집함 등)를 `applyGuards`에 통과 → 순서 무관 깊은
+  비교로 완전히 동일(코드가 `{...defaults,...원본}` 스프레드 패턴을
+  써서 키 순서만 바뀌는 것은 실제 데이터 손실이 아님을 확인 후 순서
+  무관 비교로 검증).
+- **전 탭 스모크**: 5개 필드+grades+milestones를 한 번에 전부 오염시킨
+  state로 `applyGuards`+`renderAll()` → 대시보드·자산·매물·액션·
+  수집함 5개 탭 전부 전환 시 실제 콘텐츠가 정상 렌더(빈 화면 아님),
+  전체 과정에서 미처리 예외 없음 확인.
+- `node --check js/state.js` 통과, `state.js` 1파일만 diff(+42/-7줄).
+- 로컬 python 테스트 서버·Playwright 스크립트는 레포 바깥
+  scratchpad에서만 실행, 세션 종료 전 전부 삭제.
+
+**→ B-86 완료**. `properties.js` 무접촉 준수(손 B의 B-87과 파일
+무충돌 병렬 진행, 착수 전 `git status` 확인 — B-87은 이미 커밋 완료
+상태였음). BACKLOG.md "코드 점검 발견" 섹션은 커맨드센터가 확인 후
+정리할 차례. 착수 순서상 다음은 B-80·B-88·B-89.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
