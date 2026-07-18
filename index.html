@@ -912,30 +912,36 @@
         <button type="button" class="btn-find" id="cxDetailFindLocBtn">위치 재검색</button>
       </div>
 
-      <div class="cx-dl" style="margin-top:12px">
-        <div class="cx-dt">주소</div>
-        <div class="cx-dd" id="cxDetailLoc">—</div>
+      <div id="cxDetailInfoView">
+        <div class="cx-dl" style="margin-top:12px">
+          <div class="cx-dt">주소</div>
+          <div class="cx-dd" id="cxDetailLoc">—</div>
+        </div>
+        <div class="row">
+          <div class="cx-dl">
+            <div class="cx-dt">역 / 노선</div>
+            <div class="cx-dd" id="cxDetailStationLine">—</div>
+          </div>
+          <div class="cx-dl">
+            <div class="cx-dt">준공연도</div>
+            <div class="cx-dd" id="cxDetailYear">—</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="cx-dl">
+            <div class="cx-dt">세대수</div>
+            <div class="cx-dd" id="cxDetailHouseholds">—</div>
+          </div>
+          <div class="cx-dl">
+            <div class="cx-dt">출퇴근</div>
+            <div class="cx-dd" id="cxDetailCommute">—</div>
+          </div>
+        </div>
+        <div class="c-actions" style="margin-bottom:10px">
+          <button type="button" id="cxDetailInfoEditBtn">단지 정보 수정</button>
+        </div>
       </div>
-      <div class="row">
-        <div class="cx-dl">
-          <div class="cx-dt">역 / 노선</div>
-          <div class="cx-dd" id="cxDetailStationLine">—</div>
-        </div>
-        <div class="cx-dl">
-          <div class="cx-dt">준공연도</div>
-          <div class="cx-dd" id="cxDetailYear">—</div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="cx-dl">
-          <div class="cx-dt">세대수</div>
-          <div class="cx-dd" id="cxDetailHouseholds">—</div>
-        </div>
-        <div class="cx-dl">
-          <div class="cx-dt">출퇴근</div>
-          <div class="cx-dd" id="cxDetailCommute">—</div>
-        </div>
-      </div>
+      <div id="cxDetailInfoEdit" style="display:none;margin:12px 0 10px"></div>
       <div class="cx-dl" style="margin-bottom:10px">
         <div class="cx-dt">주차 (세대당)</div>
         <div id="cxDetailParkingWrap"></div>

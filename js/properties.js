@@ -2314,6 +2314,7 @@ let cxSafetyExpanded=new Set();
    편집모드 진입 id만 기억 — 값은 "저장" 클릭 전까지 listing 객체에 반영
    안 됨("취소" 시 재렌더로 DOM 폐기, 값 무손실) */
 let cxListingEditMode=new Set();
+let cxDetailInfoEditing=false;
 /* #cxDetailMap은 formMap/propEditMap과 동일하게 컨테이너를 절대 display:none 처리하지 않고
    인스턴스를 한 번만 만들어 재사용한다 — 지도 div를 숨겼다 다시 보이면 네이버 지도 SDK
    내부(비동기 타일 onload 콜백)에서 널 참조 에러가 남(실측 확인). 좌표 없을 땐 지도 위에
@@ -2573,6 +2574,8 @@ document.getElementById('complexDetailModal').addEventListener('change',e=>{
 function openComplexDetail(id){
   const cx=state.complexes.find(x=>x.id===id); if(!cx)return;
   cxDetailId=id;
+  cxDetailInfoEditing=false;
+  document.getElementById('cxDetailInfoEdit').innerHTML='';
   renderComplexDetailBody(cx);
   openModal('complexDetailModal');
   reselectCxMarker(id);
@@ -2627,18 +2630,116 @@ document.getElementById('cxDetailCommuteMemo').addEventListener('blur',e=>{
   cx.commuteMemo=e.target.value.trim(); cx.updatedAt=new Date().toISOString();
   save();
 });
-function renderComplexDetailBody(cx){
+function complexInfoEditHTML(cx){
+  return `<div class="field" style="margin-bottom:10px">
+      <label>단지명</label>
+      <input type="text" data-cxeditfield="complexName" value="${esc(cx.complexName||'')}" placeholder="예: 가양6단지">
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>주소</label>
+      <input type="text" data-cxeditfield="loc" value="${esc(cx.loc||'')}" placeholder="예: 강서구 가양동">
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>역</label>
+      <input type="text" data-cxeditfield="station" value="${esc(cx.station||'')}" placeholder="예: 가양역 도보 8분">
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>노선</label>
+      <input type="text" data-cxeditfield="line" value="${esc(cx.line||'')}" placeholder="예: 9호선">
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>준공연도</label>
+      <input type="number" min="0" step="1" data-cxeditfield="yearBuilt" value="${cx.yearBuilt!=null?esc(cx.yearBuilt):''}" placeholder="예: 1992">
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>세대수</label>
+      <input type="number" min="0" step="1" data-cxeditfield="households" value="${cx.households!=null?esc(cx.households):''}" placeholder="예: 1476">
+    </div>
+    <div class="c-actions">
+      <button type="button" class="btn-save" data-cxinfosave>저장</button>
+      <button type="button" class="btn-ghost" data-cxinfocancel>취소</button>
+    </div>`;
+}
+function renderComplexDetailInfo(cx,resetBuffer=false){
   document.getElementById('cxDetailTitle').textContent=cx.complexName||'(이름 없음)';
-  const favBtn=document.getElementById('cxDetailFavBtn');
-  if(favBtn){ favBtn.classList.toggle('on',!!cx.favorite); favBtn.setAttribute('aria-pressed',cx.favorite?'true':'false'); }
   document.getElementById('cxDetailLoc').textContent=cx.loc||'주소 정보 없음';
   document.getElementById('cxDetailStationLine').textContent=[cx.station,cx.line].filter(Boolean).join(' · ')||'—';
-  document.getElementById('cxDetailYear').textContent=cx.yearBuilt?cx.yearBuilt+'년 준공':'—';
-  document.getElementById('cxDetailHouseholds').textContent=cx.households?(cx.households+'세대'+(cx.householdGrade?' · '+cx.householdGrade:'')):'—';
+  document.getElementById('cxDetailYear').textContent=cx.yearBuilt!=null?cx.yearBuilt+'년 준공':'—';
+  document.getElementById('cxDetailHouseholds').textContent=cx.households!=null?(cx.households+'세대'+(cx.householdGrade?' · '+cx.householdGrade:'')):'—';
   document.getElementById('cxDetailCommute').textContent=[
     cx.commuteGangnam!=null?'강남역 '+cx.commuteGangnam+'분':null,
     cx.commuteSinsa!=null?'신사역 '+cx.commuteSinsa+'분':null
   ].filter(Boolean).join(' · ')||'—';
+  const view=document.getElementById('cxDetailInfoView');
+  const edit=document.getElementById('cxDetailInfoEdit');
+  view.style.display=cxDetailInfoEditing?'none':'';
+  edit.style.display=cxDetailInfoEditing?'':'none';
+  if(cxDetailInfoEditing){
+    if(resetBuffer||!edit.querySelector('[data-cxeditfield]')) edit.innerHTML=complexInfoEditHTML(cx);
+  } else {
+    edit.innerHTML='';
+  }
+}
+function readComplexInfoInt(field){
+  const input=document.querySelector(`#cxDetailInfoEdit [data-cxeditfield="${field}"]`);
+  input.setCustomValidity('');
+  const raw=input.value.trim();
+  if(raw==='') return {ok:true,value:null};
+  const value=Number(raw);
+  if(!Number.isInteger(value)||value<0){
+    input.setCustomValidity('0 이상의 정수로 입력해주세요.');
+    input.reportValidity();
+    return {ok:false,value:null};
+  }
+  return {ok:true,value};
+}
+document.getElementById('cxDetailInfoEditBtn').onclick=()=>{
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
+  cxDetailInfoEditing=true;
+  renderComplexDetailInfo(cx,true);
+};
+document.getElementById('cxDetailInfoEdit').addEventListener('click',e=>{
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
+  if(e.target.closest('[data-cxinfocancel]')){
+    cxDetailInfoEditing=false;
+    renderComplexDetailInfo(cx);
+    return;
+  }
+  if(!e.target.closest('[data-cxinfosave]')) return;
+  const wrap=document.getElementById('cxDetailInfoEdit');
+  const nameInput=wrap.querySelector('[data-cxeditfield="complexName"]');
+  const complexName=nameInput.value.trim();
+  nameInput.setCustomValidity('');
+  if(!complexName){
+    nameInput.setCustomValidity('단지명을 입력해주세요.');
+    nameInput.reportValidity();
+    return;
+  }
+  const year=readComplexInfoInt('yearBuilt');
+  const households=readComplexInfoInt('households');
+  if(!year.ok||!households.ok) return;
+  const loc=wrap.querySelector('[data-cxeditfield="loc"]').value.trim();
+  const station=wrap.querySelector('[data-cxeditfield="station"]').value.trim();
+  const line=wrap.querySelector('[data-cxeditfield="line"]').value.trim();
+  if(cx.complexName!==complexName||cx.loc!==loc) cx.geocodeQuery=buildGeocodeQuery(loc,complexName);
+  cx.complexName=complexName;
+  cx.loc=loc;
+  cx.station=station;
+  cx.line=line;
+  cx.yearBuilt=year.value;
+  cx.households=households.value;
+  cx.householdGrade=calcHouseholdGrade(households.value,state.settings.grades);
+  cx.updatedAt=new Date().toISOString();
+  cxDetailInfoEditing=false;
+  save();
+  renderComplexDetailBody(cx);
+  renderComplexes();
+  showPropToast('단지 정보를 저장했어요');
+});
+function renderComplexDetailBody(cx){
+  renderComplexDetailInfo(cx);
+  const favBtn=document.getElementById('cxDetailFavBtn');
+  if(favBtn){ favBtn.classList.toggle('on',!!cx.favorite); favBtn.setAttribute('aria-pressed',cx.favorite?'true':'false'); }
   const parkingWrap=document.getElementById('cxDetailParkingWrap');
   if(parkingWrap) parkingWrap.innerHTML=triStateHTML({
     field:'parking', value:cx.parking, state:cx.parkingState,
