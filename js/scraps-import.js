@@ -59,8 +59,15 @@ function scParseFrontmatter(text){
 }
 
 /* ── 마크다운 표 파서 ── */
+/* B-97: 표 밖 줄(헤딩·리스트·인용 등)을 예전엔 filter()로 통째 버렸음
+   (커맨드센터 실코드 확인 실버그) — 표는 그대로 구조화 파싱하되, 표가
+   아닌 줄은 scFreeText로 별도 raw 항목을 만들어 보존한다. 표만 있는
+   기존 케이스는 표 밖 줄이 비어있어 무회귀(추가 항목 안 생김) */
 function scParseMdTable(text){
-  const lines=text.split('\n').map(l=>l.trim()).filter(l=>l.startsWith('|'));
+  const allLines=text.split('\n');
+  const tableLineIdx=[];
+  allLines.forEach((l,i)=>{ if(l.trim().startsWith('|')) tableLineIdx.push(i); });
+  const lines=tableLineIdx.map(i=>allLines[i].trim());
   if(lines.length<2) return null;
   const headers=lines[0].split('|').slice(1,-1).map(h=>h.trim());
   const fieldKeys=headers.map(scMapField);
@@ -82,7 +89,11 @@ function scParseMdTable(text){
     delete item.extra;
     if(item.title||item.raw) items.push(item);
   }
-  return items.length?items:null;
+  if(!items.length) return null;
+  const tableIdxSet=new Set(tableLineIdx);
+  const outside=allLines.filter((_,i)=>!tableIdxSet.has(i)).join('\n').trim();
+  if(outside){ const outsideItem=scFreeText(outside); if(outsideItem) items.unshift(outsideItem[0]); }
+  return items;
 }
 
 /* ── key: val 블록 파서 (빈 줄로 구분) ── */
