@@ -1,4 +1,53 @@
-# HANDOFF — B-97 ② 완료, 에픽 잔여 없음 (2026-07-18)
+# HANDOFF — B-105 완료, B-102 재개 준비 (2026-07-18)
+
+## 최신 작업: B-105 라이브 렌더 키 입력 지연 완화
+
+```
+93d7ab3 fix: 라이브 렌더 스킵·디바운스 (B-105)
+6458830 docs: B-105 HISTORY 기록
+```
+
+`js/utils.js`+`js/scraps-form.js` 2파일만 수정. `properties.js`
+(B-102 예정)·`index.html`/`nav.js`/`style.css`(손 B의 B-53)
+무접촉. B-102보다 선순위 지시였고, B-102는 아직 착수 전이라 커밋
+경계 보류 이슈 없이 바로 B-105부터 처리했다.
+
+- `ceRender(el)`에 `raw===el.dataset.renderedRaw`면 즉시 return하는
+  스킵 가드 추가. `ceRenderDebounced(el)` 신설(rAF 코얼레싱, 연속
+  입력 중 프레임당 최대 1회 렌더). `sc_text`/`sem_text`의 `input`·
+  `compositionend` 핸들러 4곳만 `ceRender`→`ceRenderDebounced`로
+  교체, `compositionstart`에서 `ceCancelDebounced`로 조합 중 지연
+  렌더 취소(DOM 갈아엎기 방지).
+- 툴바/Ctrl+B·I/Enter줄바꿈/슬래시적용의 `ceRender` 호출은 의도적으로
+  동기 그대로 유지(이산적 단발 액션, 즉시 피드백이 맞는 UX).
+
+**검증**: Playwright 데스크톱+모바일 32개 기능 체크 전부 통과(마커
+렌더·Ctrl+B·슬래시·붙여넣기·조합 중 렌더 미발생·XSS 4종 무력화·
+스킵 가드 확인) + 편집모달 50KB 원문 로드→타이핑→저장 round-trip
+확인. 테스트 스크립트 자체 버그 2건 발견해 수정 후 재확인(코드
+결함 아님). 정량 측정: 동기 키 입력 지연 old 8.5ms→new 1.1ms(약
+87% 감소, 50KB 기준), 버스트 10회 코얼레싱으로 76.8ms→8.8ms.
+
+**커밋②(줄 단위 부분 렌더) 생략**: 조건("50KB 지연 여전히 >100ms")
+미충족 — 커밋① 후 50KB 단일 `ceRender()` 최악 비용 9.7ms로 임계의
+10분의 1 미만. 구조 재설계 없이 목표 달성.
+
+**진단 보고(코드 무변경)**: 실규모(스크랩 50개·이미지 76장, 앱
+자체 `compressImage()`로 실압축) 계측 — `state` JSON **3.92MB
+(B-80 서버 4MB 상한의 98%)**, `JSON.stringify` 5.0ms,
+`localStorage.setItem` 6.4ms, `renderScraps()` 12.4ms. 후자 셋은
+이 규모에서 병목 아님 — "전체적으로 느림" 체감의 주 원인은 라이브
+렌더 쪽이었을 가능성. state 크기가 서버 상한에 근접하는 건 별도
+사안(수정 안 함, 커맨드센터 후속 판단용 보고만).
+
+- **B-105 완료**. push는 검증 완료 후 진행.
+- **다음: B-102 재개**(`properties.js`, 소형 묶음 3건 — parseNaver
+  세대수 구조화 승격·showPropToast→toast 통합·B-91 매물 메모 표시
+  누락 수정).
+
+---
+
+# 이전 핸드오프 — B-97 ② 완료, 에픽 잔여 없음 (2026-07-18)
 
 ## 최신 작업: B-97 ② 수집함 카드 원문 보기 토글
 
