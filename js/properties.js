@@ -1000,17 +1000,32 @@ document.getElementById('saveBtn').onclick=async()=>{
   } else {
     /* v5 stage5a: 신규 매물은 properties[]가 아니라 단지(complexes)/매물(listings)
        2계층으로 라우팅. properties[]는 기존 데이터 백업용으로 손대지 않는다 */
-    await saveAsComplexListing(data);
+    const saved=await saveAsComplexListing(data);
+    /* B-19확: 매칭 제안에서 "취소"를 고르면 저장을 중단하고 폼을 그대로 둔다
+       (입력값 유실 방지) */
+    if(saved===false) return;
   }
   closeForm(); save(); renderProps(); refreshOverview();
 };
 /* 파싱·입력 UX는 그대로, 저장 목적지만 단지/매물로 변경(Stage2 규칙 재사용) */
+/* B-19확: 완전일치(mergeKey) 실패 시에만 퍼지 후보를 확인, 있으면 사용자에게
+   제안 모달을 띄운다 — "취소" 선택 시 false를 반환해 호출부가 폼을 닫지 않고
+   유지하게 한다(입력값 유실 방지) */
 async function saveAsComplexListing(data){
   const {complexName,groupCode,dongHo}=migParseName(data.name);
   const loc=data.loc||'';
   const geocodeQuery=buildGeocodeQuery(loc,complexName);
   const mergeKey=normalizeStr(complexName)+'|'+normalizeStr(loc||data.station||'');
   let cx=state.complexes.find(c=>normalizeStr(c.complexName)+'|'+normalizeStr(c.loc||c.station||'')===mergeKey);
+
+  if(!cx){
+    const candidates=findComplexCandidates(complexName,data.lat,data.lng);
+    if(candidates.length){
+      const choice=await showComplexMatchPrompt(candidates,complexName||data.name);
+      if(choice==='cancel') return false;
+      if(choice!=='new') cx=state.complexes.find(c=>c.id===choice)||null;
+    }
+  }
   const isNewComplex=!cx;
 
   if(isNewComplex){
@@ -1065,6 +1080,7 @@ async function saveAsComplexListing(data){
     ? `새 단지 "${cx.complexName}"가 등록됐어요${(cx.lat&&cx.lng)?'':' · 좌표 확인 필요'}`
     : `기존 단지 "${cx.complexName}"에 매물이 추가됐어요`);
   tempParking=null; tempManagementFee=null;
+  return true;
 }
 function delProp(id){if(!confirm('이 매물을 삭제할까요?'))return;state.properties=state.properties.filter(x=>x.id!==id);save();renderProps();refreshOverview();}
 
@@ -1376,6 +1392,83 @@ function buildGeocodeQuery(loc,complexName){
   const base=`${loc||''} ${complexName||''}`.trim();
   return /^서울/.test(base)?base:`서울 ${base}`.trim();
 }
+/* B-19확: 단지명 퍼지 비교 전용 — normalizeStr()보다 공격적으로 정규화(괄호와
+   내용·끝의 "아파트" 접미사·모든 공백 제거). cxMergeKey() 등 기존 완전일치
+   dedup 로직은 그대로 두고, 이 함수는 오직 "비슷한 단지 후보" 탐색에만 씀 —
+   완전일치가 실패했을 때만 호출돼 제안 후보를 찾는 용도(자동 배정 아님) */
+function fuzzyComplexName(name){
+  return String(name||'')
+    .replace(/\([^)]*\)/g,'')
+    .replace(/아파트\s*$/,'')
+    .replace(/\s+/g,'')
+    .toLowerCase()
+    .trim();
+}
+/* 매칭 기준 ①이름 유사(퍼지 완전일치) ②좌표 근접(300m) — 둘 중 하나라도 걸리면
+   후보. 여러 개면 전부 반환, 최종 선택은 항상 사용자(showComplexMatchPrompt) */
+const CX_MATCH_RADIUS_M=300;
+function findComplexCandidates(complexName,lat,lng){
+  const fz=fuzzyComplexName(complexName);
+  const out=[];
+  state.complexes.forEach(cx=>{
+    const nameMatch=!!fz && fuzzyComplexName(cx.complexName)===fz;
+    const distMatch=(lat!=null&&lng!=null&&cx.lat!=null&&cx.lng!=null)
+      &&haversineM({lat,lng},{lat:cx.lat,lng:cx.lng})<=CX_MATCH_RADIUS_M;
+    if(nameMatch||distMatch) out.push({cx,nameMatch,distMatch});
+  });
+  return out;
+}
+function cxMatchReason(c){
+  return [c.nameMatch?'이름 유사':null, c.distMatch?'위치 근접':null].filter(Boolean).join(' · ');
+}
+/* B-19확: "이 단지에 추가할까요?" 제안 모달 — 자동 병합 금지, 사용자가 후보
+   버튼을 누르거나 "새 단지로 만들기"/"취소"를 눌러야만 진행. properties.js
+   외 파일 무접촉 제약(B-69와 파일 조율)이라 HTML/CSS 신규 파일 없이 여기서
+   동적 주입, 기존 .modal/.mhead/.mbody/.mfoot 스타일과 --ink-soft 토큰만 재사용 */
+(function cxMatchInjectUI(){
+  document.body.insertAdjacentHTML('beforeend',`
+    <div class="modal" id="cxMatchModal">
+      <div class="box">
+        <div class="mhead"><h3>비슷한 단지를 찾았어요</h3></div>
+        <div class="mbody">
+          <p class="mdesc" id="cxMatchDesc"></p>
+          <div id="cxMatchCandidates"></div>
+        </div>
+        <div class="mfoot">
+          <button class="btn-ghost" id="cxMatchCancelBtn">취소</button>
+          <button class="btn-ghost" id="cxMatchNewBtn">새 단지로 만들기</button>
+        </div>
+      </div>
+    </div>`);
+  const modal=document.getElementById('cxMatchModal');
+  modal.addEventListener('click',e=>{ if(e.target===modal) cxMatchCleanup('cancel'); });
+})();
+let _cxMatchResolve=null;
+function cxMatchCleanup(result){
+  document.getElementById('cxMatchCandidates').querySelectorAll('[data-cxid]').forEach(b=>b.onclick=null);
+  closeModal('cxMatchModal');
+  const resolve=_cxMatchResolve; _cxMatchResolve=null;
+  if(resolve) resolve(result);
+}
+function showComplexMatchPrompt(candidates,complexName){
+  return new Promise(resolve=>{
+    _cxMatchResolve=resolve;
+    document.getElementById('cxMatchDesc').innerHTML=
+      `"<b>${esc(complexName||'')}</b>"과(와) 비슷한 단지를 찾았어요. 기존 단지에 매물을 추가할까요?`;
+    document.getElementById('cxMatchCandidates').innerHTML=candidates.map(c=>
+      `<button type="button" class="btn-ghost" data-cxid="${esc(c.cx.id)}" style="display:block;width:100%;text-align:left;margin-bottom:8px;padding:10px 12px;">
+        <div style="font-weight:700;">${esc(c.cx.complexName||'(이름 없음)')}</div>
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">${esc(c.cx.loc||'주소 정보 없음')}${cxMatchReason(c)?' · '+esc(cxMatchReason(c)):''}</div>
+      </button>`
+    ).join('');
+    document.getElementById('cxMatchCandidates').querySelectorAll('[data-cxid]').forEach(b=>{
+      b.onclick=()=>cxMatchCleanup(b.dataset.cxid);
+    });
+    document.getElementById('cxMatchNewBtn').onclick=()=>cxMatchCleanup('new');
+    document.getElementById('cxMatchCancelBtn').onclick=()=>cxMatchCleanup('cancel');
+    openModal('cxMatchModal');
+  });
+}
 /* 같은 배치 안의 행끼리도 병합/중복 감지가 되도록 배치 내 상태를 누적하며 순회한다 */
 function calcCxImportStatus(parsed){
   const existingCxByKey=new Map();
@@ -1393,23 +1486,42 @@ function calcCxImportStatus(parsed){
     const geocodeQuery=buildGeocodeQuery(loc,complexName);
     const mergeKey=cxMergeKey(complexName,loc,row.station);
 
-    let cxId, cxJudgment, existingComplexId=null;
+    let cxId, cxJudgment, existingComplexId=null, cxCandidates=[];
     if(existingCxByKey.has(mergeKey)){
       cxId=existingCxByKey.get(mergeKey); existingComplexId=cxId; cxJudgment='existing';
     } else if(batchCxPseudoId.has(mergeKey)){
       cxId=batchCxPseudoId.get(mergeKey); cxJudgment='existing';
     } else {
-      cxId='batch'+(++pseudoSeq); batchCxPseudoId.set(mergeKey,cxId); cxJudgment='new';
+      cxId='batch'+(++pseudoSeq); batchCxPseudoId.set(mergeKey,cxId);
+      /* B-19확: 완전일치 없을 때만 퍼지 후보 확인(TSV엔 좌표가 없어 이름
+         유사만 적용). 후보가 있어도 기본은 '신규'(자동 배정 아님) — 사용자가
+         renderImportPreview()의 드롭다운에서 직접 골라야 기존 단지로 붙는다 */
+      cxCandidates=findComplexCandidates(complexName,null,null).map(c=>({id:c.cx.id,name:c.cx.complexName,reason:cxMatchReason(c)}));
+      cxJudgment=cxCandidates.length?'fuzzy':'new';
     }
 
     const lk=cxListingDupKey(cxId,row.url,dongHo,row.area,row.depositNum);
     const listingDup=listingKeySet.has(lk);
     if(!listingDup) listingKeySet.add(lk);
 
-    return {...row,complexName,groupCode,dongHo,geocodeQuery,mergeKey,cxId,cxJudgment,existingComplexId,listingDup};
+    return {...row,complexName,groupCode,dongHo,geocodeQuery,mergeKey,cxId,cxJudgment,existingComplexId,cxCandidates,listingDup};
   });
 }
 
+/* B-19확: 임포트 프리뷰의 "단지 판정" 셀 — existing은 기존과 동일, new는
+   퍼지 후보 없는 순수 신규, fuzzy는 비슷한 기존 단지가 있어도 기본값은
+   "신규"(자동 배정 아님) — 드롭다운에서 사용자가 직접 골라야 기존 단지에
+   붙는다. 고른 값은 row.cxOverride에 저장, 제출 시 참조 */
+function cxJudgmentCell(r,i){
+  if(r.cxJudgment==='existing') return `<span class="dup-badge dup-이름유사">기존 단지 있음 · 매물 추가</span>`;
+  if(r.cxJudgment==='fuzzy'){
+    const opts=[`<option value="new">새 단지로 만들기</option>`]
+      .concat(r.cxCandidates.map(c=>`<option value="${esc(c.id)}"${r.cxOverride===c.id?' selected':''}>${esc(c.name)}에 추가${c.reason?' · '+esc(c.reason):''}</option>`));
+    return `<span class="dup-badge dup-이름유사" style="display:inline-block;margin-bottom:4px;">비슷한 단지 있음</span>
+      <select class="pi-cxsel" data-idx="${i}" style="display:block;font-size:11px;max-width:170px;">${opts.join('')}</select>`;
+  }
+  return `<span class="dup-badge dup-신규">신규 단지</span>`;
+}
 let importParsedRows=[];
 function renderImportPreview(rows){
   if(!rows.length){
@@ -1417,7 +1529,8 @@ function renderImportPreview(rows){
     return;
   }
   document.getElementById('propImportErr').textContent='';
-  const newCxCount=new Set(rows.filter(r=>r.cxJudgment==='new').map(r=>r.mergeKey)).size;
+  const newCxCount=new Set(rows.filter(r=>r.cxJudgment!=='existing').map(r=>r.mergeKey)).size;
+  const fuzzyCount=rows.filter(r=>r.cxJudgment==='fuzzy').length;
   const dupListingCount=rows.filter(r=>r.listingDup).length;
   const html=`<div style="overflow-x:auto"><table class="import-tbl">
     <thead><tr>
@@ -1432,7 +1545,7 @@ function renderImportPreview(rows){
       <td class="tnum">${r.depositNum!=null?r.depositNum+'억':'—'}</td>
       <td class="tnum">${r.area!=null?r.area+'㎡':'—'}</td>
       <td>${esc(r.status)}</td>
-      <td><span class="dup-badge ${r.cxJudgment==='new'?'dup-신규':'dup-이름유사'}">${r.cxJudgment==='new'?'신규 단지':'기존 단지 있음 · 매물 추가'}</span></td>
+      <td>${cxJudgmentCell(r,i)}</td>
       <td>${r.listingDup?'<span class="dup-badge dup-중복">기존 매물 있음</span>':'—'}</td>
     </tr>`).join('')}</tbody>
   </table></div>`;
@@ -1447,8 +1560,9 @@ function renderImportPreview(rows){
     updateCount();
   };
   document.querySelectorAll('.pi-chk').forEach(cb=>cb.onchange=updateCount);
+  document.querySelectorAll('.pi-cxsel').forEach(sel=>sel.onchange=()=>{ rows[+sel.dataset.idx].cxOverride=sel.value; });
   updateCount();
-  document.getElementById('propImportSummary').textContent=`총 ${rows.length}행 · 신규 단지 ${newCxCount}개 · 중복 매물 ${dupListingCount}건 자동 해제`;
+  document.getElementById('propImportSummary').textContent=`총 ${rows.length}행 · 신규 단지 ${newCxCount}개${fuzzyCount?` (비슷한 단지 ${fuzzyCount}건 확인 필요)`:''} · 중복 매물 ${dupListingCount}건 자동 해제`;
   document.getElementById('propImportPreview').style.display='';
 }
 
@@ -1477,7 +1591,11 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
   toImport.forEach(row=>{
     let realCxId=resolvedCxId.get(row.mergeKey);
     if(!realCxId){
-      if(row.existingComplexId){
+      /* B-19확: 사용자가 드롭다운에서 후보를 골랐으면 우선 적용(제안 선택),
+         아니면 완전일치 결과, 둘 다 없으면 신규 생성 — 자동 배정 없음 */
+      if(row.cxOverride&&row.cxOverride!=='new'){
+        realCxId=row.cxOverride;
+      } else if(row.existingComplexId){
         realCxId=row.existingComplexId;
       } else {
         const cx={
