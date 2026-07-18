@@ -1,83 +1,95 @@
-# HANDOFF — B-72 + B-74 완료 (2026-07-18)
+# HANDOFF — 🔴 B-84 저장 유실 방지 완료 (2026-07-18)
 
 ## 1. 목표
-`BACKLOG.md` ⭐ 섹션 B-72(수집함 카드 가독성) + B-74(초광폭 유연
-레이아웃), 한 지시서·커밋 분리(둘 다 `style.css` 겹침이라 한 손
-순차). 손 B가 `properties.js`로 B-62 작업 중이라 `properties.js`
-무접촉.
+`BACKLOG.md` "코드 점검 발견" 섹션 B-84(감사 확정 발견, 높음·데이터
+유실). ①페이지 이탈 시 대기 중인 Redis 동기화가 있으면 즉시 flush
+②디바운스에 maxWait(5s) 추가해 연타 입력 중에도 손실 창이 무한정
+늘어나지 않게 함. 손 B가 `utils.js`·`scraps-import.js`·
+`scraps-render.js`·`scraps-form.js`·`properties.js`로 B-83 작업
+중이라 `state.js`·`boot.js` 외 무접촉.
 
 ## 2. 완료
-**커밋 3개(코드 2 + 문서 1), 검증 완료. push는 검증 후 진행 가능.**
+**커밋 2개(코드 1 + 문서 1), 검증 완료. push는 검증 후 진행 가능.**
 
 ```
-67f01a5 style: 수집함 카드 필드 표기 가독성 (B-72)
-eb7566d style: 문서형 탭 초광폭 상한 재설계 (B-74)
-6fe037a docs: B-72+B-74 HISTORY 기록
+c8a2138 fix: 이탈 시 Redis flush + 디바운스 maxWait (B-84)
+2ef6d6f docs: B-84 HISTORY 기록
 ```
 
-두 코드 커밋 모두 `properties.js` 전혀 안 건드림(B-72는
-`scraps-render.js`+`style.css`, B-74는 `style.css` 단독).
+`state.js` 1파일만 수정(+44/-5줄). `boot.js`는 안 건드림 — 기존
+`pagehide`/`visibilitychange`(뷰 상태 저장용)는 그대로 두고
+`state.js`에 별도 리스너를 추가로 등록(이벤트 리스너는 여러 개
+등록해도 서로 방해 없이 전부 실행됨). 손 B의 B-83 대상 5개 파일도
+전혀 안 건드림.
 
-**커밋①(B-72)** — 진단 먼저(Playwright 캡처): 위치·가격·면적·일정을
-`&nbsp;·&nbsp;`로 이어붙인 한 줄 텍스트가 길어지면 값들이 서로 구분
-안 되고 흘러넘쳐 안 읽힘을 실측 확인. 필드별 개별 칩(`.chip` 재사용)
-으로 분리, 값 텍스트는 `--ink`(진한 색)로 아이콘과 구분, 칩마다
-`max-width`+말줄임+`title` 툴팁. 모바일은 칩 `max-width` 더 축소.
-**마크다운 본문 렌더 영역(B-76 대기)은 전혀 안 건드림** — 구조화
-필드 표기만 수정.
+**구현**:
+1. `flushPendingSync()` 신설 — `pagehide`+`visibilitychange`(hidden)
+   등록, 대기 중인 디바운스 타이머(`syncTimer`)가 있을 때만 동작.
+   Bearer 토큰 헤더 필요해 `sendBeacon()` 대신
+   `fetch(url,{keepalive:true,...})`.
+2. 미동기 플래그(`localStorage.sh_unsynced`, B-80 대비) — keepalive
+   64KB 제한·응답 못 받고 페이지가 죽을 가능성 고려해 "먼저
+   미동기로 표시 → 성공 응답 받으면 지움" 순서로 실패를 조용히
+   삼키지 않게 함. `syncToRedis()`(기존 800ms 경로)도 같은 플래그를
+   갱신해 플러시/일반 경로 신호를 통일. 표시 UI 자체는 B-80 몫,
+   이번엔 플래그만 정확히 남김.
+3. 디바운스 maxWait — `SYNC_DEBOUNCE_MS=800`(무변경)에
+   `SYNC_MAX_WAIT_MS=5000` 추가, 최초 `save()` 시각 기준 경과 계산해
+   5초 넘으면 다음 지연 0(즉시), 아니면 `min(800,5000-경과)`. 타이머
+   발화 시 `syncTimer`/`syncBurstStartedAt`을 `null`로 되돌려 "대기
+   중" 판별을 정확하게 함(이전엔 발화 후에도 만료 ID를 계속 들고
+   있어 부정확했음).
 
-**커밋②(B-74)** — 배경 실측(2560px 캡처): B-57이 전 탭
-`max-width:none`을 적용해 문서형 탭(대시보드·자산·액션·수집함)이
-대형 모니터에서 과도하게 넓어짐을 시각 확인(액션 행 텅 빈 여백,
-타임라인 점 양끝 벌어짐 등). 콘텐츠 유형별 상한 재설계 — 자산(7컬럼
-표)은 넓게(`clamp(1440px,82vw,1800px)`, 2560px에서 1800), 대시보드·
-액션·수집함(리스트·타임라인)은 보수적으로(`clamp(1440px,60vw,1600px)`,
-2560px에서 1536), 매물(지도)은 기존처럼 전체폭 유지. 기존
-`body:has(#panel-props.on) .wrap{...}`(B-46) 패턴 재사용해 패널별
-스코프 분리. `clamp()`라 1440px 이하에선 기존과 완전히 동일(하드
-컷오프 없음).
-
-- **검증**(Playwright):
-  - B-72: 데스크톱 1280px+모바일 390px, 4개 필드 칩 분리 렌더·
-    SC_PROPLESS 무영향·title 툴팁·마크다운 raw 영역 무회귀·갤러리
-    무회귀·편집모달 데이터 무회귀 확인.
-  - B-74: 1280/1440/1920/2560px 4구간×5개 패널 25개 시나리오 + 모바일
-    390px. 1440px 이하 전 패널 무변화, 1920px에서 자산만 확장 중
-    (1574)·나머지 아직 1440, 2560px에서 매물 2560(전체폭)·자산
-    1800(상한)·나머지 1536(상한 이내) 확인. 스크린샷 재비교로 여백이
-    합리적 수준으로 개선된 것 시각 확인. 모바일 무회귀.
-  - `node --check js/scraps-render.js` 통과, CSS 중괄호 균형 통과
-    (2개 커밋 모두).
-  - 로컬 python 테스트 서버·Playwright 스크립트·캡처 이미지는 레포
-    바깥 scratchpad에서만 실행, 세션 종료 전 전부 삭제.
+- **검증**(Playwright, `/api/state` 라우트 모킹):
+  - 일반 흐름: `save()` 1회 → 정확히 800ms 후 POST 1건만(무회귀).
+  - maxWait: 300ms 간격 10초 연타 → POST가 ~5005ms·~10157ms 시점
+    총 2건(디바운스만이었다면 ~10.3초에 1건뿐이었을 것).
+  - 이탈 flush: `save()` 후 100ms(800ms 되기 전)에 `pagehide` →
+    즉시 POST 1건, `Authorization: Bearer` 헤더 정상, 성공 후
+    `sh_unsynced` 정상 해제.
+  - flush 가드: 대기 타이머 없을 때 이탈 → POST 0건(불필요한 요청
+    없음).
+  - flush 실패: POST abort 모킹 → `sh_unsynced` 플래그 정확히 설정.
+  - `visibilitychange`(hidden) 경로도 `pagehide`와 동일하게 동작.
+  - `node --check js/state.js` 통과.
+  - 로컬 python 테스트 서버·Playwright 스크립트는 레포 바깥
+    scratchpad에서만 실행, 세션 종료 전 전부 삭제.
 
 ## 3. 미완 / 다음 단계
-- **B-72·B-74 완료** — BACKLOG.md ⭐ 섹션에서 커맨드센터가 삭제
-  처리할 차례.
-- B-76(수집함 마크다운 오인식)은 여전히 대기 상태 — 이번 B-72에서
-  건드리지 않음(지시대로 마크다운 본문 렌더 영역 제외).
+- **B-84 완료** — BACKLOG.md "코드 점검 발견" 섹션에서 커맨드센터가
+  삭제 처리할 차례.
+- **B-80(저장 실패 표시)이 이번에 남긴 `sh_unsynced` 플래그를 소비할
+  예정** — 이번 세션은 플래그를 정확히 남기는 것까지만, 사람이 보는
+  UI(재로그인 시 배너 등)는 B-80 범위.
 - push는 이 세션에서 검증 완료 후 진행(보류 아님, 지시대로).
 
 ## 4. 주의점
-- PIN·API 키·실제 데이터는 이 문서 어디에도 기록 안 함.
+- PIN·API 키·실제 데이터는 이 문서 어디에도 기록 안 함. 테스트는
+  가짜 토큰(`faketoken123`)만 사용.
 - **BACKLOG.md는 커맨드센터 소유(읽기 전용)** — 이번 세션에서도 전혀
   수정·커밋 안 함.
-- **`properties.js` 무접촉 준수** — 착수 전 `git status`로 확인, 손
-  B의 B-62 작업은 이미 커밋 완료 상태였음(충돌 없음).
-- 새 CSS 파일 없음. B-72의 `.sc-meta-chip`/`.sc-meta-chip-text`는
-  기존 `.chip` 클래스와 조합해 최소 추가, B-74는 새 클래스 없이
-  기존 `body:has()` 패턴만 재사용.
-- B-74의 clamp() 수치(자산 1800 상한 / 나머지 1600 상한)는 실측 후
-  판단한 값 — 추후 실사용 중 여전히 좁다/넓다는 피드백이 있으면
-  조정 여지 있음(하드코딩된 "정답"이 아니라 실측 기반 초기값).
+- **`state.js`·`boot.js` 외 무접촉 준수** — 착수 시점에 손 B가
+  B-83으로 `utils.js`·`scraps-import.js`·`scraps-render.js`·
+  `scraps-form.js`·`properties.js`를 작업 중(커밋 안 된 상태)이었음.
+  커밋마다 매번 `git status` 확인해 내 파일(`state.js`)만 스테이징,
+  Codex의 진행 중 작업(5개 파일)은 전혀 건드리지 않음. `HISTORY.md`도
+  Codex가 아직 손대지 않은 상태를 확인 후 내 항목만 추가.
+- 스키마 변경 없음 — `sh_unsynced`는 `state` 객체 필드가 아니라
+  독립적인 localStorage 플래그라 `state.js` 상단 JSDoc 스키마 갱신
+  대상 아님.
+- 기존 800ms 디바운스 값·localStorage 즉시 저장 semantics 전부
+  무변경 — maxWait는 "5초 넘도록 디바운스가 계속 리셋되는 경우"에만
+  개입.
 
 ## 5. 컨텍스트
 - 이 레포는 "머리(커맨드센터, 코드 미수정) — 손 A(Claude Code) — 손
   B(Codex)" 3자 협업 구조. SSOT는 `CLAUDE.md`, 실행 규칙은
   `AGENTS.md`, 이력은 `HISTORY.md`, 백로그는 `BACKLOG.md`(커맨드센터
   전용).
-- 직전 세션들: ... → B-71(진단, 변경불요)+B-20(매물 중복 확인) → 손
-  B의 B-62(출퇴근 표기 이원화 정리, properties.js) → **이번 세션
-  (B-72+B-74, 검증 완료) — 수집함 카드 가독성 + 초광폭 레이아웃**.
-  B-62와 파일 무충돌 병렬 진행(`style.css`/`scraps-render.js` vs
-  `properties.js`).
+- 이번 세션은 커맨드센터의 "심층 코드 감사 2건"(보안 / 상태·레거시)
+  결과 등록된 B-80~B-89 중 최우선(🔴 데이터 유실) 항목. 직전
+  세션들: ... → B-72+B-74(카드 가독성+레이아웃) → **이번 세션(B-84,
+  검증 완료) — 저장 유실 방지**. 손 B의 B-83(보안 방어 강화 묶음)과
+  파일 무충돌 병렬 진행(`state.js` vs `utils.js`/`scraps-*.js`/
+  `properties.js`). 착수 순서상 다음은 B-80(저장 실패 표시)·나머지
+  B-8x 감사 항목들.
