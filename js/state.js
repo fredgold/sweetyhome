@@ -294,11 +294,31 @@ let overview=null, ovMarkers=[], formMapObj=null, formMarker=null, tempLatLng=nu
    저장 시점(saveAsComplexListing)에 반영 — tempChecks와 동일한 패턴 */
 let tempParking=null, tempManagementFee=null;
 
+/* B-86: 배열이어야 할 필드가 truthy 비배열(문자열·객체 등)로 오염되면 뒤이은
+   .map()에서 TypeError가 나 applyGuards() 전체가 중단되고 renderAll()도
+   실행 안 돼 화면이 완전히 빈 채로 멈춤(단일 실패점) — 기존 ||[] 는 falsy만
+   걸러서 truthy 비배열은 그대로 통과시켰음. Array.isArray로 실제 검사하고
+   안전한 기본값으로 대체, 콘솔 warn 1줄로 원인 추적 가능하게(누락은 정상
+   케이스라 조용히 기본값 적용, "값은 있는데 타입이 틀린" 경우만 경고) */
+function guardArr(val,fallback,label){
+  if(Array.isArray(val)) return val;
+  if(val!=null) console.warn(`applyGuards: ${label}이(가) 배열이 아니라 기본값으로 대체됨(타입: ${typeof val})`);
+  return fallback;
+}
 /* ---- load with migration ---- */
 function applyGuards(raw){
   state=Object.assign(structuredClone(DEFAULT), raw||{});
   state.profile=Object.assign(structuredClone(DEFAULT_PROFILE), state.profile||{});
   if(!Array.isArray(state.profile.milestones)||!state.profile.milestones.length) state.profile.milestones=structuredClone(DEFAULT_PROFILE.milestones);
+  /* B-86: milestone.label이 문자열이 아니면(누락·오염) ai.js profileLine()의
+     m.label.includes(...)에서 크래시 — ai.js는 안 건드리고 데이터 쪽에서
+     보정. 누락(undefined)은 정상 케이스라 조용히, 값이 있는데 타입이 틀린
+     경우만 경고 */
+  state.profile.milestones=state.profile.milestones.map(m=>{
+    const validLabel=typeof (m&&m.label)==='string';
+    if(!validLabel&&m&&m.label!=null) console.warn(`applyGuards: milestone.label이 문자열이 아니라 빈 문자열로 대체됨(타입: ${typeof m.label})`);
+    return {...m, label:validLabel?m.label:''};
+  });
   state.assets=Object.assign(structuredClone(DEFAULT.assets), state.assets||{});
   if(!Array.isArray(state.assets.items)){
     const old=state.assets, mig=[];
@@ -316,23 +336,32 @@ function applyGuards(raw){
   /* B-18: settings.grades 없거나(구버전 데이터) 일부 키만 있어도 기본값(과거
      리터럴과 동일)으로 보정 — 등급 판정 결과가 절대 바뀌지 않게 함 */
   state.settings.grades=Object.assign(structuredClone(GRADE_DEFAULTS), state.settings.grades||{});
+  /* B-86: grades.area/households가 배열이 아니면(오염) calcAreaGrade/
+     calcHouseholdGrade(utils.js)의 배열 구조분해([g1,g2]=...)에서 크래시 —
+     기본값으로 되돌림 */
+  state.settings.grades.area=guardArr(state.settings.grades.area,structuredClone(GRADE_DEFAULTS.area),'settings.grades.area');
+  state.settings.grades.households=guardArr(state.settings.grades.households,structuredClone(GRADE_DEFAULTS.households),'settings.grades.households');
   /* B-61: 통근 기준지 2인 — 항상 정확히 2개, 항목별 병합(구 데이터가 아예
      없거나 1개뿐이거나 name/dest 일부만 있어도 나머지는 기본값으로 채움) */
   const commutersRaw=Array.isArray(state.settings.commuters)?state.settings.commuters:[];
   state.settings.commuters=DEFAULT.settings.commuters.map((def,i)=>({...def, ...(commutersRaw[i]||{})}));
   state.chatHistory=state.chatHistory||[];
-  state.actions=state.actions||structuredClone(DEFAULT.actions);
+  state.actions=guardArr(state.actions,structuredClone(DEFAULT.actions),'actions');
   /* B-30: assignee(담당)·due(마감) 필드 누락 보정, 기본 '' — 기존 액션
      무손실(미지정/마감없음으로 자연 해석됨) */
   state.actions=state.actions.map(a=>({category:'',assignee:'',due:'',...a}));
   if(!state._prepMigrated){
     const ids=new Set(state.actions.map(a=>a.id));
-    let p=state.actions.length?Math.max(...state.actions.map(x=>x.priority)):0;
+    /* B-86: priority가 숫자가 아닌 항목이 하나라도 섞이면 Math.max가 NaN을
+       반환해(NaN 오염) 이후 ++p로 이관되는 항목이 전부 priority:NaN이 되고
+       정렬이 깨짐 — 숫자인 것만 모아 최댓값 계산, 하나도 없으면 0 */
+    const numericPriorities=state.actions.map(x=>x.priority).filter(x=>typeof x==='number'&&!isNaN(x));
+    let p=numericPriorities.length?Math.max(...numericPriorities):0;
     (state.prep||[]).forEach(t=>{if(!ids.has(t.id))state.actions.push({id:t.id,text:t.tx+(t.sub?` (${t.sub})`:''),priority:++p,done:t.done||false,category:'매물준비'});});
     (state.steps||[]).forEach(t=>{if(!ids.has(t.id))state.actions.push({id:t.id,text:t.tx+(t.sub?` (${t.sub})`:''),priority:++p,done:t.done||false,category:'계약'});});
     state._prepMigrated=true;
   }
-  state.properties=(state.properties||[]).map(p=>{
+  state.properties=guardArr(state.properties,[],'properties').map(p=>{
     // C) deposit 타입 보호: 계산용 depositNum 보정
     const dn=p.depositNum!=null?p.depositNum:(typeof p.deposit==='number'?p.deposit:(typeof p.deposit==='string'&&p.deposit?parseEok(p.deposit):null));
     const hh=p.households!=null?(parseInt(p.households)||null):null;
@@ -368,7 +397,7 @@ function applyGuards(raw){
      B-39: favorite 필드 누락 보정, 기본 false
      B-61: commutes(2인 소요시간·환승·기준지 스냅샷)·commuteMemo 필드 누락
      보정 — commutes는 항목별 병합이라 구 데이터 무손실(safety와 동일 패턴) */
-  state.complexes=(state.complexes||[]).map(cx=>{
+  state.complexes=guardArr(state.complexes,[],'complexes').map(cx=>{
     const commutesRaw=Array.isArray(cx.commutes)?cx.commutes:[];
     const commutes=[0,1].map(i=>({minutes:null,transfers:null,destSnapshot:'', ...(commutesRaw[i]||{})}));
     return {
@@ -382,10 +411,16 @@ function applyGuards(raw){
   });
   /* B-27-lite: safety 필드 누락 보정 — 항목별로 병합해 일부만 저장된 기존
      데이터도 나머지 항목이 defaultSafetyItem()으로 채워지게 함(무손실) */
-  state.listings=(state.listings||[]).map(l=>{
+  state.listings=guardArr(state.listings,[],'listings').map(l=>{
     const safety=defaultListingSafety();
     SAFETY_ITEMS.forEach(({key})=>{
-      safety[key]={...safety[key], ...(l.safety&&l.safety[key])};
+      /* B-86: l.safety[key]가 객체가 아니면(문자열·배열·숫자 등으로 오염) 그대로
+         스프레드하면 엉뚱한 모양의 객체가 만들어짐(예: 문자열은 인덱스 키로
+         쪼개져 들어감) — 객체일 때만 병합하고, 아니면 기본값 유지 */
+      const raw=l.safety&&l.safety[key];
+      const validRaw=(raw&&typeof raw==='object'&&!Array.isArray(raw))?raw:null;
+      if(raw!=null&&!validRaw) console.warn(`applyGuards: listings[${l.id||'?'}].safety.${key}가 객체가 아니라 기본값으로 대체됨(타입: ${typeof raw})`);
+      safety[key]={...safety[key], ...(validRaw||{})};
     });
     return {
       managementFeeState:'unknown',
@@ -394,7 +429,7 @@ function applyGuards(raw){
       safety,
     };
   });
-  state.scraps=(state.scraps||[]).map(s=>{
+  state.scraps=guardArr(state.scraps,[],'scraps').map(s=>{
     const p=s.parsed||{};
     return {
       id: s.id||'sc'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
