@@ -197,10 +197,11 @@ document.getElementById('sc_importBack').onclick=()=>{
 document.getElementById('sc_importConfirm').onclick=()=>{
   const checkedIdxs=Array.from(document.querySelectorAll('.sc-imp-chk:checked')).map(c=>+c.dataset.idx);
   const now=Date.now();
+  let seq=0;
   checkedIdxs.slice().reverse().forEach(i=>{
     const it=scImportItems[i];
     state.scraps.unshift({
-      id:'sc'+now.toString(36)+Math.random().toString(36).slice(2,5),
+      id:'sc'+now.toString(36)+Math.random().toString(36).slice(2,5)+(++seq),
       createdAt:now,status:'new',parsed:null,
       title:it.title||'',type:it.type||'area',
       raw:it.raw||'',location:it.location||'',
