@@ -428,7 +428,11 @@ function loadSavedRoute(id){
   renderComplexes(); renderRouteBar(); waitNaverMaps(()=>drawRoute());
 }
 let _routeMenu=null;
-function closeRouteMenu(){ if(_routeMenu){ _routeMenu.remove(); _routeMenu=null; } }
+function closeRouteMenu(){
+  if(!_routeMenu) return;
+  document.removeEventListener('click',_routeMenu._outsideClose,true);
+  _routeMenu.remove(); _routeMenu=null;
+}
 function showRouteMenu(btn){
   if(_routeMenu){ closeRouteMenu(); return; }
   const saved=state.savedRoutes||[];
@@ -454,8 +458,8 @@ function showRouteMenu(btn){
     state.savedRoutes=state.savedRoutes.filter(r=>r.id!==b.dataset.delroute);
     save(); closeRouteMenu(); showRouteMenu(btn);
   });
-  const close=ev=>{ if(!menu.contains(ev.target)){ closeRouteMenu(); document.removeEventListener('click',close,true); } };
-  setTimeout(()=>document.addEventListener('click',close,true),0);
+  menu._outsideClose=ev=>{ if(!menu.contains(ev.target)) closeRouteMenu(); };
+  document.addEventListener('click',menu._outsideClose,true);
 }
 document.getElementById('propRouteBtn').onclick=(e)=>{
   if(routeMode!=='off'){ exitRouteMode(); return; }
@@ -472,6 +476,7 @@ document.getElementById('propRouteBtn').onclick=(e)=>{
 let _moreMenu=null, _moreSlots=null;
 function closeMoreMenu(){
   if(!_moreMenu) return;
+  document.removeEventListener('click',_moreMenu._outsideClose,true);
   _moreSlots.forEach(({el,parent,next})=>parent.insertBefore(el,next));
   _moreMenu.remove(); _moreMenu=null; _moreSlots=null;
   unlockBodyScroll();
@@ -506,8 +511,8 @@ function showMoreMenu(btn){
      스크롤되게 함 */
   menu.style.maxHeight=Math.max(120,window.innerHeight-rect.bottom-4-12)+'px';
   lockBodyScroll();
-  const close=ev=>{ if(!menu.contains(ev.target)&&ev.target!==btn){ closeMoreMenu(); document.removeEventListener('click',close,true); } };
-  setTimeout(()=>document.addEventListener('click',close,true),0);
+  menu._outsideClose=ev=>{ if(!menu.contains(ev.target)&&ev.target!==btn) closeMoreMenu(); };
+  document.addEventListener('click',menu._outsideClose,true);
 }
 document.getElementById('propMoreBtn').onclick=(e)=>showMoreMenu(e.currentTarget);
 
