@@ -297,7 +297,10 @@
             <div class="fm-hint">단지명 넣고 ‘위치 자동 찾기’를 누르거나, 지도를 직접 탭해서 핀을 놓으세요.</div>
           </div>
           <div class="field" style="margin-bottom:10px">
-            <label>메모</label>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <label>메모</label>
+              <button type="button" class="sc-preview-toggle" id="f_memoPreviewToggle"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기</button>
+            </div>
             <div class="sc-md-toolbar" id="f_mdToolbar">
               <button type="button" data-fmtgt="wrap" data-open="**" data-close="**" title="굵게 (Ctrl+B)"><b>B</b></button>
               <button type="button" data-fmtgt="wrap" data-open="*" data-close="*" title="기울임 (Ctrl+I)"><i>I</i></button>
@@ -307,6 +310,7 @@
               <button type="button" data-fmtgt="line" data-prefix="> " title="인용"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/></svg></button>
             </div>
             <textarea id="f_memo" placeholder="채광, 곰팡이, 보증보험 가능 여부, 집주인 융자 등"></textarea>
+            <div id="f_memoPreview" class="sc-md-preview sc-md-content" style="display:none;border:1px solid var(--hairline);border-radius:9px;padding:12px;margin-top:6px;"></div>
           </div>
           <div class="field" style="margin-bottom:10px">
             <label>사진 첨부 (선택)</label>
@@ -834,7 +838,10 @@
         <div class="fm-hint">단지명 넣고 '위치 자동 찾기'를 누르거나, 지도를 직접 탭해서 핀을 놓으세요.</div>
       </div>
       <div class="field" style="margin-bottom:10px">
-        <label>메모</label>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <label>메모</label>
+          <button type="button" class="sc-preview-toggle" id="em_memoPreviewToggle"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기</button>
+        </div>
         <div class="sc-md-toolbar" id="em_mdToolbar">
           <button type="button" data-emtgt="wrap" data-open="**" data-close="**" title="굵게 (Ctrl+B)"><b>B</b></button>
           <button type="button" data-emtgt="wrap" data-open="*" data-close="*" title="기울임 (Ctrl+I)"><i>I</i></button>
@@ -844,6 +851,7 @@
           <button type="button" data-emtgt="line" data-prefix="> " title="인용"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/></svg></button>
         </div>
         <textarea id="em_memo" placeholder="채광, 곰팡이, 보증보험 가능 여부, 집주인 융자 등"></textarea>
+        <div id="em_memoPreview" class="sc-md-preview sc-md-content" style="display:none;border:1px solid var(--hairline);border-radius:9px;padding:12px;margin-top:6px;"></div>
       </div>
       <div class="field" style="margin-bottom:10px">
         <label>사진 첨부 (선택)</label>

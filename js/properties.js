@@ -1054,6 +1054,25 @@ document.getElementById('em_memo').addEventListener('keydown',e=>{
   if(mod&&e.key==='b'){e.preventDefault();mdWrap(e.target,'**','**');}
   if(mod&&e.key==='i'){e.preventDefault();mdWrap(e.target,'*','*');}
 });
+/* B-97: 매물 메모 미리보기 — 자산 노트(an_previewToggle) 패턴 재사용,
+   접기 아닌 명시 토글 버튼(UI 원칙). renderMd+DOMPurify 경로 그대로.
+   element를 직접 받아 고정 ID(f_memo·em_memo)·행별 동적 요소(수정모드
+   listing memo) 양쪽에서 재사용 */
+function memoPreviewToggle(btn,ta,prev,toolbar){
+  const on=prev.style.display==='none';
+  prev.style.display=on?'':'none';
+  ta.style.display=on?'none':'';
+  if(toolbar) toolbar.style.display=on?'none':'';
+  btn.classList.toggle('on',on);
+  btn.innerHTML=on?ic('edit')+' 편집':ic('eye')+' 미리보기';
+  if(on) prev.innerHTML=renderMd(ta.value)||'<span style="color:var(--ink-faint);font-size:12px;">내용을 입력하면 미리보기가 표시됩니다.</span>';
+}
+document.getElementById('f_memoPreviewToggle').onclick=function(){
+  memoPreviewToggle(this,document.getElementById('f_memo'),document.getElementById('f_memoPreview'),document.getElementById('f_mdToolbar'));
+};
+document.getElementById('em_memoPreviewToggle').onclick=function(){
+  memoPreviewToggle(this,document.getElementById('em_memo'),document.getElementById('em_memoPreview'),document.getElementById('em_mdToolbar'));
+};
 document.getElementById('f_img').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
   compressImage(f,dataUrl=>{
@@ -2508,9 +2527,14 @@ function listingEditFieldsHTML(l){
         ${LISTING_STATUS_OPTIONS.map(st=>`<option value="${st}" ${(l.listingStatus||'확인필요')===st?'selected':''}>${st}</option>`).join('')}
       </select>
     </div>
-    <div class="safety-item-row">
-      <textarea class="safety-memo" data-editfield="memo" placeholder="매물 메모">${esc(l.memo||'')}</textarea>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 4px;">
+      <label style="font-size:11.5px;font-weight:700;color:var(--ink-soft);">메모</label>
+      <button type="button" class="sc-preview-toggle" data-lstmemopreview="${esc(l.id)}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기</button>
     </div>
+    <div class="safety-item-row">
+      <textarea class="safety-memo lst-memo-ta" data-editfield="memo" placeholder="매물 메모">${esc(l.memo||'')}</textarea>
+    </div>
+    <div class="lst-memo-preview sc-md-preview sc-md-content" style="display:none;border:1px solid var(--hairline);border-radius:9px;padding:12px;margin-top:6px;"></div>
     <div class="c-actions">
       <button type="button" data-lstsave="${esc(l.id)}">저장</button>
       <button type="button" data-lstcancel="${esc(l.id)}">취소</button>
@@ -2554,6 +2578,16 @@ document.getElementById('cxDetailListings').addEventListener('click',e=>{
     renderComplexes();
     return;
   }
+});
+/* B-97: 매물 수정모드 메모 미리보기 — 행마다 동적으로 렌더되는 요소라
+   고정 ID 대신 data-lid로 스코프해서 찾음(fillBtn과 동일한 위임 패턴) */
+document.getElementById('cxDetailListings').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-lstmemopreview]'); if(!btn) return;
+  const row=btn.closest('[data-lid]'); if(!row) return;
+  const ta=row.querySelector('.lst-memo-ta');
+  const prev=row.querySelector('.lst-memo-preview');
+  if(!ta||!prev) return;
+  memoPreviewToggle(btn,ta,prev,null);
 });
 /* B-92: 정보 자동 채우기 — ADD 폼 fillBtn과 동일하게 정규식 파싱(parseNaver)
    우선, 실패 시 AI 폴백. ADD 폼과 달리 필드가 이미 값을 갖고 있을 수 있어
