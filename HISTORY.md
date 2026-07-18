@@ -2973,6 +2973,52 @@ scraps)은 `||[]`(또는 `||기본값`)만 있어 **falsy만 걸렀고 truthy
 
 ---
 
+## 2026-07-18 — CLAUDE.md(SSOT) 스키마·저장·인증 서술 갱신 (B-82, 문서만)
+
+코드 무변경 — `CLAUDE.md`만 수정. 실코드(주로 `js/state.js` 상단
+JSDoc, `js/auth.js`, `api/state.js`)를 진실의 원천으로 두고 문서
+서술을 거기에 맞췄다.
+
+- **상태 스키마 요약**: flat `state.properties[]` 단일 서술을
+  2계층(`complexes[]`/`listings[]`) 기준으로 교체. 이번 트랙 신규
+  필드 반영 — `listings[].safety`(9항목, 상태 3종), `complexes[].
+  commutes`/`commuteMemo`(2인 기록, index 매칭), `scraps[].imgs`(+
+  `img` 미러 규칙: imgs[0]과 항상 동기화되는 레거시 대표사진, 삭제·
+  개명 금지), `settings.owners`/`commuters`. 레거시 `properties[]`는
+  "E-01로 2계층 전환 완료·B-05 삭제 대기, 수정 경로 일부 아직
+  활성(`properties.js:1002` saveBtn) — 신규 기능은 여기 손대지
+  말 것"으로 명시.
+- **Redis 키 표기**: 실제 서버 키 `'sweetyhome:state'`(`api/state.js`
+  KEY 상수)와 localStorage 키 `'sweetyhome'`(`js/state.js` `save()`)를
+  분리 명기 — 기존 문서는 `'sweetyhome'` 하나로 뭉뚱그려 혼동 소지가
+  있었음.
+- **저장 패턴**: B-84/B-80 반영 — 디바운스 800ms+maxWait 5s,
+  이탈 flush(`flushPendingSync()`, keepalive), `sh_unsynced` 플래그
+  (실패 표시 전용, 자동 복구 없음), 동기화 칩 6개 상태(`ok`/`local`/
+  `offline`/`localfail`/`expired`/`toolarge`) 전부 나열, 서버 4MB
+  상한(413) 명시.
+- **주요 ID 레퍼런스 표**: 이번 트랙 3개 영역만 소량 보충 — 단지
+  매칭 제안 모달(`cxMatchModal` 등, properties.js 동적 삽입), 단지
+  상세 출퇴근(`cxDetailCommute`/`cxDetailCommutes`/
+  `cxDetailCommuteMemo`), 통근 기준지 설정(`pf_commuter0/1_name/dest`).
+  안전 체크는 ID가 아니라 class+data속성(`data-safekey`/`data-lid`)
+  기반이라 그 패턴을 그대로 기록(억지로 ID화하지 않음). 과도한 확장
+  자제 지시 준수 — 이 4행만 추가.
+- **인증**: `sessionStorage sh_token` 서술을 `localStorage sh_token`+
+  `sh_token_exp`(B-65)로 갱신, 서버 `api/_auth.js` SESSION_TTL과
+  수동 동기화 필요하다는 점도 함께 명시.
+- renderMd 방어범위 서술(B-64 갱신분)은 실측과 일치해 그대로 유지.
+
+**검증**: 갱신한 모든 파일명·키·필드명·함수명을 실코드와 교차
+확인 — `js/state.js` 상단 JSDoc(스키마), `js/auth.js`(setToken/
+getToken/forceLogin 등), `api/state.js`(KEY 상수·MAX_STATE_BYTES),
+`index.html`+`js/properties.js`(신규 ID 4행 grep으로 실존 확인).
+문서만 변경이라 별도 코드 실행 검증 불필요.
+
+**→ B-82 완료**. `CLAUDE.md` 1파일만 수정.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
