@@ -706,6 +706,25 @@ function parseDepositUpper(rangeStr,fallback){
   const last=parseFloat(nums[nums.length-1]);
   return isNaN(last)?fallback:last;
 }
+function commuteCardChips(cx){
+  const commuters=state.settings.commuters||[];
+  const current=commuters.map((commuter,i)=>{
+    const commute=(cx.commutes||[])[i]||{};
+    return commute.minutes!=null?{commuter,commute}:null;
+  }).filter(Boolean);
+  if(current.length){
+    const summary=current.map(({commuter,commute})=>`${esc(commuter.name)} ${esc(commute.minutes)}분`).join(' · ');
+    const changed=current.filter(({commuter,commute})=>commute.destSnapshot&&commute.destSnapshot!==commuter.dest);
+    return `<span class="chip tnum">${summary}</span>`+
+      changed.map(({commuter})=>`<span class="chip warn">${esc(commuter.name)} 기준지 변경됨 · 재확인 필요</span>`).join('');
+  }
+  const legacy=[cx.commuteGangnam,cx.commuteSinsa].map((value,i)=>{
+    if(value==null||value==='') return null;
+    const label=commuters[i]?.dest||`목적지 ${i+1}`;
+    return `${esc(label)} ${esc(value)}`;
+  }).filter(Boolean);
+  return legacy.length?`<span class="chip tnum">${legacy.join(' · ')}</span>`:'';
+}
 /* 펼침 본문 메타칩 — 가격·면적은 헤드라인에 이미 있으므로 경고성 신호만 별도 칩으로 */
 function bodyMetaChips(p){
   const chips=[];
@@ -718,8 +737,8 @@ function bodyMetaChips(p){
   if(p.householdGrade) chips.push(`<span class="chip">${esc(p.householdGrade)}</span>`);
   else if(p.households) chips.push(`<span class="chip tnum">${p.households}세대</span>`);
   if(p.jeonseRatio!=null) chips.push(`<span class="chip tnum">전세가율 ${p.jeonseRatio}%</span>`);
-  if(p.commuteGangnam) chips.push(`<span class="chip tnum">강남 ${esc(p.commuteGangnam)}</span>`);
-  if(p.commuteSinsa) chips.push(`<span class="chip tnum">신사 ${esc(p.commuteSinsa)}</span>`);
+  const commuteChips=commuteCardChips(p);
+  if(commuteChips) chips.push(commuteChips);
   if(p.aiScore!=null) chips.push(`<span class="chip score">AI ${p.aiScore}점</span>`);
   if(p.geocodePending&&!p.lat) chips.push('<span class="chip chip-warn">좌표확인필요</span>');
   else if(p.lat) chips.push(`<span class="chip geo">${ic('pin','ic-muted')} 위치 저장됨</span>`);
@@ -2113,13 +2132,15 @@ function renderComplexes(){
     /* B-44②: 대표가격은 헤드라인급으로 c-head-text에 별도 노출(c-price)하므로
        c-meta의 deposit 칩은 중복 제거 — "사람은 단지가 아니라 가격을 기억" */
     const priceHTML=(rep&&rep.deposit!=null)?`<div class="c-price tnum">보증금 ${rep.deposit}억</div>`:'';
+    const commuteHTML=commuteCardChips(cx);
     const repHTML=rep?`<div class="c-meta">
         <span class="chip tnum">${rep.areaM2!=null?'전용 '+rep.areaM2+'㎡':(rep.areaText?esc(rep.areaText):'면적 미정')}</span>
         <span class="chip">${esc(rep.areaGrade||calcAreaGrade(rep.areaM2,state.settings.grades)||'—')}</span>
         <span class="chip ${listingStatusChipClass(rep.listingStatus)}">${esc(rep.listingStatus||'확인필요')}</span>
+        ${commuteHTML}
       </div>
       <div class="cx-listing-meta">최근 확인 ${rep.lastCheckedAt?esc(new Date(rep.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>`
-      :`<div class="c-meta"><span class="chip warn">현재 대표매물 없음</span></div>`;
+      :`<div class="c-meta"><span class="chip warn">현재 대표매물 없음</span>${commuteHTML}</div>`;
     /* B-44①: "이번 주 확인 완료" 버튼은 단지 상세(cxDetailWeeklyCheckBtn)에 이미 있어
        카드에선 제거 — 뱃지·최근확인 날짜만 유지해 카드 높이를 줄이고 노출 수를 늘림 */
     const weeklyBadge=needsWeeklyCheck(cx,rep)?'<span class="chip warn">7일+ 미확인</span>':'';
