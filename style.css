@@ -387,12 +387,22 @@
     /* B-46: 매물탭(뷰포트 고정 flex 컬럼)은 .wrap의 하단 padding이 불필요 —
        활성화 시 .wrap 하단 여백을 0으로(다른 탭은 위에서 24px로 축소한 값 그대로 유지) */
     body:has(#panel-props.on) .wrap{padding-bottom:0;}
-    /* B-51/B-57: 대형 모니터(1920/2560/4K)에서 .wrap max-width:1440px 제한 때문에
-       양옆에 큰 여백이 남던 문제 — 전 탭 대형 모니터 전체폭(B-57로 매물탭
-       한정 스코프 해제). 1440 이하 뷰포트에선 max-width 자체가 원래도
-       제약 요인이 아니라(뷰포트가 더 좁으면 width:auto가 이미 더 작게
-       잡힘) 기존 레이아웃과 완전히 동일 */
-    .wrap{max-width:none;}
+    /* B-51/B-57/B-74: B-57에서 전 탭 max-width:none(대형 모니터 전체폭)을
+       적용했더니 문서형 탭(대시보드·자산·액션·수집함)이 2560px 등에서
+       과도하게 넓어짐(실측: 액션 행이 화면 끝까지 늘어나 체크박스~삭제
+       버튼 사이가 텅 빔, 대시보드 타임라인 점들이 화면 양끝까지 벌어짐).
+       매물탭(뷰포트 고정 지도 레이아웃)만 전체폭 유지, 문서형 탭은 콘텐츠
+       유형별 상한을 clamp()로 — 뷰포트가 커질수록 완만히 넓어지다 상한에서
+       멈춤(하드 컷오프였던 구 1440 고정과 달리 1440~상한 구간은 유연).
+       1440px 이하 뷰포트에선 min값(1440px)이 이겨 기존과 완전히 동일. */
+    body:has(#panel-props.on) .wrap{max-width:none;}
+    /* 자산: 소유자~메모 7개 컬럼 표라 넓을수록 각 컬럼이 널널해짐 → 더 넓은 상한 */
+    body:has(#panel-assets.on) .wrap{max-width:clamp(1440px,82vw,1800px);}
+    /* 대시보드·액션·수집함: 타임라인·단일 컬럼 리스트·카드라 텍스트/버튼 사이만
+       벌어질 뿐 내용이 늘어나지 않음 → 더 보수적인 상한 */
+    body:has(#panel-dash.on) .wrap,
+    body:has(#panel-actions.on) .wrap,
+    body:has(#panel-scraps.on) .wrap{max-width:clamp(1440px,60vw,1600px);}
     #panel-props.on .grid{flex:1;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch;}
     .grid{grid-template-columns:minmax(0,var(--sidebar-w,360px)) 24px minmax(0,1fr);gap:0;}
     .grid>section{order:1;display:flex;flex-direction:column;height:100%;}
