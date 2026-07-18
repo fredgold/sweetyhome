@@ -1,4 +1,41 @@
-# HANDOFF — B-87 매물 루트 메뉴 리스너 수정 완료 (2026-07-18)
+# HANDOFF — B-86 applyGuards 배열·구조 가드 완료 (2026-07-18)
+
+## 최신 작업: B-86
+
+`BACKLOG.md` "코드 점검 발견" 섹션 B-86(감사 발견, 중·견고성).
+`applyGuards`의 핵심 배열 5종(actions·properties·complexes·
+listings·scraps)에 `Array.isArray` 가드가 없어 truthy 비배열 오염
+1회로 앱 전체가 빈 화면으로 멈추는 단일 실패점을 해소하고, 부수 가드
+4건(grades.area/households·safety 비객체·priority NaN·milestone
+label)을 추가했다. 손 B가 `properties.js`로 B-87 작업 중이라
+`properties.js` 무접촉 — `state.js` 1파일만 수정(+42/-7줄).
+
+- 커밋: `fix: applyGuards 배열·구조 가드 강화 (B-86)`
+- 공용 헬퍼 `guardArr(val,fallback,label)`을 신설해 배열 5종에 적용
+  (falsy 폴백은 기존과 동일하게 유지, truthy 비배열만 새로 막음).
+  값이 있는데 타입이 틀린 경우만 `console.warn`, 단순 누락은 조용히
+  기본값 적용.
+- `settings.grades.area`/`households` 비배열 가드로 utils.js의
+  `calcAreaGrade`/`calcHouseholdGrade` 구조분해 크래시 예방(utils.js
+  자체는 안 건드림).
+- `listings[].safety[key]` 비객체 가드로 스프레드 오염 방지.
+- `actions` priority 이관부는 숫자 priority만 필터링해 `Math.max`에
+  전달, NaN 오염 방지.
+- `milestone.label` 누락·오염을 `applyGuards`에서 문자열로 보정해
+  `ai.js`(안 건드림)의 `profileLine()` 크래시 예방.
+- Playwright 73개 체크: 배열 5종×오염 3종(문자열/객체/null) 무크래시+
+  정확한 warn, grades·safety·priority·milestone 오염 각각 무크래시,
+  정상 state 라운드트립 순서 무관 완전 동일(무손실), 5개 탭 전부
+  동시 오염시켜도 실제 콘텐츠 정상 렌더(빈 화면 아님) 확인.
+- `node --check js/state.js`, `git diff --check` 통과.
+- 손 B의 B-87 대상 `properties.js`는 건드리지 않았다. `BACKLOG.md`
+  및 기존 미추적 문서 3개는 수정·커밋하지 않았다.
+- push는 검증 완료 후 진행 가능(보류 아님). 다음 순번: B-80(저장
+  실패 표시, B-84가 남긴 `sh_unsynced` 플래그 소비 예정)·B-88·B-89.
+
+---
+
+# 이전 핸드오프 — B-87 매물 루트 메뉴 리스너 수정 완료 (2026-07-18)
 
 ## 최신 작업: B-87
 
