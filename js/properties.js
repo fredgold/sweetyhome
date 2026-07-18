@@ -789,7 +789,7 @@ function renderList(){
     </div>
     <div class="c-body" id="cbody-${p.id}">
       <div class="c-meta">${bodyMetaChips(p)}</div>
-      ${p.img?`<img src="${p.img}" class="card-img-thumb" loading="lazy" alt="${esc(p.name||'매물')} 사진">`:''}
+      ${p.img?`<img src="${esc(p.img)}" class="card-img-thumb" loading="lazy" alt="${esc(p.name||'매물')} 사진">`:''}
       ${p.memo?`<div class="c-memo sc-md-content">${renderMd(p.memo)}</div>`:''}
       ${actionsHTML(p, urlSafe)}
       ${aiBlock(p)}${checklistHTML(p)}
@@ -1345,9 +1345,6 @@ function readBackup(code){
 
 
 /* ============ v4: 시트 승격 벌크 임포트 ============ */
-function safeUrl(u){
-  try{const url=new URL(u);if(!['http:','https:'].includes(url.protocol))return'';return url.href;}catch(e){return'';}
-}
 /* B-18: calcHouseholdGrade는 utils.js(GRADE_DEFAULTS와 함께 정의)로 이동 —
    state.js의 applyGuards()에서도 같은 함수를 써야 해서 두 파일보다 먼저
    로드되는 utils.js가 단일 소스. 여기 정의를 남겨두면 로드 순서상 이 파일이

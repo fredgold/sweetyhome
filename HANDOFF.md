@@ -1,4 +1,21 @@
-# HANDOFF — 🔴 B-84 저장 유실 방지 완료 (2026-07-18)
+# HANDOFF — B-83 보안 방어 강화 완료 (2026-07-18)
+
+## 최신 작업: B-83
+
+- 커밋: `fix: URL 스킴 검증·img src esc·esc 따옴표 강화 (B-83)`
+- `safeUrl()`을 `properties.js`에서 공통 `utils.js`로 옮기고, 규제뉴스
+  출처는 `http:`/`https:`일 때만 `noopener` 새 창으로 연다.
+- 매물·수집함 이미지 `src` 보간값에 `esc()`를 적용하고, `esc()`가
+  작은따옴표도 `&#39;`로 변환하도록 보강했다.
+- Playwright 데스크톱·390px 모바일에서 정상 뉴스 URL, `javascript:`
+  차단, data URL 이미지, `O'PARK` 텍스트, 주요 탭 스모크 통과.
+  대상 JavaScript `node --check`와 `git diff --check`도 통과했다.
+- 병행 작업 대상 `state.js`·`boot.js`는 건드리지 않았다.
+- `BACKLOG.md` 및 기존 미추적 문서 3개는 수정·커밋하지 않았다.
+
+---
+
+# 이전 핸드오프 — 🔴 B-84 저장 유실 방지 완료 (2026-07-18)
 
 ## 1. 목표
 `BACKLOG.md` "코드 점검 발견" 섹션 B-84(감사 확정 발견, 높음·데이터

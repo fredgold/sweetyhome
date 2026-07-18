@@ -15,7 +15,7 @@ const SC_PROPLESS=new Set(['note','ai_log']);
    공용. 각 썸네일에 개별 삭제(✕) 버튼, data-idx로 배열 인덱스 매칭 */
 function scRenderImgThumbs(containerId,arr){
   document.getElementById(containerId).innerHTML=arr.map((src,i)=>
-    `<div class="sc-img-thumb"><img src="${src}" alt="첨부 사진 ${i+1}"><button type="button" class="sc-img-thumb-del" data-idx="${i}">✕</button></div>`
+    `<div class="sc-img-thumb"><img src="${esc(src)}" alt="첨부 사진 ${i+1}"><button type="button" class="sc-img-thumb-del" data-idx="${i}">✕</button></div>`
   ).join('');
 }
 function scUpdateImgUploadLabel(labelId,arr,emptyText){

@@ -232,7 +232,7 @@ function renderRegNews(){
     </div>`).join('')+'</div>';
   cards.querySelectorAll('.rn-card[data-rnid]').forEach(el=>{
     const n=state.regNews.find(x=>x.id===el.dataset.rnid);
-    if(n&&n.source) el.onclick=()=>window.open(n.source,'_blank');
+    if(n&&n.source) el.onclick=()=>{const u=safeUrl(n.source);if(u)window.open(u,'_blank','noopener');};
   });
 }
 function updateDashRegline(){}
