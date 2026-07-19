@@ -1,6 +1,8 @@
 /* ============ tab switching ============ */
 let propsPanelHeightRaf=null;
 function syncPropsPanelHeight(){
+  const topbar=document.getElementById('appTopbar');
+  if(topbar) document.documentElement.style.setProperty('--app-top-h',topbar.getBoundingClientRect().height+'px');
   const panel=document.getElementById('panel-props');
   if(!panel?.classList.contains('on')||window.innerWidth<900) return;
   const top=panel.getBoundingClientRect().top+window.scrollY;
@@ -29,6 +31,9 @@ function switchPanel(name){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 window.addEventListener('resize',schedulePropsPanelHeight);
+const appTopbarResizeObserver=window.ResizeObserver?new ResizeObserver(schedulePropsPanelHeight):null;
+appTopbarResizeObserver?.observe(document.getElementById('appTopbar'));
+schedulePropsPanelHeight();
 document.querySelectorAll('.atab[data-panel]').forEach(b=>b.onclick=()=>switchPanel(b.dataset.panel));
 document.querySelectorAll('[data-goto]').forEach(a=>a.onclick=()=>switchPanel(a.dataset.goto));
 

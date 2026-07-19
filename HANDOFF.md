@@ -1,4 +1,29 @@
-# HANDOFF — B-103 1단계-2차 PoC(Tiptap) 완료·사람 결정 대기 (2026-07-19)
+# HANDOFF — B-53 단일 topbar 완료 (2026-07-19)
+
+## 최신 작업: 헤더+탭바 같은 줄 배치, B-98 높이 회귀 유지
+
+커밋: `fix: 헤더·탭바 단일 topbar 고정 (B-53)`
+
+- `index.html`의 기존 `header`와 `.apptabs`를 `#appTopbar` 하나로
+  묶었다. 데스크톱은 브랜드·탭·헤더 액션 한 줄, 모바일은 같은
+  sticky wrapper 안의 헤더+가로 탭 두 줄이다.
+- `nav.js`가 wrapper 높이를 `--app-top-h`로 실측하고
+  `ResizeObserver`로 갱신한다. 매물 패널·지도 overlay·모바일 목록
+  toolbar가 이 변수 하나를 공유한다. B-98의 `--props-panel-top`
+  RAF+resize 실측은 그대로 유지했다.
+- Playwright 1440×900·1920×900·390×844 통과. 데스크톱 매물탭
+  `document maxScroll=0`, topbar 스크롤 고정, 모바일 지도/목록/추가
+  폼 시트와 모달 z-index를 확인했다. `node --check js/nav.js`,
+  `git diff --check`도 통과. 상세 수치는 `HISTORY.md` B-53 항목 참고.
+- 전용 락 3파일(`index.html`·`js/nav.js`·`style.css`) 외 제품 코드는
+  수정하지 않았다. 손 A의 B-103 2단계는 선행 커밋 `623c76f`
+  (`js/assets.js`·`js/utils.js`) 위에서 계속 진행 중이며, 현재
+  `js/utils.js`·`js/scraps-form.js` 미커밋 변경도 손 A 소유이므로
+  다음 작업자는 건드리거나 되돌리지 말 것. `BACKLOG.md`도 무수정.
+
+---
+
+# 이전 핸드오프 — B-103 1단계-2차 PoC(Tiptap) 완료·사람 결정 대기 (2026-07-19)
 
 ## 최신 작업: B-103 2차 WYSIWYG 에디터 PoC — Tiptap v2 (poc 브랜치, master 미변경)
 
