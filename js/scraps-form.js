@@ -137,9 +137,10 @@ async function initScTextEditor(){
     }
     try{
       const slashExt=buildTiptapSlashExtension(mods,'sc_slashMenu',SC_SLASH,scSlashApplyTiptap);
+      const listFixExt=buildListBackspaceFix(mods); // B-109①: 중첩 리스트 Backspace lift
       scTiptapEditor=new mods.core.Editor({
         element:el,
-        extensions:[mods.starterKit,mods.Markdown,slashExt],
+        extensions:[mods.starterKit,mods.Markdown,slashExt,listFixExt],
         content:'',
         onUpdate:({editor})=>{
           el.classList.toggle('is-empty',editor.isEmpty);
@@ -551,9 +552,10 @@ async function initSemTextEditor(){
     }
     try{
       const slashExt=buildTiptapSlashExtension(mods,'sem_slashMenu',SC_SLASH,scSlashApplyTiptap);
+      const listFixExt=buildListBackspaceFix(mods); // B-109①: 중첩 리스트 Backspace lift
       semTiptapEditor=new mods.core.Editor({
         element:el,
-        extensions:[mods.starterKit,mods.Markdown,slashExt],
+        extensions:[mods.starterKit,mods.Markdown,slashExt,listFixExt],
         content:'',
       });
       return true;

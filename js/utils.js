@@ -319,6 +319,36 @@ async function loadTiptapMods(){
   }
   return _tiptapModsPromise;
 }
+/* B-109①: 사용자 실기기 재현 — 중첩 리스트 항목 시작점에서 Backspace 시
+   상위 블록까지 통째로 뭉개짐(데이터 손실 체감). 실키스트로크 매트릭스로
+   근본원인 특정: @tiptap/starter-kit의 ListItem은 Tab→sinkListItem·
+   Shift+Tab→liftListItem만 바인딩하고 **Backspace는 바인딩하지 않는다**
+   — 항목 시작점 Backspace가 ProseMirror 기본 keymap(범용 joinBackward류)
+   으로 흘러가 중첩 리스트를 통째로 이전 문단에 병합해버림(격리 테스트로
+   재현: "- parent"+Enter+Tab+"child" 후 child 시작점 Backspace →
+   <li><p>parent</p><p>child</p></li>로 리스트성 자체가 사라짐).
+   커서가 항목의 진짜 시작점(selection.empty && parentOffset===0)일 때만
+   개입해 liftListItem을 먼저 시도 — Notion처럼 한 단계씩 내어쓰기, 이미
+   최상위면 liftListItem 자체가 리스트 밖 일반 문단으로 빼줌(prosemirror-
+   schema-list 표준 동작, 별도 분기 불요). 리스트 항목이 아니거나 선택
+   범위가 있거나 항목 중간이면 false를 반환해 기본 Backspace로 그대로
+   폴백 — 매트릭스 테스트(중첩 1~3단계·항목 시작/중간/빈 항목·선택 상태)
+   전부 실측 확인 완료 */
+function buildListBackspaceFix(mods){
+  return mods.core.Extension.create({
+    name:'listBackspaceFix',
+    addKeyboardShortcuts(){
+      return{
+        Backspace:()=>{
+          const{selection}=this.editor.state;
+          if(!selection.empty) return false;
+          if(selection.$from.parentOffset!==0) return false;
+          return this.editor.commands.liftListItem('listItem');
+        },
+      };
+    },
+  });
+}
 /* 슬래시 커맨드 메뉴 — @tiptap/suggestion 기반, 기존 .slash-menu/.slash-item
    CSS(스타일 락 대상이라 신규 클래스 없이 그대로 재사용)와 동일한 시각·
    키보드(↑↓/Enter/Esc) 동작을 재현. items=[{key,icon,label,hint}], menuElId는
