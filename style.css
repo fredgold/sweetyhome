@@ -733,8 +733,19 @@
   .ai-status.ok{background:var(--money-wash);color:var(--money-deep);}
 
   /* ===== v3: 액션 전체 ===== */
-  .actfull .actrow{padding:11px 0;}
-  .actfull .actrow .atx{font-size:14px;}
+  .act-live-groups{display:flex;flex-direction:column;gap:10px;}
+  .act-group{overflow:hidden;border:1px solid var(--hairline);border-left:3px solid var(--money);border-radius:var(--radius-card);background:var(--surface);}
+  .act-group-head{display:flex;align-items:center;gap:7px;padding:5px 9px;background:var(--hairline-soft);border-bottom:1px solid var(--hairline);font-size:12px;font-weight:800;color:var(--ink-soft);}
+  .act-group-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:var(--radius-pill);background:var(--surface);color:var(--line9-deep);font-size:11px;}
+  .act-group-body{display:grid;grid-template-columns:minmax(0,1fr);column-gap:18px;padding:0 10px;}
+  #panel-actions .actfull .actrow{display:grid;grid-template-columns:20px 20px minmax(0,1fr) auto;gap:8px;align-items:center;min-height:36px;padding:4px 0;}
+  #panel-actions .actfull .actrow .atx{display:flex;align-items:center;gap:6px;min-width:0;font-size:13px;}
+  #panel-actions .actfull .actrow .act-text{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #panel-actions .actfull .act-row-meta,
+  #panel-actions .actfull .act-row-actions{display:flex;align-items:center;gap:3px;flex:none;}
+  #panel-actions .actfull .act-cat-badge,
+  #panel-actions .actfull .act-due-badge{margin-left:0;white-space:nowrap;}
+  #panel-actions .actfull .actrow:has(.act-edit-inp){display:flex;grid-column:1 / -1;flex-wrap:nowrap;}
   .actfull .done-section{margin-top:20px;border-top:2px solid var(--hairline);padding-top:14px;}
   .actfull .done-section .done-head{font-size:12px;font-weight:700;color:var(--ink-faint);margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:6px;}
   .actfull .done-section .done-head .arw{transition:transform .15s;}
@@ -831,20 +842,18 @@
   .sc-card-raw::after{content:'▾ 더보기';display:block;font-size:10px;font-weight:700;color:var(--ink-faint);margin-top:4px;}
   .sc-card-raw.expand::after{content:'▴ 접기';}
 
-  /* B-95: 데스크톱의 긴 단일 목록만 행 우선 2열로 밀도 개선.
-     태블릿 세로와 모바일은 기존 1열, 수집함 갤러리는 별도 그리드 유지. */
+  /* B-104-2 AC3: 액션은 카테고리 섹션 안에서만 2열 콤팩트 행.
+     B-95의 전역 2열은 대체하고, 완료 구획과 수집함의 기존 2열은 유지. */
   @media (min-width:1200px){
-    #panel-actions .actfull,
+    #panel-actions .act-group-body,
     #panel-actions .done-body{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
       column-gap:18px;
       align-items:start;
     }
-    #panel-actions .actfull>.done-section,
-    #panel-actions .actfull>.empty,
     #panel-actions .actrow:has(.act-edit-inp){grid-column:1 / -1;}
-    #panel-actions .actfull>.actrow:nth-of-type(-n+2),
+    #panel-actions .act-group-body>.actrow:nth-of-type(-n+2),
     #panel-actions .done-body>.actrow:nth-of-type(-n+2){border-top:none;}
     #panel-scraps .sc-list{
       display:grid;
@@ -1118,7 +1127,12 @@
     .sc-md-toolbar .tb-sep{align-self:stretch;margin:4px 3px;}
     /* actrow 인라인 편집 줄바꿈 허용 */
     .actrow{flex-wrap:wrap;}
-    .actfull .actrow{padding:10px 0;}
+    #panel-actions .actfull .actrow{grid-template-columns:20px 20px minmax(0,1fr) auto;padding:8px 0;}
+    #panel-actions .actfull .actrow .atx{display:block;font-size:12.5px;}
+    #panel-actions .actfull .act-row-meta{margin-top:5px;flex-wrap:wrap;}
+    #panel-actions .actfull .actrow:has(.act-edit-inp){flex-wrap:wrap;}
+    #panel-actions .actfull .actrow:has(.act-edit-inp) .act-edit-inp{flex-basis:100%!important;}
+    .act-group-body{padding:0 9px;}
     /* 자산 테이블 입력박스 */
     .regrow input,.regrow select{font-size:14px;}
     .regcardlab{font-size:10.5px;font-weight:800;margin-bottom:4px;}

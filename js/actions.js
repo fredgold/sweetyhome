@@ -1,6 +1,11 @@
 /* ============ 액션 (전체) ============ */
 let actSearchQuery='', actCategoryFilter='';
 const ACT_CATS=['매물준비','계약'];
+const ACT_GROUPS=[
+  {key:'',label:'일반'},
+  ...ACT_CATS.map(category=>({key:category,label:category}))
+];
+function actGroupKey(a){return ACT_CATS.includes(a.category)?a.category:'';}
 function renderCatChips(){
   const el=document.getElementById('act_cat_chips'); if(!el)return;
   const hasCats=state.actions.some(a=>ACT_CATS.includes(a.category));
@@ -52,8 +57,8 @@ function renderActions(){
   let live=sorted.filter(a=>!a.done);
   let done=sorted.filter(a=>a.done);
   if(actCategoryFilter==='__none__'){
-    live=live.filter(a=>!a.category||a.category==='');
-    done=done.filter(a=>!a.category||a.category==='');
+    live=live.filter(a=>actGroupKey(a)==='');
+    done=done.filter(a=>actGroupKey(a)==='');
   } else if(actCategoryFilter){
     live=live.filter(a=>a.category===actCategoryFilter);
     done=done.filter(a=>a.category===actCategoryFilter);
@@ -64,30 +69,50 @@ function renderActions(){
     el.innerHTML='<div class="empty"><div class="big">아직 액션이 없어요</div>아래에 할 일을 적어보세요.</div>';
     return;
   }
+  const liveMinPriority=live.length?Math.min(...live.map(a=>a.priority)):Infinity;
+  const liveRanks=new Map(live.map((a,i)=>[a.id,i+1]));
+  const actionRow=(a,doneRow=false)=>{
+    const categoryLabel=a.category||'일반';
+    return `
+      <div class="actrow" data-done="${doneRow?'1':'0'}" data-id="${a.id}">
+        <span class="rank tnum">${doneRow?'':liveRanks.get(a.id)}</span>
+        <span class="box" data-actf-done="${a.id}">${CHECK}</span>
+        <span class="atx">
+          <span class="act-text">${esc(a.text)}</span>
+          <span class="act-row-meta">
+            <span class="act-cat-badge">${esc(categoryLabel)}</span>
+            ${a.assignee?`<span class="act-cat-badge">${esc(actOwnerLabel(a.assignee))}</span>`:''}
+            ${actDueBadge(a)}
+          </span>
+        </span>
+        <span class="act-row-actions">
+          <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
+          ${doneRow?'':`<button class="star ${a.priority<=liveMinPriority?'on':''}" data-actf-top="${a.id}" title="맨 위로" aria-label="맨 위로">${ic('star')}</button>`}
+          <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
+        </span>
+      </div>`;
+  };
   let html='<div class="actfull">';
   if(live.length){
-    html+=live.map((a,i)=>`
-      <div class="actrow" data-done="0" data-id="${a.id}">
-        <span class="rank tnum">${i+1}</span>
-        <span class="box" data-actf-done="${a.id}">${CHECK}</span>
-        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}${a.assignee?`<span class="act-cat-badge">${esc(actOwnerLabel(a.assignee))}</span>`:''}${actDueBadge(a)}</span>
-        <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
-        <button class="star ${a.priority<=Math.min(...live.map(x=>x.priority))?'on':''}" data-actf-top="${a.id}" title="맨 위로" aria-label="맨 위로">${ic('star')}</button>
-        <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
-      </div>`).join('');
+    html+='<div class="act-live-groups">';
+    html+=ACT_GROUPS.map(group=>{
+      const items=live.filter(a=>actGroupKey(a)===group.key);
+      if(!items.length) return '';
+      return `<section class="act-group" data-act-group="${group.key||'general'}">
+        <div class="act-group-head">
+          <span>${esc(group.label)}</span>
+          <span class="act-group-count tnum">${items.length}</span>
+        </div>
+        <div class="act-group-body">${items.map(a=>actionRow(a)).join('')}</div>
+      </section>`;
+    }).join('');
+    html+='</div>';
   } else {
     html+='<div class="empty"><div class="big">모든 액션 완료!</div>새 할 일을 추가하거나 AI 제안을 받아보세요.</div>';
   }
   if(done.length){
     html+=`<div class="done-section"><div class="done-head" id="act_doneToggle"><span class="arw">▾</span> 완료 ${done.length}개</div><div class="done-body">`;
-    html+=done.map(a=>`
-      <div class="actrow" data-done="1" data-id="${a.id}">
-        <span class="rank tnum"></span>
-        <span class="box" data-actf-done="${a.id}">${CHECK}</span>
-        <span class="atx">${esc(a.text)}${a.category?`<span class="act-cat-badge">${esc(a.category)}</span>`:''}${a.assignee?`<span class="act-cat-badge">${esc(actOwnerLabel(a.assignee))}</span>`:''}${actDueBadge(a)}</span>
-        <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
-        <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
-      </div>`).join('');
+    html+=done.map(a=>actionRow(a,true)).join('');
     html+='</div></div>';
   }
   html+='</div>';
