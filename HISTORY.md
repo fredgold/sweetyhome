@@ -5193,3 +5193,29 @@ B-93 토스트·완료·삭제·마감 뱃지·`/api/state` 모킹 저장 통과
 
 스크린샷은 로컬·미커밋 `mockups/b104-2b-actions-columns-{1440,
 1920,2560}.png`, `mockups/b104-2b-actions-mobile-390.png`.
+
+---
+
+## 2026-07-19 — B-111 커밋② style: ✏️ 편집 힌트 제거 (커밋 1개, 에픽 완료)
+
+손 B의 B-104-2b(`3d8b6aa`) push 확인·pull 후 진행. `style.css`
+`.sc-md-editor:not(:focus-within):not(.is-empty)::after{content:
+'✏️ 편집';...}` 1줄 삭제 — 클릭 진입이 이미 정상 동작해 힌트 자체가
+군더더기라는 사용자 결정. 같은 셀렉터의 `cursor:pointer`(874행
+인접)는 클릭 가능 어포던스로 유지, 삭제하지 않음.
+
+**검증**(Playwright, 로컬 python UTF-8 서버): B-109/B-110으로
+Tiptap이 적용된 **6개 필드 전부**(수집함 입력폼 `sc_text`·편집모달
+`sem_text`·자산 노트·매물 추가폼 `f_memo`·매물 수정폼 `em_memo`·
+매물 행 `listing memo`)에서 ①`::after` computed content가 `none`
+(힌트 완전히 사라짐) ②`cursor:pointer` 유지 확인 ③실제 클릭 시
+포커스가 에디터로 정상 이동(클릭 진입 무회귀) — 3항목×6필드=18개
+전부 통과. `node --check` 3파일(`scraps-form.js`·`assets.js`·
+`properties.js`, 이번 커밋 자체는 style.css 1줄뿐이라 코드 변경은
+없지만 회귀 확인 차 재실행) 통과.
+
+**→ B-111 완료·push 완료**(커밋① `c204c77` + 커밋② `201203e`).
+`state.js`/`profile.js`/`nav.js`/`actions.js`/`BACKLOG.md` 전부
+무접촉 확인, 손 B B-104-2b와 파일 락 충돌 없이 순서 조율 완료.
+B-103 에픽 실기기 발견 이슈 2건(레거시 렌더 잔존·편집 힌트) 전부
+해소 — 남은 건 사용자 실기기 한글 IME 확인뿐.
