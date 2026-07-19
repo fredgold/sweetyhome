@@ -840,8 +840,17 @@
   .sc-md-toolbar button:hover{background:var(--surface);color:var(--ink);}
   .sc-md-toolbar .tb-sep{width:1px;background:var(--hairline);margin:2px 3px;align-self:stretch;}
   .sc-md-editor{outline:none;border-radius:0 0 9px 9px;border:1px solid var(--money);padding:11px 13px;min-height:100px;max-height:340px;overflow-y:auto;font-size:13px;line-height:1.7;word-break:break-word;cursor:text;background:var(--surface);}
-  .sc-md-editor:not(:focus):not(.is-empty){cursor:pointer;}
-  .sc-md-editor:not(:focus):not(.is-empty)::after{content:'✏️ 편집';display:block;text-align:right;font-size:11px;color:var(--ink-faint);margin-top:4px;}
+  .sc-md-editor:not(:focus-within):not(.is-empty){cursor:pointer;}
+  .sc-md-editor:not(:focus-within):not(.is-empty)::after{content:'✏️ 편집';display:block;text-align:right;font-size:11px;color:var(--ink-faint);margin-top:4px;}
+  /* B-109③: Tiptap이 안에 마운트하는 .ProseMirror(contenteditable)는
+     브라우저 기본 파란 outline을 자체적으로 그린다 — 바깥 .sc-md-editor의
+     기존 outline:none은 그 자식까지는 못 지운다. 자식 outline은 지우고,
+     포커스 표시는 이 앱의 다른 입력창들과 동일하게 기존 --focus-ring
+     토큰으로 바깥 박스에 일원화(접근성용 표시 자체는 유지, 새 토큰 없음).
+     :focus→:focus-within 변경은 폴백(외곽 div 자체가 contenteditable)
+     에서도 그대로 성립(자기 자신도 focus-within 대상) */
+  .sc-md-editor .ProseMirror{outline:none;}
+  .sc-md-editor:focus-within{outline:none;box-shadow:var(--focus-ring);}
   .sc-md-editor.is-empty::before{content:attr(data-placeholder);color:var(--ink-faint);font-size:12.5px;white-space:pre-wrap;pointer-events:none;line-height:1.6;}
   /* B-109②: Tiptap Placeholder 확장 표준 CSS 패턴 — 빈 첫 문단 자신에게만
      data-placeholder 속성값을 얹어 보여준다(위 .is-empty::before는 폴백
