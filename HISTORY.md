@@ -4857,3 +4857,20 @@ B-102① 읽기모드 메모 표시 무회귀. XSS 3종(`<img onerror>`+
 | `NAVER_MAPS_CLIENT_ID` | 네이버 지도 Client ID (JS SDK + Geocoding 공용) | ✅ |
 | `NAVER_MAPS_CLIENT_SECRET` | 네이버 Geocoding API Secret | ✅ |
 | `ANTHROPIC_MODEL` | 모델 오버라이드 (기본: haiku) | 선택 |
+
+---
+
+## 2026-07-19 — B-104 1단계 비매물 탭 UI 진단·시안
+
+- 제품 코드와 `BACKLOG.md`는 변경하지 않고 대시·자산·액션·수집함의
+  UI 방향 10개를 진단했다.
+- 실제 사용량 수준의 로컬 샘플(액션 24건·수집함 36건)로 데스크톱
+  1440px·모바일 390px 목업 20장을 캡처했다. 이미지는 `mockups/`에
+  미커밋 로컬 파일로 남겼다.
+- 추천: 대시/자산 현행 유지, 액션 명시적 그룹+콤팩트 행, 수집함
+  갤러리 기본, 전 탭 내부 스크롤 앱셸은 별도 중형 작업으로 분리.
+- B-53 `--app-top-h`와 B-98 `--props-panel-top` 인프라를 반영해
+  스크롤 통일을 과거 전면 재작성에서 `style.css`+`nav.js` 중심
+  1~2일 규모로 재산정했다. 모바일 키보드·PTR·모달·매물 회귀가
+  핵심 위험이다.
+- 상세 보고: `docs/B-104-non-property-tabs-ui-proposal.md`.
