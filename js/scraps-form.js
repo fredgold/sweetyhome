@@ -139,6 +139,11 @@ async function initScTextEditor(){
       const slashExt=buildTiptapSlashExtension(mods,'sc_slashMenu',SC_SLASH,scSlashApplyTiptap);
       const listFixExt=buildListBackspaceFix(mods); // B-109①: 중첩 리스트 Backspace lift
       const placeholderExt=buildTiptapPlaceholder(mods,el); // B-109②: 안내 문구 에디터 내장화
+      /* B-111①: sc_text는 현재 경로상 미리 채워지는 지점이 없어(scOpenForm이
+         바로 이 함수만 호출) 실증된 버그는 아니지만, sem_text와 같은
+         구조적 위험(Editor 생성자가 기존 자식을 안 지움)을 안전망으로
+         차단 — 향후 유사 경로가 생겨도 재발 안 하게 */
+      el.innerHTML='';
       scTiptapEditor=new mods.core.Editor({
         element:el,
         extensions:[mods.starterKit,mods.Markdown,slashExt,listFixExt,placeholderExt],
@@ -557,6 +562,13 @@ async function initSemTextEditor(){
       const slashExt=buildTiptapSlashExtension(mods,'sem_slashMenu',SC_SLASH,scSlashApplyTiptap);
       const listFixExt=buildListBackspaceFix(mods); // B-109①: 중첩 리스트 Backspace lift
       const placeholderExt=buildTiptapPlaceholder(mods,el); // B-109②: 안내 문구 에디터 내장화
+      /* B-111①: openScEdit()가 에디터 미초기화 시 빈 화면 방지용으로
+         ceRenderLine 렌더를 el.innerHTML에 즉시 채워둔다(위 else 분기) —
+         Tiptap Editor 생성자는 element에 이미 있는 자식을 안 지우고
+         자기 .ProseMirror만 추가로 붙이므로, 그 레거시 정적 사본이
+         새 에디터 위에 편집 불가 상태로 영구 잔존한다. 생성 직전에
+         비워 마운트 지점을 항상 깨끗하게 만든다 */
+      el.innerHTML='';
       semTiptapEditor=new mods.core.Editor({
         element:el,
         extensions:[mods.starterKit,mods.Markdown,slashExt,listFixExt,placeholderExt],
