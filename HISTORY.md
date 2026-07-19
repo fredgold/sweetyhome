@@ -5904,3 +5904,107 @@ fixture로 57개 체크 전부 통과:
 (`nav.js`+`style.css`)과 파일 충돌 없음. 실사용 피드백 3차
 5건(B-112~118) 전부 발급·완료 — 다음은 커맨드센터 후속 판단
 대기.
+
+---
+
+## 2026-07-19 — B-31: 모바일 하단 탭바 (손 B 구현 → 손 A 인수 마무리, 커밋 1개)
+
+**경위**: B-31(모바일 하단 고정 탭바)은 손 B가 구현하고 스스로
+검증까지 마쳤지만, 실행 환경 제약으로 **커밋하지 못한 채 작업
+트리에 미커밋 상태로 남아있었다**. 손 B가 7/25까지 부재하게
+되면서, 커맨드센터가 예외적으로 승인해 **손 A가 그 미커밋 변경분
+(`index.html`+`js/nav.js`+`style.css`)을 그대로 인수**했다.
+`git stash`를 쓰지 않고 작업 트리를 그대로 이어받는 조건이었고,
+손 A의 역할은 **재검증·문서화·push뿐** — 코드 로직 자체는 100%
+손 B의 원작업물이다.
+
+### diff 리뷰로 파악한 구현 개요
+
+`index.html`(+1줄)+`js/nav.js`(+91줄)+`style.css`(+119/-9줄).
+새 DOM을 추가하지 않고 B-53이 만든 단일 topbar 인프라 위에서
+**기존 `.apptabs`(5탭 버튼)와 `#headerMoreBtn`을 모바일 폭에서
+재배치**하는 방식으로 구현됐다 — 앞서 B-31을 발급하며 "앱쉘·
+topbar 인프라로 비용 하락"이라 판단했던 전제가 실제로 맞았다.
+
+- **5탭+safe-area**: `viewport-fit=cover`가 있어야 `env(safe-area-
+  inset-*)`가 실제 값을 반환하는 iOS 필수 전제조건이라 meta
+  태그에 추가했다. `.apptabs`를 `position:fixed;bottom:0` 5칼럼
+  그리드로 옮기고, 좌우/하단 패딩에 전부 `env(safe-area-inset-*)`
+  를 반영했다.
+- **`--app-bottom-h` 앱쉘 연동**: 새 CSS 변수(모바일 기본
+  `calc(58px + safe-area-inset-bottom)`, 데스크톱 `0px`)를 만들어
+  5개 패널 높이·매물탭 플로팅 버튼(추가 FAB·현위치·토스트)
+  위치·매물 추가 폼 시트의 `bottom`이 전부 이 변수 하나만
+  참조하도록 했다 — 탭바 높이가 나중에 바뀌어도 한 곳만 고치면
+  되는 단일 소스 설계.
+- **상단 ⋯더보기 수납**: 기존에 480px 미만에서만 쓰이던
+  `#headerMoreBtn`의 임계값을 899.98px로 넓히고, 프로필/내보내기/
+  가져오기/잠금 4개 버튼을 실제 DOM 재배치(복제 아님)로 드롭다운에
+  옮겼다 되돌린다 — `properties.js`의 `syncListToolbar()`가 이미
+  쓰던 "재부모" 패턴과 동일한 방식이라 새 패턴을 만들지 않았다.
+- **visualViewport/포커스 키보드 처리**: `focusin`/`focusout`
+  (포커스 기반, textarea·select·contenteditable·`.ProseMirror`·
+  텍스트류 input 대상)과 `visualViewport.resize/scroll`(실측
+  뷰포트 축소 기반) **두 신호를 OR로 묶어** `html.mobile-keyboard-
+  open`을 토글한다. 키보드가 뜨면 탭바를 숨기고(`opacity:0;
+  pointer-events:none`) `--app-bottom-h`를 0으로 접어 시트가 탭바
+  자리까지 확장되게 한다 — "탭바-시트-키보드 3자 충돌" 해소.
+- **PTR 가드**: 패널 자체 스크롤 중엔 document로 touchstart를 안
+  넘겨 iOS PTR 오발동을 막던 기존 `APP_SCROLL_PANEL_IDS` Set에
+  `panel-props`를 추가했다 — 이전엔 매물탭이 빠져있어 모바일
+  목록뷰를 깊이 스크롤한 채 당기면 오발동 여지가 있었는데 이번에
+  같이 막혔다(회귀가 아니라 기존 갭을 메운 개선).
+
+### 인수 검증 결과 — 원지시서 항목 전부 재실행
+
+Playwright(로컬 node UTF-8 정적 서버, `window.naver` 최소 스텁,
+`hasTouch:true`) 모바일 390×844+데스크톱 1440×900으로 원지시서
+검증 항목을 전부 재실행해 **45개 체크 전부 통과**했다:
+
+- 5탭(dash/assets/props/actions/scraps) 전환마다 `document
+  maxScroll ≤1px`, 탭바 하단 고정+노출, 활성 패널이 탭바 위에서
+  정확히 끝남(겹침 0).
+- 상단 ⋯더보기: 4개 버튼 상단 비노출→⋯ 클릭 시 드롭다운 실제
+  이동→재클릭 시 원위치 복귀.
+- 탭바-시트-키보드 3자 충돌: 시트 열림(입력 전) 상태에서 탭바
+  위에서 정확히 끝나고 탭바도 그대로 보임, 필드 포커스 시
+  `mobile-keyboard-open`+탭바 숨김+`--app-bottom-h` 0으로 축소
+  +시트가 화면 바닥까지 확장(포커스 해제 시 전부 원상복구), 일반
+  `.modal`이 열려도 탭바 숨김 확인.
+- 매물 지도/목록: 지도뷰 무크래시, 목록뷰 전환 시 내부
+  `overflow-y:auto` 스크롤+카드 정상 렌더+document maxScroll 0.
+- 가로 모드(844×390): 탭바 하단 고정 유지+document maxScroll 0.
+- **데스크톱 1440 완전 무변화**: 탭바 `position:fixed` 아님(원래
+  상단 배치), 프로필 등 상시 노출, `#headerMoreBtn` display:none,
+  `--app-bottom-h` 0px, 매물탭 포함 document maxScroll 0 — 새
+  CSS가 전부 `@media(max-width:899.98px)` 안에 갇혀 있어 구조적
+  으로도 영향 불가함을 diff로 재확인.
+- B-21 드래그다운 무회귀: 단지 상세에서 합성 `TouchEvent`로 실제
+  아래 스와이프 재현 → 모달 정상 닫힘 실측(`properties.js` 자체가
+  이번 diff에서 무변경이라 구조적으로도 회귀 불가).
+- PTR(B-52) 무회귀: `js/boot.js`(PTR 구현 본체) 무변경 확인 +
+  nav.js의 유일한 관련 변경(`panel-props` 추가)이 기존 게이트
+  로직과 상충하지 않음을 코드 검토로 확인(`navigator.standalone`
+  게이트 때문에 실제 제스처 재현은 헤드리스에서 신뢰하기 어려워
+  구조적 확인으로 대체).
+
+`node --check js/nav.js js/properties.js js/boot.js`,
+`git diff --check` 전부 통과.
+
+**수정한 것: 0줄.** 재검증 중 버그처럼 보였던 것 2건은 전부 테스트
+스크립트 쪽 문제였다 — ①`openForm()`(B-31 이전부터 있던 기존
+코드)이 필드에 자동 focus를 걸어 "시트 열림 직후"를 "입력 시작
+후"와 혼동해서 테스트했던 것, ②시트 오픈 애니메이션+지도/에디터
+비동기 초기화가 끝나기 전(200ms)에 위치를 측정해 ~3px 오차가
+났던 것. 둘 다 테스트 스크립트만 고쳐 해소했고 제품 코드는
+그대로 뒀다.
+
+**확인 못한 것(실기기 확인 필요, 사용자 몫)**: `env(safe-area-
+inset-*)`의 실제 0이 아닌 값(헤드리스는 항상 0), `visualViewport.
+resize`의 실제 iOS 키보드 신호(포커스 기반 대체 경로만 실측),
+B-23 PTR의 실제 스와이프 제스처(`navigator.standalone` 게이트로
+실기기 PWA 전용), iOS Safari 일반 브라우저 탭 최종 확인.
+
+**→ B-31 완료·push 완료**(`378d0b5`, 손 B 원작업물 그대로 커밋,
+코드 수정 없음). 손 B 복귀(7/25) 시 이 항목으로 인계 내역 확인
+가능. 다음은 완료 후 대기 — 커맨드센터 별도 발급.
