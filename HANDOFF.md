@@ -1,4 +1,64 @@
-# HANDOFF — B-106① state 용량 표시 완료 (2026-07-19)
+# HANDOFF — B-103 에픽 코드 소진(2-3 완료)·실기기 한글 관문 대기 (2026-07-19)
+
+## 최신 작업: 매물 메모 3곳 Tiptap 전환 — B-103 마지막 코드 커밋
+
+```
+c0a233d feat: 매물 메모 3곳(추가폼·수정폼·매물행) Tiptap 전환 (B-103 2-3)
+```
+
+`properties.js` 단독(+175/-2줄). `index.html`(B-53 완료로 락은
+풀렸지만 결국 무접촉)·`state.js`/`profile.js`(손 B B-106① 락)·
+`BACKLOG.md` 전부 무접촉. `utils.js`도 2-1·2-2가 만든 공용 래퍼
+그대로 재사용해 무접촉 — **B-103 에픽 코드 작업 여기서 소진**.
+
+**대상 3곳**: `f_memo`(매물 추가폼)·`em_memo`(매물 수정폼, 레거시
+`state.properties` 경로)·`lst-memo-ta`(단지 상세 매물 행, B-91
+수정모드).
+
+- **"그림자 textarea" 패턴(2-1·2-2와 다른 설계 판단)**: f_memo/
+  em_memo는 명시 분기 대신 원래 textarea를 숨겨서 남기고 Tiptap
+  `onUpdate`가 매 변경마다 `.value`에 마크다운을 계속 동기화 —
+  `em_saveBtn`의 `.value.trim()` 읽기, `data-lstsave`의 제너릭
+  `[data-editfield]` 순회 저장 로직을 **한 줄도 안 건드리고** 얹을
+  수 있어서 이 방식을 택했다(제너릭 루프는 필드 종류를 모르는 게
+  핵심이라 분기 처리가 오히려 더 침습적).
+- **listing memo — Map 기반 멀티 인스턴스**: `cxListingEditMode`가
+  `Set`이라 매물 행 여러 개가 동시 수정모드일 수 있는 유일한 필드.
+  `renderCxListings()` 시작에서 `destroyAllListingMemoEditors()`
+  필수 호출(재렌더마다 DOM은 사라지지만 Tiptap JS 객체는 `destroy()`
+  없인 안 사라짐 — 누수). 모달 "닫기"(저장/취소 없이)에도 즉시
+  정리하는 안전망 추가.
+- **부수 발견·개선**: 멀티 인스턴스 테스트 중 "행 A 저장 시 아직
+  편집 중인 행 B의 미저장 타이핑이 사라짐"을 발견 — Tiptap 도입
+  이전부터 있던 B-91 구조적 특성(재렌더가 모든 행을 `l.memo`로 다시
+  채움)이 "동시 2개 이상 열기" 시나리오로 처음 실측된 것. 제너릭
+  저장/재렌더 로직은 안 건드리고 **내가 새로 만든 destroy/init
+  함수 안에서만** `listingMemoPendingContent`로 해결 — Tiptap
+  전환이 기존보다 더 안전해진 케이스.
+- memoPreviewToggle 3곳은 지시대로 Tiptap 성공 시 숨김(함수 자체는
+  폴백용으로 보존).
+
+**검증**: Playwright 29개 체크 전부 통과 — f_memo/em_memo 라이브
+숏컷+저장(v5 `saveAsComplexListing`이 `state.listings`로 라우팅함을
+재확인, 첫 검증 때 잘못된 배열 체크로 실패했다가 바로잡음)+
+싱글턴 재사용, **listing memo 2개 행 동시 편집→Map 인스턴스 정확히
+2개→서로 독립·교차 오염 없음→한 행 저장 후에도 다른 행 미저장
+타이핑 보존→취소 시 Map 완전히 비워짐(누수 없음)→destroy 후
+재진입 정상**, B-92 자동채우기 Tiptap 동기화, B-102① 읽기모드
+무회귀, XSS 3종 전부 무실행, 모바일 390px, 저장 왕복(Redis 모킹),
+폴백 경로(esm.sh 차단 모킹, 3곳 전부 기존 textarea 정상 동작).
+`node --check` 통과.
+
+- **B-103 2-3 완료·push 완료. B-103 에픽 코드 작업 소진.**
+- **에픽 종결 판정은 사용자 실기기 확인(한글 IME) 후 커맨드센터
+  몫** — 자산 노트·수집함 폼/모달·매물 메모 3곳 총 6개 필드 전부
+  동일한 Playwright 시뮬레이션 한계(실제 다중 `compositionupdate`
+  연쇄 미검증)를 안고 있어 자체적으로 "완료"라 선언하지 않음.
+- 다음은 커맨드센터 지시 대기.
+
+---
+
+# 이전 핸드오프 — B-106① state 용량 표시 완료 (2026-07-19)
 
 ## 최신 작업: 4MB 대비 현재 크기·80% 초과 경고
 
