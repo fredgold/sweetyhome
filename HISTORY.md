@@ -5434,3 +5434,86 @@ Playwright 24건 fixture:
 B-113의 `auth.js`·`api/_auth.js`·문서 커밋(`8d7e504`/
 `3026c81`)을 최신화한 뒤 파일 충돌 없이 마무리했다. 다음
 B-104 작업은 B-104-5 대시 D2(별도 지시).
+
+---
+
+## 2026-07-19 — B-116: 단지 상태 변경 빠른 경로 복원 (커밋 1개)
+
+사용자 피드백("E-01 단지 전환 후 상태 변경 기능이 사라졌다") +
+커맨드센터 사전 조사(상세 select는 현존 확인)를 이어받아, 착수
+전 `complexStatus`를 바꿀 수 있는 모든 진입점을 먼저 전수
+진단했다.
+
+### 진단
+
+- `#cxDetailStatusSel`(단지 상세 select, `properties.js:3162`
+  `onchange`) — 착수 시점에 유일하게 살아있던 편집 경로.
+- 레거시 `showStatusPicker()`(`:1367`)는 `.pill[data-statuspill]`을
+  통해 `state.properties[].status`를 바꾸는 함수로 **complexStatus와
+  무관**(다른 스키마, 값 집합도 다름: 방문예정·문의예정 포함
+  7종 vs complexStatus의 6종). E-01 이관 후 새 단지 카드
+  (`#complexSection`)의 `.pill`에는 처음부터 이 함수도 다른 어떤
+  핸들러도 연결된 적이 없었다 — 카드를 눌러도 반응이 없던 것이
+  "기능이 사라졌다" 체감의 정체였다(회귀가 아니라 애초에 새 카드
+  UI에 이관되지 않은 빠진 배선).
+- `migComplexStatus()`(`:1913`)는 properties→complexes 1회성
+  마이그레이션 프리뷰 값 정규화 전용, 라이브 편집과 무관.
+
+### 복원
+
+`js/properties.js` 단독 수정(+40/-2줄). `index.html`·`state.js`·
+`BACKLOG.md` 무접촉, **`style.css`도 결과적으로 무접촉**(기존
+`.status-picker`/`.sp-opt`/`.pill{cursor:pointer}` 스타일이 이미
+충분해 신규 CSS 불필요 — 손 B의 B-104-5 미커밋 `style.css` 변경분과
+접점 자체가 없었다).
+
+- 단지 카드 뱃지(`.pill`)에 `data-cxstatuspill="${cx.id}"` 부여,
+  `#complexSection` 클릭 위임에서 `data-cxopen`(카드 전체→상세
+  열기) 분기보다 먼저 가로채는 `showCxStatusPicker(pill,cx)` 신설.
+  레거시 `showStatusPicker`와 동일한 `.status-picker` 플로팅
+  메뉴(마크업·위치 계산·바깥 클릭 닫기)를 그대로 재사용 — "신규
+  패턴 금지" 지시대로 새 UI 컴포넌트 0개. 옵션 6개는
+  `#cxDetailStatusSel`과 완전히 동일한 값 집합.
+- 선택 시 `save()`+`renderStats()`+`renderComplexes()` 호출.
+  `renderComplexes()`가 끝에서 항상 `refreshOverview()`를 부르고,
+  마커 재렌더 스킵 캐시 키(`markerKey`)에 이미 `complexStatus`가
+  포함돼 있어(기존 코드) 지도 마커 색(`HEX_CX`)이 자동으로
+  갱신된다. 필터·카드 뱃지도 같은 재렌더 경로로 동시 반영.
+- **부수 발견·동시 수정**: 기존 `#cxDetailStatusSel.onchange`는
+  `renderComplexes()`만 호출하고 `renderStats()`는 안 불러 상세
+  경로로 상태를 바꿔도 상단 요약 카운트(단지 N개·후보 N·임장예정
+  N)가 갱신되지 않는 기존 결함이 있었다. 검증 요구("상세 변경→
+  카드 반영")를 카운트에도 대칭 적용해 같이 고쳤다 — 새 카드
+  경로와 완전히 동일한 갱신 세트로 맞춘 것.
+- 상세가 열려있는 상태에서 카드로 상태를 바꾸면
+  `cxDetailId===cx.id` 체크로 `renderComplexDetailBody(cx)`도
+  같이 호출해 상세 select 표시값까지 카드→상세 방향으로 동기화.
+
+**검증**: Playwright(로컬 node UTF-8 정적 서버, `window.naver`
+최소 스텁을 `addInitScript`로 주입해 `cxMarkerHtml`·마커 생성
+로직까지 실제 코드 경로로 실행·검증, Redis 왕복 확인을 위해 guest
+세션과 별도로 가짜 토큰을 심은 비guest 세션 분리) 데스크톱
+1440×900+모바일 390×844 20개 체크 전부 통과:
+
+- 카드 pill 클릭→picker 오픈, 동시에 상세 모달은 안 열림(이벤트
+  위임 우선순위 확인).
+- picker 옵션 6개+현재값 `on` 표시.
+- 옵션 선택→`state.complexes[].complexStatus` 갱신+카드 뱃지
+  텍스트/색 즉시 갱신+요약 카운트 갱신+마커 아이콘 문자열에
+  `HEX_CX[새상태]` 색 포함 확인.
+- 카드→상세 동기(select 값 일치), 상세 select 변경→카드 뱃지·
+  카운트·마커 전부 역방향 동기.
+- 비guest 세션에서 `flushPendingSync()` 강제 호출 후
+  `/api/state` POST 바디에 변경된 `complexStatus`가 실제로 포함됨
+  (guest 모드는 `save()`가 즉시 return해 동기화 자체를 건너뛰는
+  기존 설계라 이 체크만 별도 세션으로 분리).
+- 레거시 `showStatusPicker`/`state.properties` 무손실(함수·배열
+  둘 다 그대로 존재).
+- 모바일 터치로 picker 오픈+뷰포트 안 위치+상태 변경 반영+상세
+  모달 미동시오픈.
+
+`node --check` 통과.
+
+**→ B-116 완료·push 완료**(`01057fa`). 손 B의 B-104-5
+(`nav.js`+`style.css`)와 파일 충돌 없음. 다음 손 A 작업은
+B-117(별도 지시).

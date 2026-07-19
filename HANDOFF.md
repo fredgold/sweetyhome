@@ -1,4 +1,77 @@
-# HANDOFF — B-104-4 완료 (2026-07-19)
+# HANDOFF — B-116 완료 (2026-07-19)
+
+## 최신 작업: 단지 카드 상태 변경 빠른 경로 복원
+
+```
+01057fa fix: 단지 카드 상태 변경 빠른 경로 복원 (B-116)
+```
+
+`js/properties.js` 단독 수정(+40/-2줄). `style.css`는 결과적으로
+무접촉(재사용 가능한 기존 `.status-picker`/`.pill{cursor:pointer}`
+스타일만으로 충분해 신규 CSS 불필요) — 손 B의 B-104-5
+(`nav.js`+`style.css`) 미커밋 변경분과도 겹치지 않았다.
+`index.html`/`state.js`/`BACKLOG.md` 전부 무접촉.
+
+**진단(착수 전 전수 확인)** — `complexStatus`를 바꿀 수 있는 진입점은
+착수 시점에 사실상 1곳뿐이었다:
+- `#cxDetailStatusSel`(단지 상세 select, `properties.js:3162`
+  `onchange`) — 유일하게 생존한 편집 경로.
+- 레거시 `showStatusPicker()`(`:1367`)는 `.pill[data-statuspill]`을
+  통해 `state.properties[].status`를 바꾸는 함수로, **`complexStatus`와
+  무관**하다(다른 스키마·다른 값 집합). E-01 이관 후 단지 카드
+  (`#complexSection`)의 `.pill`에는 애초에 아무 `data-*` 핸들러도
+  안 붙어 있어 클릭해도 아무 일도 안 일어났다 — 이게 "카드에서
+  상태를 못 바꾼다"는 사용자 체감의 실체였다.
+- `migComplexStatus()`(`:1913`)는 properties→complexes 1회성
+  마이그레이션 프리뷰 값 정규화 함수로, 라이브 편집 경로가 아니다.
+
+**복원**: 단지 카드 뱃지(`.pill`)에 `data-cxstatuspill="${cx.id}"`를
+붙이고, `#complexSection` 클릭 위임에서 `data-cxopen`(카드 전체
+클릭→상세 열기) 분기보다 먼저 가로채는 `showCxStatusPicker(pill,cx)`
+를 신설했다. 레거시 `showStatusPicker`와 완전히 동일한
+`.status-picker`/`.sp-opt` 플로팅 메뉴 마크업·위치 계산·바깥 클릭
+닫기 패턴을 그대로 재사용(신규 CSS·신규 UI 패턴 0). 옵션 6개(관심·
+검토중·후보·임장예정·보류·탈락)는 `#cxDetailStatusSel`과 완전히
+동일한 값 집합 — 스키마·값 집합 변경 없음, 자동 판정 없음.
+
+- 선택 시 `save()`+`renderStats()`+`renderComplexes()`를 호출 —
+  `renderComplexes()`가 끝에서 항상 `refreshOverview()`를 부르므로
+  지도 마커 색(`HEX_CX`, 마커 캐시 키에 `complexStatus` 포함이라
+  스킵 안 됨)·필터(재계산 기반이라 자동 반영)·카드 뱃지가 전부 한
+  번에 갱신된다.
+- **부수 발견·동시 수정**: 기존 `#cxDetailStatusSel.onchange`는
+  `renderComplexes()`만 부르고 `renderStats()`는 호출하지 않아
+  상세에서 상태를 바꿔도 상단 요약 카운트(단지 N개·후보 N·임장예정
+  N)가 갱신 안 되는 기존 결함이 있었다(라이브 경로가 detail select
+  하나뿐이던 동안은 눈에 덜 띔). "카드 변경→...카운트...동기,
+  상세 변경→카드 반영" 검증 요구를 상세 경로에도 동일 적용하며
+  `renderStats()` 호출을 추가해 두 경로를 완전히 대칭으로 맞췄다.
+- 상세 열려있는 상태에서 카드로 변경한 경우 `cxDetailId===cx.id`면
+  `renderComplexDetailBody(cx)`도 같이 불러 상세 select 표시값까지
+  동기화(카드→상세 방향).
+
+**검증**: Playwright(로컬 node UTF-8 정적 서버, `window.naver` 최소
+스텁으로 지도 마커 생성 로직까지 실제 실행·검증, guest/비guest
+세션 분리) 데스크톱 1440×900+모바일 390×844 20개 체크 전부 통과 —
+카드 pill 클릭 시 picker 오픈+상세 모달 미동시오픈, 옵션 6개+현재값
+`on`표시, 선택 후 `state.complexes.complexStatus` 갱신+카드 뱃지
+텍스트·색 즉시 갱신+요약 카운트 갱신+마커 아이콘 HEX 색 갱신
+(`cxMarkerHtml`이 실제 실행됨을 스텁 마커 객체로 확인), 카드→상세
+동기(select 값 일치), 상세→카드 동기(뱃지·카운트·마커 모두 역방향
+갱신), 비guest 세션에서 `flushPendingSync()` 강제 후 `/api/state`
+POST 바디에 변경된 `complexStatus` 포함(Redis 왕복), 레거시
+`showStatusPicker`/`state.properties` 무손실, 모바일 터치로 picker
+오픈+뷰포트 내 위치+상태 변경 반영+상세 모달 미동시오픈. `node
+--check` 통과.
+
+- **B-116 완료·push 완료**. 손 B의 B-104-5(`nav.js`+`style.css`)
+  미커밋 변경과 파일 충돌 없음(`git status`로 확인 후 `style.css`
+  미접촉 유지).
+- **다음**: B-117(별도 지시).
+
+---
+
+# 이전 핸드오프 — B-104-4 완료 (2026-07-19)
 
 ## 최신 작업: 자산 탭 A2 요약·노트 / 등록부 2구역
 
