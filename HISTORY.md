@@ -4427,6 +4427,132 @@ Tiptap 등 ProseMirror 계열, 직접 InputRule 구현 여지) 조사 지속
 
 ---
 
+## 2026-07-19 — B-103 1단계-2차: Tiptap WYSIWYG 에디터 PoC (poc 브랜치, 커밋 2개·master 미푸시)
+
+1차(Toast UI) 탈락 사유(라이브 마크다운 숏컷 미지원)에 대응한 2차
+후보 PoC. **⚠️ 코드는 `master`에 없다** — `poc` 브랜치에서만 작업.
+1차 코드를 먼저 되돌리는 커밋(`60638ac` "poc: revert Toast UI 스파이크")
+으로 정리한 뒤 Tiptap 커밋(`ac7c828` "poc: B-103 2차 Tiptap v2 WYSIWYG
+스파이크")을 쌓아, `poc` 브랜치 히스토리에 1차·2차 시도가 모두
+남는다(비교·롤백 가능). 대상은 1차와 동일하게 자산 노트 1곳,
+파일도 동일(`index.html`+`js/assets.js`+`style.css`, 총 +43/-41줄).
+
+### 구성
+
+Tiptap v2(`@tiptap/core`+`@tiptap/starter-kit` 2.27.2)+
+`tiptap-markdown` 0.8.10(마크다운 파싱·직렬화, `@tiptap/core` v2
+계열과 호환되는 마지막 버전 — 최신 0.9.0은 Tiptap v3 전용이라 제외).
+esm.sh CDN에서 `import()` 동적 로딩(빌드 파이프라인 없음, `index.html`에
+`<script>` 태그 추가 없이 `assets.js` 안에서 `await import('https://esm.sh/...')`
+만으로 로드) — **1차의 jsdelivr 패키징 문제가 재현되지 않아 vendoring
+없이 CDN ESM으로 그대로 성립**. 저장은 `editor.storage.markdown.
+getMarkdown()`으로 마크다운 문자열 반환, `state.assets.notes`에
+그대로 반영(스키마 무변경). Tiptap은 기본 CSS를 전혀 안 실어(헤드리스
+설계) `style.css`에 최소 골격(헤딩·리스트·인용 여백/크기) 10줄
+추가 — 폰트는 오버라이드 없이 앱 전역 Pretendard를 자동 상속(1차는
+Toast UI 자체 CSS를 이겨야 해서 오버라이드가 필요했던 것과 대조).
+
+### 검증 10개 기준 + 신규 심화 테스트 결과 — **17개 전부 통과**
+
+Playwright(로컬 python UTF-8 서버+esm.sh 실접속, 실키스트로크
+`page.keyboard.type`/`press` 방법론 1차와 동일):
+
+- **⑨"1. "/"- "/"## " 라이브 자동 전환**: 전부 실키스트로크로 확인
+  — 타이핑 즉시 `<ol>`/`<ul>`/`<h1>`로 전환, 마커 문자 화면 무노출
+  (1차의 핵심 탈락 사유를 정확히 해결). Enter는 리스트 번호를
+  정확히 이어감(2번째 `<li>` 자동 생성), **빈 항목에서 Enter →
+  리스트 탈출**(Notion 표준 동작)도 확인. `getMarkdown()`에 B-108류
+  "1.붙음" 손상 없음.
+- **⑩ 헤딩·볼드·리스트 마커 무노출**: 스크린샷으로 실제 렌더 확인
+  (헤딩·볼드·순서리스트·인용을 전부 타이핑만으로 작성, 화면에 `#`·
+  `**`·`1.` 전혀 안 보임 — 세션 scratchpad에서 삭제).
+- **①한글 IME 심화**: 5음절 연속 조합 무깨짐(1차와 동일 baseline)
+  + **신규 테스트: "1. " 타이핑 직후(리스트로 전환된 상태) 바로 한글
+  조합 시작 → input rule 오발동 없이 리스트 첫 항목 안에 정상
+  삽입**(오발동 시나리오였다면 리스트가 풀리거나 "1.가"처럼
+  깨졌을 텐데, `<ol><li><p>가</p></li></ol>`로 정확). ProseMirror의
+  조합 처리(`view.composing` 가드)가 InputRule 평가 시점과 충돌하지
+  않음을 실측 확인.
+  ⚠️ Playwright/CDP 조합 시뮬레이션은 실제 OS IME를 완전히 재현
+  못하는 한계는 1차와 동일하게 인정 — 실기기 최종 확인 권장.
+  ⚠️ **1개 음절만 테스트**했음(실제 한글 단어는 초성·중성·종성이
+  조합되는 동안 여러 compositionupdate가 발생 — 이번 PoC는 시간
+  제약상 단일 완성 음절 삽입만 확인, 여러 compositionupdate가 연쇄
+  되는 동안의 안정성까지는 미검증. 2단계 착수 전 실기기 확인 권장
+  사항에 포함).
+- **⑥ 기존 저장 마크다운 왕복 무변형**: 헤딩·굵게·리스트·인용
+  혼합 샘플을 `setContent()`→`getMarkdown()` 왕복 시 **원본과 완전
+  동일**(diff 없음) 확인. 저장 버튼→`state.assets.notes` 반영도 확인.
+- **⑧XSS**: `<img onerror>`+`<svg onload>` 붙여넣기 시 편집 표면
+  무실행.
+- **④스타일 통합**: 오버라이드 불필요(위 참고), 통합 비용 1차보다
+  낮음.
+- **②모바일 390px**: 가로 overflow 없음, 타이핑 정상.
+- **⑤50KB+ 무지연**: 동기 비용 2~3ms(ProseMirror diff 렌더, 여유 큼).
+- (부가) Cmd/Ctrl+B 단축키 — StarterKit 기본 제공, OS별 자동 매핑
+  확인(맥 호스트에서 최초 `Control+b`로 오탐 실패했다가 `navigator.
+  platform` 확인 후 `Meta+b`로 재검증 — 앱 실사용자가 맥이면 정상
+  동작, 이 발견 자체가 테스트 아티팩트였음을 기록).
+
+### ③ 번들 크기·로드 — Toast UI(1차) 대비 비교표
+
+| 항목 | Toast UI(1차) | Tiptap(2차) |
+|---|---|---|
+| 실제 전송량(wire, 압축 상태) | JS+CSS 합계 gzip **약 266KB** | esm.sh 전체 **약 231KB**(brotli, Playwright network API 실측) |
+| 요청 수 | 2개(JS 1+CSS 1) | **128개**(세분화된 ESM 모듈 그래프 — prosemirror-* 각 패키지가 별도 파일) |
+| 캐싱 | 공식 CDN, 캐시 정책 미확인 | `cache-control: public, max-age=31536000, immutable` 확인 — **최초 1회 이후 전부 디스크 캐시**(재방문 비용 0에 수렴) |
+| CSS | 필요(자체 CSS 있음, 폰트 오버라이드 4줄 추가 필요) | 불요(헤드리스, 골격 CSS만 10줄) |
+| CDN 안정성 | 위험(jsdelivr 깨짐, 공식 CDN만 가용·SRI 불가) | **안정**(esm.sh CDN ESM 그대로 성립, vendoring 불요) |
+
+바이트 총량은 비슷하지만(231KB vs 266KB) **요청 수 128개는 최초
+방문 시 실제 지연 요인**(HTTP/2 멀티플렉싱으로 완화되나 0은 아님)
+— 단 1년 불변 캐시라 두 번째 방문부터는 사실상 무비용. 실채택 시
+자산 탭 진입 시점 지연로드(둘 다 이번 PoC에선 미적용, index.html
+head 무조건 로드 아님 — Tiptap은 애초에 script 태그가 없어 로드
+시점이 이미 `initAssetNotesEditor()` 호출 시점=자산 탭 진입 시로
+자연 지연로드됨. Toast UI는 `<script>` 태그가 index.html head에
+있어 전 페이지 로드시 항상 받아옴 — **이 차이도 Tiptap이 유리**).
+
+### 2단계(수집함 폼·편집모달·매물 메모 3곳) 전환 규모 추정(코드 무변경, 추정만)
+
+실제 대상 카운트(grep 확인):
+- **수집함 입력폼(`sc_text`)+편집모달(`sem_text`)**: 이번 PoC와 동일한
+  싱글턴 패턴 재사용 가능(필드당 에디터 1개, 동시에 최대 1개만 활성).
+  단 `scraps-form.js`의 슬래시 커맨드(`scDetectSlash`/`scShowSlash`/
+  `scApplySlash`, `SC_*` 26개 참조 지점)는 Tiptap 전용 API(`@tiptap/
+  suggestion`)로 재구현 필요 — **가장 큰 작업 블록**. 또한 이 2필드는
+  B-105/B-107이 공들여 고친 `ceRender`/`ceGetOffset`/
+  `ceFlushDebounced` 커스텀 파이프라인의 소비처라, Tiptap 전환 시
+  그 인프라 전체가 이 2필드에서는 불필요해짐(ProseMirror가 자체
+  렌더·커서 관리) — **단순화지만 최근 하드닝한 코드를 걷어내는
+  결정**이라 신중한 회귀 검증 필요.
+- **매물 메모 3곳**: `f_memo`(추가폼)·`em_memo`(수정폼)는 싱글턴이라
+  자산 노트와 동일 패턴으로 낮은 비용. **`lst-memo-ta`(단지 상세
+  매물 행 메모, `renderCxListings()` 템플릿 내 동적 생성)는 행마다
+  독립 인스턴스가 필요하고 `cxListingEditMode`가 `Set`이라 이론상
+  여러 행이 동시에 편집모드일 수 있음** — 싱글턴이 아니라 `Map<
+  listingId, Editor>` 같은 인스턴스 수명주기 관리가 신규로 필요한
+  **유일한 새 패턴**(생성은 편집모드 진입 시, 파괴는 편집모드 이탈·
+  재렌더 시).
+- 총평: 5개 필드 중 4개(자산 노트 완료 포함 시 3개 남음: sc_text·
+  sem_text·f_memo·em_memo)는 이번에 검증된 싱글턴 패턴 그대로 재사용
+  가능. 슬래시 커맨드 재구현(수집함 2필드)과 동적 다중 인스턴스
+  관리(매물 행 1곳)가 2단계의 실질 신규 작업 — 정확한 공수는 코딩
+  없이는 확정 어려움(추정 표시, 확답 아님).
+
+`node --check js/assets.js` 통과. `poc` 브랜치는 로컬에만 존재,
+origin push 안 함(지시 조건 준수). 로컬 python 테스트 서버·
+Playwright 스크립트·스크린샷은 레포 바깥 scratchpad에서만 실행,
+세션 종료 전 전부 삭제.
+
+**→ B-103 1단계-2차(Tiptap PoC) 완료·보고**. 코드는 `master`에 없음
+(poc 브랜치에만 존재, 1차 되돌림 커밋 포함 총 2개 커밋). **판정은
+커맨드센터·사용자 몫** — 이번 결과만 놓고 보면 Tiptap이 10개 기준
+전부(신규 ⑨⑩·심화 IME 포함) 통과해 1차 Toast UI보다 우위이나, 2단계
+전환 공수(슬래시 커맨드 재구현·동적 인스턴스 관리)는 미실측 추정.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |
