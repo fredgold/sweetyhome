@@ -4248,6 +4248,75 @@ Playwright 합성 테스트로 완전히 확인하지 못했을 가능성을 인
 
 ---
 
+## 2026-07-19 — B-102: 매물 소형 묶음 3건(`properties.js`, 커밋 3개)
+
+`properties.js` 단독 수정. 3건 모두 기능 단위 atomic 커밋으로 분리 —
+③(실버그)을 커밋①로 최우선 처리하라는 지시에 따라 순서를 매겼다.
+
+1. **`fix`: 단지 매물 메모 표시 누락 수정**(B-91 실버그, 최우선
+   커밋) — `renderCxListings()`가 매물 행의 `l.memo`를 편집모드
+   (`listingEditFieldsHTML`) 안 textarea에서만 다루고, 읽기 모드에는
+   전혀 렌더하지 않던 결함. 편집 저장 후 화면을 벗어나면 적어둔 메모가
+   안 보여 "저장이 안 된 줄" 오해할 수 있는 실사용 버그. 레거시
+   `state.properties` 카드(`renderList()` 내 `p.memo`, line 864)가
+   이미 쓰던 `<div class="c-memo sc-md-content">${renderMd(...)}</div>`
+   패턴을 그대로 재사용해 `!editing&&l.memo` 조건으로 메타 정보 아래에
+   삽입 — `renderMd`(marked.js+DOMPurify)·`c-memo` CSS 클래스 모두
+   기존 것 그대로, 새 스타일·새 살균 경로 없음(지시서 "renderMd+esc
+   경로 준수" 충족).
+2. **`feat`: parseNaver 세대수(`sedN`) 구조화 → B-101 승격 대상
+   추가** — 기존엔 `sedN`이 `_auto.k4`(대단지 게이트)·`memo` 문자열
+   조립에만 쓰이고 파싱 결과 객체(`r`)에 구조화 필드로 노출되지
+   않았음. `r.households=sedN`을 추가해 B-101이 확립한 승격 파이프라인
+   (`createComplexPromotion`→`applyComplexPromotion`, 기존값 없으면
+   즉시 채움·있으면 confirm 후 덮어씀, `promotion.handled`로 단지당
+   1회)에 `parking`과 동일한 패턴으로 편입. `households` 필드 적용 시
+   `householdGrade`도 `calcHouseholdGrade()`로 함께 재계산(단일소스
+   원칙 — B-100에서 세운 규칙과 동일). ADD 폼 채우기
+   (`queueAddFormComplexPromotion`)·매물행 붙여넣기 자동채우기
+   (listing edit paste) 양쪽 다 `createComplexPromotion`을 공유해서
+   호출하므로 추가 배선 없이 두 경로 모두에 자동 적용됨.
+3. **`refactor`: `showPropToast`→공용 `toast()` 통합** — B-93에서
+   `utils.js`에 만든 공용 `toast()`(요소 id `appToast`, `textContent`
+   대입·`clearTimeout`으로 타이머 정리·`.prop-toast` 클래스 재사용)와
+   `properties.js` 자체의 `showPropToast()`(요소 id `propToast`,
+   `setTimeout`만 걸고 이전 타이머 정리 없음 — 연속 호출 시 레이스
+   가능성)가 중복 존재하던 걸 정리. `showPropToast` 함수 정의 삭제,
+   6개 호출부(신규/기존 단지 매물 등록·대량 가져오기·마이그레이션
+   가져오기·위치 미지원/권한거부·단지 정보 저장) 전부 `toast()`로
+   교체. `.prop-toast` CSS 클래스는 공유라 스타일 변경 없음(`style.css`
+   무접촉).
+
+**검증**(Playwright, 로컬 python UTF-8 강제 서버): 17개 체크 전부
+통과 —
+- ① `parseNaver`가 "1234세대" 텍스트에서 `households:1234` 반환 +
+  기존 memo 문자열 조립("1234세대") 하위호환 유지.
+- ① `createComplexPromotion`이 `values.households` 포함.
+- ① 단지에 세대수가 비어있으면(`null`) confirm 없이 즉시 채움 +
+  `householdGrade` 동시 재계산.
+- ① 기존값과 다르면 confirm 요구, 승인 시 반영·거부 시 유지, 동일값이면
+  confirm 자체를 안 띄움(3가지 분기 전부 확인).
+- ② `showPropToast` 함수가 더 이상 정의되지 않음, `toast()` 호출 시
+  `#appToast`에 메시지 표시, 레거시 `#propToast` 엘리먼트 미생성.
+- ③ 읽기 모드에서 `.c-memo` 블록에 마크다운 렌더(굵게 등) 확인,
+  `<svg onload>`+`<img onerror>` XSS 페이로드 실행 안 됨(스크립트 실행
+  플래그 미설정·raw svg/onerror 속성 DOM에 없음 — DOMPurify 정화 확인).
+  편집모드 진입 시 읽기용 `.c-memo` 블록은 사라지고(중복 렌더 방지)
+  textarea에 원문 그대로 유지. 메모가 빈 매물은 `.c-memo` 블록 자체가
+  안 생김(빈 박스 노출 없음).
+- `node --check js/properties.js` 통과.
+- 3개 atomic 커밋으로 분리 적용한 뒤 `git diff`로 3개 커밋 합산본이
+  원래 통합 diff와 바이트 단위로 동일함을 확인(분리 과정에서 손실·중복
+  없음).
+- 로컬 python 테스트 서버·Playwright 스크립트는 레포 바깥
+  scratchpad에서만 실행, 세션 종료 전 전부 삭제(이전 세션(B-63·B-72)의
+  잔여 스크린샷·스크립트도 함께 정리).
+
+**→ B-102 완료**. `index.html`/`nav.js`/`style.css`/`utils.js`/
+`scraps-*.js` 전부 무접촉 확인.
+
+---
+
 ## 현재 기술 스택
 
 | 항목 | 내용 |

@@ -1,4 +1,55 @@
-# HANDOFF — B-107 완료(B-105 회귀 핫픽스), B-102 재개 준비 (2026-07-19)
+# HANDOFF — B-102 완료(매물 소형 묶음 3건), B-103 착수 준비 (2026-07-19)
+
+## 최신 작업: B-102 매물 소형 묶음 3건
+
+```
+4f15322 fix: 단지 매물 메모 표시 누락 수정 (B-102①, B-91 실버그)
+78e9d23 feat: parseNaver 세대수 구조화→B-101 승격 대상 추가 (B-102②)
+9e1521c refactor: showPropToast→공용 toast() 통합 (B-102③)
+```
+
+`properties.js` 단독 수정. `index.html`/`nav.js`/`style.css`/
+`utils.js`/`scraps-*.js` 무접촉. 지시서의 "커밋① 최우선" 요구에 맞춰
+3건을 기능 단위 atomic 커밋 3개로 분리, 실버그 수정을 가장 먼저
+커밋했다(합친 diff와 3커밋 합산 diff가 바이트 단위로 동일함을
+`git diff` 비교로 확인 — 분리 과정 손실·중복 없음).
+
+- **①(최우선) B-91 매물 메모 표시 누락 수정**: `renderCxListings()`가
+  `l.memo`를 편집모드 textarea에서만 다루고 읽기 모드엔 전혀 렌더하지
+  않던 실사용 버그(저장해도 안 보여 "저장 안 된 줄" 오해 가능). 레거시
+  `state.properties` 카드가 쓰던 `<div class="c-memo sc-md-content">
+  ${renderMd(...)}</div>` 패턴을 그대로 재사용, `!editing&&l.memo`
+  조건으로 삽입 — 새 살균 경로·새 CSS 없음.
+- **② parseNaver 세대수 구조화 → B-101 승격 대상 추가**: `sedN`을
+  `r.households`로 파싱 결과에 노출, `createComplexPromotion`/
+  `applyComplexPromotion`에 `parking`과 동일 패턴(빈값 즉시 채움·
+  기존값과 다르면 confirm·`handled`로 단지당 1회)으로 편입.
+  `households` 적용 시 `householdGrade`도 `calcHouseholdGrade()`로
+  동시 재계산. ADD 폼 채우기·매물행 붙여넣기 자동채우기 양쪽 다
+  `createComplexPromotion` 공유라 추가 배선 없이 두 경로 자동 적용.
+- **③ showPropToast → 공용 toast() 통합**: B-93이 `utils.js`에 만든
+  공용 `toast()`(요소 id `appToast`, `clearTimeout`으로 타이머 정리)
+  와 `properties.js` 자체 `showPropToast()`(요소 id `propToast`,
+  이전 타이머 정리 없음)의 중복을 정리. 함수 정의 삭제, 호출부 6곳
+  전부 `toast()`로 교체. `.prop-toast` CSS는 공유라 `style.css`
+  무접촉.
+
+**검증**: Playwright(로컬 python UTF-8 강제 서버) 17개 체크 전부
+통과 — households 구조화·승격 3분기(빈값 즉시/기존값 confirm 승인·
+거부/동일값 무프롬프트) 확인, `toast()` 전환 후 레거시 `#propToast`
+미생성 확인, 메모 읽기모드 렌더+마크다운(굵게)+XSS 2종
+(`<svg onload>`+`<img onerror>`) 무력화+편집모드 전환 시 중복 없음+
+빈 메모는 빈 박스 미노출 확인. `node --check` 통과.
+
+- **B-102 완료**. push 완료.
+- **다음: B-103 착수**(서식 품질 에픽 2기 — WYSIWYG 에디터 PoC
+  스파이크, 자산 노트 1곳에 Toast UI Editor 시험 적용. IME·모바일
+  390px·번들 크기·스타일 통합 실측 + "50KB+ 긴 문서 타이핑 무지연"
+  통과 기준 포함(B-105/B-107 재발 방지). BACKLOG.md 기준 손 A 담당).
+
+---
+
+# 이전 핸드오프 — B-107 완료(B-105 회귀 핫픽스), B-102 재개 준비 (2026-07-19)
 
 ## 최신 작업: B-107 지연 렌더·커서 정합성 핫픽스
 
