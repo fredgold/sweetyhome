@@ -2594,9 +2594,10 @@ function renderComplexes(){
         <span class="chip">${esc(rep.areaGrade||calcAreaGrade(rep.areaM2,state.settings.grades)||'—')}</span>
         <span class="chip ${listingStatusChipClass(rep.listingStatus)}">${esc(rep.listingStatus||'확인필요')}</span>
         ${commuteHTML}
+        ${fieldNoteChip(cx)}
       </div>
       <div class="cx-listing-meta">최근 확인 ${rep.lastCheckedAt?esc(new Date(rep.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>`
-      :`<div class="c-meta"><span class="chip warn">현재 대표매물 없음</span>${commuteHTML}</div>`;
+      :`<div class="c-meta"><span class="chip warn">현재 대표매물 없음</span>${commuteHTML}${fieldNoteChip(cx)}</div>`;
     /* B-44①: "이번 주 확인 완료" 버튼은 단지 상세(cxDetailWeeklyCheckBtn)에 이미 있어
        카드에선 제거 — 뱃지·최근확인 날짜만 유지해 카드 높이를 줄이고 노출 수를 늘림 */
     const weeklyBadge=needsWeeklyCheck(cx,rep)?'<span class="chip warn">7일+ 미확인</span>':'';
@@ -2896,6 +2897,16 @@ function safetyBadgeChip(l){
   const allOk=items.every(s=>s.status==='ok');
   if(allOk) return `<span class="chip ok">안전 체크 완료${lastCheckedAt?` · 마지막 확인 ${esc(lastCheckedAt)}`:''}</span>`;
   return `<span class="chip${warningCnt?' warn':''}">미확인 ${uncheckedCnt} · 주의 ${warningCnt}${lastCheckedAt?` · 마지막 확인 ${esc(lastCheckedAt)}`:''}</span>`;
+}
+/* B-41: 임장 노트 요약 칩 — 별점 매긴 항목이 하나라도 있을 때만 노출(기록
+   자체가 없으면 무표시). 평균은 표시용 계산일 뿐 저장·정렬·필터에 전혀
+   개입하지 않는다(safetyBadgeChip과 동일하게 집계만) */
+function fieldNoteChip(cx){
+  const fn=cx.fieldNote; if(!fn) return '';
+  const rated=FIELD_NOTE_ITEMS.map(({key})=>fn.items[key]).filter(it=>it&&it.rating!=null);
+  if(!rated.length) return '';
+  const avg=rated.reduce((s,it)=>s+it.rating,0)/rated.length;
+  return `<span class="chip">임장 ★${avg.toFixed(1)} · ${rated.length}/${FIELD_NOTE_ITEMS.length} 기록</span>`;
 }
 /* B-27-lite: 전세 안전 체크 9항목 — 기록·표시만(자동 판정·차단 없음). 기본
    접힘, 매물 행 안에서 토글해서 펼침 */
