@@ -1,4 +1,45 @@
-# HANDOFF — B-109 완료·자산노트·매물메모 동일버그 잔존 (2026-07-19)
+# HANDOFF — B-110 완료·B-109 전 필드 적용 완료 (2026-07-19)
+
+## 최신 작업: B-109 잔여 전파 — 자산 노트·매물 메모 3곳
+
+```
+cf87182 fix: B-109 잔여 전파 — 자산 노트·매물 메모 3곳 (B-110)
+```
+
+`js/assets.js`+`js/properties.js`만 수정(+16/-4줄). `state.js`/
+`profile.js`/`nav.js`/`style.css`/`BACKLOG.md` 전부 무접촉 —
+`nav.js`+`style.css`는 손 B가 B-104-1(앱쉘)로 작업 중인 미커밋
+변경분이라 `git status`로 확인 후 `git add`에서 명시적으로 제외.
+
+B-109에서 utils.js에 만들어둔 `buildListBackspaceFix`·
+`buildTiptapPlaceholder`를 남은 4곳(자산 노트·매물 추가폼 f_memo·
+매물 수정폼 em_memo·매물 행 listing memo) 에디터 생성부 extensions
+배열에 연결만 하면 됐다 — 새 로직 없이 4곳 전부 검증 24개 첫 실행에
+전부 통과(공용 래퍼 설계가 재사용 단계에서 실제로 효과를 봄).
+
+- 플레이스홀더 텍스트는 각 필드의 기존 `<textarea placeholder="...">`
+  값을 `mount.dataset.placeholder`로 그대로 복사해 재사용 —
+  index.html·properties.js 문구 재작성 없음.
+- 포커스 링은 4곳 마운트가 이미 `.sc-md-editor` 클래스를 쓰고 있어
+  B-109③ CSS가 셀렉터 매칭만으로 자동 적용 — **`style.css` 수정
+  전혀 불필요**(지시서가 예상한 대로, 중단·보고 조건 미해당).
+- listing memo는 2개 인스턴스 동시 편집모드 상태에서도 lift·
+  플레이스홀더·포커스·저장/destroy 전부 정상 확인(교차 오염 없음).
+
+**검증**: Playwright 24개 전부 통과 — 4곳 각각 2단계 lift 무손실+
+undo, 플레이스홀더 표시, 포커스 링, XSS 3종, 저장 왕복(Redis 모킹),
+폴백 경로(esm.sh 차단, 자산노트·f_memo 구 textarea 정상). `node
+--check` 2파일 통과.
+
+- **B-110 완료·push 완료**. **B-109 폴리시 3건이 이제 6개 필드
+  (수집함 2+자산노트 1+매물메모 3) 전부에 적용됨** — B-103 에픽의
+  "적용 범위 한계" 잔여가 해소됨.
+- **다음**: 남은 건 사용자 실기기 한글 IME 확인(B-103 에픽 종결
+  조건)뿐 — 그 결과에 따라 커맨드센터가 최종 종결 판정.
+
+---
+
+# 이전 핸드오프 — B-109 완료·자산노트·매물메모 동일버그 잔존 (2026-07-19)
 
 ## 최신 작업: Tiptap 후속 폴리시 3건 — 사용자 실기기 검증 발견
 

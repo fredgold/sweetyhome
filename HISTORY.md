@@ -4976,3 +4976,57 @@ sem_text 둘 다) ③포커스(내부 outline 제거+외곽 focus-ring 스크린
 **→ B-109 완료·push 완료**. `state.js`/`profile.js`/`BACKLOG.md`
 무접촉 확인. **자산 노트·매물 메모 3곳의 동일 버그는 미해결로 남음
 — 후속 작업(파일 락 해제 시) 필요, 위 "적용 범위 한계" 참고.**
+
+---
+
+## 2026-07-19 — B-110: B-109 잔여 전파 — 자산 노트·매물 메모 3곳 (커밋 1개)
+
+B-109가 파일 락 때문에 수집함(`sc_text`/`sem_text`) 2곳에만 적용하고
+남겨둔 나머지 4곳(자산 노트·매물 추가폼·매물 수정폼·매물 행 메모)에
+동일 폴리시를 연결. `js/assets.js`+`js/properties.js`만 수정
+(+16/-4줄, 매우 작은 변경) — B-109에서 이미 `utils.js`에 만들어둔
+`buildListBackspaceFix`·`buildTiptapPlaceholder`를 각 에디터 생성부
+extensions 배열에 추가만 하면 됐다("공용 래퍼라 전 필드 일괄 적용"
+설계가 실제로 이 재사용 단계에서 효과를 봄 — 새 로직 없이 4곳 전부
+17개 검증 첫 실행에 전부 통과).
+
+- **4개 생성부 전부 동일 패턴 적용**: `assets.js`의
+  `initAssetNotesEditor()`(`assetTiptapEditor`), `properties.js`의
+  `initFMemoEditor()`(`fMemoTiptapEditor`)·`initEMMemoEditor()`
+  (`emMemoTiptapEditor`)·`initListingMemoEditor()`(listing memo
+  Map 인스턴스 — 유일하게 동시 2개+ 열릴 수 있는 필드라 이번에도
+  멀티 인스턴스 상태에서 별도 검증).
+- **플레이스홀더 텍스트 소스**: 이 4곳의 마운트 div는 새로 만드는
+  요소라 sc_text/sem_text와 달리 애초에 `data-placeholder` 속성이
+  없음 — 각 필드의 원래 `<textarea>`가 이미 갖고 있던 표준 HTML
+  `placeholder` 속성값(`ta.placeholder`)을 그대로 읽어
+  `mount.dataset.placeholder`로 복사해써서 index.html·properties.js의
+  기존 문구 재작성 없이 재사용(f_memo/em_memo는 index.html 정적
+  속성, listing memo는 `listingEditFieldsHTML()`의 기존 `placeholder=
+  "매물 메모"`를 그대로 사용).
+- **포커스 링**: 4곳 마운트 전부 기존 `.sc-md-editor` 클래스를
+  재사용하고 있어(B-103 2-1/2-2/2-3 때 이미 그렇게 만들어둠) B-109③의
+  `.sc-md-editor .ProseMirror{outline:none}`+`.sc-md-editor:focus-
+  within{box-shadow:var(--focus-ring)}` CSS가 셀렉터 매칭만으로
+  자동 적용됨을 확인 — **`style.css` 수정 전혀 불필요**(지시서 예상과
+  일치, 중단·보고 조건 미해당).
+- 손 B가 `js/nav.js`+`style.css`로 B-104-1(앱쉘) 작업 중인 걸
+  `git status`로 확인 — 그 두 파일은 완전히 무접촉, 커밋에도 포함 안
+  시킴(`git add`로 내 파일 2개만 명시적으로 선택, 손 B의 미커밋
+  변경분은 그대로 둠).
+
+### 검증(Playwright, 로컬 python UTF-8 서버, 폴백 경로 포함) — 24개 전부 통과
+
+4곳 각각: ①2단계 중첩 lift 무손실+undo 복원 ②플레이스홀더 표시
+③포커스 링(내부 outline 제거+외곽 focus-ring). listing memo는 추가로
+2개 인스턴스 동시 열림 상태에서 lstA만 조작해도 lstB는 완전히 독립
+(교차 오염 없음), 저장 시 destroy 정상(Map에 lstB만 남음). 4곳 전체
+XSS 3종(자산노트·listing memo로 대표 확인)·저장 왕복(Redis 모킹)
+무회귀. 폴백 경로(esm.sh 차단 모킹): 자산 노트·f_memo 둘 다 구
+textarea 그대로 노출·정상 동작 확인. `node --check` 2파일 통과.
+
+**→ B-110 완료·push 완료**. `state.js`/`profile.js`/`nav.js`/
+`style.css`/`BACKLOG.md` 전부 무접촉 확인. **B-109 폴리시 3건이
+이제 6개 필드(수집함 2+자산노트 1+매물메모 3) 전부에 적용됨** —
+B-103 에픽의 마지막 남은 "적용 범위 한계"가 해소됨. 남은 건 사용자
+실기기 한글 IME 확인(B-103 종결 조건)뿐.
