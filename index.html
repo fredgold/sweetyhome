@@ -911,6 +911,19 @@
   </div>
 
   <div class="modal" id="complexDetailModal">
+    <!-- B-117: 매물 상세 사이드 패널 — 단지 상세 옆(왼쪽)으로 확장(데스크톱)/
+         전체 시트로 스택(모바일). .box보다 DOM에서 먼저 나와야 justify-content:
+         flex-end 그룹 안에서 왼쪽에 자리잡음(style.css #complexDetailModal 참고) -->
+    <div class="cx-listing-detail" id="cxListingDetailBox">
+      <div class="mhead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <h3 id="cxListingDetailTitle" style="margin:0">매물 상세</h3>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button type="button" class="btn-ghost" id="cxListingDetailEditBtn">수정</button>
+          <button type="button" class="btn-ghost" id="cxListingDetailBackBtn">← 뒤로</button>
+        </div>
+      </div>
+      <div class="mbody" id="cxListingDetailBody"></div>
+    </div>
     <div class="box" style="max-width:460px;width:100%">
       <div class="mhead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
         <h3 id="cxDetailTitle" style="margin:0">단지 상세</h3>

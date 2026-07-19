@@ -361,6 +361,16 @@
        높아 이 규칙이 이겨버려 mhead까지 같이 스크롤돼버림 */
     #complexDetailModal .box{width:100%;max-width:100%;height:auto;max-height:88vh;border-radius:16px 16px 0 0;margin:0;animation:sheetup .22s ease;}
     #complexDetailModal .box::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--hairline);margin:8px auto 2px;}
+    /* B-117: 매물 상세 사이드 패널 — 모바일은 옆 확장이 불가능해 전체 시트로
+       스택. position:absolute;inset:0은 이미 position:fixed인 #complexDetailModal
+       (.modal 기본 규칙) 자체가 containing block이라 뷰포트 전체를 덮는다. z-index는
+       형제 .box(z-index:auto)만 이기면 되는 로컬 값 — B-59가 이미 쓰는 1100 티어를
+       새로 침범하지 않고 그 자식 스태킹 컨텍스트 안에서만 유효(충돌 없음) */
+    .cx-listing-detail{
+      position:absolute;inset:0;z-index:1;
+      border-radius:16px 16px 0 0;max-height:100dvh;
+      animation:sheetup .22s ease;
+    }
     /* 리스트뷰(data-view=list) — 지도를 숨기고 카드를 세로 목록으로. 위치 확인은 카드 탭 →
        단지 상세 바텀시트의 지도(#cxDetailMap)로 충분해 지도뷰와 중복하지 않음.
        현위치(.my-loc-btn)는 지도 관련 기능이라 리스트뷰에선 그대로 숨김 유지 —
@@ -589,7 +599,12 @@
   .cx-dl{margin-bottom:10px;}
   .cx-dl .cx-dt{font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:2px;}
   .cx-dl .cx-dd{font-size:14px;font-weight:600;}
-  .cx-listing-row{border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;margin-bottom:8px;}
+  .cx-listing-row{border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;margin-bottom:8px;cursor:pointer;}
+  /* B-117: 매물 상세 사이드 패널 — 기본은 숨김(JS가 .open 토글), 배경·flex 컬럼만
+     공통 지정하고 크기·위치는 breakpoint별로(데스크톱: 위 #complexDetailModal 블록,
+     모바일: 아래 @media max-width 899.98px 블록) 따로 정의 */
+  .cx-listing-detail{display:none;flex-direction:column;background:var(--surface);overflow:hidden;}
+  .cx-listing-detail.open{display:flex;}
   .cx-listing-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;}
   .cx-listing-dongho{font-size:13px;font-weight:700;}
   .cx-listing-meta{font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-bottom:3px;}
@@ -636,6 +651,15 @@
   @media (min-width:900px){
     #complexDetailModal{justify-content:flex-end;padding:0;z-index:1002;}
     #complexDetailModal .box{max-width:460px;width:100%;height:100vh;max-height:100vh;border-radius:0;margin:0;animation:drop .18s ease;}
+    /* B-117: 매물 상세 사이드 패널 — DOM에서 .box보다 앞이라 flex-end 그룹 안에서
+       단지 상세 왼쪽에 나란히 붙는다. 별도 z-index 불필요(형제 .box는 z-index:auto라
+       DOM 순서로만 자연스레 옆에 위치, 겹칠 일이 없음) */
+    #complexDetailModal .cx-listing-detail{
+      width:380px;flex:0 0 380px;height:100vh;max-height:100vh;
+      border-right:1px solid var(--hairline);
+      box-shadow:0 20px 60px rgba(0,0,0,.25);
+      animation:drop .18s ease;
+    }
   }
 
   .c-top-left{display:flex;gap:8px;align-items:flex-start;}

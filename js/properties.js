@@ -1546,8 +1546,19 @@ document.getElementById('propExportBtn').onclick=e=>showExportMenu(e.currentTarg
 
 
 /* ============ 내보내기 / 가져오기 ============ */
-document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
-document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{
+  closeModal(b.dataset.close);
+  /* B-117: 단지 상세를 닫으면 옆/위에 열려있던 매물 상세 사이드 패널도 같이 정리 —
+     안 그러면 다음에 이 단지(혹은 다른 단지)를 다시 열었을 때 이전 매물의 패널이
+     잠깐 남아있는 상태로 보일 수 있음(cxListingDetailId가 stale) */
+  if(b.dataset.close==='complexDetailModal') closeListingDetail();
+});
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{
+  if(e.target===m){
+    m.classList.remove('open');
+    if(m.id==='complexDetailModal') closeListingDetail();
+  }
+}));
 
 function makeBackup(){
   const payload={v:3, savedAt:new Date().toISOString(), state};
@@ -2901,6 +2912,7 @@ document.getElementById('complexDetailModal').addEventListener('change',e=>{
 function openComplexDetail(id){
   const cx=state.complexes.find(x=>x.id===id); if(!cx)return;
   cxDetailId=id;
+  closeListingDetail(); /* B-117: 이전 단지에서 열려있던 매물 상세 패널 잔존 방지 */
   cxDetailInfoEditing=false;
   document.getElementById('cxDetailInfoEdit').innerHTML='';
   renderComplexDetailBody(cx);
@@ -3134,6 +3146,7 @@ function renderCxListings(complexId){
     .slice().sort((a,b)=>new Date(a.capturedAt||0)-new Date(b.capturedAt||0));
   if(!listings.length){
     wrap.innerHTML='<p style="font-size:12.5px;color:var(--ink-soft)">등록된 매물이 없어요.</p>';
+    renderListingDetailPanel();
     return;
   }
   wrap.innerHTML=listings.map(l=>{
@@ -3164,7 +3177,98 @@ function renderCxListings(complexId){
     </div>`;
   }).join('');
   listings.forEach(l=>{ if(cxListingEditMode.has(l.id)) initListingMemoEditor(l.id); });
+  /* B-117: 매물 목록이 재렌더될 때마다(모든 매물 데이터 변경 경로가 공통으로 이
+     함수를 거침) 사이드 패널이 열려있으면 같은 데이터로 다시 그림 — 개별 핸들러마다
+     동기화 호출을 따로 추가할 필요 없이 여기 한 곳으로 충분. 보던 매물이 방금
+     삭제됐다면 renderListingDetailPanel 내부에서 자동으로 패널을 닫는다 */
+  renderListingDetailPanel();
 }
+/* ============ B-117: 매물 상세 사이드 패널 (읽기 전용, 단지 상세 옆 확장) ============
+   편집은 신설하지 않음 — "수정" 버튼은 기존 행 인라인 수정모드(B-91)를 그대로 켠다.
+   스키마·자동 판정 없음, esc()/renderMd 기존 경로만 재사용 */
+let cxListingDetailId=null;
+function daysAgoLabel(iso){
+  if(!iso) return '확인 기록 없음';
+  const days=Math.floor((Date.now()-new Date(iso).getTime())/86400000);
+  if(days<=0) return '오늘 확인';
+  return `${days}일 전 확인`;
+}
+/* safetySectionHTML(편집용 select/input)과 별개의 읽기 전용 렌더러 —
+   같은 SAFETY_ITEMS/SAFETY_STATUS_LABEL(state.js)만 재사용, 새 데이터 형태 없음 */
+function safetyReadOnlyHTML(l){
+  return `<div class="safety-list">
+    ${SAFETY_ITEMS.map(item=>{
+      const s=l.safety[item.key];
+      const cls=s.status==='warning'?' warn':(s.status==='ok'?' ok':'');
+      const metaParts=[s.memo?esc(s.memo):'',s.source?esc(s.source):'',s.checkedAt?esc(s.checkedAt):''].filter(Boolean);
+      return `<div class="safety-item">
+        <div class="safety-item-head">
+          <span class="safety-item-label">${esc(item.label)}</span>
+          <span class="chip${cls}">${esc(SAFETY_STATUS_LABEL[s.status]||'미확인')}</span>
+        </div>
+        ${metaParts.length?`<div class="cx-listing-meta">${metaParts.join(' · ')}</div>`:''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function listingDetailBodyHTML(l){
+  const safeHref=l.url?safeUrl(l.url):'';
+  return `
+    <div class="cx-listing-top">
+      <span class="cx-listing-dongho">${esc(l.dongHo||'동/호 미상')}</span>
+      <span class="chip ${listingStatusChipClass(l.listingStatus)}">${esc(l.listingStatus||'확인필요')}</span>
+      ${l.isRepresentative?'<span class="chip ok">대표매물</span>':''}
+    </div>
+    <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'—')}</div>
+    <div class="cx-listing-meta">${esc(mgmtFeeCaption(l))}</div>
+    <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · ${esc(daysAgoLabel(l.lastCheckedAt))}</div>
+    ${safeHref?`<div class="c-actions" style="margin:6px 0"><a href="${safeHref}" target="_blank" rel="noopener">${ic('link')} URL 열기</a></div>`:''}
+    ${l.memo?`<div class="c-memo sc-md-content">${renderMd(l.memo)}</div>`:'<div class="cx-listing-meta">메모 없음</div>'}
+    <h3 style="font-size:13px;margin:14px 0 8px">전세 안전 체크</h3>
+    ${safetyReadOnlyHTML(l)}
+  `;
+}
+function renderListingDetailPanel(){
+  const panel=document.getElementById('cxListingDetailBox');
+  if(!panel) return;
+  if(!cxListingDetailId){ panel.classList.remove('open'); return; }
+  const listing=state.listings.find(l=>l.id===cxListingDetailId);
+  if(!listing){ closeListingDetail(); return; }
+  const cx=state.complexes.find(c=>c.id===listing.complexId);
+  document.getElementById('cxListingDetailTitle').textContent=
+    (cx?cx.complexName+' · ':'')+(listing.dongHo||'동/호 미상');
+  document.getElementById('cxListingDetailBody').innerHTML=listingDetailBodyHTML(listing);
+  panel.classList.add('open');
+}
+function openListingDetail(lid){
+  cxListingDetailId=lid;
+  renderListingDetailPanel();
+}
+function closeListingDetail(){
+  cxListingDetailId=null;
+  const panel=document.getElementById('cxListingDetailBox');
+  if(panel) panel.classList.remove('open');
+}
+document.getElementById('cxListingDetailBackBtn').onclick=closeListingDetail;
+document.getElementById('cxListingDetailEditBtn').onclick=()=>{
+  const lid=cxListingDetailId; if(!lid) return;
+  const listing=state.listings.find(l=>l.id===lid); if(!listing) return;
+  closeListingDetail();
+  cxListingEditMode.add(lid);
+  renderCxListings(listing.complexId);
+  const row=document.querySelector(`#cxDetailListings [data-lid="${CSS.escape(lid)}"]`);
+  if(row) row.scrollIntoView({block:'center',behavior:'smooth'});
+};
+/* 행 클릭(버튼류 제외 영역) → 사이드 패널. a/button/input/select/textarea는 이미
+   각자 다른 위임 핸들러(수정·삭제·URL·안전체크 select 등)가 처리하므로 여기서
+   제외 — stopPropagation 없이 병행해도 서로 간섭하지 않는다(각자 독립적으로
+   closest 매칭 후 return). 수정모드 행은 이미 입력 폼이라 상세 열기 대상에서 제외 */
+document.getElementById('cxDetailListings').addEventListener('click',e=>{
+  if(e.target.closest('a,button,input,select,textarea')) return;
+  const row=e.target.closest('[data-lid]'); if(!row) return;
+  if(cxListingEditMode.has(row.dataset.lid)) return;
+  openListingDetail(row.dataset.lid);
+});
 document.getElementById('cxDetailListings').addEventListener('click',e=>{
   const btn=e.target.closest('[data-lact]'); if(!btn)return;
   const row=btn.closest('[data-lid]'); if(!row)return;
@@ -3281,7 +3385,7 @@ document.getElementById('cxDetailVerdict').addEventListener('blur',e=>{
     box.style.transition='transform .2s ease';
     if(curDist>=THRESHOLD){
       box.style.transform='translateY(100%)';
-      setTimeout(()=>{ closeModal('complexDetailModal'); box.style.transition=''; box.style.transform=''; },200);
+      setTimeout(()=>{ closeModal('complexDetailModal'); closeListingDetail(); box.style.transition=''; box.style.transform=''; },200);
     } else {
       box.style.transform='translateY(0)';
       setTimeout(()=>{ box.style.transition=''; box.style.transform=''; },200);
