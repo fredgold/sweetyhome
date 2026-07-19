@@ -1264,6 +1264,7 @@ async function saveAsComplexListing(data){
     isRepresentative:isFirstListing,
     memo:data.memo||'',
     safety:defaultListingSafety(),
+    history:[{at:now2,deposit:depositVal,listingStatus:'게시중',source:'create'}],
   });
 
   toast(isNewComplex
@@ -1862,6 +1863,9 @@ function cxMergeExecute(){
   state.listings.filter(l=>l.complexId===dropId).forEach(l=>{
     l.complexId=keep.id;
     if(keepHadRep&&l.isRepresentative) l.isRepresentative=false;
+    /* B-43: 값은 안 바뀌어도 "다른 단지로 이관됐다"는 사실 자체를 남김 —
+       무조건 append(recordListingHistoryIfChanged가 아님) */
+    recordListingHistory(l,'merge');
   });
   state.complexes=state.complexes.filter(c=>c.id!==dropId);
   routeSelected.delete(dropId); /* B-118: 삭제된 단지 참조 정리 — 임장 루트 선택 Set.
@@ -2090,6 +2094,7 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
       isRepresentative:isFirstListing,
       memo:row.memo||'',
       safety:defaultListingSafety(),
+      history:[{at:now,deposit:row.depositNum??null,listingStatus:'확인필요',source:'create'}],
     });
     newListingCount++;
   });
@@ -2275,6 +2280,7 @@ function migApply(){
         isRepresentative:isFirstListing,
         memo:p.memo||'',
         safety:defaultListingSafety(),
+        history:[{at:now,deposit:depositVal,listingStatus:'확인필요',source:'create'}],
       });
       newListings++;
     });
@@ -2885,6 +2891,22 @@ function mgmtFeeCaption(l){
   if(l.managementFeeState==='na') return '관리비 해당없음';
   return '관리비 미확인';
 }
+/* B-43: listings[].history — deposit·listingStatus 변경만 기록(lastCheckedAt과
+   무관), 자동 판정·정렬 개입 없음. 소급 생성 금지 원칙에 따라 기존 매물엔
+   과거분을 만들어 넣지 않음 — 오직 이 두 함수를 통과한 시점부터만 쌓인다.
+   recordListingHistoryIfChanged: 값이 실제로 바뀔 때만(같은 값 재저장은
+   무append) — edit/check/gone/price 등 "변경"류 경로.
+   recordListingHistory: 무조건 append — create(최초 상태 자체가 기록 대상)·
+   merge(값은 안 바뀌어도 "이관됐다"는 사실 자체를 남겨야 하는 경로) 전용 */
+function recordListingHistoryIfChanged(listing,before,source){
+  if(listing.deposit===before.deposit&&listing.listingStatus===before.listingStatus) return;
+  if(!Array.isArray(listing.history)) listing.history=[];
+  listing.history.push({at:new Date().toISOString(),deposit:listing.deposit,listingStatus:listing.listingStatus,source});
+}
+function recordListingHistory(listing,source){
+  if(!Array.isArray(listing.history)) listing.history=[];
+  listing.history.push({at:new Date().toISOString(),deposit:listing.deposit,listingStatus:listing.listingStatus,source});
+}
 /* B-27-lite②: 안전 체크 9항목 요약 배지 — SAFETY_ITEMS(state.js) 재사용,
    집계만 함(정렬·필터·숨김·자동판정 없음). 전부 '문제없음'일 때만 예외
    문구, 그 외엔 미확인/주의 개수 + 최신 확인일을 그대로 보여줌 */
@@ -2993,6 +3015,7 @@ document.getElementById('cxDetailListings').addEventListener('click',e=>{
     const lid=saveBtn.dataset.lstsave;
     const listing=state.listings.find(l=>l.id===lid); if(!listing) return;
     const row=saveBtn.closest('[data-lid]'); if(!row) return;
+    const before={deposit:listing.deposit,listingStatus:listing.listingStatus};
     row.querySelectorAll('[data-editfield]').forEach(el=>{
       const field=el.dataset.editfield;
       if(field==='areaM2'||field==='deposit'){
@@ -3007,6 +3030,7 @@ document.getElementById('cxDetailListings').addEventListener('click',e=>{
         listing[field]=el.value.trim();
       }
     });
+    recordListingHistoryIfChanged(listing,before,'edit');
     cxListingEditMode.delete(lid);
     save();
     renderCxListings(listing.complexId);
@@ -3624,18 +3648,24 @@ document.getElementById('cxDetailListings').addEventListener('click',e=>{
     state.listings.filter(l=>l.complexId===listing.complexId).forEach(l=>l.isRepresentative=false);
     listing.isRepresentative=true;
   } else if(act==='check'){
+    const before={deposit:listing.deposit,listingStatus:listing.listingStatus};
     listing.lastCheckedAt=new Date().toISOString();
     listing.listingStatus='게시중';
+    recordListingHistoryIfChanged(listing,before,'check');
   } else if(act==='gone'){
+    const before={deposit:listing.deposit,listingStatus:listing.listingStatus};
     listing.listingStatus='사라짐';
+    recordListingHistoryIfChanged(listing,before,'gone');
   } else if(act==='price'){
     const nv=prompt('새 보증금(억)을 입력하세요',listing.deposit!=null?listing.deposit:'');
     if(nv==null)return;
     const num=parseFloat(nv);
     if(isNaN(num))return;
+    const before={deposit:listing.deposit,listingStatus:listing.listingStatus};
     listing.deposit=num;
     listing.listingStatus='가격변동';
     listing.lastCheckedAt=new Date().toISOString();
+    recordListingHistoryIfChanged(listing,before,'price');
   } else if(act==='del'){
     if(!confirm('이 매물 기록을 삭제할까요? (단지는 유지돼요)'))return;
     state.listings=state.listings.filter(l=>l.id!==lid);

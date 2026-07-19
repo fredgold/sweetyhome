@@ -74,11 +74,18 @@
  *                     managementFeeState ('known'|'unknown'|'na', 기본 'unknown'),
  *                     listingStatus('게시중' 기본), isRepresentative(false), memo,
  *                     safety: { [SAFETY_ITEMS[].key]: {status('unchecked'|'ok'|
- *                       'warning', 기본 'unchecked'), memo, source, checkedAt} }}]
+ *                       'warning', 기본 'unchecked'), memo, source, checkedAt} },
+ *                     history: [{at(ISO), deposit, listingStatus, source(변경 경로
+ *                       식별자 — 'create'|'edit'|'check'|'gone'|'price'|'merge' 등)}]}]
  *                    complexes와 같은 v5 스키마, 라이브 전환 완료.
  *                    B-27-lite: safety는 전세 안전 체크 9항목(SAFETY_ITEMS, 이
  *                    파일 상단 상수) 기록 전용 — 자동 판정·차단 없음, 사용자가
  *                    직접 입력한 값을 그대로 보여줄 뿐.
+ *                    B-43: history는 deposit·listingStatus가 실제로 바뀔 때만
+ *                    append(같은 값 재저장은 무append) — 자동 "기록"일 뿐 판정·
+ *                    알림·정렬 개입 없음. 기존 매물은 빈 배열로 시작하며 과거
+ *                    변경분을 소급 생성하지 않는다(추정 기록 금지). lastCheckedAt
+ *                    (확인 이벤트)과는 별개 — history는 값 변경만 기록.
  *
  * state.scraps    : [{id, createdAt, title, type (SC_TYPE key),
  *                     raw, img (base64, 레거시 1장 — B-67 이후 imgs[0]과
@@ -507,11 +514,16 @@ function applyGuards(raw){
       if(raw!=null&&!validRaw) console.warn(`applyGuards: listings[${l.id||'?'}].safety.${key}가 객체가 아니라 기본값으로 대체됨(타입: ${typeof raw})`);
       safety[key]={...safety[key], ...(validRaw||{})};
     });
+    /* B-43: history는 guardArr로 배열 형태만 보정 — 소급 생성 절대 금지이므로
+       누락 시 빈 배열([])이 기본값. 항목별 재구성 없이 배열 그대로 통과시켜
+       기존 기록 무손실 보존 */
+    const history=guardArr(l.history,[],`listings[${l.id||'?'}].history`);
     return {
       managementFeeState:'unknown',
       ...l,
       managementFeeState: l.managementFeeState || (l.managementFee!=null?'known':'unknown'),
       safety,
+      history,
     };
   });
   state.scraps=guardArr(state.scraps,[],'scraps').map(s=>{
