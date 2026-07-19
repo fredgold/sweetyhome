@@ -2120,6 +2120,34 @@ function migApply(){
 /* ============ v5 Stage 3+4: 단지 카드 목록 + 단지 상세·매물 목록 (properties[] 뷰 공존) ============ */
 const SC_CX=Object.assign({},SC,{임장예정:SC['방문예정']});
 const HEX_CX=Object.assign({},HEX,{임장예정:HEX['방문예정']});
+/* B-116: 단지 카드 상태 뱃지 빠른 변경 — E-01 이관 후 소실된 카드 즉시변경 경로 복원.
+   레거시 showStatusPicker(state.properties[].status용, 1367행)와 같은 .status-picker
+   플로팅 메뉴를 재사용하되 대상은 complexStatus. 옵션 6개는 cxDetailStatusSel(상세
+   select, index.html)과 동일한 값 집합 — migComplexStatus의 ALLOWED(1916행)와도 일치 */
+let _cxStatusPicker=null;
+function showCxStatusPicker(pill, cx){
+  if(_cxStatusPicker){ _cxStatusPicker.remove(); _cxStatusPicker=null; }
+  const opts=['관심','검토중','후보','임장예정','보류','탈락'];
+  const cur=cx.complexStatus||'관심';
+  const picker=document.createElement('div');
+  picker.className='status-picker';
+  picker.innerHTML=opts.map(s=>`<button class="sp-opt${cur===s?' on':''}" data-sp="${esc(s)}" style="border-left:3px solid var(${SC_CX[s]||'--hairline'})">${esc(s)}</button>`).join('');
+  document.body.appendChild(picker);
+  _cxStatusPicker=picker;
+  const rect=pill.getBoundingClientRect();
+  const top=rect.bottom+window.scrollY+4;
+  const left=Math.min(rect.left+window.scrollX, window.innerWidth-130);
+  picker.style.top=top+'px'; picker.style.left=Math.max(8,left)+'px';
+  picker.querySelectorAll('[data-sp]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    cx.complexStatus=b.dataset.sp; cx.updatedAt=new Date().toISOString();
+    picker.remove(); _cxStatusPicker=null;
+    save(); renderStats(); renderComplexes();
+    if(cxDetailId===cx.id) renderComplexDetailBody(cx);
+  });
+  const close=ev=>{ if(!picker.contains(ev.target)){ picker.remove(); _cxStatusPicker=null; document.removeEventListener('click',close,true); } };
+  setTimeout(()=>document.addEventListener('click',close,true),0);
+}
 /* 대표매물(isRepresentative), 없으면 첫 매물 — 지도·카드·통계·루트가 공통으로 씀 */
 function cxRepOf(cx){
   const ls=state.listings.filter(l=>l.complexId===cx.id);
@@ -2371,7 +2399,7 @@ function renderComplexes(){
         </div>
         <div class="c-badge-col">
           <button type="button" class="c-fav-btn${cx.favorite?' on':''}" data-favtoggle="${cx.id}" aria-label="즐겨찾기" aria-pressed="${cx.favorite?'true':'false'}">${ic('star')}</button>
-          <span class="pill" style="border-left-color:${color}"><i class="pill-dot" style="background:${color}"></i>${esc(st)}</span>
+          <span class="pill" style="border-left-color:${color}" data-cxstatuspill="${cx.id}"><i class="pill-dot" style="background:${color}"></i>${esc(st)}</span>
         </div>
       </div>
       <div class="cx-card-body">
@@ -2404,6 +2432,14 @@ document.getElementById('complexSection').addEventListener('click',e=>{
   if(e.target.closest('.c-routecheck-wrap')) return;
   const favBtn=e.target.closest('[data-favtoggle]');
   if(favBtn){ toggleFavorite(favBtn.dataset.favtoggle); return; }
+  /* B-116: 단지 카드 상태 뱃지 빠른 변경 — data-cxopen(카드 전체 클릭 시 상세 열기)의
+     조상 요소라 먼저 가로채 return하지 않으면 상세 모달까지 같이 열림 */
+  const statusPill=e.target.closest('[data-cxstatuspill]');
+  if(statusPill){
+    const cx=state.complexes.find(c=>c.id===statusPill.dataset.cxstatuspill);
+    if(cx) showCxStatusPicker(statusPill, cx);
+    return;
+  }
   const el=e.target.closest('[data-cxopen]'); if(!el)return;
   openComplexDetail(el.dataset.cxopen);
 });
@@ -3162,7 +3198,9 @@ document.getElementById('cxDetailListings').addEventListener('click',e=>{
 document.getElementById('cxDetailStatusSel').onchange=e=>{
   const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
   cx.complexStatus=e.target.value; cx.updatedAt=new Date().toISOString();
-  save(); renderComplexes();
+  /* B-116: 카드 빠른 경로(showCxStatusPicker)와 동일하게 요약 카운트(renderStats)도
+     같이 갱신 — 두 경로 모두 지도·필터·카운트가 즉시 동기화되도록 맞춤 */
+  save(); renderStats(); renderComplexes();
 };
 document.getElementById('cxDetailFavBtn').onclick=()=>{
   if(!cxDetailId) return;
