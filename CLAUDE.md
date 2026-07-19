@@ -19,8 +19,8 @@
 ## 파일 구조
 
 ```
-index.html              HTML 구조 전용 (~670줄)
-style.css               CSS 전체 (~700줄)
+index.html              HTML 구조 전용 (~1,040줄)
+style.css               CSS 전체 (~1,510줄)
 api/
   login.js              PIN 검증 → Bearer token 발급
   state.js              Redis GET/POST (state 저장·불러오기)
