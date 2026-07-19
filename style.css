@@ -418,10 +418,9 @@
     body:has(#panel-props.on) .wrap{max-width:none;}
     /* 자산: 소유자~메모 7개 컬럼 표라 넓을수록 각 컬럼이 널널해짐 → 더 넓은 상한 */
     body:has(#panel-assets.on) .wrap{max-width:clamp(1440px,82vw,1800px);}
-    /* 대시보드·액션·수집함: 타임라인·단일 컬럼 리스트·카드라 텍스트/버튼 사이만
+    /* 대시보드·수집함: 타임라인·카드라 텍스트/버튼 사이만
        벌어질 뿐 내용이 늘어나지 않음 → 더 보수적인 상한 */
     body:has(#panel-dash.on) .wrap,
-    body:has(#panel-actions.on) .wrap,
     body:has(#panel-scraps.on) .wrap{max-width:clamp(1440px,60vw,1600px);}
     #panel-props.on .grid{flex:1;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch;}
     .grid{grid-template-columns:minmax(0,var(--sidebar-w,360px)) 24px minmax(0,1fr);gap:0;}
@@ -735,6 +734,7 @@
   /* ===== v3: 액션 전체 ===== */
   .act-live-groups{display:flex;flex-direction:column;gap:10px;}
   .act-group{overflow:hidden;border:1px solid var(--hairline);border-left:3px solid var(--money);border-radius:var(--radius-card);background:var(--surface);}
+  .act-group.is-empty{display:none;}
   .act-group-head{display:flex;align-items:center;gap:7px;padding:5px 9px;background:var(--hairline-soft);border-bottom:1px solid var(--hairline);font-size:12px;font-weight:800;color:var(--ink-soft);}
   .act-group-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:var(--radius-pill);background:var(--surface);color:var(--line9-deep);font-size:11px;}
   .act-group-body{display:grid;grid-template-columns:minmax(0,1fr);column-gap:18px;padding:0 10px;}
@@ -861,6 +861,20 @@
       gap:10px 14px;
       align-items:start;
     }
+  }
+  @media (min-width:1440px){
+    body:has(#panel-actions.on) .wrap{max-width:none;}
+    #panel-actions .act-live-groups{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      align-items:start;
+    }
+    #panel-actions .act-group.is-empty{display:block;}
+    #panel-actions .act-group-body{grid-template-columns:minmax(0,1fr);}
+    #panel-actions .act-group-body>.actrow:nth-of-type(2){border-top:1px solid var(--hairline-soft);}
+    #panel-actions .act-group-body .actrow:has(.act-edit-inp){flex-wrap:wrap;}
+    #panel-actions .act-group-body .actrow:has(.act-edit-inp) .act-edit-inp{flex-basis:100%!important;}
   }
 
   /* 마크다운 에디터 */

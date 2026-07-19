@@ -65,10 +65,6 @@ function renderActions(){
   }
   if(aq){ live=live.filter(a=>(a.text||'').toLowerCase().includes(aq)); done=done.filter(a=>(a.text||'').toLowerCase().includes(aq)); }
   const el=document.getElementById('act_list');
-  if(!state.actions.length){
-    el.innerHTML='<div class="empty"><div class="big">아직 액션이 없어요</div>아래에 할 일을 적어보세요.</div>';
-    return;
-  }
   const liveMinPriority=live.length?Math.min(...live.map(a=>a.priority)):Infinity;
   const liveRanks=new Map(live.map((a,i)=>[a.id,i+1]));
   const actionRow=(a,doneRow=false)=>{
@@ -93,22 +89,22 @@ function renderActions(){
       </div>`;
   };
   let html='<div class="actfull">';
-  if(live.length){
-    html+='<div class="act-live-groups">';
-    html+=ACT_GROUPS.map(group=>{
-      const items=live.filter(a=>actGroupKey(a)===group.key);
-      if(!items.length) return '';
-      return `<section class="act-group" data-act-group="${group.key||'general'}">
-        <div class="act-group-head">
-          <span>${esc(group.label)}</span>
-          <span class="act-group-count tnum">${items.length}</span>
-        </div>
-        <div class="act-group-body">${items.map(a=>actionRow(a)).join('')}</div>
-      </section>`;
-    }).join('');
-    html+='</div>';
-  } else {
-    html+='<div class="empty"><div class="big">모든 액션 완료!</div>새 할 일을 추가하거나 AI 제안을 받아보세요.</div>';
+  html+='<div class="act-live-groups">';
+  html+=ACT_GROUPS.map(group=>{
+    const items=live.filter(a=>actGroupKey(a)===group.key);
+    return `<section class="act-group${items.length?'':' is-empty'}" data-act-group="${group.key||'general'}">
+      <div class="act-group-head">
+        <span>${esc(group.label)}</span>
+        <span class="act-group-count tnum">${items.length}</span>
+      </div>
+      <div class="act-group-body">${items.map(a=>actionRow(a)).join('')}</div>
+    </section>`;
+  }).join('');
+  html+='</div>';
+  if(!live.length){
+    html+=state.actions.length
+      ?'<div class="empty"><div class="big">모든 액션 완료!</div>새 할 일을 추가하거나 AI 제안을 받아보세요.</div>'
+      :'<div class="empty"><div class="big">아직 액션이 없어요</div>아래에 할 일을 적어보세요.</div>';
   }
   if(done.length){
     html+=`<div class="done-section"><div class="done-head" id="act_doneToggle"><span class="arw">▾</span> 완료 ${done.length}개</div><div class="done-body">`;
