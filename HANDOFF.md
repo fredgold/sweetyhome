@@ -1,7 +1,82 @@
-# HANDOFF — B-41 완료 (2026-07-20) 임장 노트
+# HANDOFF — B-43 완료 (2026-07-20) 매물 스냅샷
 
 > **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
 > 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
+
+## 최신 작업: 매물 가격·상태 변동 자동 기록 — listings[].history
+
+```
+59ddcde feat: 매물 스냅샷 — 스키마+기록 배선 (B-43 ①)
+41de716 feat: 매물 스냅샷 — B-117 상세 패널 변동 이력 표시 (B-43 ②)
+```
+
+커맨드센터 확정 스펙으로 착수(자동 "기록"이라 판정 금지 원칙과
+충돌 없음을 커맨드센터가 사전 검토). 손 B 부재로 파일 락 제약 없이
+진행, 2커밋 분리.
+
+**스키마**(`state.js`): `listings[].history[] = [{at(ISO), deposit,
+listingStatus, source}]`. `source`는 변경 경로 식별자
+(`'create'|'edit'|'check'|'gone'|'price'|'merge'`). `applyGuards`는
+`guardArr`로 배열 형태만 보정 — 누락 시 빈 배열, **과거분을 소급
+생성하지 않음**(기존 매물은 이번 커밋 이후 실제 변경이 일어나야만
+쌓이기 시작). `HISTORY_SOURCE_LABEL` 표시 라벨 상수 추가(2번째
+커밋, `SAFETY_STATUS_LABEL`과 동일 패턴).
+
+**기록 배선**(`properties.js`, 값 변경 경로 전수 8곳): 두 헬퍼로
+분리—
+- `recordListingHistoryIfChanged(listing,before,source)`: deposit·
+  listingStatus가 실제로 바뀔 때만 append(같은 값 재저장은 무append)
+  — `edit`(수정모드 저장)·`check`(게시중 확인)·`gone`(사라짐 처리)·
+  `price`(가격변동 기록) 4곳.
+- `recordListingHistory(listing,source)`: 무조건 append — `create`
+  (신규 매물 생성 3곳: `saveAsComplexListing`·TSV 벌크 임포트·레거시
+  마이그레이션 위저드, 최초 상태 자체가 기록 대상이라 "변경"
+  프레이밍이 안 맞음) · `merge`(B-118 병합 이관, 값은 안 바뀌어도
+  "다른 단지로 옮겨졌다"는 사실 자체를 남겨야 함) 4곳.
+
+**스펙의 "parseNaver 자동채우기·승격" 처리 방식(보고)**: 코드
+추적 결과 "정보 자동 채우기"(`data-lstfill`) 버튼은 DOM 입력값만
+채우고 실제 저장은 하지 않음(주석에 이미 명시: "listing 객체가
+아니라 아직 DOM 입력값만 바꾼다") — 최종 반영은 항상 수정모드
+"저장"(`data-lstsave`, `edit` 경로)을 거치므로 별도 배선 불필요.
+단지 승격(`applyComplexPromotion`)도 `complexes[]` 필드만 다루고
+`listings[].deposit/listingStatus`는 건드리지 않아 무관. 즉 스펙이
+나열한 7개 시나리오는 실제로는 8개 코드 지점(=6개 source 값)으로
+전부 커버됨 — 별도의 "promote" source는 불필요하다고 판단.
+
+**표시**(2번째 커밋, `properties.js`만·신규 CSS 0): B-117 매물 상세
+패널에 "변동 이력" h3 섹션(전세 안전 체크 다음) — `listingHistoryHTML(l)`
+이 시간 역순으로 "7/19 4.5억·게시중 (최초 등록)" 형식 렌더. 기존
+`.cx-listing-meta`/`.tnum` 클래스 그대로 재사용. 시각화·추세 화살표는
+B-42 몫이라 이번엔 리스트만.
+
+**검증**(Playwright, 42개 체크, 데스크톱 1440×900+모바일 390×844):
+`create`(`saveAsComplexListing` 직접 호출로 신규 단지+매물 생성 →
+history 1건·source=create 확인, 나머지 2개 create 사이트는 동일
+인라인 패턴이라 코드 검토로 확인), `edit`(수정모드에서 deposit
+변경 후 저장 → append 확인, **동일 값으로 재저장 → 무append 확인**),
+`check`(게시중 확인 클릭 → append, **이미 게시중인 상태에서 재클릭
+→ 무append**), `gone`(사라짐 처리 → append), `price`(prompt로 새
+보증금 입력 → append, **동일 값 재입력 → 무append**), `merge`
+(B-118 병합 실행 → 이관된 매물에 history 1건·source=merge 확인,
+값 자체는 불변이어도 무조건 기록됨을 확인), **`applyGuards` 무손실**
+(history 없는 기존 매물 → 소급 생성 없이 빈 배열, 오염된 값(배열
+아님) → 빈 배열로 안전 보정, 기존 history 있는 매물 → 재적용해도
+그대로 보존), **XSS**(`listingStatus`에 `<img onerror>` payload
+주입 → 표시 시 `esc()`로 이스케이프돼 미실행 확인), **B-27-lite·
+B-118 무회귀**(안전 체크 섹션 정상 렌더, 병합 시 cxB 삭제 등 기존
+동작 그대로), **Redis 왕복**(토큰 세팅 후 `/api/state` POST 바디에
+`"source":"merge"` 포함 확인 — mock 서버로 실제 요청 캡처). `node
+--check` 13개 js 파일 전부 통과. 스크래치 테스트 스크립트는 실행
+후 삭제.
+
+- **B-43 완료·push 완료**(`59ddcde`/`41de716`).
+- **다음**: B-42(타임라인 시각화)는 별도 지시 대기 — B-43의
+  `listings[].history[]`가 그 데이터 소스.
+
+---
+
+# 이전 핸드오프 — B-41 완료 (2026-07-20) 임장 노트
 
 ## 최신 작업: 단지 임장 노트 — 6항목 별점+메모 기록
 
@@ -125,69 +200,4 @@ grep으로 properties.js 3+assets.js 1+scraps-form.js 2=6 정확히 일치
 - **다음**: 기발급 지시서대로 B-41(임장 노트) 착수 — 단,
   BACKLOG.md상 "착수 전 커맨드센터가 B-27-lite 안전체크 입력 UI와
   중복 검토 후 스펙 확정" 전제 미충족 확인됨(사용자 몫).
-
----
-
-# 이전 핸드오프 — B-120+B-121 완료 (2026-07-19) 감사 후속: 문서 로테이션+소형 정리
-
-## 최신 작업: B-119 감사 후속 — HANDOFF 로테이션·CLAUDE.md 정정·소형 정리 3건
-
-```
-32dc48f docs: HANDOFF.md 로테이션 — 최신 3개만 유지 (B-120)
-4e7238b docs: CLAUDE.md 파일 규모 서술 갱신 (B-120)
-b1bf51b refactor: 감사 소형 정리 묶음 (B-121)
-```
-
-B-119 감사 보고(`f6a017c`)에서 사용자가 전건 승인한 후속 작업.
-손 B 부재로 파일 락 제약 없이 진행. 커밋 3개로 분리.
-
-**커밋① HANDOFF.md 로테이션**: 47개 엔트리·2,162줄(B-84까지 소급)을
-최신 3개(당시 B-31/B-118/B-114)만 남기고 절삭, 최상단에 로테이션
-규칙 명시. 절삭분은 git 이력·`HISTORY.md`에 그대로 남아있어 정보
-손실 아님(B-119가 샘플 대조로 중복 확인함).
-
-**커밋② CLAUDE.md 서술 갱신**: `index.html` "~670줄"→실제 1,042줄,
-`style.css` "~700줄"→실제 1,509줄로 정정. 구조 개편 없이 수치만.
-
-**커밋③ 감사 소형 정리**(`properties.js`+`utils.js`+`nav.js`+
-`style.css`+`CLAUDE.md`):
-- `properties.js`의 `--nav-h`/`--topbar-h`/`--overlay-top` 계산
-  코드(생산 함수 2개+스크롤 리스너+호출 5곳) 삭제 — B-53(`13a4b37`)
-  이후 `style.css` 소비처가 0건이었음을 삭제 전 재확인(grep). 매
-  스크롤 프레임마다 발생하던 `getBoundingClientRect`/
-  `getComputedStyle`/`setProperty` 호출이 사라짐(성능 개선,
-  시각적 변화 없음 — 애초에 아무 CSS도 이 값을 안 읽었으므로).
-- `claudeAPI`+`aiAvailable`+`aiUnavailableMsg`+`updateAiButtons`를
-  `properties.js`(로드순서 10번째)에서 `utils.js`(1번째)로 이관.
-  `actions.js`/`assets.js`/`scraps-form.js`/`scraps-import.js`가
-  `properties.js`보다 먼저 로드되면서도 `claudeAPI`를 참조하던
-  역방향 결합을 해소. `CLAUDE.md`의 `ai.js` 서술도 함께 정정
-  (claudeAPI 실제 위치가 ai.js가 아니었던 기존 오기까지 바로잡음).
-- 고아 함수 `assetTotal()`(`nav.js`, 정의 외 참조 0건) 삭제.
-- 미사용 CSS 셀렉터 25개 삭제 — 삭제 직전 각각 `index.html`+
-  `js/*.js`+`mockups/`까지 재검증(따옴표/경계 포함 정밀 grep,
-  동적 클래스 조합 오탐 없음 확인). `.side`/`.scard`/`.task`
-  (+`.box`/`.tx`)/`.arow`/`.atotal`/`.c-top-left`/`.og-info`/
-  `.og-title`/`.og-desc`/`.split-placeholder`/`.slash-desc`/
-  `.slash-none`/`.pam-*`(5개)/`.c-line`/`.atab.soon` 계열.
-- **레거시 `state.properties[]` CRUD 23곳·마이그레이션 프리뷰
-  죽은 코드(~160줄)는 지시대로 무접촉** — B-05 몫.
-- **`properties.js` 분할은 이번에 손대지 않음** — B-05 완료 후
-  재평가 확정 사항(사용자 결정, 2026-07-19).
-
-**검증**: `node --check` 전체 13개 js 파일 통과. `style.css` 중괄호
-balance(1005/1005) 확인. Playwright(로컬 Node UTF-8 정적 서버 —
-Python `http.server`는 Content-Type charset 누락으로 한글 정규식이
-깨져 오탐 발생하는 걸 발견해 자체 Node 서버로 교체, `window.naver`
-최소 스텁, marked/DOMPurify/Tiptap CDN 스텁) 데스크톱 1440×900+
-모바일 390×844 양쪽에서 게스트 로그인 후 5개 탭(대시/자산/매물/
-액션/수집함) 전환+스크롤 실행 — **콘솔 에러 0건**(파비콘 404 2건은
-테스트 서버 자체의 정적 경로 처리 차이일 뿐 실제 파일 존재, 코드
-무관). `typeof claudeAPI==='function'` 양쪽 뷰포트 확인(참조
-오류 없음, 이관 성공). `typeof assetTotal==='undefined'`로 완전
-제거 확인. `--nav-h` computed value가 빈 문자열로 소비처 0 재확인.
-
-- **B-120+B-121 완료. 커밋 3개(`32dc48f`/`4e7238b`/`b1bf51b`)**.
-- **다음**: 사용자 별도 지시 대기. B-05(레거시 완전 삭제, 손 B
-  복귀 후) 착수 시 이번에 무접촉한 23곳+~160줄이 그 대상.
 
