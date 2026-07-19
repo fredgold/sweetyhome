@@ -886,7 +886,6 @@
   .sc-md-toolbar .tb-sep{width:1px;background:var(--hairline);margin:2px 3px;align-self:stretch;}
   .sc-md-editor{outline:none;border-radius:0 0 9px 9px;border:1px solid var(--money);padding:11px 13px;min-height:100px;max-height:340px;overflow-y:auto;font-size:13px;line-height:1.7;word-break:break-word;cursor:text;background:var(--surface);}
   .sc-md-editor:not(:focus-within):not(.is-empty){cursor:pointer;}
-  .sc-md-editor:not(:focus-within):not(.is-empty)::after{content:'✏️ 편집';display:block;text-align:right;font-size:11px;color:var(--ink-faint);margin-top:4px;}
   /* B-109③: Tiptap이 안에 마운트하는 .ProseMirror(contenteditable)는
      브라우저 기본 파란 outline을 자체적으로 그린다 — 바깥 .sc-md-editor의
      기존 outline:none은 그 자식까지는 못 지운다. 자식 outline은 지우고,
