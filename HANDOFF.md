@@ -1,7 +1,61 @@
-# HANDOFF — B-120+B-121 완료 (2026-07-19) 감사 후속: 문서 로테이션+소형 정리
+# HANDOFF — B-122 완료 (2026-07-19) 지침 강화 — 확립 원칙 명문화
 
 > **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
 > 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
+
+## 최신 작업: CLAUDE.md/AGENTS.md에 확립 원칙 8개 명문화 (코드 무변경)
+
+```
+d530796 docs: 지침 강화 — 확립 원칙 CLAUDE.md/AGENTS.md 명문화 (B-122)
+```
+
+B-41(임장 노트)보다 먼저 발급된 문서 전용 지시. 최근 세션들에서
+이미 실무로 확립됐지만 문서화되지 않았던 원칙 8개를 CLAUDE.md 4개+
+AGENTS.md 4개로 추가·보강만 함(기존 구조·규칙 삭제 없음, 1커밋).
+
+**CLAUDE.md 추가 4건**:
+1. `## UI/레이아웃 정책` 신설 — 전 탭 전체폭 프레임+탭별 폭 흡수
+   장치(매물=지도·액션=그룹 칼럼·수집함=카드 그리드·자산=2구역·
+   대시=콤팩트 행, 2026-07-19 확정) 명문화, 중앙 고정폭 신설 금지.
+2. 같은 섹션에 접기 지양 원칙(2026-07-18 확정) — 명시적 버튼·모드
+   전환 원칙, 말줄임은 접기와 구분해 허용으로 명시.
+3. `## 핵심 패턴`에 **에디터(Tiptap) 표준** 항목 추가 —
+   `loadTiptapMods()`+`buildListBackspaceFix`+`buildTiptapPlaceholder`
+   +로드 실패 폴백(`showEditorFallbackNote`)+마크다운 저장/renderMd
+   읽기 패턴. 현재 6필드(자산 노트 1·수집함 2·매물 메모 3) 전부
+   적용 완료됨을 전례로 명시 — 실코드 대조로 정확히 6곳(properties.js
+   3+assets.js 1+scraps-form.js 2) 확인 후 기입.
+4. 파일 구조 표의 `style.css` 줄수를 B-121 CSS 정리 이후 실측치로
+   재정정(~1,510→~1,460줄, `index.html`은 무변경이라 유지).
+
+**AGENTS.md 추가 4건**(`## 검증 표준` 신설):
+5. 실기기 관문 — 한글 IME·safe-area·실키보드·PWA PTR 등 자동화
+   한계 항목은 "사용자 실기기 확인"을 완료 조건으로 HANDOFF 명시
+   (B-31 인수 사례 근거).
+6. 렌더 타이밍 변경 시 "지연 중 동기 상호작용" 케이스 검증 필수 —
+   `utils.js`의 `ceFlushDebounced()` 패턴 참고(B-107 회귀 교훈).
+7. CSS 변수 도입·폐기 시 소비자 전수 grep 확인 — B-121에서 발견한
+   `--nav-h`/`--topbar-h`/`--overlay-top` 무소비 변수 교훈.
+8. 파일 락 프로토콜 명문화 — 착수·커밋 직전 `git status`, 본인
+   파일만 명시적 `git add`, 상대 미커밋 변경 무접촉·무스테이징
+   (B-84·B-118·B-31 실제 적용 사례 근거).
+
+**검증**: 추가 서술에 인용한 함수명·파일명·수치를 실코드로 전수
+재확인 — `ceFlushDebounced`(`utils.js:157`), `showEditorFallbackNote`
+(`utils.js:463`) 실존 확인, `style.css` 1,462줄 실측, `index.html`
+1,042줄 실측 무변경, 6필드 호출부(`buildListBackspaceFix(mods)`)
+grep으로 properties.js 3+assets.js 1+scraps-form.js 2=6 정확히 일치
+확인. `git diff` 전체 재검토로 삭제 없이 추가·수치정정만 있음을
+확인(AGENTS.md +7줄, CLAUDE.md +11/-1줄).
+
+- **B-122 완료·push 완료**(`d530796`).
+- **다음**: 기발급 지시서대로 B-41(임장 노트) 착수 — 단,
+  BACKLOG.md상 "착수 전 커맨드센터가 B-27-lite 안전체크 입력 UI와
+  중복 검토 후 스펙 확정" 전제 미충족 확인됨(사용자 몫).
+
+---
+
+# 이전 핸드오프 — B-120+B-121 완료 (2026-07-19) 감사 후속: 문서 로테이션+소형 정리
 
 ## 최신 작업: B-119 감사 후속 — HANDOFF 로테이션·CLAUDE.md 정정·소형 정리 3건
 
@@ -190,115 +244,4 @@ Playwright(로컬 node UTF-8 정적 서버, `window.naver` 최소 스텁,
 - **손 B 복귀(7/25) 시**: 이 HANDOFF 항목으로 인계 내역 확인 가능.
   재검증에서 발견된 문제 없음, 코드 수정 없음.
 - **다음**: 완료 후 대기 — 다음 배정은 커맨드센터가 별도 발급.
-
----
-
-# 이전 핸드오프 — B-118 완료 (2026-07-19)
-
-## 최신 작업: 단지 병합 도구 — 중복 단지 정리 (실사례: 가양6단지 2개)
-
-```
-cbe5917 feat: 단지 병합 도구 — 중복 단지 정리 (B-118)
-```
-
-`index.html`(+1줄, "⋯" 버튼 하나)+`js/properties.js`(+261줄).
-`style.css` 무접촉(기존 `.modal`/`.box`/`.mhead`/`.mbody`/`.cx-dl`/
-`.status-picker`/`.sp-opt`/`.btn-ghost`/`.btn-save` 전부 재사용해 새
-CSS가 필요 없었음). `state.js`/`BACKLOG.md` 무접촉, 스키마 변경 없음.
-손 B는 이번 턴 중 B-31(파킹 해제, `nav.js`+`style.css`)에 착수해
-미커밋 변경이 있었으나 diff 겹침 0(커밋 전 `git status`/`git diff`로
-매번 확인).
-
-**진입점**: 단지 상세 mhead에 "⋯" 버튼(`cxDetailMoreBtn`) 신설 →
-클릭 시 항목 1개짜리 드롭다운("다른 단지와 병합", 기존
-`showRouteMenu`/`showExportMenu`와 동일한 `.status-picker.route-menu`
-패턴 재사용) — 접기 숨김이 아니라 명시 항목.
-
-**3단계 마법사, 매 단계 사용자 확정**(자동 병합 절대 금지):
-1. **후보 선택**: `findComplexCandidates()`/`cxMatchReason()`(B-19확
-   매칭 제안 로직) 그대로 재사용해 이름 유사·좌표 300m 이내 후보를
-   먼저 보여주고, 직접 검색 입력도 병행 제공.
-2. **방향 선택**: 두 단지를 나란히 보여주고(각자 소속 매물 건수
-   포함) 어느 쪽을 남길지 명시적으로 선택.
-3. **필드별 충돌 미리보기**: 남길 값 기본 + keep 쪽이 빈 값일
-   때만 drop 값으로 채우는 규칙(`cxComputeMerge()`, 순수 함수 —
-   실행 전까지 실제 state는 손대지 않음)을 계산해 최종 반영값을
-   전부 나열하고, 채워진 필드는 "(상대 단지 값으로 채움)" 표시.
-   대표매물이 양쪽 다 있으면 경고 문구로 결과(남는 단지 것 유지)를
-   먼저 알림. "병합 확정" 버튼을 눌러야만 다음 단계(실행)로 진행.
-
-**병합 규칙**(필드 종류별):
-- 단순 텍스트/숫자 14종(주소·역·노선·준공연도·메모·장단점·판단·
-  출퇴근메모 등)은 keep이 비어있을 때만 drop 값으로 채움.
-- 세대수/세대수등급, 좌표(lat+lng), 주차/주차상태는 **짝으로 함께**
-  채움(하나만 채우면 불일치 데이터가 생기므로).
-- `favorite`은 OR 규칙(둘 중 하나라도 즐겨찾기면 병합 후에도 유지).
-- `commutes[]`는 인덱스별로(설정상 통근 기준지 2인과 매칭) 개별
-  빈값 판정 후 채움.
-- 단지명·`complexStatus`·`id`·`createdAt`은 항상 keep 쪽 고정(채움
-  대상 아님) — "어느 쪽 정보를 우선할지"의 핵심 의미.
-
-**실행**(`cxMergeExecute`): `backupBeforeMerge()`로 두 단지+소속
-매물 전체를 `localStorage` `sh_mergeBackup_<timestamp>` 키에 JSON
-스냅샷 저장 — **백업 실패 시(용량 초과 등) 병합 자체를 진행하지
-않고 alert로 중단**(방식 명시: 기존 내보내기 파일 다운로드가 아니라
-localStorage 백업 키 저장을 선택 — 다운로드 팝업 차단·저장 위치
-확인 등 사용자 액션 없이 항상 확실히 남는 쪽을 택함). 이후
-`listings[].complexId`를 keep으로 일괄 이관, 양쪽 다 대표매물이면
-keep 쪽 유지+drop 쪽 대표 해제, `state.complexes`에서 drop 제거,
-`routeSelected`(임장 루트 선택 Set)에서 drop id 제거, `save()`.
-모달은 병합 도구만 닫고 단지 상세는 열어둔 채 keep 기준으로
-새로 그림(`openComplexDetail()` 재호출 대신 `cxDetailId` 직접
-전환+`renderComplexDetailBody`+`renderComplexes`만 호출 — 이유는
-아래 부수 발견 참고).
-
-**부수 발견·수정**: 처음엔 병합 후 화면 갱신에 `openComplexDetail
-(keep.id)`를 그대로 재사용하려 했으나, 이미 열려있는
-`complexDetailModal`에 `openModal()`을 한 번 더 호출하면
-`lockBodyScroll()`의 카운터가 여분으로 하나 더 늘어 이후 모달을
-닫아도 `unlockBodyScroll()` 카운트가 0에 도달하지 못해 스크롤
-잠금이 안 풀리는 버그가 될 뻔했다(실코드 확인 후 실행 전 수정) —
-모달을 다시 열지 않고 `cxDetailId` 갱신+내용 재렌더만으로 해결.
-
-**삭제된 단지 참조 잔존 0 — 전수 확인 방법·결과**: `properties.js`
-전체에서 `complexId`/`cxDetailId`/`.complexes` 참조를 grep해 상태를
-지속적으로 들고 있을 수 있는 지점을 전수 조사했다. 결과 **복합
-id를 실제로 캐싱하는 곳은 `cxDetailId`(전역 변수)와 `routeSelected`
-(Set) 단 둘뿐**이었다 — 나머지(`ovMarkers[]._cxid`, `lastVisibleMapKey`
-/`lastMarkerRenderKey`, `highlightCxCard`/`cxStripCenterId` 등)는 전부
-매 렌더마다 `state.complexes`/`state.listings`에서 새로 계산하는
-파생값이라 별도 정리가 불필요했다. 다른 파일(`nav.js`/`boot.js`/
-`actions.js`/`assets.js`/`scraps-*.js`/`ai.js`/`profile.js`)도 grep한
-결과 `nav.js`의 대시보드 요약 카운트 계산 1곳만 `state.complexes`를
-참조했는데 이 역시 매 렌더 시점에 `state.complexes`를 그대로 읽는
-파생 계산이라 무관했다. `cxListingEditMode`/`cxSafetyExpanded`는
-매물(listing) id 기준이라 애초에 무관(매물 자체는 삭제되지 않고
-`complexId`만 바뀌므로 편집 중이던 상태도 그대로 유효).
-
-**검증**: Playwright(로컬 node UTF-8 정적 서버, `window.naver` 최소
-스텁, 비guest 세션+`/api/state` 모킹) 데스크톱 1440×900, 단지 2개
-(가양6단지/가양6단지(재건축))·매물 3+2건 fixture로 57개 체크 전부
-통과 — ⋯ 메뉴 진입점 노출, 1~3단계 각각의 화면 전환, **취소
-4가지 경로**(1단계 닫기버튼·1단계 배경클릭·2단계 취소·3단계
-취소, 뒤로 버튼 2곳도 별도 확인) **전부 데이터 무변경+백업 키
-미생성 확인**, 3단계 미리보기의 XSS 페이로드(`<img onerror>`,
-drop측 `commuteMemo`에 삽입)가 실제 `<img>` 태그로 파싱되지
-않고 이스케이프 텍스트로만 노출+스크립트 미실행, 실행 후 단지
-1개로 감소+매물 5건 손실 없이 전부 이관+대표매물 정확히 1개
-보장(남는 쪽 유지·이관된 쪽 해제)+14개 텍스트 필드 중 빈 필드만
-정확히 채움+세대수/좌표/주차 짝 채움+`commutes[0]` 채움+이미 값
-있는 필드(주소·좌표)는 유지+favorite OR 규칙+`complexStatus`는
-채움 대상 아님(keep 값 고정) 전부 실측 확인, 병합 도구 모달만
-닫히고 단지 상세는 유지된 채 keep 기준으로 갱신, 백업 스냅샷에
-두 단지+매물 5건 전체 포함 확인, **잔존 검사**(`JSON.stringify
-(state)`에 삭제된 단지 id 없음+`routeSelected`에 없음+`cxDetailId`가
-가리키지 않음) 전부 통과, 병합 후 요약 카운트·지도 마커 배열·
-단지 카드 목록이 1개로 갱신, Redis 왕복(`flushPendingSync()`
-강제 후 POST 바디에 병합된 단지 1개+매물 5건+삭제 id 잔존 없음
-확인). `node --check` 통과.
-
-- **B-118 완료·push 완료**. 손 B의 B-31(`nav.js`+`style.css`)
-  미커밋 변경과 파일 충돌 없음.
-- **다음**: 별도 지시 대기(B-118로 실사용 피드백 3차 5건 전부
-  발급 완료 — 커맨드센터 후속 판단).
 
