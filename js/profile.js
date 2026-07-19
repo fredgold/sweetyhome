@@ -15,6 +15,20 @@ function renderProfileOwners(){
     renderProfileOwners();
   });
 }
+function renderProfileStateSize(){
+  const body=document.querySelector('#profileModal .mbody');
+  if(!body) return;
+  let el=document.getElementById('pf_stateSize');
+  if(!el){
+    el=document.createElement('div');
+    el.id='pf_stateSize';
+    el.setAttribute('role','status');
+    el.style.marginTop='16px';
+    body.appendChild(el);
+  }
+  el.className='chip'+(isStateSizeWarning()?' chip-warn':'');
+  el.textContent=`현재 저장 용량 ${formatStateSize()} · 서버 4MB 상한의 ${stateSizePercent()}%`+(isStateSizeWarning()?' · 상한에 가까워요':'');
+}
 function openProfile(){
   const p=state.profile;
   document.getElementById('pf_names').value=p.names||'';
@@ -33,6 +47,7 @@ function openProfile(){
   profileOwnersDraft=[...state.settings.owners];
   renderProfileOwners();
   renderProfileMilestones();
+  renderProfileStateSize();
   openModal('profileModal');
 }
 document.getElementById('profileBtn').onclick=openProfile;

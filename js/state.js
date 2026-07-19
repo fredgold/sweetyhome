@@ -111,6 +111,23 @@ const SYNC_MSGS={
   expired:'로그인이 만료됐어요. 다시 로그인해주세요.',
   toolarge:'저장할 데이터가 너무 커요(서버 상한 초과) — 사진 등 큰 항목을 정리한 뒤 다시 시도하세요.',
 };
+const STATE_MAX_BYTES=4*1024*1024, STATE_WARN_RATIO=.8;
+let currentStateSizeBytes=0;
+function formatStateSize(bytes=currentStateSizeBytes){
+  return bytes>=1024*1024?(bytes/1024/1024).toFixed(2)+'MB':(bytes/1024).toFixed(1)+'KB';
+}
+function stateSizePercent(){ return Math.round(currentStateSizeBytes/STATE_MAX_BYTES*100); }
+function isStateSizeWarning(){ return currentStateSizeBytes>STATE_MAX_BYTES*STATE_WARN_RATIO; }
+function updateStateSizeIndicators(){
+  const chip=document.getElementById('syncChip');
+  if(chip) chip.title=`현재 저장 용량 ${formatStateSize()} · 서버 4MB 상한의 ${stateSizePercent()}%`;
+  if(typeof renderProfileStateSize==='function') renderProfileStateSize();
+}
+function recordStateJsonSize(json){
+  currentStateSizeBytes=new Blob([json]).size;
+  updateStateSizeIndicators();
+  return currentStateSizeBytes;
+}
 function setSyncState(s){
   const chip=document.getElementById('syncChip');
   const msg=document.getElementById('syncMsg');
@@ -485,6 +502,7 @@ async function load(){
     applyGuards(structuredClone(GUEST_STATE));
     state.settings.owners=['본인','배우자','공동'];
     syncOwners();
+    recordStateJsonSize(JSON.stringify(state));
     renderAll();
     return;
   }
@@ -509,6 +527,7 @@ async function load(){
     if(n){ n.textContent='클라우드·로컬 모두 불러오기 실패. 새로고침하거나 잠시 후 다시 시도하세요.'; n.style.color='var(--s-drop)'; }
   }
   applyGuards(raw);
+  recordStateJsonSize(JSON.stringify(state));
   renderAll();
   /* B-80: 지난 세션의 flushPendingSync/syncToRedis가 미동기로 끝났으면(플래그
      남아있음) 이번 로드에서 안내 — 자동으로 뭔가 하지 않고 표시만. 성공
@@ -531,13 +550,14 @@ async function save(){
   if(isGuestMode){ const n=document.getElementById('savedNote'); n.textContent='데모 모드 — 저장되지 않아요'; n.style.color='var(--ink-faint)'; return; }
   const n=document.getElementById('savedNote'); n.textContent='저장 중…'; n.style.color='var(--ink-soft)';
   const json=JSON.stringify(state);
+  const bytes=recordStateJsonSize(json);
   try{
     localStorage.setItem('sweetyhome',json);
   }catch(e){
     /* B-80: 조용히 삼키지 않고 칩 상태 반영 + 원인 추적용 크기 로그(용량 초과가
        흔한 원인이라 KB를 같이 남김). Redis 동기화는 로컬 저장과 무관하게
        그대로 시도(로컬이 실패했다면 오히려 Redis가 유일한 백업이 됨) */
-    const kb=(new Blob([json]).size/1024).toFixed(1);
+    const kb=(bytes/1024).toFixed(1);
     console.warn(`save(): localStorage 저장 실패(state 크기 ${kb}KB) — ${e&&e.message}`);
     setSyncState('localfail');
   }
