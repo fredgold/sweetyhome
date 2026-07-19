@@ -418,10 +418,9 @@
     body:has(#panel-props.on) .wrap{max-width:none;}
     /* 자산은 B-104-4의 요약/노트·등록부 2구역이 폭을 흡수한다. */
     body:has(#panel-assets.on) .wrap{max-width:none;}
-    /* 대시보드: 타임라인·카드라 텍스트/버튼 사이만 벌어질 뿐 내용이
-       늘어나지 않음 → 더 보수적인 상한. 수집함은 B-104-3에서 카드
-       auto-fill 그리드가 폭을 흡수하므로 매물탭처럼 전체폭 프레임. */
-    body:has(#panel-dash.on) .wrap{max-width:clamp(1440px,60vw,1600px);}
+    /* 대시보드는 B-104-5의 요약 카드·Top 3 콤팩트 행이 폭을 흡수한다.
+       수집함은 B-104-3의 카드 auto-fill 그리드가 폭을 흡수한다. */
+    body:has(#panel-dash.on) .wrap{max-width:none;}
     body:has(#panel-scraps.on) .wrap{max-width:none;}
     #panel-props.on .grid{flex:1;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch;}
     .grid{grid-template-columns:minmax(0,var(--sidebar-w,360px)) 24px minmax(0,1fr);gap:0;}
@@ -864,6 +863,20 @@
     #panel-actions .done-body>.actrow:nth-of-type(-n+2){border-top:none;}
   }
   @media (min-width:1440px){
+    #panel-dash.on{
+      display:grid;
+      grid-template-columns:minmax(0,4fr) minmax(460px,3fr);
+      grid-template-areas:
+        "journey journey"
+        "summaries actions"
+        "notice notice";
+      gap:14px;
+      align-content:start;
+    }
+    #panel-dash .hero{grid-area:journey;margin-bottom:0;}
+    #panel-dash .dcards{grid-area:summaries;margin-bottom:0;align-content:start;}
+    #panel-dash .top3{grid-area:actions;margin-bottom:0;}
+    #panel-dash .regline{grid-area:notice;}
     #panel-assets .asset-zones{
       display:grid;
       grid-template-columns:minmax(380px,3fr) minmax(0,8fr);
