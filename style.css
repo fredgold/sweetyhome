@@ -416,8 +416,8 @@
        멈춤(하드 컷오프였던 구 1440 고정과 달리 1440~상한 구간은 유연).
        1440px 이하 뷰포트에선 min값(1440px)이 이겨 기존과 완전히 동일. */
     body:has(#panel-props.on) .wrap{max-width:none;}
-    /* 자산: 소유자~메모 7개 컬럼 표라 넓을수록 각 컬럼이 널널해짐 → 더 넓은 상한 */
-    body:has(#panel-assets.on) .wrap{max-width:clamp(1440px,82vw,1800px);}
+    /* 자산은 B-104-4의 요약/노트·등록부 2구역이 폭을 흡수한다. */
+    body:has(#panel-assets.on) .wrap{max-width:none;}
     /* 대시보드: 타임라인·카드라 텍스트/버튼 사이만 벌어질 뿐 내용이
        늘어나지 않음 → 더 보수적인 상한. 수집함은 B-104-3에서 카드
        auto-fill 그리드가 폭을 흡수하므로 매물탭처럼 전체폭 프레임. */
@@ -864,6 +864,17 @@
     #panel-actions .done-body>.actrow:nth-of-type(-n+2){border-top:none;}
   }
   @media (min-width:1440px){
+    #panel-assets .asset-zones{
+      display:grid;
+      grid-template-columns:minmax(380px,3fr) minmax(0,8fr);
+      grid-template-rows:auto minmax(0,1fr);
+      column-gap:18px;
+      align-items:start;
+    }
+    #panel-assets .asset-zone-summary{grid-column:1;grid-row:1;min-width:0;}
+    #panel-assets .asset-zone-summary .asum{grid-template-columns:minmax(0,1fr);}
+    #panel-assets .asset-zone-details{grid-column:1;grid-row:2;min-width:0;}
+    #panel-assets .asset-zones>.reg{grid-column:2;grid-row:1 / span 2;min-width:0;align-self:start;}
     body:has(#panel-actions.on) .wrap{max-width:none;}
     #panel-actions .act-live-groups{
       display:grid;

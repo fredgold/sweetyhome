@@ -119,74 +119,80 @@
       </div>
       <div class="adesc">스프레드시트처럼 <b>소유자·항목·금액·형태·유동성·동원 가능액</b>으로 관리해요. 단위는 <b>원</b>. 시트에서 행을 복사해 붙여넣으면 한 번에 들어옵니다.</div>
 
-      <div class="asum">
-        <div class="sbig hl">
-          <div class="lab">즉시 동원 가능액 <span style="font-weight:600">· 지금 집 자금 투입 가능</span></div>
-          <div class="val tnum" id="s_imm">0원</div>
-          <div class="won tnum" id="s_imm_won">₩0</div>
-          <div class="immed" id="s_imm_reserve">&nbsp;</div>
+      <div class="asset-zones">
+        <div class="asset-zone-summary">
+          <div class="asum">
+            <div class="sbig hl">
+              <div class="lab">즉시 동원 가능액 <span style="font-weight:600">· 지금 집 자금 투입 가능</span></div>
+              <div class="val tnum" id="s_imm">0원</div>
+              <div class="won tnum" id="s_imm_won">₩0</div>
+              <div class="immed" id="s_imm_reserve">&nbsp;</div>
+            </div>
+            <div class="sbig">
+              <div class="lab">총 자산 합계</div>
+              <div class="val tnum" id="s_total" style="color:var(--ink)">0원</div>
+              <div class="won tnum" id="s_total_won">₩0</div>
+              <div class="immed">전체 동원 가능액(만기 포함) <b class="tnum" id="s_mob">0</b></div>
+              <div class="ownerline" id="s_owners"></div>
+            </div>
+          </div>
         </div>
-        <div class="sbig">
-          <div class="lab">총 자산 합계</div>
-          <div class="val tnum" id="s_total" style="color:var(--ink)">0원</div>
-          <div class="won tnum" id="s_total_won">₩0</div>
-          <div class="immed">전체 동원 가능액(만기 포함) <b class="tnum" id="s_mob">0</b></div>
-          <div class="ownerline" id="s_owners"></div>
+
+        <div class="reg">
+          <div class="reghead">
+            <span>소유자</span><span>자산 항목</span><span>현재 금액</span><span>형태</span><span>유동성</span><span>동원 가능액</span><span>메모</span><span></span>
+          </div>
+          <div class="asset-filter-bar">
+            <select class="asset-owner-sel" id="asset_ownerFilter">
+              <option value="">전체 소유자</option>
+            </select>
+            <input class="asset-search-input" id="asset_search" placeholder="🔍 항목명 검색...">
+          </div>
+          <div id="a_rows"></div>
+          <div class="regadd">
+            <button class="btn-addrow" id="addAssetRow">＋ 항목 추가</button>
+            <button class="btn-paste" id="pasteAssetBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg> 시트 붙여넣기</button>
+          </div>
+        </div>
+
+        <div class="asset-zone-details">
+          <div class="atarget">
+            <div class="trow">
+              전세 보증금 목표
+              <input type="number" id="a_target" step="0.1" placeholder="4.5"> 억
+              <span id="a_targetMsg"></span>
+            </div>
+            <div class="trow">
+              예비비(결혼·이사 등)
+              <input type="number" id="a_reserve" step="100" placeholder="1000"> 만원
+              <span id="a_reserveMsg"></span>
+            </div>
+          </div>
+
+          <div class="asset-updated" id="a_updated" style="font-size:11px;color:var(--ink-faint);text-align:right;margin-bottom:4px;"></div>
+          <div class="anote">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <label>메모 (부모님 지원 조건, 증여 공제, 계획 등)</label>
+              <button type="button" class="sc-preview-toggle" id="an_previewToggle"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기</button>
+            </div>
+            <div class="sc-md-toolbar" id="an_mdToolbar">
+              <button type="button" data-antgt="wrap" data-open="**" data-close="**" title="굵게 (Ctrl+B)"><b>B</b></button>
+              <button type="button" data-antgt="wrap" data-open="*" data-close="*" title="기울임 (Ctrl+I)"><i>I</i></button>
+              <span class="tb-sep"></span>
+              <button type="button" data-antgt="line" data-prefix="## " title="제목">H</button>
+              <button type="button" data-antgt="line" data-prefix="- " title="목록">•</button>
+              <button type="button" data-antgt="line" data-prefix="> " title="인용"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/></svg></button>
+            </div>
+            <textarea id="a_notes" class="sc-md-textarea" placeholder="예: 양가 각각 본인 계좌로 입금 (증여공제 활용) / 8월 이자지원 확인 후 한도 재계산"></textarea>
+            <div id="an_mdPreview" class="sc-md-preview sc-md-content" style="display:none;border:1px solid var(--hairline);border-radius:9px;padding:12px;margin-top:6px;"></div>
+            <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+              <button type="button" class="btn-primary" id="an_saveBtn">저장</button>
+            </div>
+          </div>
+
+          <div class="privacy"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg> 이 보드 데이터(자산 금액 포함)는 클라우드 저장소에 동기화돼요. 동기화 실패 시엔 이 기기에만 저장돼요. 더 안심하고 싶으면 정확한 금액 대신 <b>대략값</b>으로 적고, 실제 숫자는 따로 메모해두세요.</div>
         </div>
       </div>
-
-      <div class="reg">
-        <div class="reghead">
-          <span>소유자</span><span>자산 항목</span><span>현재 금액</span><span>형태</span><span>유동성</span><span>동원 가능액</span><span>메모</span><span></span>
-        </div>
-        <div class="asset-filter-bar">
-          <select class="asset-owner-sel" id="asset_ownerFilter">
-            <option value="">전체 소유자</option>
-          </select>
-          <input class="asset-search-input" id="asset_search" placeholder="🔍 항목명 검색...">
-        </div>
-        <div id="a_rows"></div>
-        <div class="regadd">
-          <button class="btn-addrow" id="addAssetRow">＋ 항목 추가</button>
-          <button class="btn-paste" id="pasteAssetBtn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="3" rx="1"/><path d="M15 4.5h1.5a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M12 10v6"/><path d="M9.5 13.5 12 16l2.5-2.5"/></svg> 시트 붙여넣기</button>
-        </div>
-      </div>
-
-      <div class="atarget">
-        <div class="trow">
-          전세 보증금 목표
-          <input type="number" id="a_target" step="0.1" placeholder="4.5"> 억
-          <span id="a_targetMsg"></span>
-        </div>
-        <div class="trow">
-          예비비(결혼·이사 등)
-          <input type="number" id="a_reserve" step="100" placeholder="1000"> 만원
-          <span id="a_reserveMsg"></span>
-        </div>
-      </div>
-
-      <div class="asset-updated" id="a_updated" style="font-size:11px;color:var(--ink-faint);text-align:right;margin-bottom:4px;"></div>
-      <div class="anote">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-          <label>메모 (부모님 지원 조건, 증여 공제, 계획 등)</label>
-          <button type="button" class="sc-preview-toggle" id="an_previewToggle"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기</button>
-        </div>
-        <div class="sc-md-toolbar" id="an_mdToolbar">
-          <button type="button" data-antgt="wrap" data-open="**" data-close="**" title="굵게 (Ctrl+B)"><b>B</b></button>
-          <button type="button" data-antgt="wrap" data-open="*" data-close="*" title="기울임 (Ctrl+I)"><i>I</i></button>
-          <span class="tb-sep"></span>
-          <button type="button" data-antgt="line" data-prefix="## " title="제목">H</button>
-          <button type="button" data-antgt="line" data-prefix="- " title="목록">•</button>
-          <button type="button" data-antgt="line" data-prefix="> " title="인용"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/></svg></button>
-        </div>
-        <textarea id="a_notes" class="sc-md-textarea" placeholder="예: 양가 각각 본인 계좌로 입금 (증여공제 활용) / 8월 이자지원 확인 후 한도 재계산"></textarea>
-        <div id="an_mdPreview" class="sc-md-preview sc-md-content" style="display:none;border:1px solid var(--hairline);border-radius:9px;padding:12px;margin-top:6px;"></div>
-        <div style="display:flex;justify-content:flex-end;margin-top:6px;">
-          <button type="button" class="btn-primary" id="an_saveBtn">저장</button>
-        </div>
-      </div>
-
-      <div class="privacy"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg> 이 보드 데이터(자산 금액 포함)는 클라우드 저장소에 동기화돼요. 동기화 실패 시엔 이 기기에만 저장돼요. 더 안심하고 싶으면 정확한 금액 대신 <b>대략값</b>으로 적고, 실제 숫자는 따로 메모해두세요.</div>
     </div>
   </section>
 
