@@ -695,7 +695,7 @@ function applyFill(j){
   if(j.loc) document.getElementById('f_loc').value=j.loc;
   if(j.deposit!=null&&j.deposit!=='') document.getElementById('f_deposit').value=j.deposit;
   if(j.area!=null&&j.area!=='') document.getElementById('f_area').value=j.area;
-  if(j.memo) document.getElementById('f_memo').value=j.memo;
+  if(j.memo){ document.getElementById('f_memo').value=j.memo; if(fMemoTiptapEditor) fMemoTiptapEditor.commands.setContent(j.memo); }
   if(j._auto) tempChecks=Object.assign(tempChecks||{},j._auto);
   /* B-28: 파싱이 주차·관리비를 읽었을 때만 저장 — 저장 시점(saveAsComplexListing)에
      반영, 실패 시 각 state는 기존대로 'unknown' */
@@ -923,6 +923,7 @@ const form=document.getElementById('form');
 let propImgData=null;
 function clearForm(){
   ['editId','f_name','f_loc','f_station','f_line','f_deposit','f_area','f_households','f_url','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
+  if(fMemoTiptapEditor) fMemoTiptapEditor.commands.setContent('');
   tempChecks=null;tempParking=null;tempManagementFee=null;tempComplexPromotion=null;clearFormPin();
   propImgData=null;
   document.getElementById('f_img').value='';
@@ -941,10 +942,51 @@ let _formLocked=false;
 function openForm(){
   form.classList.add('open');initFormMap();document.getElementById('f_name').focus();
   if(!DESKTOP_MQ.matches){ lockBodyScroll(); _formLocked=true; }
+  initFMemoEditor();
 }
 function closeForm(){
   form.classList.remove('open');clearForm();
   if(_formLocked){ unlockBodyScroll(); _formLocked=false; }
+}
+/* B-103 2-3: 매물 추가폼 메모 Tiptap 전환 — "그림자 textarea" 패턴.
+   f_memo textarea는 DOM에 그대로 두되 숨기고(display:none), Tiptap
+   onUpdate에서 매 변경마다 markdown을 textarea.value로 계속 동기화한다.
+   이렇게 하면 저장 로직(`document.getElementById('f_memo').value`)이
+   Tiptap 유무와 무관하게 그대로 동작 — properties.js의 저장 경로를
+   건드리지 않아도 됨(가장 침습이 적은 방식). 폴백 시엔 textarea가
+   원래대로 보이고 편집 가능해 기존과 완전히 동일 */
+let fMemoTiptapEditor=null, fMemoTiptapFailed=false, fMemoTiptapInitPromise=null;
+function initFMemoEditor(){
+  if(fMemoTiptapEditor||fMemoTiptapFailed||fMemoTiptapInitPromise) return;
+  const ta=document.getElementById('f_memo');
+  if(!ta) return;
+  fMemoTiptapInitPromise=(async()=>{
+    const mods=await loadTiptapMods().catch(()=>null);
+    if(!mods){ fMemoTiptapFailed=true; fMemoTiptapInitPromise=null; showEditorFallbackNote(ta); return; }
+    let mount=document.getElementById('f_memoMount');
+    if(!mount){
+      mount=document.createElement('div');
+      mount.id='f_memoMount';
+      mount.className='sc-md-editor sc-md-content';
+      ta.insertAdjacentElement('afterend',mount);
+    }
+    try{
+      fMemoTiptapEditor=new mods.core.Editor({
+        element:mount,
+        extensions:[mods.starterKit,mods.Markdown],
+        content:ta.value||'',
+        onUpdate:({editor})=>{ ta.value=editor.storage.markdown.getMarkdown(); },
+      });
+      ta.style.display='none';
+      document.getElementById('f_memoPreviewToggle').style.display='none';
+      document.getElementById('f_mdToolbar').style.display='none';
+      document.getElementById('f_memoPreview').style.display='none';
+    }catch(e){
+      fMemoTiptapFailed=true; fMemoTiptapEditor=null; mount.remove();
+      showEditorFallbackNote(ta);
+    }
+    fMemoTiptapInitPromise=null;
+  })();
 }
 document.getElementById('toggleForm').onclick=()=>{ if(form.classList.contains('open'))closeForm(); else {clearForm();openForm();} };
 document.getElementById('cancelBtn').onclick=closeForm;
@@ -969,6 +1011,17 @@ function openEdit(id){
     const field=k.replace('em_','');
     document.getElementById(k).value=p[field]??'';
   });
+  /* B-103 2-3: em_memo는 모달이 재사용되므로(다른 매물을 열 때마다
+     같은 인스턴스) sem_text와 동일 패턴 — 이미 활성이면 콘텐츠만
+     교체, 아직이면 위에서 이미 채운 textarea.value를 초기값 삼아
+     초기화하고 그 사이 다른 항목으로 안 바뀐 경우에만 반영 */
+  if(emMemoTiptapEditor){
+    emMemoTiptapEditor.commands.setContent(p.memo??'');
+  } else if(!emMemoTiptapFailed){
+    initEMMemoEditor().then(ok=>{
+      if(ok&&propEditId===id) emMemoTiptapEditor.commands.setContent(p.memo??'');
+    });
+  }
   const prev=document.getElementById('em_imgPreview'), clr=document.getElementById('em_imgClear');
   if(p.img){prev.src=p.img;prev.style.display='';clr.style.display='';}
   else{prev.style.display='none';clr.style.display='none';}
@@ -984,6 +1037,47 @@ function openEdit(id){
       editMapMarker=new naver.maps.Marker({position:pos,map:editMapObj});
     }
   },120);
+}
+/* B-103 2-3: em_memo Tiptap 싱글턴 — 모달을 여러 매물에 재사용하므로
+   sem_text(B-103 2-2)와 동일하게 최초 1회만 생성, 이후엔 openEdit()에서
+   setContent()로 내용만 교체. 그림자 textarea 패턴은 f_memo와 동일 */
+let emMemoTiptapEditor=null, emMemoTiptapFailed=false, emMemoTiptapInitPromise=null;
+async function initEMMemoEditor(){
+  if(emMemoTiptapEditor) return true;
+  if(emMemoTiptapFailed) return false;
+  if(emMemoTiptapInitPromise) return emMemoTiptapInitPromise;
+  const ta=document.getElementById('em_memo');
+  emMemoTiptapInitPromise=(async()=>{
+    const mods=await loadTiptapMods().catch(()=>null);
+    if(!mods){ emMemoTiptapFailed=true; showEditorFallbackNote(ta); return false; }
+    let mount=document.getElementById('em_memoMount');
+    if(!mount){
+      mount=document.createElement('div');
+      mount.id='em_memoMount';
+      mount.className='sc-md-editor sc-md-content';
+      ta.insertAdjacentElement('afterend',mount);
+    }
+    try{
+      emMemoTiptapEditor=new mods.core.Editor({
+        element:mount,
+        extensions:[mods.starterKit,mods.Markdown],
+        content:ta.value||'',
+        onUpdate:({editor})=>{ ta.value=editor.storage.markdown.getMarkdown(); },
+      });
+      ta.style.display='none';
+      document.getElementById('em_memoPreviewToggle').style.display='none';
+      document.getElementById('em_mdToolbar').style.display='none';
+      document.getElementById('em_memoPreview').style.display='none';
+      return true;
+    }catch(e){
+      emMemoTiptapFailed=true; emMemoTiptapEditor=null; mount.remove();
+      showEditorFallbackNote(ta);
+      return false;
+    }
+  })();
+  const ok=await emMemoTiptapInitPromise;
+  emMemoTiptapInitPromise=null;
+  return ok;
 }
 document.getElementById('em_findBtn').onclick=async function(){
   const name=(document.getElementById('em_name').value+' '+document.getElementById('em_loc').value).trim();
@@ -2407,6 +2501,71 @@ let cxSafetyExpanded=new Set();
    안 됨("취소" 시 재렌더로 DOM 폐기, 값 무손실) */
 let cxListingEditMode=new Set();
 let cxDetailInfoEditing=false;
+/* B-103 2-3: 매물 행 메모는 f_memo/em_memo와 달리 동시에 2개 이상
+   편집모드로 열릴 수 있는 유일한 필드라(cxListingEditMode가 Set)
+   싱글턴이 아니라 lid별 인스턴스가 필요 — Map<lid,{editor,mount}>.
+   renderCxListings()가 매번 innerHTML을 통째로 재조립하므로, 그
+   시작 지점에서 반드시 destroyAllListingMemoEditors()를 먼저 호출해
+   이전 렌더의 Tiptap 인스턴스(DOM에서만 사라지고 JS 객체는 안
+   사라짐 — destroy() 없인 메모리 누수)를 정리한다 */
+let listingMemoEditors=new Map();
+/* renderCxListings()는 저장 대상이 아닌 "여전히 편집 중인" 행도 매번
+   innerHTML로 통째로 다시 그리는데, 그 새 textarea는 항상 l.memo(마지막
+   저장값)로 채워진다 — 즉 행 A를 저장하면 행 B가 여전히 편집 중이어도
+   B의 미저장 타이핑이 날아가는 게 이 함수 도입 전부터 있던 B-91의
+   구조적 특성이다. destroy 시점에 "아직 편집모드인 행"의 최신 마크다운을
+   잠깐 담아뒀다가 재생성 시 l.memo 대신 그걸 쓰면 이 손실을 막을 수 있어
+   Tiptap 전환 김에 함께 개선했다(제너릭 저장 루프·재렌더 로직 자체는
+   무변경 — 이 파일의 새 함수 내부에서만 처리) */
+let listingMemoPendingContent=new Map();
+function destroyAllListingMemoEditors(){
+  listingMemoEditors.forEach(({editor},lid)=>{
+    if(cxListingEditMode.has(lid)){
+      try{ listingMemoPendingContent.set(lid,editor.storage.markdown.getMarkdown()); }catch(e){}
+    }
+    try{editor.destroy();}catch(e){}
+  });
+  listingMemoEditors.clear();
+}
+async function initListingMemoEditor(lid){
+  if(listingMemoEditors.has(lid)) return;
+  const row=document.querySelector(`[data-lid="${CSS.escape(lid)}"]`);
+  if(!row) return;
+  const ta=row.querySelector('.lst-memo-ta');
+  if(!ta) return;
+  const mods=await loadTiptapMods().catch(()=>null);
+  /* 로드 대기 중 저장/취소/재렌더로 편집모드를 벗어났거나 이미 다른
+     경로로 인스턴스가 생겼을 수 있어 재확인 후 진행 */
+  if(!cxListingEditMode.has(lid)||listingMemoEditors.has(lid)) return;
+  const freshRow=document.querySelector(`[data-lid="${CSS.escape(lid)}"]`);
+  if(!freshRow) return;
+  const freshTa=freshRow.querySelector('.lst-memo-ta');
+  if(!freshTa) return;
+  const pending=listingMemoPendingContent.has(lid)?listingMemoPendingContent.get(lid):null;
+  listingMemoPendingContent.delete(lid);
+  const initialContent=pending!=null?pending:(freshTa.value||'');
+  if(!mods){ if(pending!=null) freshTa.value=pending; showEditorFallbackNote(freshTa); return; }
+  const mount=document.createElement('div');
+  mount.className='lst-memo-mount sc-md-editor sc-md-content';
+  freshTa.insertAdjacentElement('afterend',mount);
+  try{
+    const editor=new mods.core.Editor({
+      element:mount,
+      extensions:[mods.starterKit,mods.Markdown],
+      content:initialContent,
+      onUpdate:({editor})=>{ freshTa.value=editor.storage.markdown.getMarkdown(); },
+    });
+    freshTa.value=initialContent;
+    listingMemoEditors.set(lid,{editor,mount});
+    freshTa.style.display='none';
+    const previewBtn=freshRow.querySelector(`[data-lstmemopreview="${CSS.escape(lid)}"]`);
+    if(previewBtn) previewBtn.style.display='none';
+  }catch(e){
+    mount.remove();
+    if(pending!=null) freshTa.value=pending;
+    showEditorFallbackNote(freshTa);
+  }
+}
 /* #cxDetailMap은 formMap/propEditMap과 동일하게 컨테이너를 절대 display:none 처리하지 않고
    인스턴스를 한 번만 만들어 재사용한다 — 지도 div를 숨겼다 다시 보이면 네이버 지도 SDK
    내부(비동기 타일 onload 콜백)에서 널 참조 에러가 남(실측 확인). 좌표 없을 땐 지도 위에
@@ -2631,7 +2790,11 @@ document.getElementById('cxDetailListings').addEventListener('click',async e=>{
   if(diffs.length&&!confirm(`다음 값을 덮어쓸까요?\n${diffs.join('\n')}`)) return;
   if(j.deposit!=null) depositInp.value=j.deposit;
   if(j.area!=null) areaInp.value=j.area;
-  if(j.memo) memoInp.value=j.memo;
+  if(j.memo){
+    memoInp.value=j.memo;
+    const inst=listingMemoEditors.get(fillBtn.dataset.lstfill);
+    if(inst) inst.editor.commands.setContent(j.memo);
+  }
   const listing=state.listings.find(l=>l.id===fillBtn.dataset.lstfill);
   const cx=listing&&state.complexes.find(c=>c.id===listing.complexId);
   applyComplexPromotion(cx,promotion);
@@ -2651,6 +2814,14 @@ document.getElementById('cxDetailListings').addEventListener('change',e=>{
   listing.safety[safekey][safefield]=el.value;
   save();
   renderCxListings(listing.complexId);
+});
+/* B-103 2-3: 매물 행 메모 편집 중(저장/취소 없이) "닫기"로 모달을 그냥
+   닫는 경우 — renderCxListings()가 다시 호출될 때까지 Tiptap 인스턴스가
+   DOM에서만 안 보일 뿐 살아있게 되는 걸 막는 안전망. 다음에 아무
+   단지든 열면(renderComplexDetailBody→renderCxListings) 어차피
+   정리되지만, 닫는 즉시 정리해 누수 창을 0으로 만든다 */
+document.getElementById('complexDetailModal').addEventListener('click',e=>{
+  if(e.target.closest('[data-close="complexDetailModal"]')) destroyAllListingMemoEditors();
 });
 /* 단지(parking)·매물(managementFee) 공용 클릭/입력 핸들러 — #complexDetailModal
    안 어디서든(단지 필드 1개 + 매물 행 N개) 위임 처리 */
@@ -2912,6 +3083,7 @@ document.getElementById('cxDetailFindLocBtn')?.addEventListener('click',async fu
   setTimeout(()=>{ this.disabled=false; this.textContent=old; },1600);
 });
 function renderCxListings(complexId){
+  destroyAllListingMemoEditors();
   const wrap=document.getElementById('cxDetailListings'); if(!wrap)return;
   const listings=state.listings.filter(l=>l.complexId===complexId)
     .slice().sort((a,b)=>new Date(a.capturedAt||0)-new Date(b.capturedAt||0));
@@ -2946,6 +3118,7 @@ function renderCxListings(complexId){
       </div>
     </div>`;
   }).join('');
+  listings.forEach(l=>{ if(cxListingEditMode.has(l.id)) initListingMemoEditor(l.id); });
 }
 document.getElementById('cxDetailListings').addEventListener('click',e=>{
   const btn=e.target.closest('[data-lact]'); if(!btn)return;
