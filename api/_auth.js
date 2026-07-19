@@ -5,7 +5,10 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN,
 });
 
-const SESSION_TTL = 86400;
+/* B-113: 24h→30일 + 슬라이딩 갱신(verifySession 성공마다 TTL 재설정) — 개인용
+   PIN 앱이라 30일 타당, 모바일 재로그인 잦다는 실사용 피드백 반영.
+   클라 js/auth.js SH_TOKEN_TTL_MS와 동일한 값으로 수동 동기화 필요(B-65 규칙) */
+const SESSION_TTL = 30 * 24 * 60 * 60;
 const ALLOWED_ORIGINS = ['https://sweetyhome.vercel.app'];
 
 export { redis, SESSION_TTL };
@@ -40,11 +43,13 @@ export async function verifySession(req, res) {
     return false;
   }
   const token = auth.slice(7);
-  const exists = await redis.get(`sweetyhome:sess:${token}`);
+  const key = `sweetyhome:sess:${token}`;
+  const exists = await redis.get(key);
   if (!exists) {
     res.status(401).json({ ok: false, error: '세션이 만료되었습니다.' });
     return false;
   }
+  await redis.expire(key, SESSION_TTL);
   return true;
 }
 

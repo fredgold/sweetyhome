@@ -1,9 +1,13 @@
 /* ============ 로그인 ============ */
 let isGuestMode=false;
 /* B-65: sessionStorage(탭 닫히면 소멸) → localStorage 전환 + 만료시각(sh_token_exp)
-   별도 저장. 서버 세션 TTL(api/_auth.js SESSION_TTL=86400초=24h)과 동일한 값 —
-   TTL 자체는 시크릿이 아니라 상수로 코드에 둠. 서버 TTL이 바뀌면 이 값도 같이 바꿔야 함 */
-const SH_TOKEN_TTL_MS=24*60*60*1000;
+   별도 저장. 서버 세션 TTL(api/_auth.js SESSION_TTL=30일)과 동일한 값 —
+   TTL 자체는 시크릿이 아니라 상수로 코드에 둠. 서버 TTL이 바뀌면 이 값도 같이 바꿔야 함.
+   B-113: 24h→30일 + 슬라이딩 갱신. 서버가 verifySession 성공마다 Redis TTL을
+   재설정하므로, 클라도 토큰을 실제 사용할 때마다(getToken) sh_token_exp를 같이
+   미뤄야 서버는 살아있는데 클라가 먼저 로컬 만료로 재로그인을 강제하는 불일치가
+   안 생김 */
+const SH_TOKEN_TTL_MS=30*24*60*60*1000;
 function setToken(token){
   localStorage.setItem('sh_token',token);
   localStorage.setItem('sh_token_exp',String(Date.now()+SH_TOKEN_TTL_MS));
@@ -17,6 +21,7 @@ function getToken(){
   if(!t) return null;
   const exp=+localStorage.getItem('sh_token_exp');
   if(!exp||Date.now()>exp){ clearToken(); return null; }
+  localStorage.setItem('sh_token_exp',String(Date.now()+SH_TOKEN_TTL_MS));
   return t;
 }
 function authHeaders(extra){
