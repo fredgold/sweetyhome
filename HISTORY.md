@@ -4874,3 +4874,105 @@ B-102① 읽기모드 메모 표시 무회귀. XSS 3종(`<img onerror>`+
   1~2일 규모로 재산정했다. 모바일 키보드·PTR·모달·매물 회귀가
   핵심 위험이다.
 - 상세 보고: `docs/B-104-non-property-tabs-ui-proposal.md`.
+
+---
+
+## 2026-07-19 — B-109: Tiptap 후속 폴리시 3건 — 사용자 실기기 검증 발견 (커밋 3개)
+
+B-103 2-1·2-2가 배포된 실기기에서 사용자가 직접 발견·재현한(스크린샷
+확보) 3건. `scraps-form.js`+`utils.js`+`style.css`만 수정(손 B가
+`state.js`·`profile.js`로 B-106① 후속 작업 중이라 무접촉 유지) —
+**즉 이번 수정은 수집함(`sc_text`/`sem_text`) 2곳에만 적용되고,
+자산 노트·매물 메모 3곳(파일 락 밖)은 이번에 손대지 않았다.**
+
+### 커밋① fix: 중첩 리스트 백스페이스 데이터 손실 (`5ac5454`, 최우선·실버그)
+
+**근본원인**(실키스트로크로 특정, `setTextSelection`으로 커서를
+정확한 위치에 두고 실제 `Backspace` 키 이벤트를 발생시키는 방식으로
+`Home`/반복 `ArrowLeft`가 예상과 다르게 동작하는 함정을 피해 재현):
+`@tiptap/starter-kit`의 `ListItem` 확장은 `Tab`→`sinkListItem`·
+`Shift+Tab`→`liftListItem`만 기본 바인딩하고 **`Backspace`는 바인딩
+하지 않는다.** 그 결과 항목 시작점 Backspace가 ProseMirror 기본
+keymap(범용 조인류)으로 흘러가 중첩 리스트 항목을 통째로 이전 문단에
+병합해버려 사용자에게는 "상위 블록이 삭제됐다"로 체감됨(격리
+재현: `- parent` Enter Tab `child` → child 시작점 Backspace →
+`<li><p>parent</p><p>child</p></li>`로 리스트 구조 자체가 사라짐).
+
+**수정**: `커서가 collapsed && 항목의 진짜 시작점(parentOffset===0)`
+일 때만 `liftListItem`을 먼저 시도하는 커스텀 키맵 확장
+(`buildListBackspaceFix`, `utils.js`) — Notion처럼 한 단계씩
+내어쓰기, 이미 최상위면 `liftListItem` 자체가(prosemirror-schema-list
+표준 동작) 리스트 밖 일반 문단으로 변환해줘 별도 분기 불필요. 조건에
+안 맞으면 `false`를 반환해 기본 Backspace로 폴백 — 매트릭스 8종
+(2·3단계 중첩, 항목 시작/중간/빈 항목, 선택 상태, undo) 전부 실측
+확인.
+
+### 커밋② fix: 플레이스홀더 에디터 내장화 (`cc0f6e0`)
+
+기존엔 CSS `.is-empty::before{content:attr(data-placeholder)}`를
+바깥 컨테이너(`#sc_text`/`#sem_text` 자신)에 걸어 흉내냈는데, 그
+pseudo가 커서가 실제로 있는 안쪽 Tiptap 빈 문단과 다른(부모) 노드
+기준이라 "에디터 안 실제 타이핑 위치"와 시각적으로 분리된 별도
+블록처럼 보임 — 사용자가 "에디터 밖 고정 영역"으로 체감. `@tiptap/
+extension-placeholder`(esm.sh, 기존 버전 계열 2.27.2 고정)로 교체 —
+Tiptap이 진짜 빈 문단 노드 자신에게 `data-placeholder`를 얹어주는
+표준 방식. 기존 `data-placeholder` 속성값(index.html 원문 그대로,
+문구 재작성 없음)을 그대로 읽어써 `index.html` 무수정. Tiptap 성공
+시 초기 HTML에 박혀있던 `is-empty` 클래스를 명시적으로 제거해 구
+CSS 플레이스홀더와 이중 표시되지 않게 함. 폴백 경로는 `is-empty`
+클래스를 계속 토글하는 기존 코드를 그대로 둬서 무변경.
+
+### 커밋③ style: 포커스 테두리 정리 (`c8d1280`)
+
+Tiptap이 안에 마운트하는 `.ProseMirror`(contenteditable)가 브라우저
+기본 파란 outline을 자체적으로 그려 바깥 `.sc-md-editor`의 기존
+`outline:none`이 자식까지는 못 지웠다. `.sc-md-editor .ProseMirror
+{outline:none;}`로 내부 outline 제거, 포커스 표시는 이 앱의 다른
+모든 입력창과 동일한 기존 `--focus-ring` 토큰(신규 토큰 없음)으로
+바깥 박스에 일원화 — `.sc-md-editor:focus-within{box-shadow:var(
+--focus-ring);}`. 부수로 `:not(:focus)`→`:not(:focus-within)`도
+함께 고쳤다(바깥 div가 `contentEditable=false`라 자기 자신은 절대
+`:focus`를 못 받아 "✏️ 편집" 안내가 편집 중에도 상시 노출되던 잠재
+버그 — Tiptap 활성화 이후 존재했지만 이번에 CSS를 만지는 김에 같이
+수정). 폴백 경로(바깥 div 자신이 contenteditable)에서도 `:focus-
+within`은 자기 자신 포커스 시에도 성립해 그대로 작동.
+
+### ⚠️ 매우 중요 — 적용 범위 한계(정직한 보고)
+
+**이 3건 수정은 `sc_text`(수집함 입력폼)·`sem_text`(수집함 편집모달)
+2곳에만 적용됐다.** 파일 락(`properties.js`·`assets.js` 제외)
+때문에 아래는 손대지 못했고, **실측으로 재현 확인한 결과 백스페이스
+버그는 그대로 남아있다**:
+- 자산 노트(`assets.js`, `an_tiptapMount`) — 격리 재현: 동일한
+  `- parent`+Enter+Tab+`child`+Backspace 시퀀스로
+  `<li><p>parent</p><p>child</p></li>` 재현(수정 전과 동일 증상).
+- 매물 메모 3곳(`properties.js`, `f_memo`·`em_memo`·`lst-memo-ta`)
+  — 같은 `loadTiptapMods()`를 쓰지만 `buildListBackspaceFix`/
+  `buildTiptapPlaceholder`를 extensions 배열에 추가하는 건 각 파일의
+  Editor 생성 호출부라 유틸 함수만 만들어놓는다고 자동 적용되지
+  않음 — 실제로 이 4개 필드에는 아직 안 붙어있다.
+
+**다음 손대는 사람이 반드시 알아야 할 것**: `buildListBackspaceFix`·
+`buildTiptapPlaceholder`(둘 다 `utils.js`)는 이미 만들어져 있고
+재사용만 하면 됨 — `properties.js`/`assets.js`가 잠금 해제되면
+각 `new mods.core.Editor({...extensions...})` 호출부에 두 줄만
+추가하면 된다(스타일은 `.sc-md-editor`/`.ProseMirror` 셀렉터라
+이미 전역 적용돼 있어 CSS는 추가 작업 불요, 포커스 링도 이미
+전역 적용됨 — CSS 3벌 중 커밋③만 사실상 이미 전 필드 적용, 커밋①②는
+JS 확장을 개별 추가해야 함).
+
+### 검증(Playwright, 로컬 python UTF-8 서버, esm.sh 실접속+차단 모킹 양쪽)
+
+①매트릭스 8종(2·3단계 중첩 lift 전부 무손실, 반복 Backspace로
+최상위→일반 문단 전환, 항목 중간 Backspace 무변화, 빈 항목
+Backspace 안전, 텍스트 선택 상태 선택분만 삭제, undo로 리스트 구조
+복원) ②플레이스홀더(표시/입력 시 소멸/저장 시 미유입, sc_text·
+sem_text 둘 다) ③포커스(내부 outline 제거+외곽 focus-ring 스크린샷
+확인) 폴백 경로(esm.sh 차단 모킹: 3가지 fix 전부 미적용 상태로 구
+에디터 그대로 정상 동작) 무회귀(자산 노트 파일락 밖 정상 동작 확인,
+모바일 390px, XSS 3종, 저장 왕복 Redis 모킹) 전부 통과.
+`node --check` 2파일 통과.
+
+**→ B-109 완료·push 완료**. `state.js`/`profile.js`/`BACKLOG.md`
+무접촉 확인. **자산 노트·매물 메모 3곳의 동일 버그는 미해결로 남음
+— 후속 작업(파일 락 해제 시) 필요, 위 "적용 범위 한계" 참고.**
