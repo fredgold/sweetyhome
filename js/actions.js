@@ -50,11 +50,114 @@ function actDueBadge(a){
   const overdue=!a.done && diff<0;
   return `<span class="act-due-badge${overdue?' overdue':''}" title="${esc(a.due)}">${esc(label)}</span>`;
 }
+/* B-114: 별도 order 필드 없이 기존 priority만 재부여한다. 미완료 최솟값은
+   ★ 고정 행으로 취급해 직접 이동할 수 없고, 다른 행도 그 위로 갈 수 없다.
+   검색·분류 중에는 숨은 행 순서가 모호하므로 순서 변경 UI를 잠근다. */
+function actSortedLive(){
+  const positions=new Map(state.actions.map((a,i)=>[a.id,i]));
+  return state.actions.filter(a=>!a.done).sort((a,b)=>
+    (a.priority-b.priority)||(positions.get(a.id)-positions.get(b.id)));
+}
+function actPinnedId(){return actSortedLive()[0]?.id||'';}
+function actReorder(dragId,targetId,place,targetCategory){
+  const dragged=state.actions.find(a=>a.id===dragId);
+  if(!dragged||dragged.done||dragId===actPinnedId()||dragId===targetId)return false;
+  const pinnedId=actPinnedId();
+  const oldCategory=dragged.category||'';
+  const before=actSortedLive().map(a=>a.id);
+  const ordered=actSortedLive().filter(a=>a.id!==dragId);
+  dragged.category=ACT_CATS.includes(targetCategory)?targetCategory:'';
+  let insertAt=-1;
+  if(targetId){
+    const targetIndex=ordered.findIndex(a=>a.id===targetId);
+    if(targetIndex>=0) insertAt=targetIndex+(place==='after'?1:0);
+  }
+  if(insertAt<0){
+    const lastInGroup=ordered.reduce((last,a,i)=>actGroupKey(a)===dragged.category?i:last,-1);
+    insertAt=lastInGroup>=0?lastInGroup+1:ordered.length;
+  }
+  ordered.splice(insertAt,0,dragged);
+  const pinned=ordered.find(a=>a.id===pinnedId);
+  const normalized=pinned?[pinned,...ordered.filter(a=>a.id!==pinnedId)]:ordered;
+  if(oldCategory===(dragged.category||'')&&before.every((id,i)=>normalized[i]?.id===id))return false;
+  normalized.forEach((a,i)=>{a.priority=i+1;});
+  save();renderActions();renderTop3();toast(oldCategory===(dragged.category||'')?'순서를 바꿨어요':'분류와 순서를 바꿨어요');
+  return true;
+}
+function actMoveByButton(id,direction){
+  const pinnedId=actPinnedId();
+  const action=state.actions.find(a=>a.id===id);
+  if(!action||action.done||id===pinnedId)return false;
+  const group=actSortedLive().filter(a=>actGroupKey(a)===actGroupKey(action));
+  const index=group.findIndex(a=>a.id===id);
+  const target=group[index+direction];
+  if(!target||target.id===pinnedId)return false;
+  return actReorder(id,target.id,direction<0?'before':'after',actGroupKey(action));
+}
+function clearActDragFeedback(el){
+  el.querySelector('.act-live-groups')?.classList.remove('is-dragging');
+  el.querySelectorAll('.actrow.dragging,.actrow.drop-before,.actrow.drop-after').forEach(row=>
+    row.classList.remove('dragging','drop-before','drop-after'));
+  el.querySelectorAll('.act-group-body.is-drop-target').forEach(body=>body.classList.remove('is-drop-target'));
+}
+function bindActDrag(el,orderLocked){
+  const groups=el.querySelector('.act-live-groups'); if(!groups||orderLocked)return;
+  let dragId='';
+  el.querySelectorAll('[data-actf-drag][draggable="true"]').forEach(handle=>{
+    handle.addEventListener('keydown',e=>{
+      if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;
+      e.preventDefault();
+      actMoveByButton(handle.dataset.actfDrag,e.key==='ArrowUp'?-1:1);
+    });
+    handle.addEventListener('dragstart',e=>{
+      dragId=handle.dataset.actfDrag;
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain',dragId);
+      groups.classList.add('is-dragging');
+      requestAnimationFrame(()=>handle.closest('.actrow')?.classList.add('dragging'));
+    });
+    handle.addEventListener('dragend',()=>{dragId='';clearActDragFeedback(el);});
+  });
+  el.querySelectorAll('.act-group-body').forEach(body=>{
+    body.addEventListener('dragover',e=>{
+      if(!dragId)return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect='move';
+      el.querySelectorAll('.actrow.drop-before,.actrow.drop-after').forEach(row=>row.classList.remove('drop-before','drop-after'));
+      el.querySelectorAll('.act-group-body.is-drop-target').forEach(target=>target.classList.remove('is-drop-target'));
+      body.classList.add('is-drop-target');
+      const row=e.target.closest('.actrow');
+      if(row&&row.dataset.id!==dragId){
+        const rect=row.getBoundingClientRect();
+        row.classList.add(e.clientY<rect.top+rect.height/2?'drop-before':'drop-after');
+      }
+      const panel=document.getElementById('panel-actions');
+      const panelRect=panel.getBoundingClientRect();
+      if(e.clientY<panelRect.top+48)panel.scrollTop-=14;
+      else if(e.clientY>panelRect.bottom-48)panel.scrollTop+=14;
+    });
+    body.addEventListener('drop',e=>{
+      if(!dragId)return;
+      e.preventDefault();
+      const row=e.target.closest('.actrow');
+      if(row?.dataset.id===dragId){clearActDragFeedback(el);dragId='';return;}
+      const rect=row?.getBoundingClientRect();
+      const place=row&&e.clientY>=rect.top+rect.height/2?'after':'before';
+      const targetId=row?.dataset.id||'';
+      const category=body.dataset.actCategory||'';
+      const movedId=dragId;
+      dragId='';
+      clearActDragFeedback(el);
+      actReorder(movedId,targetId,place,category);
+    });
+  });
+}
 function renderActions(){
   syncActOwnerSelect();
   const aq=(document.getElementById('act_search')?.value||'').trim().toLowerCase();
   const sorted=[...state.actions].sort((a,b)=>(a.done-b.done)||(a.priority-b.priority));
-  let live=sorted.filter(a=>!a.done);
+  const allLive=sorted.filter(a=>!a.done);
+  let live=[...allLive];
   let done=sorted.filter(a=>a.done);
   if(actCategoryFilter==='__none__'){
     live=live.filter(a=>actGroupKey(a)==='');
@@ -65,12 +168,29 @@ function renderActions(){
   }
   if(aq){ live=live.filter(a=>(a.text||'').toLowerCase().includes(aq)); done=done.filter(a=>(a.text||'').toLowerCase().includes(aq)); }
   const el=document.getElementById('act_list');
-  const liveMinPriority=live.length?Math.min(...live.map(a=>a.priority)):Infinity;
+  const pinnedId=allLive[0]?.id||'';
+  const orderLocked=Boolean(aq||actCategoryFilter);
+  const groupOrders=new Map(ACT_GROUPS.map(group=>[
+    group.key,
+    allLive.filter(a=>actGroupKey(a)===group.key)
+  ]));
   const liveRanks=new Map(live.map((a,i)=>[a.id,i+1]));
   const actionRow=(a,doneRow=false)=>{
     const categoryLabel=a.category||'일반';
+    const pinned=!doneRow&&a.id===pinnedId;
+    const group=groupOrders.get(actGroupKey(a))||[];
+    const groupIndex=group.findIndex(item=>item.id===a.id);
+    const canMoveUp=!orderLocked&&!pinned&&groupIndex>0&&group[groupIndex-1]?.id!==pinnedId;
+    const canMoveDown=!orderLocked&&!pinned&&groupIndex>=0&&groupIndex<group.length-1;
+    const dragEnabled=!doneRow&&!orderLocked&&!pinned;
+    const orderTitle=orderLocked?'검색·분류 필터 해제 후 순서 변경':pinned?'★ 고정 행은 다른 항목의 ★를 누른 뒤 이동':'끌어서 순서·분류 변경';
     return `
-      <div class="actrow" data-done="${doneRow?'1':'0'}" data-id="${a.id}">
+      <div class="actrow${doneRow?'':' is-sortable'}${pinned?' is-pinned':''}" data-done="${doneRow?'1':'0'}" data-id="${a.id}">
+        ${doneRow?'':`<span class="act-order-tools">
+          <button type="button" class="act-drag-handle${dragEnabled?'':' is-disabled'}" data-actf-drag="${a.id}" draggable="${dragEnabled?'true':'false'}" aria-label="${esc(orderTitle)}" title="${esc(orderTitle)}"${dragEnabled?'':' disabled'}><span aria-hidden="true">⋮⋮</span></button>
+          <button type="button" class="act-move-btn" data-actf-move="${a.id}" data-direction="-1" aria-label="위로 이동"${canMoveUp?'':' disabled'}>▲</button>
+          <button type="button" class="act-move-btn" data-actf-move="${a.id}" data-direction="1" aria-label="아래로 이동"${canMoveDown?'':' disabled'}>▼</button>
+        </span>`}
         <span class="rank tnum">${doneRow?'':liveRanks.get(a.id)}</span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
         <span class="atx">
@@ -83,7 +203,7 @@ function renderActions(){
         </span>
         <span class="act-row-actions">
           <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
-          ${doneRow?'':`<button class="star ${a.priority<=liveMinPriority?'on':''}" data-actf-top="${a.id}" title="맨 위로" aria-label="맨 위로">${ic('star')}</button>`}
+          ${doneRow?'':`<button class="star ${pinned?'on':''}" data-actf-top="${a.id}" title="${pinned?'맨 위 고정됨':'맨 위로'}" aria-label="${pinned?'맨 위 고정됨':'맨 위로'}">${ic('star')}</button>`}
           <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
         </span>
       </div>`;
@@ -97,7 +217,7 @@ function renderActions(){
         <span>${esc(group.label)}</span>
         <span class="act-group-count tnum">${items.length}</span>
       </div>
-      <div class="act-group-body">${items.map(a=>actionRow(a)).join('')}</div>
+      <div class="act-group-body" data-act-category="${esc(group.key)}">${items.map(a=>actionRow(a)).join('')}</div>
     </section>`;
   }).join('');
   html+='</div>';
@@ -120,6 +240,9 @@ function renderActions(){
   el.querySelectorAll('[data-actf-top]').forEach(b=>b.onclick=()=>{
     const a=state.actions.find(x=>x.id===b.dataset.actfTop);
     if(a){const min=Math.min(...state.actions.map(x=>x.priority));a.priority=min-1;a.done=false;save();renderActions();renderTop3();}
+  });
+  el.querySelectorAll('[data-actf-move]').forEach(b=>b.onclick=()=>{
+    actMoveByButton(b.dataset.actfMove,Number(b.dataset.direction));
   });
   el.querySelectorAll('[data-actf-del]').forEach(b=>b.onclick=()=>{
     if(!confirm('이 액션을 삭제할까요?'))return;
@@ -156,6 +279,7 @@ function renderActions(){
     row.querySelector('.act-edit-cancel').onclick=()=>{renderActions();};
     inp.addEventListener('keydown',e=>{ if(e.key==='Enter')save_(); if(e.key==='Escape'){renderActions();} });
   });
+  bindActDrag(el,orderLocked);
   const dt=document.getElementById('act_doneToggle');
   if(dt) dt.onclick=()=>dt.parentElement.classList.toggle('collapsed');
   renderCatChips();
