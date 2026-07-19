@@ -230,6 +230,9 @@ const SAFETY_ITEMS=[
 ];
 const SAFETY_STATUS_LABEL={unchecked:'미확인',ok:'문제없음',warning:'주의'};
 const SAFETY_SOURCES=['매물광고','중개사','임대인','현장','등기부','건축물대장','은행','보증기관','기타'];
+/* B-43: listings[].history[].source 표시 라벨 — state.js·properties.js 양쪽에서
+   공유(SAFETY_STATUS_LABEL과 동일 패턴) */
+const HISTORY_SOURCE_LABEL={create:'최초 등록',edit:'정보 수정',check:'게시중 확인',gone:'사라짐 처리',price:'가격변동 기록',merge:'단지 병합 이관'};
 function defaultSafetyItem(){ return {status:'unchecked',memo:'',source:'',checkedAt:''}; }
 function defaultListingSafety(){
   const safety={};

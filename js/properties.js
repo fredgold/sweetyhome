@@ -3580,6 +3580,21 @@ function safetyReadOnlyHTML(l){
     }).join('')}
   </div>`;
 }
+/* B-43: 변동 이력 — 시간 역순 리스트만(시각화·추세 화살표는 B-42 몫). deposit·
+   listingStatus가 실제로 바뀐 시점만 쌓이므로(자동 판정·정렬 개입 없음), 목록
+   자체가 곧 그 매물의 실제 변경 이력. 새 CSS 없이 기존 .cx-listing-meta 재사용 */
+function listingHistoryHTML(l){
+  const hist=Array.isArray(l.history)?l.history:[];
+  if(!hist.length) return '<div class="cx-listing-meta">변동 이력 없음</div>';
+  return [...hist].reverse().map(h=>{
+    const d=new Date(h.at);
+    const dateLabel=isNaN(d.getTime())?'—':`${d.getMonth()+1}/${d.getDate()}`;
+    const priceLabel=h.deposit!=null?`${h.deposit}억`:'가격 미정';
+    const statusLabel=esc(h.listingStatus||'—');
+    const sourceLabel=esc(HISTORY_SOURCE_LABEL[h.source]||h.source||'—');
+    return `<div class="cx-listing-meta tnum">${esc(dateLabel)} ${esc(priceLabel)}·${statusLabel} (${sourceLabel})</div>`;
+  }).join('');
+}
 function listingDetailBodyHTML(l){
   const safeHref=l.url?safeUrl(l.url):'';
   return `
@@ -3595,6 +3610,8 @@ function listingDetailBodyHTML(l){
     ${l.memo?`<div class="c-memo sc-md-content">${renderMd(l.memo)}</div>`:'<div class="cx-listing-meta">메모 없음</div>'}
     <h3 style="font-size:13px;margin:14px 0 8px">전세 안전 체크</h3>
     ${safetyReadOnlyHTML(l)}
+    <h3 style="font-size:13px;margin:14px 0 8px">변동 이력</h3>
+    ${listingHistoryHTML(l)}
   `;
 }
 function renderListingDetailPanel(){
