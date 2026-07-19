@@ -1,4 +1,40 @@
-# HANDOFF — B-110 완료·B-109 전 필드 적용 완료 (2026-07-19)
+# HANDOFF — B-104-1 전 탭 내부 스크롤 앱셸 완료 (2026-07-19)
+
+## 최신 작업: 비매물 4탭 앱셸 통일 — 2단계 첫 커밋
+
+`js/nav.js`+`style.css`만 수정. D1/A1 현행 UI와 액션/수집함 형태는
+그대로 두고 스크롤 모델만 분리 구현했다. `index.html`·`assets.js`·
+`properties.js`·`BACKLOG.md` 무접촉.
+
+- B-98의 패널 시작점 실측을 `--active-panel-top`으로 최소 일반화,
+  기존 매물용 `--props-panel-top`은 그대로 유지한다.
+- 대시·자산·액션·수집함 활성 패널은 `100dvh` 앱셸 안에서
+  `overflow-y:auto`+`overscroll-behavior:contain`; 공용 저장상태
+  문구는 기존처럼 패널 아래 별도 상태줄로 유지해 콘텐츠를 가리지 않는다.
+- 탭 버튼과 `data-goto` 전환은 **항상 대상 패널 맨 위로 초기화**.
+  기존 document smooth-scroll 대신 document 0 + panel scrollTop 0을
+  동기 적용한다.
+- iOS PWA에서 내부 패널이 중간까지 스크롤돼도 document는 0이라 PTR이
+  오발동할 수 있는 새 조건을 `nav.js` touchstart 전달 가드로 차단.
+  패널 최상단 PTR과 B-52 매물 지도 패닝 제외는 그대로 유지한다.
+
+**검증**: Playwright 1440×900·1920×1080·390×844 전 탭. 비매물
+4탭 `document maxScroll=0`, topbar y=0, 내부 패널+저장상태줄이
+viewport 끝에 일치. 탭/`data-goto` scrollTop 0 정책, 모바일 viewport
+844→500 축소 후 자산·액션·수집함 입력 포커스 도달, 수집함 추가폼
+Tiptap·편집모달 `.mbody` 독립 스크롤, PTR(중간 오발동 false/
+최상단 true/지도 false), 매물 데스크톱 map/list와 모바일 map/list
+무회귀. `node --check js/nav.js`, `git diff --check` 통과.
+
+탭 전환 스크린샷 15장(각 탭 × 1440/1920/390)은 `mockups/
+b104-1-{viewport}-{panel}.png`에 **미커밋 로컬**로 남겼다.
+
+- **B-104-1 완료·push 완료**.
+- 다음 순서: B-104-2 액션 AC3 → B-104-3 수집함 SC1.
+
+---
+
+# 이전 핸드오프 — B-110 완료·B-109 전 필드 적용 완료 (2026-07-19)
 
 ## 최신 작업: B-109 잔여 전파 — 자산 노트·매물 메모 3곳
 

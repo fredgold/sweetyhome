@@ -90,6 +90,28 @@
 
   .panel{display:none;animation:fade .22s ease;}
   .panel.on{display:block;}
+  #panel-dash.on,
+  #panel-assets.on,
+  #panel-actions.on,
+  #panel-scraps.on{
+    height:calc(100dvh - var(--active-panel-top,var(--app-top-h)));
+    flex:1 1 0;
+    min-height:0;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:24px;
+  }
+  body:has(#panel-dash.on) .wrap,
+  body:has(#panel-assets.on) .wrap,
+  body:has(#panel-actions.on) .wrap,
+  body:has(#panel-scraps.on) .wrap{
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    padding-bottom:0;
+  }
   @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
   /* ================= DASHBOARD ================= */
@@ -985,6 +1007,10 @@
 
   @media (max-width:760px){
     .wrap{padding:0 12px 60px;}
+    #panel-dash.on,
+    #panel-assets.on,
+    #panel-actions.on,
+    #panel-scraps.on{padding-bottom:60px;}
     .app-topbar{padding-top:14px;padding-bottom:10px;margin-bottom:14px;}
     header{gap:10px;margin-bottom:10px;}
     .brand h1{font-size:20px;}

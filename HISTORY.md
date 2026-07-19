@@ -5030,3 +5030,50 @@ textarea 그대로 노출·정상 동작 확인. `node --check` 2파일 통과.
 이제 6개 필드(수집함 2+자산노트 1+매물메모 3) 전부에 적용됨** —
 B-103 에픽의 마지막 남은 "적용 범위 한계"가 해소됨. 남은 건 사용자
 실기기 한글 IME 확인(B-103 종결 조건)뿐.
+
+---
+
+## 2026-07-19 — B-104-1: 전 탭 내부 스크롤 앱셸 통일
+
+사용자 채택 순서(앱셸 → 액션 AC3 → 수집함 SC1)의 첫 커밋. UI 형태는
+바꾸지 않고 대시·자산·액션·수집함 4탭을 viewport 높이의 내부 스크롤
+패널로 전환했다. `js/nav.js`+`style.css`만 수정하고 `index.html`·
+`assets.js`·`properties.js`·`BACKLOG.md`는 무접촉.
+
+- B-53 `--app-top-h`와 B-98 `--props-panel-top` 실측 구조를
+  `--active-panel-top`으로 최소 일반화. 매물 변수와 데스크톱 높이식은
+  보존했다.
+- 비매물 활성 패널은 `height:calc(100dvh - --active-panel-top)` 계열,
+  `min-height:0`, `overflow-y:auto`, `overscroll-behavior:contain`.
+  `.wrap`은 세로 flex 앱셸이 되어 주소창/키보드로 viewport 높이가
+  변하는 순서와 무관하게 패널이 남은 공간에 맞춰진다.
+- 첫 구현 중 저장상태 문구를 overlay로 두면 하단 행을 가리는 것을
+  스크린샷에서 발견해 폐기. 기존 `#savedNote`를 패널 아래 별도
+  상태줄로 보존해 UI 정보와 콘텐츠 모두 가리지 않는다.
+- 스크롤 정책은 기존 의미를 유지해 탭 버튼·`data-goto` 모두 대상
+  패널을 맨 위로 초기화한다. document와 패널을 즉시 0으로 맞춰 탭마다
+  smooth-scroll 잔상이 생기지 않는다.
+- iOS PWA PTR은 document가 늘 0인 내부 스크롤 모델에서 패널 중간을
+  최상단으로 오판할 수 있어, 비매물 패널 `scrollTop>0`일 때
+  touchstart의 document 전달만 막았다. 패널 최상단 PTR은 유지한다.
+
+### 검증
+
+Playwright 1440×900·1920×1080·390×844 전 탭 실사용량 샘플(자산
+18·액션 32·수집함 30)로 검증.
+
+- 비매물 4탭 전부 `document maxScroll=0`, topbar y=0, 패널
+  `overflow-y:auto`·overscroll contain, 패널+저장상태줄 viewport 일치.
+- 매물 데스크톱 1440/1920 지도·목록 `document maxScroll=0`,
+  fixed/flex/map 높이 유지. 모바일 390 지도 fixed+overflow hidden,
+  목록 static+sticky toolbar 전환 유지.
+- 자산·액션 입력과 수집함 추가폼/Tiptap 포커스 도달. 모바일 viewport
+  844→500 축소 후에도 액션 입력이 내부 패널 안에 도달.
+- 수집함 편집모달 `.mbody` 독립 스크롤 유지.
+- iOS PWA PTR: 내부 패널 중간 false, 패널 최상단 true, 매물 지도
+  패닝 false(B-52 무회귀).
+- 탭과 `data-goto` 재진입 scrollTop 0 확인.
+- `node --check js/nav.js`, `git diff --check` 통과.
+
+스크린샷 15장(5탭 × 1440/1920/390)은 로컬 `mockups/
+b104-1-{viewport}-{panel}.png`에 미커밋으로 보존.

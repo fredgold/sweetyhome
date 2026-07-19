@@ -1,22 +1,28 @@
 /* ============ tab switching ============ */
-let propsPanelHeightRaf=null;
-function syncPropsPanelHeight(){
+const APP_SCROLL_PANEL_IDS=new Set(['panel-dash','panel-assets','panel-actions','panel-scraps']);
+let panelHeightRaf=null;
+function syncPanelHeight(){
   const topbar=document.getElementById('appTopbar');
   if(topbar) document.documentElement.style.setProperty('--app-top-h',topbar.getBoundingClientRect().height+'px');
-  const panel=document.getElementById('panel-props');
-  if(!panel?.classList.contains('on')||window.innerWidth<900) return;
+  const panel=document.querySelector('.panel.on');
+  if(!panel) return;
   const top=panel.getBoundingClientRect().top+window.scrollY;
-  document.documentElement.style.setProperty('--props-panel-top',top+'px');
+  document.documentElement.style.setProperty('--active-panel-top',top+'px');
+  if(panel.id==='panel-props'&&window.innerWidth>=900){
+    document.documentElement.style.setProperty('--props-panel-top',top+'px');
+  }
 }
-function schedulePropsPanelHeight(){
-  if(propsPanelHeightRaf) cancelAnimationFrame(propsPanelHeightRaf);
-  propsPanelHeightRaf=requestAnimationFrame(()=>{
-    propsPanelHeightRaf=null;
-    syncPropsPanelHeight();
+function schedulePanelHeight(){
+  if(panelHeightRaf) cancelAnimationFrame(panelHeightRaf);
+  panelHeightRaf=requestAnimationFrame(()=>{
+    panelHeightRaf=null;
+    syncPanelHeight();
   });
 }
-document.getElementById('panel-props').addEventListener('animationend',e=>{
-  if(e.target===e.currentTarget) schedulePropsPanelHeight();
+document.querySelectorAll('.panel').forEach(panel=>{
+  panel.addEventListener('animationend',e=>{
+    if(e.target===e.currentTarget) schedulePanelHeight();
+  });
 });
 function switchPanel(name){
   activePanel=name;
@@ -25,15 +31,27 @@ function switchPanel(name){
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+name));
   if(name==='dash') renderDash();
   if(name==='assets') renderAssets();
-  if(name==='props'){ schedulePropsPanelHeight(); initOverview(); setTimeout(()=>{overview&&overview.refresh(true);autoGeocode();},80); }
+  if(name==='props'){ schedulePanelHeight(); initOverview(); setTimeout(()=>{overview&&overview.refresh(true);autoGeocode();},80); }
   if(name==='actions') renderActions();
   if(name==='scraps') renderScraps();
-  window.scrollTo({top:0,behavior:'smooth'});
+  const panel=document.getElementById('panel-'+name);
+  if(panel) panel.scrollTop=0;
+  window.scrollTo({top:0,left:0,behavior:'auto'});
+  schedulePanelHeight();
 }
-window.addEventListener('resize',schedulePropsPanelHeight);
-const appTopbarResizeObserver=window.ResizeObserver?new ResizeObserver(schedulePropsPanelHeight):null;
+window.addEventListener('resize',schedulePanelHeight);
+const appTopbarResizeObserver=window.ResizeObserver?new ResizeObserver(schedulePanelHeight):null;
 appTopbarResizeObserver?.observe(document.getElementById('appTopbar'));
-schedulePropsPanelHeight();
+schedulePanelHeight();
+/* 내부 패널이 중간까지 스크롤된 상태에서는 document.scrollTop이 계속 0이라
+   boot.js의 iOS PTR이 최상단으로 오판한다. touchstart만 document까지 전달하지
+   않아 패널 자체의 위쪽 스크롤은 살리고, panel.scrollTop===0일 때의 PTR은 유지한다. */
+document.querySelectorAll('.panel').forEach(panel=>{
+  if(!APP_SCROLL_PANEL_IDS.has(panel.id)) return;
+  panel.addEventListener('touchstart',e=>{
+    if(panel.scrollTop>0) e.stopPropagation();
+  },{passive:true});
+});
 document.querySelectorAll('.atab[data-panel]').forEach(b=>b.onclick=()=>switchPanel(b.dataset.panel));
 document.querySelectorAll('[data-goto]').forEach(a=>a.onclick=()=>switchPanel(a.dataset.goto));
 
