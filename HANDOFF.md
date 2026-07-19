@@ -1,4 +1,71 @@
-# HANDOFF — B-53 단일 topbar 완료 (2026-07-19)
+# HANDOFF — B-103 2단계 ①② 완료·실기기 한글 관문 대기 (2026-07-19)
+
+## 최신 작업: Tiptap 프로덕션 전환 — 자산 노트·수집함 폼/모달 (커밋 2개, master 반영)
+
+```
+623c76f feat: 자산 노트 Tiptap 전환 (B-103 2-1)
+1ac7817 feat: 수집함 폼·편집모달 Tiptap 전환 + 슬래시 Suggestion 재구축 (B-103 2-2)
+```
+
+**`master`에 Tiptap이 실제로 반영된 첫 커밋들**(1·2차 PoC는 `poc`
+브랜치에만 있었음). 지시 조건대로 커밋②까지만 진행, 커밋③(매물
+메모 3곳, `lst-memo-ta` 동적 다중 인스턴스 포함)은 여기서 멈추고
+검증 결과만 보고 — 다음 지시 대기.
+
+`index.html`/`nav.js`/`style.css` 전부 무접촉(손 B의 B-53과 동시
+진행, 매 커밋 전 `git status`로 확인). 대상 파일: `utils.js`(공용
+Tiptap 래퍼)+`assets.js`(자산 노트)+`scraps-form.js`(수집함 폼·
+모달). `scraps-render.js`는 실제로는 무접촉(카드 렌더는 저장된
+마크다운 문자열만 소비해 에디터 교체와 무관 — grep으로 확인 후
+손 안 댐).
+
+- **공용 래퍼(`utils.js`)**: `loadTiptapMods()`(4개 esm.sh 모듈 캐시
+  로더, 실패 시 null)·`buildTiptapSlashExtension()`(`@tiptap/
+  suggestion` 기반, 기존 `.slash-menu` DOM·CSS 재사용)·
+  `tiptapToolbarAction()`(기존 `data-mdwrap`/`data-mdline` 속성값을
+  Tiptap 명령으로 매핑)·`showEditorFallbackNote()`(새 클래스 없이
+  인라인 안내 1줄).
+- **실측으로 발견·수정한 `@tiptap/suggestion` API 함정 2건**:
+  ①`onKeyDown`의 `props`엔 `.command`가 없음(`onStart`/`onUpdate`
+  에서만 있음) — Enter 처리 시 클로저에 저장해둔 command 재사용으로
+  해결. ②방향키 이동 시 메뉴를 다시 그리는 함수가 클릭 핸들러를
+  매번 날려버려 "방향키 이동 후 클릭 안 먹음" 버그 자체 발견·수정.
+- **커밋① 자산 노트**: textarea+미리보기 토글 → Tiptap 싱글턴(새
+  마운트 div, 기존 `.sc-md-editor .sc-md-content` 클래스 재사용).
+- **커밋② 수집함 폼·모달**: `sc_text`/`sem_text`(contenteditable
+  div라 새 마운트 없이 `contentEditable=false`+내부 마운트) →
+  Tiptap. 슬래시 10개 항목 전부 Tiptap 명령으로 재구축(필터/↑↓/
+  Enter/클릭 4경로 확인). **ceRender 파이프라인은 전수 grep 결과
+  참조 0이 아니라 삭제하지 않음** — Tiptap 로드 실패 시에만 붙는
+  폴백 리스너(`attachScTextFallbackListeners`/`attachSemText
+  FallbackListeners`)의 유일한 소비처로 보존, B-105/B-107 하드닝이
+  "CDN 장애 최후 방어선"으로 남음. 모달은 열자마자 기존 렌더로
+  즉시 표시(로딩 공백 없음) 후 Tiptap 준비되면 조용히 교체, 여러
+  항목을 순서대로 열어도 인스턴스 재사용(콘텐츠만 교체, DOM 안
+  깨짐). **B-108("1. " 리스트 접두 손상) 자연 해소를 실측으로
+  확인**(ProseMirror 리스트 모델 자체엔 그 결함 구조가 없음).
+
+**검증**: Playwright 27개 체크 전부 통과 — 라이브 숏컷(⑨⑩)·슬래시
+4경로·XSS 3종(img onerror·svg onload·script+javascript: 링크, 편집
+표면+카드 렌더 양쪽)·50KB(2~3ms)·모바일 390px·저장 왕복(Redis
+모킹, guest 모드는 저장 자체를 건너뛰는 설계라 이 테스트만 인증
+상태 흉내)·**폴백 경로(esm.sh 차단 모킹, 구 슬래시·구 저장 전부
+정상)**·B-108 재현 불가·통합 스모크(두 에디터 동시 초기화 무충돌,
+매물탭 B-102 무회귀). `node --check` 3파일 통과.
+
+**⚠️ 실기기 한글 확인은 사용자 몫**(커맨드센터 채택 조건) — 자산
+노트·수집함 폼·편집모달 3곳 전부 Playwright/CDP 조합 시뮬레이션의
+한계(실제 다중 `compositionupdate` 연쇄 미검증)가 그대로 적용됨.
+특히 모바일 한글 키보드 실기기 확인 필요.
+
+- **B-103 2단계 ①② 완료·push 완료**.
+- **다음은 커맨드센터 지시 대기**: 검증 결과 보고 후 (a)실기기 한글
+  확인 결과에 따라 커밋③(매물 메모 3곳) 진행 여부 (b)그 사이 다른
+  유휴 작업 여부.
+
+---
+
+# 이전 핸드오프 — B-53 단일 topbar 완료 (2026-07-19)
 
 ## 최신 작업: 헤더+탭바 같은 줄 배치, B-98 높이 회귀 유지
 
