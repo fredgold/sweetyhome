@@ -1726,6 +1726,267 @@ function showComplexMatchPrompt(candidates,complexName){
     openModal('cxMatchModal');
   });
 }
+/* ============ B-118: 단지 병합 도구 (사후 정리 — B-19확 매칭 제안에도 불구하고
+   표기 차이로 실제 발생한 중복 단지, 실사례: 가양6단지 2개) ============
+   자동 병합 절대 금지 — 후보 선택→방향 선택→필드 충돌 미리보기 3단계 전부
+   사용자가 직접 확정해야 다음으로 진행된다. findComplexCandidates/cxMatchReason
+   (B-19확)를 그대로 재사용해 후보 로직을 중복 구현하지 않았다. */
+let cxMergeState=null;
+/* 병합 전 필수 스냅샷 — 실행 취소 기능은 없지만 복구 원본은 반드시 남긴다는
+   지시에 따라, 두 단지+소속 매물 전체를 localStorage 별도 키에 저장(기존
+   makeBackup()의 "state 전체를 JSON으로 담는" 방식과 동일한 발상을 병합
+   대상만으로 스코프를 좁혀 재사용). 실패(용량 초과 등)하면 null을 반환해
+   호출부가 병합 자체를 중단하게 한다 */
+function backupBeforeMerge(keep,drop){
+  try{
+    const payload={
+      v:1, savedAt:new Date().toISOString(), reason:'cxMerge',
+      complexes:[keep,drop].map(c=>JSON.parse(JSON.stringify(c))),
+      listings:state.listings.filter(l=>l.complexId===keep.id||l.complexId===drop.id).map(l=>JSON.parse(JSON.stringify(l))),
+    };
+    const key='sh_mergeBackup_'+Date.now();
+    localStorage.setItem(key,JSON.stringify(payload));
+    return key;
+  }catch(e){ return null; }
+}
+const CX_MERGE_FILL_FIELDS=['loc','geocodeQuery','groupCode','regionGroup','station','line','yearBuilt','commuteGangnam','commuteSinsa','memo','pros','cons','verdict','commuteMemo'];
+const CX_MERGE_FIELD_LABELS={loc:'주소',geocodeQuery:'지오코딩 검색어',groupCode:'탐색그룹코드',regionGroup:'탐색그룹명',station:'역/도보',line:'노선',yearBuilt:'준공연도',commuteGangnam:'강남역(레거시)',commuteSinsa:'신사역(레거시)',memo:'단지 메모',pros:'장점',cons:'단점',verdict:'한줄 판단',commuteMemo:'출퇴근 메모',households:'세대수',coords:'좌표',parking:'주차(세대당)',favorite:'즐겨찾기'};
+/* 병합 미리보기 계산 — keep/drop을 그대로 두고 얕은 복사본(merged)만 만들어
+   반환하는 순수 함수. 실행(cxMergeExecute)이 이 결과를 실제 state에 적용한다.
+   규칙: 남길 값 기본, keep 쪽이 빈 값일 때만 drop 값으로 보충(자동 판정 아님 —
+   단순 빈값 채움, confirm 전 화면에 전부 노출) */
+function cxComputeMerge(keep,drop){
+  const merged=Object.assign({},keep);
+  const filledFrom={};
+  const isBlank=v=>v==null||v==='';
+  CX_MERGE_FILL_FIELDS.forEach(f=>{
+    if(isBlank(merged[f])&&!isBlank(drop[f])){ merged[f]=drop[f]; filledFrom[f]='drop'; }
+  });
+  if(isBlank(merged.households)&&!isBlank(drop.households)){
+    merged.households=drop.households; merged.householdGrade=drop.householdGrade; filledFrom.households='drop';
+  }
+  if((merged.lat==null||merged.lng==null)&&drop.lat!=null&&drop.lng!=null){
+    merged.lat=drop.lat; merged.lng=drop.lng; filledFrom.coords='drop';
+  }
+  if((!merged.parkingState||merged.parkingState==='unknown')&&drop.parkingState&&drop.parkingState!=='unknown'){
+    merged.parking=drop.parking; merged.parkingState=drop.parkingState; filledFrom.parking='drop';
+  }
+  const favoriteMerged=!!(keep.favorite||drop.favorite);
+  if(favoriteMerged&&!keep.favorite) filledFrom.favorite='drop';
+  merged.favorite=favoriteMerged;
+  merged.commutes=(keep.commutes||[]).map((c,i)=>{
+    const dc=(drop.commutes||[])[i];
+    const blank=!c||(c.minutes==null&&c.transfers==null&&!c.destSnapshot);
+    if(blank&&dc&&(dc.minutes!=null||dc.transfers!=null||dc.destSnapshot)){
+      filledFrom['commute'+i]='drop';
+      return Object.assign({},dc);
+    }
+    return Object.assign({},c||{minutes:null,transfers:null,destSnapshot:''});
+  });
+  return {merged,filledFrom};
+}
+function cxMergeCandidateBtnHTML(cx,reason){
+  return `<button type="button" class="btn-ghost" data-cxmergepick="${esc(cx.id)}" style="display:block;width:100%;text-align:left;margin-bottom:8px;padding:10px 12px;">
+    <div style="font-weight:700;">${esc(cx.complexName||'(이름 없음)')}</div>
+    <div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">${esc(cx.loc||'주소 정보 없음')}${reason?' · '+esc(reason):''}</div>
+  </button>`;
+}
+function cxMergeRenderStep1(){
+  const cx=state.complexes.find(c=>c.id===cxMergeState.sourceId); if(!cx){ cxMergeCancel(); return; }
+  const candidates=findComplexCandidates(cx.complexName,cx.lat,cx.lng).filter(c=>c.cx.id!==cx.id);
+  document.getElementById('cxMergeTitle').textContent='병합할 단지 선택';
+  document.getElementById('cxMergeBody').innerHTML=`
+    <p class="mdesc">"<b>${esc(cx.complexName||'(이름 없음)')}</b>"과(와) 병합할 다른 단지를 선택하세요. 목록에
+    없으면 아래에서 검색하세요.</p>
+    ${candidates.length?`<div class="cx-dt" style="margin:10px 0 6px">근접·이름 유사 후보</div>
+      ${candidates.map(c=>cxMergeCandidateBtnHTML(c.cx,cxMatchReason(c))).join('')}`:''}
+    <div class="cx-dt" style="margin:10px 0 6px">직접 검색</div>
+    <input type="text" id="cxMergeSearchInput" placeholder="단지명·주소 검색">
+    <div id="cxMergeSearchResults" style="margin-top:8px"></div>
+    <div class="c-actions" style="margin-top:14px">
+      <button type="button" class="btn-ghost" id="cxMergeCancelBtn1">취소</button>
+    </div>`;
+  document.getElementById('cxMergeCancelBtn1').onclick=cxMergeCancel;
+  document.getElementById('cxMergeBody').querySelectorAll('[data-cxmergepick]').forEach(b=>{
+    b.onclick=()=>{ cxMergeState.targetId=b.dataset.cxmergepick; cxMergeState.step=2; cxMergeRenderStep2(); };
+  });
+  const searchInput=document.getElementById('cxMergeSearchInput');
+  const renderSearch=()=>{
+    const q=normalizeStr(searchInput.value);
+    const wrap=document.getElementById('cxMergeSearchResults');
+    if(!q){ wrap.innerHTML=''; return; }
+    const results=state.complexes.filter(c=>c.id!==cx.id&&
+      (normalizeStr(c.complexName).includes(q)||normalizeStr(c.loc).includes(q))).slice(0,20);
+    wrap.innerHTML=results.length
+      ?results.map(c=>cxMergeCandidateBtnHTML(c,'')).join('')
+      :'<p style="font-size:12px;color:var(--ink-soft)">검색 결과가 없어요.</p>';
+    wrap.querySelectorAll('[data-cxmergepick]').forEach(b=>{
+      b.onclick=()=>{ cxMergeState.targetId=b.dataset.cxmergepick; cxMergeState.step=2; cxMergeRenderStep2(); };
+    });
+  };
+  searchInput.addEventListener('input',renderSearch);
+}
+function cxMergeRenderStep2(){
+  const a=state.complexes.find(c=>c.id===cxMergeState.sourceId);
+  const b=state.complexes.find(c=>c.id===cxMergeState.targetId);
+  if(!a||!b){ cxMergeCancel(); return; }
+  document.getElementById('cxMergeTitle').textContent='어느 쪽을 남길까요?';
+  document.getElementById('cxMergeBody').innerHTML=`
+    <p class="mdesc">두 단지 중 남길 단지를 고르세요. 남기는 쪽 정보가 기본이 되고, 빈 항목만
+    사라지는 쪽 정보로 채워요. 다음 화면에서 자세히 확인할 수 있어요.</p>
+    ${cxMergeCandidateBtnHTML(a,'매물 '+state.listings.filter(l=>l.complexId===a.id).length+'건')}
+    ${cxMergeCandidateBtnHTML(b,'매물 '+state.listings.filter(l=>l.complexId===b.id).length+'건')}
+    <div class="c-actions" style="margin-top:6px">
+      <button type="button" class="btn-ghost" id="cxMergeBackBtn2">뒤로</button>
+      <button type="button" class="btn-ghost" id="cxMergeCancelBtn2">취소</button>
+    </div>`;
+  document.getElementById('cxMergeBody').querySelectorAll('[data-cxmergepick]').forEach(btn=>{
+    btn.onclick=()=>{
+      const keepId=btn.dataset.cxmergepick;
+      cxMergeState.keepId=keepId;
+      cxMergeState.dropId=keepId===a.id?b.id:a.id;
+      cxMergeState.step=3;
+      cxMergeRenderStep3();
+    };
+  });
+  document.getElementById('cxMergeBackBtn2').onclick=()=>{ cxMergeState.step=1; cxMergeRenderStep1(); };
+  document.getElementById('cxMergeCancelBtn2').onclick=cxMergeCancel;
+}
+function cxMergeFieldRowsHTML(keep,drop,filledFrom){
+  const rows=[];
+  const push=(label,val,filled)=>rows.push(`<div class="cx-dl">
+    <div class="cx-dt">${esc(label)}${filled?' <span style="color:var(--ink-faint);font-weight:600;">(상대 단지 값으로 채움)</span>':''}</div>
+    <div class="cx-dd">${val!=null&&val!==''?esc(String(val)):'—'}</div>
+  </div>`);
+  const {merged}=cxComputeMerge(keep,drop);
+  push('단지명(유지)',merged.complexName,false);
+  CX_MERGE_FILL_FIELDS.forEach(f=>{
+    const label=CX_MERGE_FIELD_LABELS[f]||f;
+    if(isBlankBoth(keep[f],drop[f])) return;
+    push(label,merged[f],filledFrom[f]==='drop');
+  });
+  push('세대수',merged.households!=null?merged.households+'세대':null,filledFrom.households==='drop');
+  push('좌표',merged.lat!=null&&merged.lng!=null?merged.lat.toFixed(5)+', '+merged.lng.toFixed(5):null,filledFrom.coords==='drop');
+  push('주차(세대당)',merged.parkingState==='known'?merged.parking+'대':(merged.parkingState==='na'?'해당없음':null),filledFrom.parking==='drop');
+  push('즐겨찾기',merged.favorite?'예':null,filledFrom.favorite==='drop');
+  return rows.join('');
+}
+function isBlankBoth(a,b){ return (a==null||a==='')&&(b==null||b===''); }
+function cxMergeRenderStep3(){
+  const keep=state.complexes.find(c=>c.id===cxMergeState.keepId);
+  const drop=state.complexes.find(c=>c.id===cxMergeState.dropId);
+  if(!keep||!drop){ cxMergeCancel(); return; }
+  const dropListings=state.listings.filter(l=>l.complexId===drop.id);
+  const keepListings=state.listings.filter(l=>l.complexId===keep.id);
+  const keepHasRep=keepListings.some(l=>l.isRepresentative);
+  const dropHasRep=dropListings.some(l=>l.isRepresentative);
+  const repConflict=keepHasRep&&dropHasRep;
+  const {filledFrom}=cxComputeMerge(keep,drop);
+  document.getElementById('cxMergeTitle').textContent='병합 전 확인';
+  document.getElementById('cxMergeBody').innerHTML=`
+    <p class="mdesc"><b>${esc(keep.complexName||'')}</b>을(를) 남기고
+    <b>${esc(drop.complexName||'')}</b>은(는) 사라져요. 사라지는 단지의 매물
+    <b>${dropListings.length}건</b>은 남는 단지로 전부 옮겨져요(병합 후 총
+    ${keepListings.length+dropListings.length}건).</p>
+    ${repConflict?`<p class="mdesc" style="color:var(--s-drop);font-weight:600;">⚠️ 두 단지 모두 대표매물이 있어요 —
+      병합 후 <b>${esc(keep.complexName||'')}</b>의 대표매물을 유지하고,
+      <b>${esc(drop.complexName||'')}</b>의 대표매물은 대표가 아닌 일반 매물로 바뀌어요.</p>`:''}
+    <p class="mdesc">병합 전 두 단지와 매물 전체를 브라우저에 백업해요. 실행 취소는 없지만
+    복구용 원본은 남아요.</p>
+    <div class="cx-dt" style="margin:10px 0 2px">최종 반영될 값</div>
+    ${cxMergeFieldRowsHTML(keep,drop,filledFrom)}
+    <div class="c-actions" style="margin-top:14px">
+      <button type="button" class="btn-ghost" id="cxMergeBackBtn3">뒤로</button>
+      <button type="button" class="btn-ghost" id="cxMergeCancelBtn3">취소</button>
+      <button type="button" class="btn-save" id="cxMergeConfirmBtn">병합 확정</button>
+    </div>`;
+  document.getElementById('cxMergeBackBtn3').onclick=()=>{ cxMergeState.step=2; cxMergeRenderStep2(); };
+  document.getElementById('cxMergeCancelBtn3').onclick=cxMergeCancel;
+  document.getElementById('cxMergeConfirmBtn').onclick=cxMergeExecute;
+}
+function cxMergeExecute(){
+  const keep=state.complexes.find(c=>c.id===cxMergeState.keepId);
+  const drop=state.complexes.find(c=>c.id===cxMergeState.dropId);
+  if(!keep||!drop) return;
+  const backupKey=backupBeforeMerge(keep,drop);
+  if(!backupKey){
+    alert('병합 전 백업 저장에 실패해서 병합을 진행하지 않았어요. 브라우저 저장 공간을 확인해주세요.');
+    return;
+  }
+  const {merged}=cxComputeMerge(keep,drop);
+  Object.assign(keep,merged);
+  keep.updatedAt=new Date().toISOString();
+  const dropId=drop.id, dropName=drop.complexName||'';
+  const keepHadRep=state.listings.some(l=>l.complexId===keep.id&&l.isRepresentative);
+  state.listings.filter(l=>l.complexId===dropId).forEach(l=>{
+    l.complexId=keep.id;
+    if(keepHadRep&&l.isRepresentative) l.isRepresentative=false;
+  });
+  state.complexes=state.complexes.filter(c=>c.id!==dropId);
+  routeSelected.delete(dropId); /* B-118: 삭제된 단지 참조 정리 — 임장 루트 선택 Set.
+    cxListingEditMode/cxSafetyExpanded는 매물 id 기준이라 손댈 필요 없음(매물 자체는
+    삭제되지 않고 complexId만 바뀌므로 편집 중이던 상태도 그대로 유효) */
+  save();
+  closeModal('cxMergeModal');
+  cxMergeState=null;
+  toast(`"${esc(dropName)}"을(를) "${esc(keep.complexName||'')}"에 병합했어요`);
+  renderStats();
+  /* B-118: 삭제된 단지 참조 정리② — cxDetailId가 dropId였다면 여기서 keep.id로
+     재설정. openComplexDetail()을 다시 부르지 않는 이유: complexDetailModal은
+     이미 열려있는 채로 이 흐름이 진행되므로, 다시 부르면 openModal()의
+     lockBodyScroll() 카운터가 한 번 더 증가해 나중에 닫아도 스크롤 잠금이
+     안 풀리는 카운터 불일치가 생김 — 모달을 다시 열지 않고 내용만 새로 그린다 */
+  cxDetailId=keep.id;
+  renderComplexDetailBody(keep);
+  renderComplexes(); /* 단지 목록 자체가 바뀌었으므로(1개 삭제) 지도·필터·카드 전부 재렌더 */
+}
+function cxMergeCancel(){
+  closeModal('cxMergeModal');
+  cxMergeState=null;
+}
+function openCxMergeTool(sourceId){
+  cxMergeState={sourceId,step:1};
+  cxMergeRenderStep1();
+  openModal('cxMergeModal');
+}
+(function cxMergeInjectUI(){
+  document.body.insertAdjacentHTML('beforeend',`
+    <div class="modal" id="cxMergeModal">
+      <div class="box">
+        <div class="mhead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <h3 id="cxMergeTitle" style="margin:0">단지 병합</h3>
+          <button type="button" class="btn-ghost" id="cxMergeCloseBtn">닫기</button>
+        </div>
+        <div class="mbody" id="cxMergeBody"></div>
+      </div>
+    </div>`);
+  const modal=document.getElementById('cxMergeModal');
+  modal.addEventListener('click',e=>{ if(e.target===modal) cxMergeCancel(); });
+  document.getElementById('cxMergeCloseBtn').onclick=cxMergeCancel;
+})();
+/* 단지 상세 ⋯메뉴 — 접기 숨김이 아니라 명시적 항목 하나짜리 드롭다운(기존
+   showRouteMenu/showExportMenu와 동일한 status-picker 패턴). 항목이 하나뿐이라도
+   향후 확장을 대비해 별도 신규 UI 패턴을 만들지 않고 그대로 재사용했다 */
+let _cxDetailMoreMenu=null;
+function closeCxDetailMoreMenu(){ if(_cxDetailMoreMenu){ _cxDetailMoreMenu.remove(); _cxDetailMoreMenu=null; } }
+function showCxDetailMoreMenu(btn){
+  if(_cxDetailMoreMenu){ closeCxDetailMoreMenu(); return; }
+  const menu=document.createElement('div');
+  menu.className='status-picker route-menu';
+  menu.innerHTML=`<button class="sp-opt" id="cxMergeMenuItem">다른 단지와 병합</button>`;
+  document.body.appendChild(menu);
+  _cxDetailMoreMenu=menu;
+  const rect=btn.getBoundingClientRect();
+  menu.style.top=(rect.bottom+window.scrollY+4)+'px';
+  menu.style.left=Math.max(8,Math.min(rect.left+window.scrollX, window.innerWidth-200))+'px';
+  document.getElementById('cxMergeMenuItem').onclick=()=>{
+    closeCxDetailMoreMenu();
+    if(cxDetailId) openCxMergeTool(cxDetailId);
+  };
+  const close=ev=>{ if(!menu.contains(ev.target)&&ev.target!==btn){ closeCxDetailMoreMenu(); document.removeEventListener('click',close,true); } };
+  setTimeout(()=>document.addEventListener('click',close,true),0);
+}
+document.getElementById('cxDetailMoreBtn').onclick=e=>showCxDetailMoreMenu(e.currentTarget);
 /* 같은 배치 안의 행끼리도 병합/중복 감지가 되도록 배치 내 상태를 누적하며 순회한다 */
 function calcCxImportStatus(parsed){
   const existingCxByKey=new Map();
