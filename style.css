@@ -418,10 +418,11 @@
     body:has(#panel-props.on) .wrap{max-width:none;}
     /* 자산: 소유자~메모 7개 컬럼 표라 넓을수록 각 컬럼이 널널해짐 → 더 넓은 상한 */
     body:has(#panel-assets.on) .wrap{max-width:clamp(1440px,82vw,1800px);}
-    /* 대시보드·수집함: 타임라인·카드라 텍스트/버튼 사이만
-       벌어질 뿐 내용이 늘어나지 않음 → 더 보수적인 상한 */
-    body:has(#panel-dash.on) .wrap,
-    body:has(#panel-scraps.on) .wrap{max-width:clamp(1440px,60vw,1600px);}
+    /* 대시보드: 타임라인·카드라 텍스트/버튼 사이만 벌어질 뿐 내용이
+       늘어나지 않음 → 더 보수적인 상한. 수집함은 B-104-3에서 카드
+       auto-fill 그리드가 폭을 흡수하므로 매물탭처럼 전체폭 프레임. */
+    body:has(#panel-dash.on) .wrap{max-width:clamp(1440px,60vw,1600px);}
+    body:has(#panel-scraps.on) .wrap{max-width:none;}
     #panel-props.on .grid{flex:1;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch;}
     .grid{grid-template-columns:minmax(0,var(--sidebar-w,360px)) 24px minmax(0,1fr);gap:0;}
     .grid>section{order:1;display:flex;flex-direction:column;height:100%;}
@@ -848,7 +849,8 @@
   .sc-card-raw.expand::after{content:'▴ 접기';}
 
   /* B-104-2 AC3: 액션은 카테고리 섹션 안에서만 2열 콤팩트 행.
-     B-95의 전역 2열은 대체하고, 완료 구획과 수집함의 기존 2열은 유지. */
+     B-95의 액션 전역 2열은 대체. 수집함 2열은 B-104-3에서 상세
+     카드의 피드 1열로 은퇴하고 카드뷰 전용 반응형 그리드로 분리. */
   @media (min-width:1200px){
     #panel-actions .act-group-body,
     #panel-actions .done-body{
@@ -860,12 +862,6 @@
     #panel-actions .actrow:has(.act-edit-inp){grid-column:1 / -1;}
     #panel-actions .act-group-body>.actrow:nth-of-type(-n+2),
     #panel-actions .done-body>.actrow:nth-of-type(-n+2){border-top:none;}
-    #panel-scraps .sc-list{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:10px 14px;
-      align-items:start;
-    }
   }
   @media (min-width:1440px){
     body:has(#panel-actions.on) .wrap{max-width:none;}
@@ -1168,16 +1164,41 @@
   .sc-view-btn{border:none;background:none;padding:5px 10px;font-size:16px;cursor:pointer;color:var(--ink-soft);line-height:1;transition:background .15s;}
   .sc-view-btn[data-on="1"]{background:var(--money-wash);color:var(--money-deep);}
 
-  /* ── 갤러리 그리드 ── */
-  .sc-gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding-bottom:6px;}
-  .sc-gallery-card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .1s;}
-  .sc-gallery-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.1);transform:translateY(-1px);}
-  .sc-gallery-img{width:100%;height:130px;object-fit:cover;display:block;}
-  .sc-gallery-no-img{height:52px;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:6px;}
-  .sc-gallery-body{padding:10px 12px 12px;}
-  .sc-gallery-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  .sc-gallery-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-  .sc-gallery-date{font-size:10px;color:var(--ink-faint);margin-left:auto;}
+  /* ── B-104-3 수집함 뷰 재정립 ── */
+  /* 리스트 = 상세 정보·원문·상태·버튼을 읽는 1열 피드. 전체폭 앱 프레임
+     안에서 본문만 읽기 좋은 폭으로 제한한다. */
+  #panel-scraps .sc-list{width:100%;max-width:880px;margin:0 auto;}
+
+  /* 카드 = 훑어보고 고르는 콤팩트 그리드. 1199px 이하는 1열,
+     1200~1439px는 2열, 1440px부터 auto-fill로 3열 이상을 쓴다. */
+  .sc-gallery-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding-bottom:6px;align-items:start;}
+  .sc-gallery-card{min-width:0;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);overflow:hidden;cursor:pointer;box-shadow:var(--shadow-card);transition:box-shadow .15s,transform .1s;}
+  .sc-gallery-card:hover{box-shadow:var(--shadow-pop);transform:translateY(-1px);}
+  .sc-gallery-card:focus-visible{outline:none;box-shadow:var(--focus-ring),var(--shadow-pop);}
+  .sc-gallery-img{width:100%;height:148px;object-fit:cover;display:block;border-bottom:1px solid var(--hairline-soft);}
+  .sc-gallery-preview{height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;border-bottom:1px solid var(--hairline-soft);font-size:12px;font-weight:800;}
+  .sc-gallery-preview-mark{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.62);}
+  .sc-gallery-preview-mark .ic{width:18px;height:18px;}
+  .sc-gallery-preview.type-subscription{background:var(--line9-wash);color:var(--line9-deep);}
+  .sc-gallery-preview.type-jeonse{background:var(--money-wash);color:var(--money-deep);}
+  .sc-gallery-preview.type-sale{background:#EEF0F6;color:var(--s-interest);}
+  .sc-gallery-preview.type-area,.sc-gallery-preview.type-policy{background:var(--hairline-soft);color:var(--ink-soft);}
+  .sc-gallery-preview.type-review{background:#F0EEF6;color:#6B5EA8;}
+  .sc-gallery-preview.type-note{background:#F6F6EE;color:#7A7A50;}
+  .sc-gallery-preview.type-ai_log{background:#EEF6F4;color:#3A7A6A;}
+  .sc-gallery-body{padding:11px 12px 12px;}
+  .sc-gallery-badges{display:flex;align-items:center;gap:5px;margin-bottom:7px;min-width:0;}
+  .sc-gallery-title{font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.45;min-height:2.9em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .sc-gallery-details{display:grid;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--hairline-soft);}
+  .sc-gallery-detail{display:flex;align-items:center;gap:5px;min-width:0;font-size:11.5px;color:var(--ink-soft);}
+  .sc-gallery-detail .ic{width:13px;height:13px;flex:none;}
+  .sc-gallery-detail span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  @media (min-width:1200px) and (max-width:1439px){
+    .sc-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
+  @media (min-width:1440px){
+    .sc-gallery-grid{grid-template-columns:repeat(auto-fill,minmax(380px,1fr));}
+  }
 
   /* ── 에디터 컨테이너 ── */
   .sc-md-split{position:relative;}

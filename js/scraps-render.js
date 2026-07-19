@@ -27,31 +27,53 @@ function renderScraps(){
   // 갤러리 뷰
   if(scViewMode==='gallery'){
     el.innerHTML='<div class="sc-gallery-grid">'+list.map(s=>{
-      const tLabel=SC_TYPE[s.type]||s.type||'';
-      const tCls='type-'+(s.type||'subscription');
-      const stLabel=SC_STATUS[s.status]||s.status||'신규';
-      const stCls='st-'+(s.status||'new');
+      const knownType=Object.prototype.hasOwnProperty.call(SC_TYPE,s.type);
+      const knownStatus=Object.prototype.hasOwnProperty.call(SC_STATUS,s.status);
+      const typeKey=knownType?s.type:'note';
+      const statusKey=knownStatus?s.status:'new';
+      const tLabel=knownType?SC_TYPE[s.type]:(s.type||'메모');
+      const stLabel=knownStatus?SC_STATUS[s.status]:(s.status||'신규');
+      const tCls='type-'+typeKey;
+      const stCls='st-'+statusKey;
+      const isPropLess=SC_PROPLESS.has(s.type);
       const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
-      return `<div class="sc-gallery-card" data-scid="${s.id}">
-        ${(s.imgs||[]).length?`<img src="${esc(s.imgs[0])}" class="sc-gallery-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진">`:`<div class="sc-gallery-no-img"><span class="sc-badge ${tCls}">${tLabel}</span></div>`}
+      const metaParts=[
+        s.location&&{icon:'pin',text:s.location},
+        !isPropLess&&s.price&&{icon:'price',text:s.price},
+        !isPropLess&&s.schedule&&{icon:'calendar',text:s.schedule},
+        !isPropLess&&s.area&&{icon:'area',text:s.area},
+      ].filter(Boolean).slice(0,2);
+      if(metaParts.length<2&&dateStr) metaParts.push({icon:'calendar',text:dateStr});
+      const title=s.title||'(제목 없음)';
+      return `<div class="sc-gallery-card" data-scid="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(title)} 편집">
+        ${(s.imgs||[]).length?`<img src="${esc(s.imgs[0])}" class="sc-gallery-img" loading="lazy" alt="${esc(title)} 사진">`:`<div class="sc-gallery-preview ${tCls}" aria-hidden="true"><span class="sc-gallery-preview-mark">${ic(typeKey==='policy'?'tip':typeKey==='note'?'edit':typeKey==='ai_log'?'sparkle':'home')}</span><span>${esc(tLabel)}</span></div>`}
         <div class="sc-gallery-body">
-          <div class="sc-gallery-title">${esc(s.title||'(제목 없음)')}</div>
-          <div class="sc-gallery-meta">
-            <span class="sc-badge ${stCls}">${stLabel}</span>
-            ${dateStr?`<span class="sc-gallery-date">${dateStr}</span>`:''}
+          <div class="sc-gallery-badges">
+            <span class="sc-badge ${tCls}">${esc(tLabel)}</span>
+            <span class="sc-badge ${stCls}">${esc(stLabel)}</span>
           </div>
-          ${(s.tags||[]).length?`<div class="sc-card-tags" style="margin-top:5px;">${s.tags.slice(0,3).map(t=>`<span class="sc-card-tag">${esc(t)}</span>`).join('')}</div>`:''}
+          <div class="sc-gallery-title">${esc(title)}</div>
+          ${metaParts.length?`<div class="sc-gallery-details">${metaParts.map(m=>`<span class="sc-gallery-detail" title="${esc(m.text)}">${ic(m.icon,'ic-muted')}<span>${esc(m.text)}</span></span>`).join('')}</div>`:''}
         </div>
       </div>`;
     }).join('')+'</div>';
-    el.querySelectorAll('.sc-gallery-card').forEach(c=>c.onclick=()=>openScEdit(c.dataset.scid));
+    el.querySelectorAll('.sc-gallery-card').forEach(c=>{
+      c.onclick=()=>openScEdit(c.dataset.scid);
+      c.onkeydown=e=>{
+        if(e.key!=='Enter'&&e.key!==' ') return;
+        e.preventDefault();
+        openScEdit(c.dataset.scid);
+      };
+    });
     return;
   }
   el.innerHTML='<div class="sc-list">'+list.map(s=>{
-    const tLabel=SC_TYPE[s.type]||s.type||'';
-    const stLabel=SC_STATUS[s.status]||s.status||'신규';
-    const tCls='type-'+(s.type||'subscription');
-    const stCls='st-'+(s.status||'new');
+    const knownType=Object.prototype.hasOwnProperty.call(SC_TYPE,s.type);
+    const knownStatus=Object.prototype.hasOwnProperty.call(SC_STATUS,s.status);
+    const tLabel=knownType?SC_TYPE[s.type]:(s.type||'메모');
+    const stLabel=knownStatus?SC_STATUS[s.status]:(s.status||'신규');
+    const tCls='type-'+(knownType?s.type:'note');
+    const stCls='st-'+(knownStatus?s.status:'new');
     let fitCls='', fitLbl='';
     if(s.fit==='high'||s.fit==='가능'){fitCls='high';fitLbl='✓ 적합';}
     else if(s.fit==='low'||s.fit==='불가'){fitCls='low';fitLbl='✕ 부적합';}
@@ -67,8 +89,8 @@ function renderScraps(){
     return `<div class="sc-card" data-scid="${s.id}">
       <div class="sc-card-head">
         <div class="sc-card-title">${esc(s.title||'(제목 없음)')}</div>
-        <span class="sc-badge ${tCls}">${tLabel}</span>
-        <span class="sc-badge ${stCls}">${stLabel}</span>
+        <span class="sc-badge ${tCls}">${esc(tLabel)}</span>
+        <span class="sc-badge ${stCls}">${esc(stLabel)}</span>
         ${dateStr?`<span style="font-size:10px;color:var(--ink-faint);margin-left:auto;flex-shrink:0;">${dateStr}</span>`:''}
       </div>
       ${metaParts.length?`<div class="sc-card-meta">${metaParts.map(m=>`<span class="chip sc-meta-chip" title="${esc(m.text)}">${ic(m.icon,'ic-muted')}<span class="sc-meta-chip-text">${esc(m.text)}</span></span>`).join('')}</div>`:''}
@@ -115,16 +137,22 @@ document.getElementById('sc_statusFilter').onclick=e=>{
 };
 document.getElementById('sc_search').addEventListener('input',e=>{scSearchQuery=e.target.value.trim();renderScraps();});
 document.getElementById('sc_sort').addEventListener('change',()=>renderScraps());
-let scViewMode='list';
-document.getElementById('sc_viewList').addEventListener('click',()=>{
+/* B-104-3: 콤팩트 카드 그리드가 기본 진입 뷰. 뷰 상태는 기존처럼
+   메모리에만 두고 renderScraps() 때 덮어쓰지 않아 세션 중 선택을 보존한다. */
+let scViewMode='gallery';
+const scViewListBtn=document.getElementById('sc_viewList');
+const scViewGalleryBtn=document.getElementById('sc_viewGallery');
+scViewListBtn.dataset.on='0';
+scViewGalleryBtn.dataset.on='1';
+scViewListBtn.addEventListener('click',()=>{
   scViewMode='list';
-  document.getElementById('sc_viewList').dataset.on='1';
-  document.getElementById('sc_viewGallery').dataset.on='0';
+  scViewListBtn.dataset.on='1';
+  scViewGalleryBtn.dataset.on='0';
   renderScraps();
 });
-document.getElementById('sc_viewGallery').addEventListener('click',()=>{
+scViewGalleryBtn.addEventListener('click',()=>{
   scViewMode='gallery';
-  document.getElementById('sc_viewList').dataset.on='0';
-  document.getElementById('sc_viewGallery').dataset.on='1';
+  scViewListBtn.dataset.on='0';
+  scViewGalleryBtn.dataset.on='1';
   renderScraps();
 });
