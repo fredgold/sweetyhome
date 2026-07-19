@@ -596,6 +596,9 @@
   .cx-listing-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;}
   .cx-listing-dongho{font-size:13px;font-weight:700;}
   .cx-listing-meta{font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-bottom:3px;}
+  /* B-42: deposit 추이 스파크라인 — 뷰박스는 SVG 내부에서 240x40 고정, 실제
+     렌더 폭은 카드 폭에 맞춰 반응형(width:100%), 높이만 40px 내외로 고정 */
+  .cx-listing-spark{display:block;width:100%;height:40px;margin:4px 0 10px;}
   /* B-28: 재사용 3상태(값/미확인/해당없음) 세그먼트 컨트롤 — 주차(단지)·관리비(매물)
      공용. 활성 세그먼트는 매물 탭 색 역할(골드 --line9)을 재사용, 미확인/해당없음일
      땐 캡션을 뮤트 처리해 "값 없음"이 한눈에 구분되게 함 */

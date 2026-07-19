@@ -2593,7 +2593,7 @@ function renderComplexes(){
     const color='var('+(SC_CX[st]||'--hairline')+')';
     /* B-44②: 대표가격은 헤드라인급으로 c-head-text에 별도 노출(c-price)하므로
        c-meta의 deposit 칩은 중복 제거 — "사람은 단지가 아니라 가격을 기억" */
-    const priceHTML=(rep&&rep.deposit!=null)?`<div class="c-price tnum">보증금 ${rep.deposit}억</div>`:'';
+    const priceHTML=(rep&&rep.deposit!=null)?`<div class="c-price tnum">보증금 ${rep.deposit}억 ${depositTrendBadge(rep)}</div>`:'';
     const commuteHTML=commuteCardChips(cx);
     const repHTML=rep?`<div class="c-meta">
         <span class="chip tnum">${rep.areaM2!=null?'전용 '+rep.areaM2+'㎡':(rep.areaText?esc(rep.areaText):'면적 미정')}</span>
@@ -2906,6 +2906,48 @@ function recordListingHistoryIfChanged(listing,before,source){
 function recordListingHistory(listing,source){
   if(!Array.isArray(listing.history)) listing.history=[];
   listing.history.push({at:new Date().toISOString(),deposit:listing.deposit,listingStatus:listing.listingStatus,source});
+}
+/* B-42: 대표가격 변동 배지 — history[]에서 deposit이 있는 가장 최근 인접
+   2건을 비교(저장·판정·정렬 개입 없음, 표시용 계산만). 반올림 후 비교해
+   부동소수점 오차로 "↓0억" 같은 잘못된 배지가 뜨지 않게 함. 하락=긍정
+   (.chip.ok, 기존 토큰)·상승=주의(.chip.warn, 기존 토큰) — 새 색상 없음.
+   deposit 있는 이력 2건 미만이거나 최근 두 값이 같으면(가격 변화 없음
+   — 예: 상태만 바뀐 edit) 무표시 */
+function depositTrendBadge(l){
+  const hist=(Array.isArray(l.history)?l.history:[]).filter(h=>h.deposit!=null);
+  if(hist.length<2) return '';
+  const prev=hist[hist.length-2].deposit, cur=hist[hist.length-1].deposit;
+  const diff=Math.round((cur-prev)*100)/100;
+  if(diff===0) return '';
+  const diffTxt=Math.abs(diff);
+  return diff<0
+    ? `<span class="chip ok tnum">↓${diffTxt}억</span>`
+    : `<span class="chip warn tnum">↑${diffTxt}억</span>`;
+}
+/* B-42: deposit 추이 미니 스파크라인 — 외부 라이브러리 없이 인라인 SVG
+   직접 생성(점+꺾은선, 높이 40px). 표시 전용, 저장·판정 없음. 좌표는
+   전부 Math 연산으로 만든 숫자 문자열(toFixed)이라 esc() 대상인 사용자
+   문자열이 섞일 경로가 없음 — priceHTML의 `${rep.deposit}` 등 기존
+   순수 숫자 보간과 동일 관례로 esc() 생략. deposit 있는 이력 2건
+   미만이면 빈 문자열 */
+function listingSparklineHTML(l){
+  const hist=(Array.isArray(l.history)?l.history:[]).filter(h=>h.deposit!=null);
+  if(hist.length<2) return '';
+  const W=240,H=40,PAD=4;
+  const vals=hist.map(h=>h.deposit);
+  const min=Math.min(...vals), max=Math.max(...vals);
+  const range=max-min||1; // 전 구간 동일값이면 0 나눗셈 방지(가운데 일직선)
+  const stepX=(W-PAD*2)/(vals.length-1);
+  const pts=vals.map((v,i)=>({
+    x:PAD+stepX*i,
+    y:H-PAD-((v-min)/range)*(H-PAD*2),
+  }));
+  const pathD=pts.map((p,i)=>`${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const dots=pts.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="var(--line9-deep)"/>`).join('');
+  return `<svg class="cx-listing-spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="보증금 추이 그래프">
+    <path d="${pathD}" fill="none" stroke="var(--line9-deep)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+  </svg>`;
 }
 /* B-27-lite②: 안전 체크 9항목 요약 배지 — SAFETY_ITEMS(state.js) 재사용,
    집계만 함(정렬·필터·숨김·자동판정 없음). 전부 '문제없음'일 때만 예외
@@ -3528,7 +3570,7 @@ function renderCxListings(complexId){
         ${l.isRepresentative?'<span class="chip ok">대표매물</span>':''}
         ${safetyBadgeChip(l)}
       </div>
-      <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'—')}</div>
+      <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} ${depositTrendBadge(l)} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'—')}</div>
       <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · 확인 ${l.lastCheckedAt?esc(new Date(l.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>
       ${!editing&&l.memo?`<div class="c-memo sc-md-content">${renderMd(l.memo)}</div>`:''}
       ${triStateHTML({field:'managementFee', value:l.managementFee, state:l.managementFeeState, caption:mgmtFeeCaption(l), unit:'만원', step:'1', placeholder:'예: 15', lid:l.id})}
@@ -3611,6 +3653,7 @@ function listingDetailBodyHTML(l){
     <h3 style="font-size:13px;margin:14px 0 8px">전세 안전 체크</h3>
     ${safetyReadOnlyHTML(l)}
     <h3 style="font-size:13px;margin:14px 0 8px">변동 이력</h3>
+    ${listingSparklineHTML(l)}
     ${listingHistoryHTML(l)}
   `;
 }
