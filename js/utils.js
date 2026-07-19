@@ -297,3 +297,117 @@ function calcHouseholdGrade(n,grades){
   if(v>=h4)return'소규모조건부';
   return'소규모주의';
 }
+
+/* ── B-103 2단계: Tiptap WYSIWYG 공용 로더 (자산 노트·수집함 폼/모달 공유) ──
+   PoC(2026-07-19, poc 브랜치)에서 검증된 esm.sh CDN 동적 import 그대로.
+   빌드 파이프라인·신규 JS 파일 없음 — index.html에 <script> 태그도 안 둔다
+   (import()가 assets.js/scraps-form.js 안에서 직접 호출됨, 탭/모달을 열 때
+   lazy load). 실패(네트워크·CDN 차단)해도 예외를 밖으로 던지지 않고 null을
+   반환 — 호출부(각 initXxxEditor)가 이를 보고 "기존 입력 UI 폴백"으로
+   전환한다. 실패 자체는 캐시하지 않음(다음 lazy-load 시점에 재시도 여지) */
+let _tiptapModsPromise=null;
+async function loadTiptapMods(){
+  if(!_tiptapModsPromise){
+    _tiptapModsPromise=Promise.all([
+      import('https://esm.sh/@tiptap/core@2.27.2'),
+      import('https://esm.sh/@tiptap/starter-kit@2.27.2'),
+      import('https://esm.sh/tiptap-markdown@0.8.10'),
+      import('https://esm.sh/@tiptap/suggestion@2.27.2'),
+    ]).then(([core,starterKit,markdown,suggestion])=>({
+      core,starterKit:starterKit.default,Markdown:markdown.Markdown,Suggestion:suggestion.Suggestion,
+    })).catch(e=>{ _tiptapModsPromise=null; throw e; });
+  }
+  return _tiptapModsPromise;
+}
+/* 슬래시 커맨드 메뉴 — @tiptap/suggestion 기반, 기존 .slash-menu/.slash-item
+   CSS(스타일 락 대상이라 신규 클래스 없이 그대로 재사용)와 동일한 시각·
+   키보드(↑↓/Enter/Esc) 동작을 재현. items=[{key,icon,label,hint}], menuElId는
+   기존 index.html의 #sc_slashMenu/#sem_slashMenu(빈 div, 이미 존재)를 그대로
+   사용 — 새 DOM 생성·index.html 수정 없음 */
+function buildTiptapSlashExtension(mods,menuElId,items,onSelect){
+  const {core,Suggestion}=mods;
+  return core.Extension.create({
+    name:'slashCommand',
+    addProseMirrorPlugins(){
+      const editor=this.editor;
+      let idx=0,curItems=[];
+      const menu=document.getElementById(menuElId);
+      function renderMenu(){
+        if(!menu)return;
+        menu.innerHTML=curItems.map((c,i)=>`<div class="slash-item${i===idx?' active':''}" data-key="${esc(c.key)}"><span class="slash-icon">${esc(c.icon)}</span><span class="slash-info"><span class="slash-label">${esc(c.label)}</span><span class="slash-hint">${esc(c.hint)}</span></span></div>`).join('');
+      }
+      function bindClicks(commandFn){
+        if(!menu)return;
+        menu.querySelectorAll('.slash-item').forEach(elx=>{
+          elx.addEventListener('mousedown',e=>e.preventDefault());
+          elx.onclick=()=>{ const it=curItems.find(c=>c.key===elx.dataset.key); if(it)commandFn(it); };
+        });
+      }
+      return [Suggestion({
+        editor,char:'/',
+        items:({query})=>{
+          const q=(query||'').toLowerCase();
+          curItems=items.filter(c=>!q||c.key.startsWith(q)||c.label.includes(q)||c.hint.includes(q));
+          idx=0;
+          return curItems;
+        },
+        command:({editor,range,props})=>{
+          editor.chain().focus().deleteRange(range).run();
+          onSelect(editor,props.key);
+        },
+        render:()=>({
+          onStart:(props)=>{
+            curItems=props.items; idx=0;
+            if(!menu)return;
+            if(!curItems.length){menu.style.display='none';return;}
+            renderMenu(); menu.style.display='block'; bindClicks(props.command);
+          },
+          onUpdate:(props)=>{
+            curItems=props.items; idx=Math.min(idx,Math.max(0,curItems.length-1));
+            if(!menu)return;
+            if(!curItems.length){menu.style.display='none';return;}
+            renderMenu(); menu.style.display='block'; bindClicks(props.command);
+          },
+          onKeyDown:(props)=>{
+            if(!menu||menu.style.display==='none')return false;
+            if(props.event.key==='Escape'){menu.style.display='none';return true;}
+            if(props.event.key==='ArrowDown'){idx=Math.min(curItems.length-1,idx+1);renderMenu();return true;}
+            if(props.event.key==='ArrowUp'){idx=Math.max(0,idx-1);renderMenu();return true;}
+            if(props.event.key==='Enter'){if(curItems[idx])props.command(curItems[idx]);return true;}
+            return false;
+          },
+          onExit:()=>{ if(menu)menu.style.display='none'; },
+        }),
+      })];
+    },
+  });
+}
+/* 툴바 버튼 data-mdwrap/data-mdline 값(기존 index.html 그대로, 새 속성
+   없음)을 Tiptap 명령으로 매핑 — 기존 ceWrap/ceLine과 동일한 버튼이
+   Tiptap 활성 시에는 이 경로로, 폴백 시에는 기존 경로로 동작 */
+function tiptapToolbarAction(editor,wrapVal,lineVal){
+  const chain=editor.chain().focus();
+  if(wrapVal){
+    if(wrapVal==='**||**')chain.toggleBold().run();
+    else if(wrapVal==='*||*')chain.toggleItalic().run();
+    else if(wrapVal==='~~||~~')chain.toggleStrike().run();
+    else if(wrapVal==='`||`')chain.toggleCode().run();
+  } else if(lineVal){
+    if(lineVal==='## ')chain.toggleHeading({level:2}).run();
+    else if(lineVal==='- ')chain.toggleBulletList().run();
+    else if(lineVal==='1. ')chain.toggleOrderedList().run();
+    else if(lineVal==='> ')chain.toggleBlockquote().run();
+    else if(lineVal==='---')chain.setHorizontalRule().run();
+  }
+}
+/* 에디터 로드 실패 시 "조용한 안내 1줄" — 새 CSS 클래스 없이 인라인
+   스타일+기존 디자인 토큰(--ink-faint)만 사용. 중복 삽입 방지용 마커는
+   data-속성(신규 클래스 아님) */
+function showEditorFallbackNote(afterEl){
+  if(!afterEl||afterEl.nextElementSibling?.dataset?.editorFallbackNote)return;
+  const note=document.createElement('div');
+  note.dataset.editorFallbackNote='1';
+  note.style.cssText='font-size:11px;color:var(--ink-faint);margin-top:4px;';
+  note.textContent='편집기를 불러오지 못해 기본 입력창으로 표시돼요.';
+  afterEl.insertAdjacentElement('afterend',note);
+}

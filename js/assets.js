@@ -40,8 +40,11 @@ function renderAssets(){
   renderAssetSummary();
   document.getElementById('a_target').value=state.settings.targetDeposit||'';
   document.getElementById('a_reserve').value=state.assets.reserve||'';
-  document.getElementById('a_notes').value=state.assets.notes||'';
-  autoResizeTa(document.getElementById('a_notes'));
+  initAssetNotesEditor();
+  if(assetTiptapFailed||!assetTiptapEditor){
+    document.getElementById('a_notes').value=state.assets.notes||'';
+    autoResizeTa(document.getElementById('a_notes'));
+  }
   const updEl=document.getElementById('a_updated');
   if(updEl&&state.assets.updatedAt) updEl.textContent='마지막 수정: '+new Date(state.assets.updatedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
   updateTargetMsg();
@@ -107,11 +110,51 @@ document.getElementById('a_reserve').addEventListener('input',e=>{state.assets.r
 document.getElementById('asset_ownerFilter').addEventListener('change',()=>renderAssets());
 document.getElementById('asset_search').addEventListener('input',()=>renderAssets());
 
+/* B-103 2-1: 자산 노트 Tiptap 전환 — textarea+미리보기 토글(WYSIWYG라
+   미리보기 자체가 불필요해짐) → Tiptap 싱글턴. index.html/style.css
+   무접촉(손 B B-53 락) — 새 마운트는 JS로만 생성, 기존 `.sc-md-editor
+   .sc-md-content` 클래스를 그대로 재사용(신규 클래스 없음, 이 클래스들이
+   h1~h3/ul/ol/blockquote 등 렌더 CSS를 이미 갖고 있어 별도 스타일 불요).
+   로드 실패(네트워크·CDN 차단) 시 기존 textarea+툴바+미리보기 UI를 그대로
+   두고 폴백 — 이 함수 자체가 실패해도 예외를 던지지 않는다 */
+let assetTiptapEditor=null, assetTiptapFailed=false, assetTiptapInitPromise=null;
+function initAssetNotesEditor(){
+  if(assetTiptapEditor||assetTiptapFailed||assetTiptapInitPromise) return;
+  const ta=document.getElementById('a_notes');
+  if(!ta) return;
+  assetTiptapInitPromise=(async()=>{
+    const mods=await loadTiptapMods().catch(()=>null);
+    if(!mods){ assetTiptapFailed=true; assetTiptapInitPromise=null; showEditorFallbackNote(ta); return; }
+    let mount=document.getElementById('an_tiptapMount');
+    if(!mount){
+      mount=document.createElement('div');
+      mount.id='an_tiptapMount';
+      mount.className='sc-md-editor sc-md-content';
+      ta.insertAdjacentElement('afterend',mount);
+    }
+    try{
+      assetTiptapEditor=new mods.core.Editor({
+        element:mount,
+        extensions:[mods.starterKit,mods.Markdown],
+        content:state.assets.notes||'',
+      });
+      ta.style.display='none';
+      document.getElementById('an_previewToggle').style.display='none';
+      document.getElementById('an_mdToolbar').style.display='none';
+      document.getElementById('an_mdPreview').style.display='none';
+    }catch(e){
+      assetTiptapFailed=true; assetTiptapEditor=null;
+      mount.remove();
+      showEditorFallbackNote(ta);
+    }
+    assetTiptapInitPromise=null;
+  })();
+}
 document.getElementById('a_notes').addEventListener('input',e=>{
   autoResizeTa(e.target);
 });
 document.getElementById('an_saveBtn').onclick=function(){
-  state.assets.notes=document.getElementById('a_notes').value;
+  state.assets.notes=assetTiptapEditor?assetTiptapEditor.storage.markdown.getMarkdown():document.getElementById('a_notes').value;
   state.assets.updatedAt=Date.now();
   save();
   toast('저장했어요');
@@ -120,7 +163,7 @@ document.getElementById('an_saveBtn').onclick=function(){
   setTimeout(()=>{btn.textContent=old; btn.disabled=false;},1200);
 };
 
-/* ── 자산 메모 마크다운 툴바 ── */
+/* ── 자산 메모 마크다운 툴바(Tiptap 폴백 시에만 사용) ── */
 document.getElementById('an_mdToolbar').onclick=e=>{
   const btn=e.target.closest('[data-antgt]');if(!btn)return;
   const ta=document.getElementById('a_notes');
