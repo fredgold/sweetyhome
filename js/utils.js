@@ -146,10 +146,27 @@ function ceRenderDebounced(el){
 function ceCancelDebounced(el){
   if(el._ceRafId){ cancelAnimationFrame(el._ceRafId); el._ceRafId=null; }
 }
+/* B-107: B-105 회귀 핫픽스 — rAF로 렌더가 미뤄지는 동안 DOM(구)과
+   dataset.raw(신)가 어긋난 상태에서 ceGetOffset으로 오프셋을 읽고
+   그 오프셋으로 raw를 자르는 동기 경로들(Enter·ceWrap·ceLine·
+   scApplySlash 등)이 잘못된 위치에 개행/마커를 삽입하던 문제.
+   "raw를 읽어 오프셋 기준으로 자르는" 모든 동기 진입점의 첫 줄에서
+   호출 — 예약된 렌더가 있으면 즉시(동기) 실행해 DOM을 raw와 다시
+   맞춘 뒤에야 그 함수의 나머지 로직(ceGetOffset 등)이 진행된다.
+   예약이 없으면(이미 최신) 그냥 통과 */
+function ceFlushDebounced(el){
+  if(el._ceRafId){ cancelAnimationFrame(el._ceRafId); el._ceRafId=null; ceRender(el); }
+}
 function ceWrap(el,open,close){
-  const s=ceGetOffset(el);
+  /* B-107: ceFlushDebounced가 내부적으로 ceRender→innerHTML 재조립을
+     하면 커서는 (offset 하나로) 복원되지만 "선택 범위"는 collapse
+     돼버려 사라진다 — 선택한 텍스트를 먼저 읽어둔 뒤에 flush해야
+     ceWrap이 감쌀 대상을 잃지 않는다(다른 ceGetOffset 호출부는 커서
+     한 점만 필요해 이 문제가 없음, ceWrap만 특별 처리) */
   const sel=window.getSelection();
   const selected=sel.rangeCount?sel.getRangeAt(0).toString():'';
+  const s=ceGetOffset(el);
+  ceFlushDebounced(el);
   const raw=el.dataset.raw!=null?el.dataset.raw:el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
   const e=s+selected.length;
   const word=selected||'텍스트';
@@ -157,6 +174,7 @@ function ceWrap(el,open,close){
   ceRender(el); ceSetOffset(el,s+open.length+word.length+close.length);
 }
 function ceLine(el,prefix){
+  ceFlushDebounced(el);
   const s=ceGetOffset(el);
   const raw=el.dataset.raw!=null?el.dataset.raw:el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
   const ls=raw.lastIndexOf('\n',s-1)+1;

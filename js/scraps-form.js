@@ -54,16 +54,25 @@ document.getElementById('sc_text').addEventListener('input',e=>{
 document.getElementById('sc_text').addEventListener('compositionstart',e=>{
   ceCancelDebounced(e.target);
 });
+/* B-107: compositionend는 rAF 디바운스에서 제외하고 동기 렌더로 복원 —
+   지연 렌더가 다음 조합 시작과 경합하던 것을 아예 없앤다. 조합은
+   한 글자 완성마다(음절 단위) 끝나는 경우가 많아 자주 렌더되지만,
+   그래도 매 keystroke마다 렌더하던 B-105 이전보다는 여전히 적다
+   (조합 중 input 이벤트는 여전히 렌더 자체를 안 함, 위 input
+   리스너의 isComposing 체크). rAF 디바운스는 비조합 입력 경로에만
+   남겨 성능 이득 대부분은 유지 */
 document.getElementById('sc_text').addEventListener('compositionend',e=>{
   const el=e.target;
   const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
   el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
-  ceRenderDebounced(el); scDetectSlash(el,'sc_slashMenu');
+  ceRender(el); scDetectSlash(el,'sc_slashMenu');
 });
 document.getElementById('sc_text').addEventListener('paste',e=>{
   e.preventDefault();
   const text=(e.clipboardData||window.clipboardData).getData('text/plain');
-  const el=e.target, s=ceGetOffset(el);
+  const el=e.target;
+  ceFlushDebounced(el);
+  const s=ceGetOffset(el);
   const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
   el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
@@ -85,6 +94,7 @@ document.getElementById('sc_text').addEventListener('keydown',e=>{
   if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
   if(e.key==='Enter'&&!scSlashActive){
     e.preventDefault();
+    ceFlushDebounced(el);
     const s=ceGetOffset(el); const raw=el.dataset.raw||'';
     const ls=raw.lastIndexOf('\n',s-1)+1;
     const curLine=raw.slice(ls,s);
@@ -166,6 +176,7 @@ function scSlashMove(dir){
 
 function scApplySlash(el,key){
   const cmd=SC_SLASH.find(c=>c.key===key); if(!cmd) return;
+  ceFlushDebounced(el);
   const cur=ceGetOffset(el);
   const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   const before=raw.slice(0,scSlashStart), after=raw.slice(cur);
@@ -179,6 +190,9 @@ function scApplySlash(el,key){
 // ── blur: 클린 렌더 / focus: 라이브 렌더 ──
 document.getElementById('sc_text').addEventListener('blur',()=>{
   const el=document.getElementById('sc_text');
+  /* B-107: 예약된 지연 렌더가 blur 이후에 뒤늦게 발화해 방금 그린
+     클린 렌더(renderMd)를 마커 보존형 렌더로 덮어써버리는 것 방지 */
+  ceFlushDebounced(el);
   const raw=el.dataset.raw||'';
   el.innerHTML=raw.trim()?renderMd(raw):'';
   el.classList.toggle('is-empty',!raw.trim());
@@ -234,6 +248,7 @@ document.getElementById('sc_saveBtn').onclick=()=>{
   const title=document.getElementById('sc_title').value.trim();
   const type=document.querySelector('.sc-type-chip.on')?.dataset.type||'subscription';
   const scEl=document.getElementById('sc_text');
+  ceFlushDebounced(scEl); // B-107: 저장 직전 예약된 렌더를 확정
   const raw=(scEl.dataset.raw||scEl.innerText||'').trim();
   const err=document.getElementById('sc_formErr');
   if(!title){err.textContent='제목을 입력해주세요.';document.getElementById('sc_title').focus();return;}
@@ -366,23 +381,28 @@ document.getElementById('sem_text').addEventListener('input',e=>{
 document.getElementById('sem_text').addEventListener('compositionstart',e=>{
   ceCancelDebounced(e.target);
 });
+/* B-107: sc_text와 동일하게 compositionend는 동기 렌더로 복원 */
 document.getElementById('sem_text').addEventListener('compositionend',e=>{
   const el=e.target;
   const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
-  el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim()); ceRenderDebounced(el);
+  el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim()); ceRender(el);
   scDetectSlash(el,'sem_slashMenu');
 });
 document.getElementById('sem_text').addEventListener('paste',e=>{
   e.preventDefault();
   const text=(e.clipboardData||window.clipboardData).getData('text/plain');
-  const el=e.target, s=ceGetOffset(el);
+  const el=e.target;
+  ceFlushDebounced(el);
+  const s=ceGetOffset(el);
   const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
   const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
   el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
   el.innerHTML=newRaw.split('\n').map(ceRenderLine).join(''); ceSetOffset(el,s+text.length);
 });
 document.getElementById('sem_text').addEventListener('blur',()=>{
-  const el=document.getElementById('sem_text'); const raw=el.dataset.raw||'';
+  const el=document.getElementById('sem_text');
+  ceFlushDebounced(el); // B-107: 지연 렌더가 blur 이후 클린 렌더를 덮어쓰지 않게
+  const raw=el.dataset.raw||'';
   el.innerHTML=raw.trim()?renderMd(raw):'';
   el.classList.toggle('is-empty',!raw.trim());
   document.getElementById('sem_mdToolbar').style.display='none';
@@ -414,6 +434,7 @@ document.getElementById('sem_text').addEventListener('keydown',e=>{
   if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
   if(e.key==='Enter'){
     e.preventDefault();
+    ceFlushDebounced(el);
     const s=ceGetOffset(el); const raw=el.dataset.raw||'';
     const ls=raw.lastIndexOf('\n',s-1)+1;
     const m=raw.slice(ls,s).match(/^([-*+]|\d+\.)\s/);
@@ -455,6 +476,7 @@ document.getElementById('sem_cancel').onclick=()=>{
 document.getElementById('sem_save').onclick=()=>{
   const s=state.scraps.find(x=>x.id===scModalEditId);
   if(!s){closeModal('scEditModal');return;}
+  ceFlushDebounced(document.getElementById('sem_text')); // B-107: 저장 직전 예약된 렌더를 확정
   const title=document.getElementById('sem_title').value.trim();
   if(!title){document.getElementById('sem_err').textContent='제목을 입력해주세요.';return;}
   const type=document.querySelector('#sem_typeChips .sc-type-chip.on')?.dataset.type||s.type;
