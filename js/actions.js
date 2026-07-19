@@ -119,12 +119,24 @@ function bindActDrag(el,orderLocked){
     handle.addEventListener('dragend',()=>{dragId='';clearActDragFeedback(el);});
   });
   el.querySelectorAll('.act-group-body').forEach(body=>{
+    /* B-124: 빈 칼럼은 평소엔 숨겨져 있다가 드래그 시작 시에만
+       .is-dragging로 드러난다(줄 바로 아래 `.act-group.is-empty`
+       CSS) — 드래그 시작 순간 그 자리에 새 칼럼이 나타나며 레이아웃이
+       밀린다. 자기 칼럼 맨 아래에서 살짝만 오버슈트해도(마우스는 전혀
+       "다른 칼럼처럼 보이는 곳"으로 옮기지 않았는데) 방금 나타난 빈
+       칼럼의 본문에 얹혀 분류가 바뀌는 사고 재현 확인(Playwright 실측).
+       빈 칼럼은 행이 하나도 없어 "행 위에 드롭"이 애초에 불가능하므로
+       기존 헤드(리스너 없음)와 동일하게 무시 — 분류 변경은 이미 항목이
+       있던 칼럼 간에만 허용(기존 동작 그대로), 완전히 빈 칼럼으로
+       옮기려면 수정 모달의 분류 드롭다운 사용 */
+    const groupIsEmpty=()=>body.closest('.act-group')?.classList.contains('is-empty');
     body.addEventListener('dragover',e=>{
       if(!dragId)return;
       e.preventDefault();
       e.dataTransfer.dropEffect='move';
       el.querySelectorAll('.actrow.drop-before,.actrow.drop-after').forEach(row=>row.classList.remove('drop-before','drop-after'));
       el.querySelectorAll('.act-group-body.is-drop-target').forEach(target=>target.classList.remove('is-drop-target'));
+      if(groupIsEmpty())return;
       body.classList.add('is-drop-target');
       const row=e.target.closest('.actrow');
       if(row&&row.dataset.id!==dragId){
@@ -139,6 +151,7 @@ function bindActDrag(el,orderLocked){
     body.addEventListener('drop',e=>{
       if(!dragId)return;
       e.preventDefault();
+      if(groupIsEmpty()){clearActDragFeedback(el);dragId='';return;}
       const row=e.target.closest('.actrow');
       if(row?.dataset.id===dragId){clearActDragFeedback(el);dragId='';return;}
       const rect=row?.getBoundingClientRect();
