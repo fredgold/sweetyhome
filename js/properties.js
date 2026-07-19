@@ -2926,6 +2926,7 @@ function renderCxListings(complexId){
       </div>
       <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'—')}</div>
       <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · 확인 ${l.lastCheckedAt?esc(new Date(l.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>
+      ${!editing&&l.memo?`<div class="c-memo sc-md-content">${renderMd(l.memo)}</div>`:''}
       ${triStateHTML({field:'managementFee', value:l.managementFee, state:l.managementFeeState, caption:mgmtFeeCaption(l), unit:'만원', step:'1', placeholder:'예: 15', lid:l.id})}
       ${editing?listingEditFieldsHTML(l):''}
       ${safetySectionHTML(l)}
