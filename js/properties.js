@@ -598,7 +598,7 @@ function parseNaver(t){
   const loc=t.match(/서울[특별시]*\s*([가-힣]+구)\s*([가-힣]+동)/);
   if(loc)r.loc=loc[1]+' '+loc[2];
   const bits=[];
-  const sed=t.match(/([\d,]+)\s*세대/); const sedN=sed?parseInt(sed[1].replace(/,/g,''),10):null; if(sed)bits.push(sedN+'세대');
+  const sed=t.match(/([\d,]+)\s*세대/); const sedN=sed?parseInt(sed[1].replace(/,/g,''),10):null; if(sed){bits.push(sedN+'세대'); r.households=sedN;}
   const hy=t.match(/(복도식|계단식|복도혼합|타워형)/); if(hy)bits.push(hy[1]);
   const nan=t.match(/(중앙난방|지역난방|개별난방)/); if(nan)bits.push(nan[1]);
   const pk=t.match(/세대당\s*([\d.]+)\s*대/); if(pk){bits.push('주차 '+pk[1]+'대/세대'); r.parking=parseFloat(pk[1]);}
@@ -618,6 +618,7 @@ function createComplexPromotion(j){
   const values={};
   if(j.loc) values.loc=String(j.loc).trim();
   if(j.parking!=null&&!isNaN(j.parking)&&j.parking>=0) values.parking=+j.parking;
+  if(j.households!=null&&!isNaN(j.households)&&j.households>=0) values.households=+j.households;
   return Object.keys(values).length?{values,handled:{}}:null;
 }
 function applyComplexPromotion(cx,promotion){
@@ -638,6 +639,14 @@ function applyComplexPromotion(cx,promotion){
       cx.parkingState==='unknown'
     );
   }
+  if(promotion.values.households!=null){
+    const same=cx.households===promotion.values.households;
+    if(!same) addChange(
+      'households','세대수',cx.households!=null?cx.households+'세대':'—',
+      promotion.values.households+'세대',
+      cx.households==null
+    );
+  }
   let approved=true;
   if(overwrite.length){
     const lines=overwrite.map(change=>`${change.label}: ${change.current} → ${change.next}`);
@@ -651,6 +660,9 @@ function applyComplexPromotion(cx,promotion){
     } else if(change.field==='parking'){
       cx.parking=promotion.values.parking;
       cx.parkingState='known';
+    } else if(change.field==='households'){
+      cx.households=promotion.values.households;
+      cx.householdGrade=calcHouseholdGrade(cx.households,state.settings.grades);
     }
   });
   promotion.handled[cx.id]=true;
