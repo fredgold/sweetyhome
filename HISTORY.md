@@ -5336,3 +5336,53 @@ Playwright 36건 fixture(사진 12/무사진 24):
 `scraps-render.js`만 먼저 작업하고, B-112 코드/문서 push
 (`5461c78`/`c5c04a5`) 뒤 pull·락 해제를 확인한 다음 CSS를 적용했다.
 다음 B-104 작업은 B-104-4 자산 A2(별도 지시).
+
+---
+
+## 2026-07-19 — B-113: 로그인 세션 30일 슬라이딩 연장 (커밋 1개)
+
+B-65의 24h 고정 TTL이 실사용에 짧아 모바일 재로그인이 잦다는
+사용자 피드백. 개인용 PIN 앱이라 30일이 타당하다는 판단으로,
+단순 TTL 연장이 아니라 활성 사용 중엔 계속 연장되는 슬라이딩
+방식을 도입했다. `js/auth.js`+`api/_auth.js` 단독 수정
+(+15/-5줄), `state.js`·`properties.js`·`index.html`·
+`BACKLOG.md` 무접촉.
+
+- **서버**: `SESSION_TTL` 86400초(24h)→`30*24*60*60`초(30일).
+  `verifySession()`이 세션 존재를 확인한 직후
+  `redis.expire(key, SESSION_TTL)`로 즉시 TTL 재설정 — API를
+  계속 쓰는 한 Redis 세션이 만료되지 않는다. 401 분기·에러
+  메시지는 그대로.
+- **클라**: `SH_TOKEN_TTL_MS` 24h→30일(서버와 수동 동기화,
+  B-65 규칙 주석 갱신). `getToken()`이 유효 토큰을 반환하는
+  시점마다 `sh_token_exp`도 같이 30일 뒤로 미룸 — 서버는
+  슬라이딩으로 계속 살아있는데 클라 로컬 시계가 먼저 만료
+  판정해 불필요한 재로그인을 강제하는 불일치를 방지.
+  `authHeaders()`가 내부에서 `getToken()`을 거치므로 API
+  호출마다 자연히 슬라이딩된다.
+- B-80의 401→`setSyncState('expired')`+`forceLogin()` 경로는
+  무변경 — 클라 슬라이딩은 로컬 선제 판정 기준만 서버와
+  맞추는 것이고, 실제 인증 실패 처리는 여전히 서버 401 응답이
+  유일한 트리거.
+
+**검증**(실 Redis 없이 코드 로직만): ①서버 — `api/_auth.js`를
+실제 import해 Upstash SDK의 fetch 요청(경로 `/pipeline`, 커맨드
+소문자 `get`/`expire`임을 실측 확인)을 가로채는 방식으로
+`verifySession()` 13개 체크 전부 통과(유효 토큰→get+정확한
+키·TTL로 슬라이딩 expire 호출·401 미설정, 만료/미존재 세션→401+
+에러메시지+expire 미호출, 인증 헤더 없음→401+redis 미접촉).
+②클라 — `auth.js`의 DOM 비의존 함수(`setToken`/`clearToken`/
+`getToken`/`authHeaders`)만 추출해 Node vm 샌드박스에서
+`Date.now()`를 모킹, 11개 체크 전부 통과(29일 경과 후 유효+exp
+재연장, 31일 무사용 경과 후 만료+`clearToken()`, 60일간 매일
+사용 시뮬레이션에서 계속 유효, `authHeaders()` 경유 슬라이딩,
+게스트 모드 무토큰 무크래시). `node --check` 2파일 통과.
+
+**⚠️ 서버 파일 변경 — 배포 후 사용자 실로그인 확인 필요.** 로컬
+검증은 Upstash REST 프로토콜을 모킹한 것이라 실제 Redis TTL
+갱신·실제 PIN 로그인 왕복은 배포 환경에서 사용자가 직접 확인해야
+한다.
+
+**→ B-113 완료·push 완료**(`8d7e504`). 손 B의 B-104-4
+(`assets.js`+`style.css`+`nav.js`)와 파일 충돌 없음. 다음 손 A
+작업은 B-116(별도 지시).
