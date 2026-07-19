@@ -355,29 +355,41 @@ function buildTiptapSlashExtension(mods,menuElId,items,onSelect){
           editor.chain().focus().deleteRange(range).run();
           onSelect(editor,props.key);
         },
-        render:()=>({
-          onStart:(props)=>{
-            curItems=props.items; idx=0;
-            if(!menu)return;
-            if(!curItems.length){menu.style.display='none';return;}
-            renderMenu(); menu.style.display='block'; bindClicks(props.command);
-          },
-          onUpdate:(props)=>{
-            curItems=props.items; idx=Math.min(idx,Math.max(0,curItems.length-1));
-            if(!menu)return;
-            if(!curItems.length){menu.style.display='none';return;}
-            renderMenu(); menu.style.display='block'; bindClicks(props.command);
-          },
-          onKeyDown:(props)=>{
-            if(!menu||menu.style.display==='none')return false;
-            if(props.event.key==='Escape'){menu.style.display='none';return true;}
-            if(props.event.key==='ArrowDown'){idx=Math.min(curItems.length-1,idx+1);renderMenu();return true;}
-            if(props.event.key==='ArrowUp'){idx=Math.max(0,idx-1);renderMenu();return true;}
-            if(props.event.key==='Enter'){if(curItems[idx])props.command(curItems[idx]);return true;}
-            return false;
-          },
-          onExit:()=>{ if(menu)menu.style.display='none'; },
-        }),
+        render:()=>{
+          /* @tiptap/suggestion 실측(2026-07-19 격리 테스트): onStart/onUpdate의
+             props에는 .command 함수가 있지만, onKeyDown의 props는
+             {view,event,range}뿐이라 .command가 없다 — onStart/onUpdate에서
+             받은 command를 클로저에 저장해두고 onKeyDown(Enter)에서 재사용 */
+          let currentCommand=null;
+          /* renderMenu()는 innerHTML을 통째로 재조립해 이전 클릭 핸들러를
+             날려버리므로, 메뉴를 다시 그리는 모든 지점(방향키 이동 포함)에서
+             항상 bindClicks까지 함께 호출한다 — 방향키로 한 번이라도 이동한
+             뒤 클릭이 안 먹던 버그의 원인이 바로 이 재바인딩 누락이었음 */
+          function refresh(){ renderMenu(); if(currentCommand)bindClicks(currentCommand); }
+          return{
+            onStart:(props)=>{
+              curItems=props.items; idx=0; currentCommand=props.command;
+              if(!menu)return;
+              if(!curItems.length){menu.style.display='none';return;}
+              menu.style.display='block'; refresh();
+            },
+            onUpdate:(props)=>{
+              curItems=props.items; idx=Math.min(idx,Math.max(0,curItems.length-1)); currentCommand=props.command;
+              if(!menu)return;
+              if(!curItems.length){menu.style.display='none';return;}
+              menu.style.display='block'; refresh();
+            },
+            onKeyDown:(props)=>{
+              if(!menu||menu.style.display==='none')return false;
+              if(props.event.key==='Escape'){menu.style.display='none';return true;}
+              if(props.event.key==='ArrowDown'){idx=Math.min(curItems.length-1,idx+1);refresh();return true;}
+              if(props.event.key==='ArrowUp'){idx=Math.max(0,idx-1);refresh();return true;}
+              if(props.event.key==='Enter'){if(curItems[idx]&&currentCommand)currentCommand(curItems[idx]);return true;}
+              return false;
+            },
+            onExit:()=>{ if(menu)menu.style.display='none'; },
+          };
+        },
       })];
     },
   });

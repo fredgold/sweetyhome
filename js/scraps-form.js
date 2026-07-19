@@ -32,85 +32,160 @@ function scUpdatePropFields(type){
 
 
 
-// ── sc_text: 라이브 렌더 + 인스타 감지 ──
-document.getElementById('sc_text').addEventListener('input',e=>{
-  const el=e.target;
-  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
-  el.dataset.raw=raw;
-  el.classList.toggle('is-empty',!raw.trim());
-  if(e.isComposing)return;
-  ceRenderDebounced(el);
-  const ogPrev=document.getElementById('sc_ogPreview');
-  if(/instagram\.com\/(p|reel)\//.test(raw)){
-    ogPrev.style.display='block';
-    ogPrev.innerHTML='<div class="og-card"><span class="og-loading">'+ic('tip')+' 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
-  } else { ogPrev.style.display='none'; }
-  scDetectSlash(el,'sc_slashMenu');
-});
-
-/* B-105: 한글 조합 중간에 이전 compositionend의 지연 렌더가 끼어들어
-   DOM을 갈아엎지 않도록, 새 조합이 시작되면 예약된 렌더를 취소 —
-   그 조합이 끝나는 compositionend가 다시 렌더를 예약한다 */
-document.getElementById('sc_text').addEventListener('compositionstart',e=>{
-  ceCancelDebounced(e.target);
-});
-/* B-107: compositionend는 rAF 디바운스에서 제외하고 동기 렌더로 복원 —
-   지연 렌더가 다음 조합 시작과 경합하던 것을 아예 없앤다. 조합은
-   한 글자 완성마다(음절 단위) 끝나는 경우가 많아 자주 렌더되지만,
-   그래도 매 keystroke마다 렌더하던 B-105 이전보다는 여전히 적다
-   (조합 중 input 이벤트는 여전히 렌더 자체를 안 함, 위 input
-   리스너의 isComposing 체크). rAF 디바운스는 비조합 입력 경로에만
-   남겨 성능 이득 대부분은 유지 */
-document.getElementById('sc_text').addEventListener('compositionend',e=>{
-  const el=e.target;
-  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
-  el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
-  ceRender(el); scDetectSlash(el,'sc_slashMenu');
-});
-document.getElementById('sc_text').addEventListener('paste',e=>{
-  e.preventDefault();
-  const text=(e.clipboardData||window.clipboardData).getData('text/plain');
-  const el=e.target;
-  ceFlushDebounced(el);
-  const s=ceGetOffset(el);
-  const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
-  const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
-  el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
-  el.innerHTML=newRaw.split('\n').map(ceRenderLine).join('');
-  ceSetOffset(el,s+text.length);
-});
-
-// ── 키보드 단축키 ──
-document.getElementById('sc_text').addEventListener('keydown',e=>{
-  const el=e.target;
-  if(scSlashActive){
-    if(e.key==='Escape'){e.preventDefault();scCloseSlash();return;}
-    if(e.key==='ArrowDown'){e.preventDefault();scSlashMove(1);return;}
-    if(e.key==='ArrowUp'){e.preventDefault();scSlashMove(-1);return;}
-    if(e.key==='Enter'){e.preventDefault();const menu=document.getElementById(scSlashMenuId);const items=menu?[...menu.querySelectorAll('.slash-item')]:[];if(items[scSlashIdx])scApplySlash(el,items[scSlashIdx].dataset.key);return;}
-  }
-  const mod=e.ctrlKey||e.metaKey;
-  if(mod&&e.key==='b'){e.preventDefault();ceWrap(el,'**','**');return;}
-  if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
-  if(e.key==='Enter'&&!scSlashActive){
+// ── sc_text: 라이브 렌더 + 인스타 감지 (Tiptap 로드 실패 시 폴백 경로) ──
+/* B-103 2-2: 기존 ceRender 기반 리스너는 함수로 묶어 Tiptap 초기화
+   실패시에만 연결한다(성공 시엔 이 경로 자체가 붙지 않음 — 이중 처리
+   방지). B-105/B-107이 하드닝한 ceRender/ceFlushDebounced 등은 여기
+   폴백 경로의 유일한 소비처라 삭제하지 않고 그대로 둔다 */
+function attachScTextFallbackListeners(){
+  const scTextEl=document.getElementById('sc_text');
+  scTextEl.addEventListener('input',e=>{
+    const el=e.target;
+    const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
+    el.dataset.raw=raw;
+    el.classList.toggle('is-empty',!raw.trim());
+    if(e.isComposing)return;
+    ceRenderDebounced(el);
+    const ogPrev=document.getElementById('sc_ogPreview');
+    if(/instagram\.com\/(p|reel)\//.test(raw)){
+      ogPrev.style.display='block';
+      ogPrev.innerHTML='<div class="og-card"><span class="og-loading">'+ic('tip')+' 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
+    } else { ogPrev.style.display='none'; }
+    scDetectSlash(el,'sc_slashMenu');
+  });
+  scTextEl.addEventListener('compositionstart',e=>{
+    ceCancelDebounced(e.target);
+  });
+  scTextEl.addEventListener('compositionend',e=>{
+    const el=e.target;
+    const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
+    el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
+    ceRender(el); scDetectSlash(el,'sc_slashMenu');
+  });
+  scTextEl.addEventListener('paste',e=>{
     e.preventDefault();
+    const text=(e.clipboardData||window.clipboardData).getData('text/plain');
+    const el=e.target;
     ceFlushDebounced(el);
-    const s=ceGetOffset(el); const raw=el.dataset.raw||'';
-    const ls=raw.lastIndexOf('\n',s-1)+1;
-    const curLine=raw.slice(ls,s);
-    const m=curLine.match(/^([-*+]|\d+\.)\s/);
-    const pfx=m?m[0]:'';
-    const newRaw=raw.slice(0,s)+'\n'+pfx+raw.slice(s);
-    el.dataset.raw=newRaw;
-    ceRender(el); ceSetOffset(el,s+1+pfx.length);
-  }
-});
+    const s=ceGetOffset(el);
+    const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
+    const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
+    el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
+    el.innerHTML=newRaw.split('\n').map(ceRenderLine).join('');
+    ceSetOffset(el,s+text.length);
+  });
+  scTextEl.addEventListener('keydown',e=>{
+    const el=e.target;
+    if(scSlashActive){
+      if(e.key==='Escape'){e.preventDefault();scCloseSlash();return;}
+      if(e.key==='ArrowDown'){e.preventDefault();scSlashMove(1);return;}
+      if(e.key==='ArrowUp'){e.preventDefault();scSlashMove(-1);return;}
+      if(e.key==='Enter'){e.preventDefault();const menu=document.getElementById(scSlashMenuId);const items=menu?[...menu.querySelectorAll('.slash-item')]:[];if(items[scSlashIdx])scApplySlash(el,items[scSlashIdx].dataset.key);return;}
+    }
+    const mod=e.ctrlKey||e.metaKey;
+    if(mod&&e.key==='b'){e.preventDefault();ceWrap(el,'**','**');return;}
+    if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
+    if(e.key==='Enter'&&!scSlashActive){
+      e.preventDefault();
+      ceFlushDebounced(el);
+      const s=ceGetOffset(el); const raw=el.dataset.raw||'';
+      const ls=raw.lastIndexOf('\n',s-1)+1;
+      const curLine=raw.slice(ls,s);
+      const m=curLine.match(/^([-*+]|\d+\.)\s/);
+      const pfx=m?m[0]:'';
+      const newRaw=raw.slice(0,s)+'\n'+pfx+raw.slice(s);
+      el.dataset.raw=newRaw;
+      ceRender(el); ceSetOffset(el,s+1+pfx.length);
+    }
+  });
+  scTextEl.addEventListener('blur',()=>{
+    const el=document.getElementById('sc_text');
+    ceFlushDebounced(el);
+    const raw=el.dataset.raw||'';
+    el.innerHTML=raw.trim()?renderMd(raw):'';
+    el.classList.toggle('is-empty',!raw.trim());
+    document.getElementById('sc_mdToolbar').style.display='none';
+  });
+  scTextEl.addEventListener('focus',()=>{
+    const el=document.getElementById('sc_text');
+    const raw=el.dataset.raw||'';
+    el.classList.remove('is-empty');
+    el.innerHTML=raw?raw.split('\n').map(ceRenderLine).join(''):'';
+    document.getElementById('sc_mdToolbar').style.display='';
+    const r=document.createRange();r.selectNodeContents(el);r.collapse(false);
+    const s=window.getSelection();s.removeAllRanges();s.addRange(r);
+  });
+}
 
-// ── 툴바 버튼 ──
+/* B-103 2-2: sc_text Tiptap 싱글턴. 로드 실패 시 위 폴백 리스너를 연결하고
+   contentEditable을 원래대로 되돌린다(HTML의 contenteditable="true"는
+   그대로 살아있으므로 되돌리기만 하면 기존 동작과 완전히 동일) */
+let scTiptapEditor=null, scTiptapFailed=false, scTiptapInitPromise=null;
+async function initScTextEditor(){
+  if(scTiptapEditor) return true;
+  if(scTiptapFailed) return false;
+  if(scTiptapInitPromise) return scTiptapInitPromise;
+  const el=document.getElementById('sc_text');
+  el.contentEditable='false';
+  scTiptapInitPromise=(async()=>{
+    const mods=await loadTiptapMods().catch(()=>null);
+    if(!mods){
+      scTiptapFailed=true; el.contentEditable='true';
+      attachScTextFallbackListeners();
+      showEditorFallbackNote(document.getElementById('sc_mdToolbar'));
+      return false;
+    }
+    try{
+      const slashExt=buildTiptapSlashExtension(mods,'sc_slashMenu',SC_SLASH,scSlashApplyTiptap);
+      scTiptapEditor=new mods.core.Editor({
+        element:el,
+        extensions:[mods.starterKit,mods.Markdown,slashExt],
+        content:'',
+        onUpdate:({editor})=>{
+          el.classList.toggle('is-empty',editor.isEmpty);
+          const raw=editor.storage.markdown.getMarkdown();
+          const ogPrev=document.getElementById('sc_ogPreview');
+          if(/instagram\.com\/(p|reel)\//.test(raw)){
+            ogPrev.style.display='block';
+            ogPrev.innerHTML='<div class="og-card"><span class="og-loading">'+ic('tip')+' 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
+          } else { ogPrev.style.display='none'; }
+        },
+      });
+      el.classList.add('is-empty');
+      return true;
+    }catch(e){
+      scTiptapFailed=true; scTiptapEditor=null; el.contentEditable='true';
+      attachScTextFallbackListeners();
+      showEditorFallbackNote(document.getElementById('sc_mdToolbar'));
+      return false;
+    }
+  })();
+  const ok=await scTiptapInitPromise;
+  scTiptapInitPromise=null;
+  return ok;
+}
+/* SC_SLASH 항목 → Tiptap 명령 매핑(슬래시 메뉴에서 선택 시). 폴백 경로의
+   scApplySlash(원문 문자열 삽입)와는 별개 — 성공 경로 전용 */
+function scSlashApplyTiptap(editor,key){
+  const chain=editor.chain().focus();
+  if(key==='h2')chain.setHeading({level:2}).run();
+  else if(key==='h3')chain.setHeading({level:3}).run();
+  else if(key==='ul')chain.toggleBulletList().run();
+  else if(key==='ol')chain.toggleOrderedList().run();
+  else if(key==='quote')chain.toggleBlockquote().run();
+  else if(key==='hr')chain.setHorizontalRule().run();
+  else if(key==='bold')chain.toggleBold().run();
+  else if(key==='italic')chain.toggleItalic().run();
+  else if(key==='code')chain.toggleCode().run();
+  else if(key==='codeblock')chain.toggleCodeBlock().run();
+}
+
+// ── 툴바 버튼(Tiptap 활성 시 명령으로, 폴백 시 ceWrap/ceLine으로) ──
 document.getElementById('sc_mdToolbar').addEventListener('mousedown',e=>e.preventDefault());
 document.getElementById('sc_mdToolbar').onclick=e=>{
   const btn=e.target.closest('button[data-mdwrap],button[data-mdline]');
   if(!btn) return;
+  if(scTiptapEditor){ tiptapToolbarAction(scTiptapEditor,btn.dataset.mdwrap,btn.dataset.mdline); return; }
   const el=document.getElementById('sc_text');
   if(btn.dataset.mdwrap){const parts=btn.dataset.mdwrap.split('||');ceWrap(el,parts[0],parts[1]);}
   else if(btn.dataset.mdline){ceLine(el,btn.dataset.mdline);}
@@ -248,8 +323,9 @@ document.getElementById('sc_saveBtn').onclick=()=>{
   const title=document.getElementById('sc_title').value.trim();
   const type=document.querySelector('.sc-type-chip.on')?.dataset.type||'subscription';
   const scEl=document.getElementById('sc_text');
-  ceFlushDebounced(scEl); // B-107: 저장 직전 예약된 렌더를 확정
-  const raw=(scEl.dataset.raw||scEl.innerText||'').trim();
+  let raw;
+  if(scTiptapEditor){ raw=scTiptapEditor.storage.markdown.getMarkdown().trim(); }
+  else { ceFlushDebounced(scEl); raw=(scEl.dataset.raw||scEl.innerText||'').trim(); } // B-107: 저장 직전 예약된 렌더를 확정
   const err=document.getElementById('sc_formErr');
   if(!title){err.textContent='제목을 입력해주세요.';document.getElementById('sc_title').focus();return;}
   if(!raw&&!scrapImgsData.length){err.textContent='원문·메모를 입력하거나 스크린샷을 첨부해주세요.';scEl.focus();return;}
@@ -291,9 +367,12 @@ function scClearForm(){
   document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' 스크린샷 첨부';
   document.getElementById('sc_file').value='';
   document.getElementById('sc_ogPreview').style.display='none';
-  const scEl=document.getElementById('sc_text');
-  scEl.innerHTML=''; scEl.dataset.raw=''; scEl.classList.add('is-empty');
-  document.getElementById('sc_mdToolbar').style.display='';
+  if(scTiptapEditor){ scTiptapEditor.commands.setContent(''); }
+  else {
+    const scEl=document.getElementById('sc_text');
+    scEl.innerHTML=''; scEl.dataset.raw=''; scEl.classList.add('is-empty');
+    document.getElementById('sc_mdToolbar').style.display='';
+  }
   scCloseSlash();
   scrapImgsData=[]; scEditId=null;
   document.getElementById('sc_formTitle').textContent='＋ 추가';
@@ -302,7 +381,7 @@ function scClearForm(){
   scUpdatePropFields('subscription');
 }
 
-function scOpenForm(){ document.getElementById('sc_form').classList.add('open'); document.getElementById('sc_addToggle').textContent='▲ 접기'; document.getElementById('sc_form').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function scOpenForm(){ document.getElementById('sc_form').classList.add('open'); document.getElementById('sc_addToggle').textContent='▲ 접기'; document.getElementById('sc_form').scrollIntoView({behavior:'smooth',block:'nearest'}); initScTextEditor(); }
 function scCloseForm(){ scClearForm(); document.getElementById('sc_form').classList.remove('open'); document.getElementById('sc_addToggle').textContent='＋ 추가'; }
 document.getElementById('sc_addToggle').onclick=()=>{ const isOpen=document.getElementById('sc_form').classList.contains('open'); isOpen?scCloseForm():scOpenForm(); };
 document.getElementById('sc_formClose').onclick=scCloseForm;
@@ -339,11 +418,24 @@ function openScEdit(id){
   document.getElementById('sem_moreFields').classList.remove('open');
   document.getElementById('sem_moreArrow').textContent='▶';
   // 편집 모달 에디터 초기화
-  const semEl=document.getElementById('sem_text');
-  semEl.dataset.raw=s.raw||'';
-  semEl.innerHTML=(s.raw||'').split('\n').map(ceRenderLine).join('');
-  semEl.classList.toggle('is-empty',!s.raw);
-  document.getElementById('sem_mdToolbar').style.display='';
+  /* B-103 2-2: Tiptap이 이미 활성이면 콘텐츠만 교체(마운트된 DOM을
+     innerHTML로 덮어쓰면 안 됨). 아직 초기화 전/실패면 기존 ceRenderLine
+     렌더를 즉시 보여주고(모달을 열자마자 빈 화면 방지), 초기화가 성공하면
+     그 사이 다른 항목으로 안 바뀐 경우에만 Tiptap 콘텐츠로 교체한다 */
+  if(semTiptapEditor){
+    semTiptapEditor.commands.setContent(s.raw||'');
+  } else {
+    const semEl=document.getElementById('sem_text');
+    semEl.dataset.raw=s.raw||'';
+    semEl.innerHTML=(s.raw||'').split('\n').map(ceRenderLine).join('');
+    semEl.classList.toggle('is-empty',!s.raw);
+    document.getElementById('sem_mdToolbar').style.display='';
+    if(!semTiptapFailed){
+      initSemTextEditor().then(ok=>{
+        if(ok&&scModalEditId===id) semTiptapEditor.commands.setContent(s.raw||'');
+      });
+    }
+  }
   document.getElementById('sem_err').textContent='';
   const sn=document.getElementById('savedNote');
   if(sn){sn.textContent='저장 버튼으로 반영됩니다';sn.style.color='var(--ink-soft)';}
@@ -368,81 +460,121 @@ document.getElementById('sem_moreToggle').onclick=()=>{
   const open=f.classList.toggle('open');
   a.textContent=open?'▼':'▶';
 };
-// ── 수정 모달 에디터 ──
+// ── 수정 모달 에디터 (Tiptap 로드 실패 시 폴백 경로) ──
 document.getElementById('sem_mdToolbar').addEventListener('mousedown',e=>e.preventDefault());
-document.getElementById('sem_text').addEventListener('input',e=>{
-  const el=e.target; const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
-  el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
-  if(e.isComposing)return;
-  ceRenderDebounced(el);
-  scDetectSlash(el,'sem_slashMenu');
-});
-/* B-105: sc_text와 동일한 조합 중 렌더 취소 패턴 */
-document.getElementById('sem_text').addEventListener('compositionstart',e=>{
-  ceCancelDebounced(e.target);
-});
-/* B-107: sc_text와 동일하게 compositionend는 동기 렌더로 복원 */
-document.getElementById('sem_text').addEventListener('compositionend',e=>{
-  const el=e.target;
-  const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
-  el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim()); ceRender(el);
-  scDetectSlash(el,'sem_slashMenu');
-});
-document.getElementById('sem_text').addEventListener('paste',e=>{
-  e.preventDefault();
-  const text=(e.clipboardData||window.clipboardData).getData('text/plain');
-  const el=e.target;
-  ceFlushDebounced(el);
-  const s=ceGetOffset(el);
-  const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
-  const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
-  el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
-  el.innerHTML=newRaw.split('\n').map(ceRenderLine).join(''); ceSetOffset(el,s+text.length);
-});
-document.getElementById('sem_text').addEventListener('blur',()=>{
+/* B-103 2-2: sc_text와 동일 패턴 — 기존 ceRender 리스너는 함수로 묶어
+   Tiptap 초기화 실패 시에만 연결 */
+function attachSemTextFallbackListeners(){
+  const semTextEl=document.getElementById('sem_text');
+  semTextEl.addEventListener('input',e=>{
+    const el=e.target; const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
+    el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim());
+    if(e.isComposing)return;
+    ceRenderDebounced(el);
+    scDetectSlash(el,'sem_slashMenu');
+  });
+  semTextEl.addEventListener('compositionstart',e=>{
+    ceCancelDebounced(e.target);
+  });
+  semTextEl.addEventListener('compositionend',e=>{
+    const el=e.target;
+    const raw=el.innerText.replace(/\r\n?/g,'\n').replace(/\n+$/,'');
+    el.dataset.raw=raw; el.classList.toggle('is-empty',!raw.trim()); ceRender(el);
+    scDetectSlash(el,'sem_slashMenu');
+  });
+  semTextEl.addEventListener('paste',e=>{
+    e.preventDefault();
+    const text=(e.clipboardData||window.clipboardData).getData('text/plain');
+    const el=e.target;
+    ceFlushDebounced(el);
+    const s=ceGetOffset(el);
+    const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
+    const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
+    el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
+    el.innerHTML=newRaw.split('\n').map(ceRenderLine).join(''); ceSetOffset(el,s+text.length);
+  });
+  semTextEl.addEventListener('blur',()=>{
+    const el=document.getElementById('sem_text');
+    ceFlushDebounced(el); // B-107: 지연 렌더가 blur 이후 클린 렌더를 덮어쓰지 않게
+    const raw=el.dataset.raw||'';
+    el.innerHTML=raw.trim()?renderMd(raw):'';
+    el.classList.toggle('is-empty',!raw.trim());
+    document.getElementById('sem_mdToolbar').style.display='none';
+  });
+  semTextEl.addEventListener('focus',()=>{
+    const el=document.getElementById('sem_text'); const raw=el.dataset.raw||'';
+    el.classList.remove('is-empty');
+    el.innerHTML=raw?raw.split('\n').map(ceRenderLine).join(''):'';
+    document.getElementById('sem_mdToolbar').style.display='';
+    const r=document.createRange();r.selectNodeContents(el);r.collapse(false);
+    const s=window.getSelection();s.removeAllRanges();s.addRange(r);
+  });
+  semTextEl.addEventListener('keydown',e=>{
+    const el=e.target;
+    if(scSlashActive){
+      if(e.key==='Escape'){e.preventDefault();scCloseSlash();return;}
+      if(e.key==='ArrowDown'){e.preventDefault();scSlashMove(1);return;}
+      if(e.key==='ArrowUp'){e.preventDefault();scSlashMove(-1);return;}
+      if(e.key==='Enter'){e.preventDefault();const menu=document.getElementById(scSlashMenuId);const items=menu?[...menu.querySelectorAll('.slash-item')]:[];if(items[scSlashIdx])scApplySlash(el,items[scSlashIdx].dataset.key);return;}
+    }
+    const mod=e.ctrlKey||e.metaKey;
+    if(mod&&e.key==='b'){e.preventDefault();ceWrap(el,'**','**');return;}
+    if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
+    if(e.key==='Enter'){
+      e.preventDefault();
+      ceFlushDebounced(el);
+      const s=ceGetOffset(el); const raw=el.dataset.raw||'';
+      const ls=raw.lastIndexOf('\n',s-1)+1;
+      const m=raw.slice(ls,s).match(/^([-*+]|\d+\.)\s/);
+      const pfx=m?m[0]:'';
+      const newRaw=raw.slice(0,s)+'\n'+pfx+raw.slice(s);
+      el.dataset.raw=newRaw; ceRender(el); ceSetOffset(el,s+1+pfx.length);
+    }
+  });
+}
+/* sem_text Tiptap 싱글턴 — 모달을 여러 번 열어도 최초 1회만 생성,
+   이후엔 openScEdit()에서 setContent()로 내용만 교체 */
+let semTiptapEditor=null, semTiptapFailed=false, semTiptapInitPromise=null;
+async function initSemTextEditor(){
+  if(semTiptapEditor) return true;
+  if(semTiptapFailed) return false;
+  if(semTiptapInitPromise) return semTiptapInitPromise;
   const el=document.getElementById('sem_text');
-  ceFlushDebounced(el); // B-107: 지연 렌더가 blur 이후 클린 렌더를 덮어쓰지 않게
-  const raw=el.dataset.raw||'';
-  el.innerHTML=raw.trim()?renderMd(raw):'';
-  el.classList.toggle('is-empty',!raw.trim());
-  document.getElementById('sem_mdToolbar').style.display='none';
-});
-document.getElementById('sem_text').addEventListener('focus',()=>{
-  const el=document.getElementById('sem_text'); const raw=el.dataset.raw||'';
-  el.classList.remove('is-empty');
-  el.innerHTML=raw?raw.split('\n').map(ceRenderLine).join(''):'';
-  document.getElementById('sem_mdToolbar').style.display='';
-  const r=document.createRange();r.selectNodeContents(el);r.collapse(false);
-  const s=window.getSelection();s.removeAllRanges();s.addRange(r);
-});
+  el.contentEditable='false';
+  semTiptapInitPromise=(async()=>{
+    const mods=await loadTiptapMods().catch(()=>null);
+    if(!mods){
+      semTiptapFailed=true; el.contentEditable='true';
+      attachSemTextFallbackListeners();
+      showEditorFallbackNote(document.getElementById('sem_mdToolbar'));
+      return false;
+    }
+    try{
+      const slashExt=buildTiptapSlashExtension(mods,'sem_slashMenu',SC_SLASH,scSlashApplyTiptap);
+      semTiptapEditor=new mods.core.Editor({
+        element:el,
+        extensions:[mods.starterKit,mods.Markdown,slashExt],
+        content:'',
+      });
+      return true;
+    }catch(e){
+      semTiptapFailed=true; semTiptapEditor=null; el.contentEditable='true';
+      attachSemTextFallbackListeners();
+      showEditorFallbackNote(document.getElementById('sem_mdToolbar'));
+      return false;
+    }
+  })();
+  const ok=await semTiptapInitPromise;
+  semTiptapInitPromise=null;
+  return ok;
+}
 document.getElementById('sem_mdToolbar').onclick=e=>{
   const btn=e.target.closest('[data-semwrap],[data-semline]');if(!btn)return;
+  if(semTiptapEditor){ tiptapToolbarAction(semTiptapEditor,btn.dataset.semwrap,btn.dataset.semline); return; }
   const el=document.getElementById('sem_text');
   if(btn.dataset.semwrap){const parts=btn.dataset.semwrap.split('||');ceWrap(el,parts[0],parts[1]);}
   else if(btn.dataset.semline){ceLine(el,btn.dataset.semline);}
 };
-document.getElementById('sem_text').addEventListener('keydown',e=>{
-  const el=e.target;
-  if(scSlashActive){
-    if(e.key==='Escape'){e.preventDefault();scCloseSlash();return;}
-    if(e.key==='ArrowDown'){e.preventDefault();scSlashMove(1);return;}
-    if(e.key==='ArrowUp'){e.preventDefault();scSlashMove(-1);return;}
-    if(e.key==='Enter'){e.preventDefault();const menu=document.getElementById(scSlashMenuId);const items=menu?[...menu.querySelectorAll('.slash-item')]:[];if(items[scSlashIdx])scApplySlash(el,items[scSlashIdx].dataset.key);return;}
-  }
-  const mod=e.ctrlKey||e.metaKey;
-  if(mod&&e.key==='b'){e.preventDefault();ceWrap(el,'**','**');return;}
-  if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
-  if(e.key==='Enter'){
-    e.preventDefault();
-    ceFlushDebounced(el);
-    const s=ceGetOffset(el); const raw=el.dataset.raw||'';
-    const ls=raw.lastIndexOf('\n',s-1)+1;
-    const m=raw.slice(ls,s).match(/^([-*+]|\d+\.)\s/);
-    const pfx=m?m[0]:'';
-    const newRaw=raw.slice(0,s)+'\n'+pfx+raw.slice(s);
-    el.dataset.raw=newRaw; ceRender(el); ceSetOffset(el,s+1+pfx.length);
-  }
-});
 document.getElementById('sem_img').onchange=e=>{
   const files=[...e.target.files]; if(!files.length)return;
   const room=SC_MAX_IMGS-semImgsData.length;
@@ -476,14 +608,16 @@ document.getElementById('sem_cancel').onclick=()=>{
 document.getElementById('sem_save').onclick=()=>{
   const s=state.scraps.find(x=>x.id===scModalEditId);
   if(!s){closeModal('scEditModal');return;}
-  ceFlushDebounced(document.getElementById('sem_text')); // B-107: 저장 직전 예약된 렌더를 확정
+  let raw;
+  if(semTiptapEditor){ raw=semTiptapEditor.storage.markdown.getMarkdown(); }
+  else { ceFlushDebounced(document.getElementById('sem_text')); raw=(document.getElementById('sem_text').dataset.raw||document.getElementById('sem_text').innerText||''); } // B-107: 저장 직전 예약된 렌더를 확정
   const title=document.getElementById('sem_title').value.trim();
   if(!title){document.getElementById('sem_err').textContent='제목을 입력해주세요.';return;}
   const type=document.querySelector('#sem_typeChips .sc-type-chip.on')?.dataset.type||s.type;
   const tagsRaw=document.getElementById('sem_tags').value;
   Object.assign(s,{
     title,type,
-    raw:(document.getElementById('sem_text').dataset.raw||document.getElementById('sem_text').innerText||''),
+    raw,
     status:document.getElementById('sem_status').value,
     location:document.getElementById('sem_location').value.trim(),
     price:document.getElementById('sem_price').value.trim(),
