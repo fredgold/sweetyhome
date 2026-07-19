@@ -130,12 +130,15 @@ function initAssetNotesEditor(){
       mount=document.createElement('div');
       mount.id='an_tiptapMount';
       mount.className='sc-md-editor sc-md-content';
+      mount.dataset.placeholder=ta.placeholder||''; // B-110: 기존 textarea placeholder 재사용
       ta.insertAdjacentElement('afterend',mount);
     }
     try{
+      const listFixExt=buildListBackspaceFix(mods); // B-110: B-109① 전파
+      const placeholderExt=buildTiptapPlaceholder(mods,mount); // B-110: B-109② 전파
       assetTiptapEditor=new mods.core.Editor({
         element:mount,
-        extensions:[mods.starterKit,mods.Markdown],
+        extensions:[mods.starterKit,mods.Markdown,listFixExt,placeholderExt],
         content:state.assets.notes||'',
       });
       ta.style.display='none';

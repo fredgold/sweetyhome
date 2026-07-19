@@ -968,12 +968,15 @@ function initFMemoEditor(){
       mount=document.createElement('div');
       mount.id='f_memoMount';
       mount.className='sc-md-editor sc-md-content';
+      mount.dataset.placeholder=ta.placeholder||''; // B-110: 기존 textarea placeholder 재사용
       ta.insertAdjacentElement('afterend',mount);
     }
     try{
+      const listFixExt=buildListBackspaceFix(mods); // B-110: B-109① 전파
+      const placeholderExt=buildTiptapPlaceholder(mods,mount); // B-110: B-109② 전파
       fMemoTiptapEditor=new mods.core.Editor({
         element:mount,
-        extensions:[mods.starterKit,mods.Markdown],
+        extensions:[mods.starterKit,mods.Markdown,listFixExt,placeholderExt],
         content:ta.value||'',
         onUpdate:({editor})=>{ ta.value=editor.storage.markdown.getMarkdown(); },
       });
@@ -1055,12 +1058,15 @@ async function initEMMemoEditor(){
       mount=document.createElement('div');
       mount.id='em_memoMount';
       mount.className='sc-md-editor sc-md-content';
+      mount.dataset.placeholder=ta.placeholder||''; // B-110: 기존 textarea placeholder 재사용
       ta.insertAdjacentElement('afterend',mount);
     }
     try{
+      const listFixExt=buildListBackspaceFix(mods); // B-110: B-109① 전파
+      const placeholderExt=buildTiptapPlaceholder(mods,mount); // B-110: B-109② 전파
       emMemoTiptapEditor=new mods.core.Editor({
         element:mount,
-        extensions:[mods.starterKit,mods.Markdown],
+        extensions:[mods.starterKit,mods.Markdown,listFixExt,placeholderExt],
         content:ta.value||'',
         onUpdate:({editor})=>{ ta.value=editor.storage.markdown.getMarkdown(); },
       });
@@ -2547,11 +2553,14 @@ async function initListingMemoEditor(lid){
   if(!mods){ if(pending!=null) freshTa.value=pending; showEditorFallbackNote(freshTa); return; }
   const mount=document.createElement('div');
   mount.className='lst-memo-mount sc-md-editor sc-md-content';
+  mount.dataset.placeholder=freshTa.placeholder||''; // B-110: 기존 textarea placeholder 재사용
   freshTa.insertAdjacentElement('afterend',mount);
   try{
+    const listFixExt=buildListBackspaceFix(mods); // B-110: B-109① 전파
+    const placeholderExt=buildTiptapPlaceholder(mods,mount); // B-110: B-109② 전파
     const editor=new mods.core.Editor({
       element:mount,
-      extensions:[mods.starterKit,mods.Markdown],
+      extensions:[mods.starterKit,mods.Markdown,listFixExt,placeholderExt],
       content:initialContent,
       onUpdate:({editor})=>{ freshTa.value=editor.storage.markdown.getMarkdown(); },
     });
