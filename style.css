@@ -843,6 +843,14 @@
   .sc-md-editor:not(:focus):not(.is-empty){cursor:pointer;}
   .sc-md-editor:not(:focus):not(.is-empty)::after{content:'✏️ 편집';display:block;text-align:right;font-size:11px;color:var(--ink-faint);margin-top:4px;}
   .sc-md-editor.is-empty::before{content:attr(data-placeholder);color:var(--ink-faint);font-size:12.5px;white-space:pre-wrap;pointer-events:none;line-height:1.6;}
+  /* B-109②: Tiptap Placeholder 확장 표준 CSS 패턴 — 빈 첫 문단 자신에게만
+     data-placeholder 속성값을 얹어 보여준다(위 .is-empty::before는 폴백
+     전용 경로로 그대로 둠). float+height:0으로 커서가 실제로 있는 줄과
+     같은 자리에 겹쳐 그려져 "에디터 밖 별도 고정 블록" 없이 표시 */
+  .sc-md-editor .ProseMirror p.is-editor-empty:first-child::before{
+    content:attr(data-placeholder);color:var(--ink-faint);font-size:12.5px;
+    white-space:pre-wrap;pointer-events:none;float:left;height:0;
+  }
   .sc-md-editor .mk{font-size:10px;color:var(--ink-faint);font-weight:normal;font-style:normal;font-family:monospace;letter-spacing:0;}
   .sc-md-editor .md-h1{font-size:17px;font-weight:800;} .sc-md-editor .md-h2{font-size:15px;font-weight:800;} .sc-md-editor .md-h3{font-size:13.5px;font-weight:700;}
   .sc-md-editor .md-li{padding-left:10px;} .sc-md-editor .md-ol{padding-left:10px;}

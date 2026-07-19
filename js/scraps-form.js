@@ -138,12 +138,12 @@ async function initScTextEditor(){
     try{
       const slashExt=buildTiptapSlashExtension(mods,'sc_slashMenu',SC_SLASH,scSlashApplyTiptap);
       const listFixExt=buildListBackspaceFix(mods); // B-109①: 중첩 리스트 Backspace lift
+      const placeholderExt=buildTiptapPlaceholder(mods,el); // B-109②: 안내 문구 에디터 내장화
       scTiptapEditor=new mods.core.Editor({
         element:el,
-        extensions:[mods.starterKit,mods.Markdown,slashExt,listFixExt],
+        extensions:[mods.starterKit,mods.Markdown,slashExt,listFixExt,placeholderExt],
         content:'',
         onUpdate:({editor})=>{
-          el.classList.toggle('is-empty',editor.isEmpty);
           const raw=editor.storage.markdown.getMarkdown();
           const ogPrev=document.getElementById('sc_ogPreview');
           if(/instagram\.com\/(p|reel)\//.test(raw)){
@@ -152,7 +152,10 @@ async function initScTextEditor(){
           } else { ogPrev.style.display='none'; }
         },
       });
-      el.classList.add('is-empty');
+      /* B-109②: index.html의 sc_text는 is-empty 클래스를 기본으로 갖고
+         있어(폴백용) Tiptap 성공 시 지워두지 않으면 구 CSS 플레이스홀더와
+         새 Placeholder 확장이 동시에 보인다 */
+      el.classList.remove('is-empty');
       return true;
     }catch(e){
       scTiptapFailed=true; scTiptapEditor=null; el.contentEditable='true';
@@ -553,11 +556,13 @@ async function initSemTextEditor(){
     try{
       const slashExt=buildTiptapSlashExtension(mods,'sem_slashMenu',SC_SLASH,scSlashApplyTiptap);
       const listFixExt=buildListBackspaceFix(mods); // B-109①: 중첩 리스트 Backspace lift
+      const placeholderExt=buildTiptapPlaceholder(mods,el); // B-109②: 안내 문구 에디터 내장화
       semTiptapEditor=new mods.core.Editor({
         element:el,
-        extensions:[mods.starterKit,mods.Markdown,slashExt,listFixExt],
+        extensions:[mods.starterKit,mods.Markdown,slashExt,listFixExt,placeholderExt],
         content:'',
       });
+      el.classList.remove('is-empty');
       return true;
     }catch(e){
       semTiptapFailed=true; semTiptapEditor=null; el.contentEditable='true';

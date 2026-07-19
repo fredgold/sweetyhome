@@ -313,8 +313,10 @@ async function loadTiptapMods(){
       import('https://esm.sh/@tiptap/starter-kit@2.27.2'),
       import('https://esm.sh/tiptap-markdown@0.8.10'),
       import('https://esm.sh/@tiptap/suggestion@2.27.2'),
-    ]).then(([core,starterKit,markdown,suggestion])=>({
+      import('https://esm.sh/@tiptap/extension-placeholder@2.27.2'),
+    ]).then(([core,starterKit,markdown,suggestion,placeholder])=>({
       core,starterKit:starterKit.default,Markdown:markdown.Markdown,Suggestion:suggestion.Suggestion,
+      Placeholder:placeholder.Placeholder,
     })).catch(e=>{ _tiptapModsPromise=null; throw e; });
   }
   return _tiptapModsPromise;
@@ -348,6 +350,19 @@ function buildListBackspaceFix(mods){
       };
     },
   });
+}
+/* B-109②: 사용자 실기기 재현 — 안내 문구(placeholder)가 에디터 안이
+   아니라 고정 영역처럼 상시 공간을 차지. 기존엔 CSS
+   `.is-empty::before{content:attr(data-placeholder)}`를 바깥 컨테이너에
+   걸어 흉내냈는데(B-103 2-1/2-2), 그 pseudo가 커서가 실제로 있는
+   안쪽 빈 문단과 다른 부모(바깥 컨테이너) 기준이라 "에디터 안 실제
+   커서 자리"와 분리된 별도 블록처럼 보임. Tiptap 자체 Placeholder
+   확장(진짜 빈 문단 노드 자신에게 뜨는 표준 방식)으로 교체 —
+   mountEl의 data-placeholder 속성(기존 HTML 그대로, 문구 재작성 없음)을
+   그대로 읽어써서 index.html 무수정 */
+function buildTiptapPlaceholder(mods,mountEl){
+  const text=mountEl.dataset.placeholder||'';
+  return mods.Placeholder.configure({placeholder:text});
 }
 /* 슬래시 커맨드 메뉴 — @tiptap/suggestion 기반, 기존 .slash-menu/.slash-item
    CSS(스타일 락 대상이라 신규 클래스 없이 그대로 재사용)와 동일한 시각·
