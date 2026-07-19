@@ -62,6 +62,12 @@
  *                    입력 시점의 settings.commuters[i].dest를 그대로 복사해두는
  *                    값 — 이후 기준지가 바뀌어도 과거 기록은 손대지 않고, 표시
  *                    시점에 스냅샷≠현재값이면 "기준지 변경됨" 안내만 덧붙임.
+ *                    B-41: fieldNote(임장 노트) = {visitedAt(날짜 문자열, 기본 null),
+ *                    items:{ [FIELD_NOTE_ITEMS[].key]: {rating(null|1~5 정수, 기본
+ *                    null — 미입력과 1점을 엄격히 구분), memo(기본 '')} }, memo(자유
+ *                    메모, 마크다운, 기본 '')}. listings[].safety와 동일하게 항목별
+ *                    병합(무손실) — 기록·표시 전용, 자동 판정·합산 저장·필터 연동 없음.
+ *                    카드 칩(fieldNoteChip)의 평균은 표시용 계산일 뿐 저장 안 됨.
  * state.listings  : [{id, complexId, source, url, capturedAt, lastCheckedAt,
  *                     dongHo, areaM2, areaText, areaGrade, deposit,
  *                     managementFee (만원 단위, null=값 없음),
@@ -226,6 +232,23 @@ function defaultListingSafety(){
 /* B-61: 통근 기준지 2인 — complexes[].commutes 기본값(신규 단지 생성 시) */
 function defaultComplexCommutes(){
   return [0,1].map(()=>({minutes:null,transfers:null,destSnapshot:''}));
+}
+
+/* B-41: 임장 노트 6항목 — complexes[].fieldNote.items의 키 목록. SAFETY_ITEMS와
+   동일 패턴(판정 없음, 기록만) — 별점(1~5, null=미입력)+항목별 메모 */
+const FIELD_NOTE_ITEMS=[
+  {key:'parking',label:'주차'},
+  {key:'night',label:'밤길'},
+  {key:'commerce',label:'상권'},
+  {key:'noise',label:'소음'},
+  {key:'slope',label:'경사도'},
+  {key:'maintenance',label:'관리상태'},
+];
+function defaultFieldNoteItem(){ return {rating:null,memo:''}; }
+function defaultComplexFieldNote(){
+  const items={};
+  FIELD_NOTE_ITEMS.forEach(({key})=>{ items[key]=defaultFieldNoteItem(); });
+  return {visitedAt:null,items,memo:''};
 }
 
 const DEFAULT_OWNERS=['규범','연정','공동'];
@@ -440,6 +463,27 @@ function applyGuards(raw){
   state.complexes=guardArr(state.complexes,[],'complexes').map(cx=>{
     const commutesRaw=Array.isArray(cx.commutes)?cx.commutes:[];
     const commutes=[0,1].map(i=>({minutes:null,transfers:null,destSnapshot:'', ...(commutesRaw[i]||{})}));
+    /* B-41: fieldNote 항목별 병합 — safety(listings[])와 동일 패턴. 일부 항목만
+       저장된 기존 데이터도 나머지 항목이 defaultFieldNoteItem()으로 채워지게 함
+       (무손실). rating은 Number()로 관대하게 변환(다른 필드의 문자열 숫자 파싱
+       관례와 동일, 예: '3'→3) 후 1~5 정수인지만 검증 — 비수치 문자열·소수·
+       범위밖·0·음수는 기본값(null)으로 되돌림, 미입력과 1점을 엄격히 구분 */
+    const fnRaw=(cx.fieldNote&&typeof cx.fieldNote==='object'&&!Array.isArray(cx.fieldNote))?cx.fieldNote:{};
+    const fnItemsRaw=(fnRaw.items&&typeof fnRaw.items==='object'&&!Array.isArray(fnRaw.items))?fnRaw.items:{};
+    const fnItems={};
+    FIELD_NOTE_ITEMS.forEach(({key})=>{
+      const raw=fnItemsRaw[key];
+      const validRaw=(raw&&typeof raw==='object'&&!Array.isArray(raw))?raw:null;
+      if(raw!=null&&!validRaw) console.warn(`applyGuards: complexes[${cx.id||'?'}].fieldNote.items.${key}가 객체가 아니라 기본값으로 대체됨(타입: ${typeof raw})`);
+      let rating=validRaw&&validRaw.rating!=null?Number(validRaw.rating):null;
+      if(rating==null||!Number.isInteger(rating)||rating<1||rating>5) rating=null;
+      fnItems[key]={rating, memo:(validRaw&&typeof validRaw.memo==='string')?validRaw.memo:''};
+    });
+    const fieldNote={
+      visitedAt: typeof fnRaw.visitedAt==='string'?fnRaw.visitedAt:null,
+      items: fnItems,
+      memo: typeof fnRaw.memo==='string'?fnRaw.memo:'',
+    };
     return {
       parking:null, parkingState:'unknown',
       pros:'', cons:'', verdict:'',
@@ -447,6 +491,7 @@ function applyGuards(raw){
       commuteMemo:'',
       ...cx,
       commutes,
+      fieldNote,
     };
   });
   /* B-27-lite: safety 필드 누락 보정 — 항목별로 병합해 일부만 저장된 기존

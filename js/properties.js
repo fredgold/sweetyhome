@@ -1222,6 +1222,7 @@ async function saveAsComplexListing(data){
       parkingState:tempParking!=null?'known':'unknown',
       pros:'', cons:'', verdict:'', favorite:false,
       commutes:defaultComplexCommutes(), commuteMemo:'',
+      fieldNote:defaultComplexFieldNote(),
       createdAt:now, updatedAt:now,
     };
     state.complexes.push(cx);
@@ -2068,6 +2069,7 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
           parking:null, parkingState:'unknown',
           pros:'', cons:'', verdict:'', favorite:false,
           commutes:defaultComplexCommutes(), commuteMemo:'',
+          fieldNote:defaultComplexFieldNote(),
           createdAt:now, updatedAt:now,
         };
         state.complexes.push(cx);
@@ -2239,6 +2241,7 @@ function migApply(){
         parking:null, parkingState:'unknown',
         pros:'', cons:'', verdict:'', favorite:false,
         commutes:defaultComplexCommutes(), commuteMemo:'',
+        fieldNote:defaultComplexFieldNote(),
         createdAt:now, updatedAt:now,
       };
       if(first.aiScore!=null) cx.aiScore=first.aiScore;
@@ -3170,6 +3173,124 @@ document.getElementById('cxDetailCommuteMemo').addEventListener('blur',e=>{
   cx.commuteMemo=e.target.value.trim(); cx.updatedAt=new Date().toISOString();
   save();
 });
+/* B-41: 임장 노트 6항목 — safety(listings[]) 입력 패턴 재사용(항목별 카드+
+   메모), 위젯만 select 대신 별점(1~5, 재클릭 시 해제=null로 미입력과 1점
+   구분). 판정·합산 저장·필터 연동 없음, 기록·표시 전용 */
+function fieldNoteItemsHTML(cx){
+  const fn=cx.fieldNote||defaultComplexFieldNote();
+  return FIELD_NOTE_ITEMS.map(({key,label})=>{
+    const it=fn.items[key]||defaultFieldNoteItem();
+    const stars=[1,2,3,4,5].map(n=>`<button type="button" class="fn-star${it.rating!=null&&n<=it.rating?' on':''}" data-fnkey="${key}" data-val="${n}" aria-label="${esc(label)} ${n}점">${ic('star')}</button>`).join('');
+    return `<div class="safety-item" data-fnkey="${key}">
+      <div class="safety-item-head">
+        <span class="safety-item-label">${esc(label)}</span>
+        <div class="fn-stars">${stars}</div>
+      </div>
+      <input type="text" class="safety-memo" data-fnfield="memo" data-fnkey="${key}" value="${esc(it.memo||'')}" placeholder="메모">
+    </div>`;
+  }).join('');
+}
+function renderCxDetailFieldNoteItems(cx){
+  const wrap=document.getElementById('cxDetailFieldNoteItems'); if(!wrap) return;
+  wrap.innerHTML=fieldNoteItemsHTML(cx);
+}
+/* B-41: 임장 노트 자유 메모 Tiptap 싱글턴 — em_memo(984행 부근)와 동일
+   패턴. 모달이 여러 단지에 재사용되므로 최초 1회만 생성, 이후 openComplexDetail
+   때마다 setContent()로 내용만 교체. onBlur는 cxDetailPros/Cons/Verdict/Memo와
+   동일한 "필드별 blur 저장" 관례를 Tiptap 경로에서도 유지하기 위함(이 모달엔
+   전체 저장 버튼이 없음 — em_memo는 별도 저장 버튼이 있어 다른 패턴 사용) */
+let cxFnMemoTiptapEditor=null, cxFnMemoTiptapFailed=false, cxFnMemoTiptapInitPromise=null;
+async function initCxFnMemoEditor(){
+  if(cxFnMemoTiptapEditor) return true;
+  if(cxFnMemoTiptapFailed) return false;
+  if(cxFnMemoTiptapInitPromise) return cxFnMemoTiptapInitPromise;
+  const ta=document.getElementById('cxDetailFieldNoteMemo');
+  cxFnMemoTiptapInitPromise=(async()=>{
+    const mods=await loadTiptapMods().catch(()=>null);
+    if(!mods){ cxFnMemoTiptapFailed=true; showEditorFallbackNote(ta); return false; }
+    let mount=document.getElementById('cxDetailFieldNoteMemoMount');
+    if(!mount){
+      mount=document.createElement('div');
+      mount.id='cxDetailFieldNoteMemoMount';
+      mount.className='sc-md-editor sc-md-content';
+      mount.dataset.placeholder=ta.placeholder||'';
+      ta.insertAdjacentElement('afterend',mount);
+    }
+    try{
+      const listFixExt=buildListBackspaceFix(mods);
+      const placeholderExt=buildTiptapPlaceholder(mods,mount);
+      cxFnMemoTiptapEditor=new mods.core.Editor({
+        element:mount,
+        extensions:[mods.starterKit,mods.Markdown,listFixExt,placeholderExt],
+        content:ta.value||'',
+        onUpdate:({editor})=>{ ta.value=editor.storage.markdown.getMarkdown(); },
+        onBlur:({editor})=>{
+          const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx) return;
+          cx.fieldNote.memo=editor.storage.markdown.getMarkdown().trim();
+          cx.updatedAt=new Date().toISOString();
+          save();
+        },
+      });
+      ta.style.display='none';
+      document.getElementById('cxDetailFieldNoteMemoPreviewToggle').style.display='none';
+      document.getElementById('cxDetailFieldNoteMemoToolbar').style.display='none';
+      document.getElementById('cxDetailFieldNoteMemoPreview').style.display='none';
+      return true;
+    }catch(e){
+      cxFnMemoTiptapFailed=true; cxFnMemoTiptapEditor=null; mount.remove();
+      showEditorFallbackNote(ta);
+      return false;
+    }
+  })();
+  const ok=await cxFnMemoTiptapInitPromise;
+  cxFnMemoTiptapInitPromise=null;
+  return ok;
+}
+document.getElementById('cxDetailFieldNoteMemoToolbar').onclick=e=>{
+  const btn=e.target.closest('[data-cxfntgt]'); if(!btn) return;
+  const ta=document.getElementById('cxDetailFieldNoteMemo');
+  if(btn.dataset.cxfntgt==='wrap'){mdWrap(ta,btn.dataset.open,btn.dataset.close);}
+  else if(btn.dataset.cxfntgt==='line'){mdLine(ta,btn.dataset.prefix);}
+};
+document.getElementById('cxDetailFieldNoteMemo').addEventListener('keydown',e=>{
+  const mod=e.ctrlKey||e.metaKey;
+  if(mod&&e.key==='b'){e.preventDefault();mdWrap(e.target,'**','**');}
+  if(mod&&e.key==='i'){e.preventDefault();mdWrap(e.target,'*','*');}
+});
+document.getElementById('cxDetailFieldNoteMemoPreviewToggle').onclick=function(){
+  memoPreviewToggle(this,document.getElementById('cxDetailFieldNoteMemo'),document.getElementById('cxDetailFieldNoteMemoPreview'),document.getElementById('cxDetailFieldNoteMemoToolbar'));
+};
+document.getElementById('cxDetailFieldNoteMemo').addEventListener('blur',e=>{
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
+  cx.fieldNote.memo=e.target.value.trim(); cx.updatedAt=new Date().toISOString();
+  save();
+});
+document.getElementById('cxDetailFieldNoteVisitedAt').addEventListener('change',e=>{
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx)return;
+  cx.fieldNote.visitedAt=e.target.value||null; cx.updatedAt=new Date().toISOString();
+  save();
+});
+/* B-41: 별점 클릭 — 같은 값 재클릭 시 해제(null), 미입력과 1점을 엄격히
+   구분. 카드 요약 칩(fieldNoteChip)이 rating에 의존하므로 renderComplexes()도
+   함께 갱신(cxDetailVerdict와 동일하게 카드에 영향 주는 필드만 선택적으로) */
+document.getElementById('complexDetailModal').addEventListener('click',e=>{
+  const btn=e.target.closest('.fn-star[data-fnkey]'); if(!btn) return;
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx) return;
+  const key=btn.dataset.fnkey, val=+btn.dataset.val;
+  const item=cx.fieldNote.items[key];
+  item.rating=(item.rating===val)?null:val;
+  cx.updatedAt=new Date().toISOString();
+  save();
+  renderCxDetailFieldNoteItems(cx);
+  renderComplexes();
+});
+document.getElementById('complexDetailModal').addEventListener('change',e=>{
+  const el=e.target.closest('[data-fnfield="memo"][data-fnkey]'); if(!el) return;
+  const cx=state.complexes.find(x=>x.id===cxDetailId); if(!cx) return;
+  cx.fieldNote.items[el.dataset.fnkey].memo=el.value;
+  cx.updatedAt=new Date().toISOString();
+  save();
+});
 function complexInfoEditHTML(cx){
   return `<div class="field" style="margin-bottom:10px">
       <label>단지명</label>
@@ -3292,6 +3413,18 @@ function renderComplexDetailBody(cx){
   document.getElementById('cxDetailCons').value=cx.cons||'';
   document.getElementById('cxDetailVerdict').value=cx.verdict||'';
   document.getElementById('cxDetailMemo').value=cx.memo||'';
+
+  if(!cx.fieldNote) cx.fieldNote=defaultComplexFieldNote();
+  document.getElementById('cxDetailFieldNoteVisitedAt').value=cx.fieldNote.visitedAt||'';
+  renderCxDetailFieldNoteItems(cx);
+  document.getElementById('cxDetailFieldNoteMemo').value=cx.fieldNote.memo||'';
+  if(cxFnMemoTiptapEditor){
+    cxFnMemoTiptapEditor.commands.setContent(cx.fieldNote.memo||'');
+  } else if(!cxFnMemoTiptapFailed){
+    initCxFnMemoEditor().then(ok=>{
+      if(ok&&cxDetailId===cx.id) cxFnMemoTiptapEditor.commands.setContent(cx.fieldNote.memo||'');
+    });
+  }
 
   const repForWeekly=cxRepOf(cx);
   const weeklyBtn=document.getElementById('cxDetailWeeklyCheckBtn');

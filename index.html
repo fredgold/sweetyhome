@@ -1017,6 +1017,29 @@
         <textarea id="cxDetailMemo" placeholder="단지 관련 메모"></textarea>
       </div>
 
+      <h3 style="font-size:14px;margin-bottom:8px">임장 노트</h3>
+      <div class="field" style="margin-bottom:10px">
+        <label>방문일</label>
+        <input type="date" id="cxDetailFieldNoteVisitedAt">
+      </div>
+      <div id="cxDetailFieldNoteItems" class="safety-list" style="margin-bottom:10px"></div>
+      <div class="field" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <label>자유 메모</label>
+          <button type="button" class="sc-preview-toggle" id="cxDetailFieldNoteMemoPreviewToggle"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기</button>
+        </div>
+        <div class="sc-md-toolbar" id="cxDetailFieldNoteMemoToolbar">
+          <button type="button" data-cxfntgt="wrap" data-open="**" data-close="**" title="굵게 (Ctrl+B)"><b>B</b></button>
+          <button type="button" data-cxfntgt="wrap" data-open="*" data-close="*" title="기울임 (Ctrl+I)"><i>I</i></button>
+          <span class="tb-sep"></span>
+          <button type="button" data-cxfntgt="line" data-prefix="## " title="제목">H</button>
+          <button type="button" data-cxfntgt="line" data-prefix="- " title="목록">•</button>
+          <button type="button" data-cxfntgt="line" data-prefix="> " title="인용"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3H6v-2a1 1 0 0 1 1-1h1V8z"/><path d="M16 8a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h1v-3h-2v-2a1 1 0 0 1 1-1h1V8z"/></svg></button>
+        </div>
+        <textarea id="cxDetailFieldNoteMemo" placeholder="임장 시 느낀 점, 추가로 기록할 내용"></textarea>
+        <div id="cxDetailFieldNoteMemoPreview" class="sc-md-preview sc-md-content" style="display:none;border:1px solid var(--hairline);border-radius:9px;padding:12px;margin-top:6px;"></div>
+      </div>
+
       <h3 style="font-size:14px;margin-bottom:8px">매물 목록</h3>
       <div id="cxDetailListings"></div>
       </div>
