@@ -1240,6 +1240,7 @@
   }
   @media (min-width:1440px){
     .sc-gallery-grid{grid-template-columns:repeat(auto-fill,minmax(380px,1fr));}
+    #panel-scraps .sc-list{max-width:1180px;}
   }
 
   /* ── 에디터 컨테이너 ── */
