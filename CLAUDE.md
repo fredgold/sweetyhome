@@ -20,7 +20,7 @@
 
 ```
 index.html              HTML 구조 전용 (~1,040줄)
-style.css               CSS 전체 (~1,510줄)
+style.css               CSS 전체 (~1,460줄)
 api/
   login.js              PIN 검증 → Bearer token 발급
   state.js              Redis GET/POST (state 저장·불러오기)
@@ -101,6 +101,8 @@ state.settings      — owners(담당자 목록, 프로필에서 편집 가능·
 
 **갤러리 뷰**: `scViewMode='list'|'gallery'` → `renderScraps()` 분기
 
+**에디터(Tiptap) 표준**: 자유 텍스트 입력 필드는 Tiptap 표준 패턴 필수 — `utils.js`의 `loadTiptapMods()`(esm.sh 동적 import)로 로드 후 `buildListBackspaceFix(mods)`+`buildTiptapPlaceholder(mods,mountEl)` 확장을 연결. `loadTiptapMods().catch(()=>null)`로 로드 실패 시 `null` 반환 → 기존 입력(textarea/contenteditable) 폴백 유지 + `showEditorFallbackNote(afterEl)`로 안내 문구 표시. 저장은 마크다운 그대로(스키마 불변), 읽기는 `renderMd`+DOMPurify. 새 필드에 일부만 적용 금지 — 현재 6필드(자산 노트 1·수집함 2·매물 메모 3) 전부 이 패턴 완전 적용됨(전례)
+
 ---
 
 ## 주요 ID 레퍼런스
@@ -127,6 +129,13 @@ state.settings      — owners(담당자 목록, 프로필에서 편집 가능·
 - CSS는 `style.css` 하나. 새 CSS 변수는 기존 `--money`, `--line9`, `--hairline` 등 디자인 토큰 활용
 - AI 기능: 현재 크레딧 소진 시 `aiAvailable=false` → 버튼 `disabled` 처리됨, 코드는 보존
 - 붙여넣기 임포트 우선순위: frontmatter(`---`) > 마크다운 표(`|`) > `key:val` 블록 > 자유 텍스트
+
+---
+
+## UI/레이아웃 정책
+
+- **레이아웃**(2026-07-19 확정): 전 탭 전체폭 프레임 + 탭별 폭 흡수 장치 — 매물=지도, 액션=그룹 칼럼, 수집함=카드 그리드, 자산=2구역, 대시=콤팩트 행. 새 UI는 이 정책을 준수하고 중앙 고정폭(가운데 정렬된 좁은 컬럼) 신설은 금지.
+- **접기 지양**(2026-07-18 확정): 기능을 접기(collapse/토글 숨김)로 숨기지 않는다 — 명시적 버튼·모드 전환으로 노출. 긴 콘텐츠의 말줄임(ellipsis)은 허용(정보를 숨기는 접기와 달리 길이만 축약하는 것이라 별개).
 
 ---
 
