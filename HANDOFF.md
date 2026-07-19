@@ -1,4 +1,82 @@
-# HANDOFF — B-104-5 완료 (2026-07-19)
+# HANDOFF — B-117 완료 (2026-07-19)
+
+## 최신 작업: 매물 상세 사이드 패널 — 단지 상세 옆 확장
+
+```
+932b794 feat: 매물 상세 사이드 패널 — 단지 상세 옆 확장 (B-117)
+```
+
+`index.html`(+13줄)+`js/properties.js`(+110/-2줄)+`style.css`(+26/-1줄).
+`state.js`/`BACKLOG.md` 무접촉, 스키마 변경 없음. 손 B의 B-114
+(`actions.js`+`style.css`) 미커밋 변경과 `style.css` 접점 0(diff
+겹침 없음, 커밋 전 매번 `git status`/`git diff style.css`로 확인).
+
+**구조**: `#complexDetailModal` 안에 기존 `.box`(단지 상세)의 **형제로
+먼저** 오는 `#cxListingDetailBox`(class `cx-listing-detail`)를 신설.
+데스크톱은 `#complexDetailModal{justify-content:flex-end}` 그룹 안에서
+DOM 순서만으로 단지 상세 왼쪽에 자연스럽게 붙고(폭 380px, 높이
+100vh), 모바일은 `position:absolute;inset:0`으로 같은 모달 안에서
+전체 화면을 덮는 별도 시트로 스택된다(로컬 `z-index:1`로 형제
+`.box`만 이기면 충분 — B-59가 쓰는 1100 티어를 새로 침범하지 않음).
+`.status-picker`처럼 완전히 새 모달을 만들지 않고 기존 모달의
+배경 딤·열림 생명주기를 그대로 공유해 이중 딤 문제가 없다.
+
+- **표시(읽기 전용)**: 동호수·전용면적·보증금·관리비(`mgmtFeeCaption`
+  텍스트만, 인터랙티브 tri-state 아님)·상태·대표 여부·URL(`safeUrl`)·
+  메모(`renderMd`)·안전 체크 9항목 전체(새 `safetyReadOnlyHTML` —
+  기존 편집용 `safetySectionHTML`의 select/input과 별개, 상태 라벨+
+  메모+출처+확인일만 텍스트로)·`lastCheckedAt`을 새 `daysAgoLabel()`
+  로 "n일 전 확인" 표시(게시중 확인 기록의 첫 가시화, B-115 연계
+  대상 확보).
+- **편집 신설 금지 준수**: 패널의 "수정" 버튼은 새 폼을 만들지 않고
+  기존 `cxListingEditMode.add(lid)`+`renderCxListings()`(B-91 인라인
+  수정모드)를 그대로 호출 — 패널은 닫히고 해당 행이 스크롤 포커스된다.
+- **동기화는 단일 지점**: 모든 매물 데이터 변경 경로(대표매물 설정·
+  게시중 확인·사라짐·가격변동·삭제·tri-state·안전체크·인라인 수정
+  저장/취소)가 공통으로 거치는 `renderCxListings()` 끝에
+  `renderListingDetailPanel()` 한 줄만 추가 — 개별 핸들러마다 동기화
+  호출을 따로 심을 필요가 없었고, 보던 매물이 삭제되면 함수 내부의
+  "찾으면 렌더, 없으면 닫기" 분기로 패널이 자동으로 닫힌다.
+- **행 클릭 vs 버튼 간섭 없음**: `#cxDetailListings` 위임 클릭에서
+  `e.target.closest('a,button,input,select,textarea')`면 무시 —
+  수정·삭제·URL·안전체크 select 등 기존 버튼/링크/폼 요소가 전부
+  이 태그들이라 별도 data-속성 화이트리스트 없이 한 줄로 충분했다.
+  기존 핸들러들과 `stopPropagation` 없이 병행해도 각자 독립적으로
+  `closest` 매칭 후 이르게 return하는 기존 패턴이라 충돌하지 않는다.
+- **닫기 경로 3종 전부 패널까지 정리**: `[data-close]` 제네릭 핸들러·
+  `.modal` 배경 딤 클릭 제네릭 핸들러·B-21 드래그다운 `finish()` 세
+  곳 모두 `complexDetailModal`을 닫을 때 `closeListingDetail()`도
+  같이 호출하도록 확장. `openComplexDetail()`도 진입 시 이전 패널을
+  리셋해 다른 단지로 전환할 때 잔존하지 않는다.
+- B-21 드래그다운은 `modal.querySelector('.box')`(첫 `.box`)에만
+  바인딩돼 있어 새 패널이 `class="box"`를 안 쓰므로 애초에 접점이
+  없다 — 모바일에서 패널이 열려있으면 화면을 완전히 덮어 아래
+  `.box`가 터치를 받지도 않는다(구조적으로 충돌 불가능).
+
+**검증**: Playwright(로컬 node UTF-8 정적 서버, `window.naver` 최소
+스텁, guest 세션) 데스크톱 1440×900+모바일 390×844 38개 체크 전부
+통과 — 행 클릭→패널 오픈+전체 필드(면적·보증금·관리비 캡션·상태·
+대표여부·"3일 전 확인"·안전체크 9항목 라벨+상태라벨+메모/출처)
+정확 표시, 패널이 단지 상세 박스 바로 왼쪽에 인접(gap 0)+폭
+380px, 다른 매물 클릭 시 스택 없이 1개만 교체, 정상 URL은
+`safeUrl` 통과 링크로·`javascript:` URL은 링크 자체 미생성, 메모
+`<img onerror>` 미실행+`onerror` 속성 자체가 렌더 결과에 없음
+(DOMPurify)+마크다운 굵게 정상 렌더, 행의 기존 버튼(수정·게시중
+확인) 클릭이 패널을 새로 열거나 잘못 닫지 않고 각자 동작 정상
+수행, 패널의 "수정"→기존 인라인 수정모드 진입+패널 닫힘, 닫기
+3종(뒤로=패널만/배경 클릭=패널+단지 상세 둘 다/상단 닫기 버튼=
+패널+단지 상세 둘 다) 각각 정확한 범위로 닫힘, 멀티 매물 왕복 후
+최신 클릭 매물로 정확히 표시, 보던 매물 삭제 시 패널 자동 닫힘,
+모바일 전체 화면 스택(뷰포트 100% 커버)+단지 상세 시트는 아래
+유지+뒤로로 복귀. `node --check` 통과.
+
+- **B-117 완료·push 완료**. 손 B의 B-114(`actions.js`+`style.css`)
+  미커밋 변경과 파일 충돌 없음.
+- **다음**: B-118(별도 지시).
+
+---
+
+# 이전 핸드오프 — B-104-5 완료 (2026-07-19)
 
 ## 최신 작업: 대시보드 D2 콤팩트 커맨드센터
 
