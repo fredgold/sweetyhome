@@ -1225,7 +1225,7 @@ async function saveAsComplexListing(data){
     safety:defaultListingSafety(),
   });
 
-  showPropToast(isNewComplex
+  toast(isNewComplex
     ? `새 단지 "${cx.complexName}"가 등록됐어요${(cx.lat&&cx.lng)?'':' · 좌표 확인 필요'}`
     : `기존 단지 "${cx.complexName}"에 매물이 추가됐어요`);
   tempParking=null; tempManagementFee=null; tempComplexPromotion=null;
@@ -1783,7 +1783,7 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
   const dupSkip=importParsedRows.filter(r=>r.listingDup).length;
   closeModal('propImportModal');
   save();renderProps();refreshOverview();
-  showPropToast(`단지 ${newCxCount}개 신규 · 매물 ${newListingCount}개 등록 완료 / 중복 매물 ${dupSkip}건 건너뜀`);
+  toast(`단지 ${newCxCount}개 신규 · 매물 ${newListingCount}개 등록 완료 / 중복 매물 ${dupSkip}건 건너뜀`);
   geocodeComplexBatch(newComplexIds);
 };
 async function geocodeComplexBatch(ids){
@@ -1797,13 +1797,6 @@ async function geocodeComplexBatch(ids){
     }catch(e){/* 좌표 확인 필요 상태로 남음 */}
   }
   save();renderComplexes();refreshOverview();
-}
-
-function showPropToast(msg){
-  let t=document.getElementById('propToast');
-  if(!t){t=document.createElement('div');t.id='propToast';t.className='prop-toast';document.body.appendChild(t);}
-  t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),3500);
 }
 
 document.getElementById('propBulkBtn').onclick=()=>{
@@ -1974,7 +1967,7 @@ function migApply(){
   save();
   closeModal('migPreviewModal');
   renderProps();
-  showPropToast(`단지 ${newComplexes}개 신규 · 매물 ${newListings}건 등록${skippedListings?` · 중복 ${skippedListings}건 건너뜀`:''} (기존 매물 목록은 그대로 유지돼요)`);
+  toast(`단지 ${newComplexes}개 신규 · 매물 ${newListings}건 등록${skippedListings?` · 중복 ${skippedListings}건 건너뜀`:''} (기존 매물 목록은 그대로 유지돼요)`);
 }
 /* B-47: 기준바(.gates) 접이식 — 자주 안 바뀌는 정보라 기본 접힘, 펼침 상태만 localStorage
    기억(모바일은 .gates 자체가 display:none이라 이 토글은 데스크톱에서만 실제로 보임) */
@@ -2203,10 +2196,10 @@ function drawMyLocMarker(){
   });
 }
 function requestMyLoc(){
-  if(!navigator.geolocation){ showPropToast('이 브라우저는 위치를 지원하지 않아요'); return; }
+  if(!navigator.geolocation){ toast('이 브라우저는 위치를 지원하지 않아요'); return; }
   navigator.geolocation.getCurrentPosition(
     p=>{ myLoc={lat:p.coords.latitude,lng:p.coords.longitude}; cxSort='dist'; drawMyLocMarker(); renderComplexes(); syncSortChips(); },
-    ()=>{ showPropToast('위치 권한이 필요해요'); if(cxSort==='dist'){cxSort='new';renderComplexes();syncSortChips();} }
+    ()=>{ toast('위치 권한이 필요해요'); if(cxSort==='dist'){cxSort='new';renderComplexes();syncSortChips();} }
   );
 }
 function renderComplexes(){
@@ -2852,7 +2845,7 @@ document.getElementById('cxDetailInfoEdit').addEventListener('click',e=>{
   save();
   renderComplexDetailBody(cx);
   renderComplexes();
-  showPropToast('단지 정보를 저장했어요');
+  toast('단지 정보를 저장했어요');
 });
 function renderComplexDetailBody(cx){
   renderComplexDetailInfo(cx);
