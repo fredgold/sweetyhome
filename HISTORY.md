@@ -6138,3 +6138,88 @@ js`의 생산 코드는 "파일 락 때문에" 그대로 남겨뒀다고 **손 B
 
 스크래치 파일 없음(임시 산출물 생성 안 함). 다음 배정은 커맨드센터
 발급 대기.
+
+---
+
+## 2026-07-19 — B-119 감사 후속 3건 (B-120+B-121)
+
+사용자가 B-119 감사의 결정 필요 항목 4건을 전건 승인해 발급된
+후속 작업. 손 B 부재로 파일 락 제약 없이 진행, 커밋 3개로 분리.
+
+### 커밋① `32dc48f` — HANDOFF.md 로테이션
+
+47개 핸드오프 엔트리·2,162줄(2026-07-18 B-84까지 소급)을 최신
+3개(당시 B-31/B-118/B-114)만 남기고 절삭, 최상단에 로테이션 규칙
+명시("최신 3개만 유지, 새 엔트리 추가 시 초과분 절삭"). 절삭분은
+git 이력과 `HISTORY.md`에 그대로 남아있어 정보 손실이 아님 —
+B-119가 B-90 항목 샘플 대조로 중복을 이미 확인한 바 있다.
+
+### 커밋② `4e7238b` — CLAUDE.md 서술 갱신
+
+`index.html` "~670줄" 서술을 실제 1,042줄로, `style.css` "~700줄"
+서술을 실제 1,509줄로 정정. 구조 개편 없이 수치만 최소 정정.
+
+### 커밋③ `b1bf51b` — 감사 소형 정리 묶음 (B-121)
+
+- **무소비 CSS 변수 계산 제거**: `properties.js`의 `updateNavHeightVar()`/
+  `updateOverlayTopVar()`(생산 함수 2개)와 이를 부르던 `initOverview()`/
+  `handleBreakpointChange()`/resize 리스너/scroll 리스너 호출 5곳을
+  삭제. 삭제 전 `--nav-h`/`--topbar-h`/`--overlay-top` 3개 변수를
+  `style.css` 전체에서 재grep해 소비처 0건을 재확인했다(B-53 이후
+  줄곧 죽어있던 코드, B-119가 처음 발견). 매 스크롤 프레임마다 발생
+  하던 `getBoundingClientRect`/`getComputedStyle`/`setProperty` 호출이
+  사라져 성능이 개선됐고, 애초에 어떤 CSS도 이 값을 읽지 않았으므로
+  시각적 변화는 없다.
+- **`claudeAPI` 이관**: `aiAvailable`/`claudeAPI()`/`aiUnavailableMsg()`/
+  `updateAiButtons()` 4개를 `properties.js`(로드순서 10번째)에서
+  `utils.js`(1번째, 모든 모듈보다 먼저 로드)로 이관. `actions.js`/
+  `assets.js`/`scraps-form.js`/`scraps-import.js`가 `properties.js`
+  보다 먼저 로드되면서도 `claudeAPI`를 참조하던 역방향 결합을
+  해소했다(B-119가 지적한 구조 문제). 함수 본문은 호출 시점에만
+  평가되므로 이관 자체로 인한 실행 순서 문제는 없음 — 이관 후 6개
+  호출부(actions/ai/assets/scraps-form×1/scraps-import/properties
+  내부 4곳) 전부 grep으로 재확인, `claudeAPI` 정의가 정확히 1곳임을
+  확인했다. `CLAUDE.md`의 `ai.js` 서술도 함께 정정(claudeAPI가
+  ai.js에 있다는 기존 오기를 "AI 채팅 UI (claudeAPI()는 utils.js)"로
+  바로잡음 — 이관으로 인해 새로 필요해진 정정이라 커밋③에 함께 포함).
+- **고아 함수 삭제**: `nav.js`의 `assetTotal(){return sumMobImmediate();}`
+  — 정의 외 참조 0건 재확인 후 삭제.
+- **미사용 CSS 25개 삭제**: `.side`·`.scard`(+`h3`/`.desc`)·`.task`
+  (+`.box`/`.tx`)·`.arow`(+`.ai`/`.al`/`.aname`/`.ahint`/`.av`/`.unit`)·
+  `.atotal`(+`.tl`/`.tv`)·`.c-top-left`·`.og-card .og-info`/`.og-title`/
+  `.og-desc`·`.split-placeholder`·`.slash-desc`·`.slash-none`·
+  `.pam-header`/`.pam-arrow`/`.pam-list`/`.pam-item`(+`.pam-high`)·
+  `.c-line`·`.atab.soon`(+`:hover`/`em`) — 모바일 미디어쿼리 내 중복
+  선언분(`.arow .av input{width:96px}`·`.scard{padding:12px}`·
+  `.scard h3{...}`·`.side{gap:12px}`) 포함. 삭제 직전 각 클래스를
+  `index.html`+`js/*.js`+`mockups/`까지 따옴표 경계 포함 정밀
+  재grep해 실사용 0건을 재확인했다(동적 클래스 조합 오탐 없음).
+  `style.css` 1,509→1,462줄(47줄 감소), 삭제 후 중괄호 balance
+  1005/1005 재확인.
+- **무접촉 확인**: 레거시 `state.properties[]` CRUD 23곳, 매물↔단지
+  마이그레이션 프리뷰 죽은 코드(~160줄)는 지시대로 손대지 않음 —
+  B-05(레거시 완전 삭제) 몫. `properties.js` 파일 분할도 이번엔
+  손대지 않음 — B-05 완료 후 재평가하기로 사용자가 이미 결정한
+  사항(B-119 처리 이력 참고).
+
+### 검증
+
+`node --check` 전체 13개 js 파일 통과. Playwright로 로컬 스모크 —
+처음엔 `python3 -m http.server`를 썼다가 Content-Type에 charset이
+없어 브라우저가 한글 정규식 리터럴을 다른 인코딩으로 오해석해
+`state.js` 파싱 자체가 깨지는(`state`/`OWNERS`/`initOverview`/`load`
+전부 `ReferenceError`) 거짓 실패를 발견 — 원인이 테스트 하네스임을
+확인하고 Node `http`로 자체 서버를 작성해(모든 응답에 `charset=utf-8`
+명시) 재실행했다. `window.naver` 최소 스텁 + marked/DOMPurify/Tiptap
+CDN 스텁, 데스크톱 1440×900+모바일 390×844 양쪽에서 게스트 로그인
+→ 5개 탭(대시/자산/매물/액션/수집함) 순회 전환+스크롤 — **콘솔
+에러 0건**(파비콘 404 2건은 테스트 서버의 정적 경로 처리 차이일
+뿐 실제 파일 존재 확인, 코드 무관). `typeof claudeAPI==='function'`
+양쪽 뷰포트 확인(참조 오류 없이 이관 성공), `typeof assetTotal
+==='undefined'`로 완전 제거 확인, `--nav-h`의 computed value가
+빈 문자열로 소비처 0 재확인. 스크래치 스모크 스크립트는 실행 후
+삭제(프로젝트 트리에 남기지 않음).
+
+**→ B-120+B-121 완료·커밋 3개(`32dc48f`/`4e7238b`/`b1bf51b`)**. 다음은
+사용자 별도 지시 대기 — B-05 착수 시 이번에 무접촉한 레거시 23곳+
+마이그레이션 ~160줄이 그 대상이 된다.

@@ -1,7 +1,72 @@
-# HANDOFF — B-31 완료 (2026-07-19) ⚠️ 손 B 구현 → 손 A 인수 마무리
+# HANDOFF — B-120+B-121 완료 (2026-07-19) 감사 후속: 문서 로테이션+소형 정리
 
 > **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
 > 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
+
+## 최신 작업: B-119 감사 후속 — HANDOFF 로테이션·CLAUDE.md 정정·소형 정리 3건
+
+```
+32dc48f docs: HANDOFF.md 로테이션 — 최신 3개만 유지 (B-120)
+4e7238b docs: CLAUDE.md 파일 규모 서술 갱신 (B-120)
+b1bf51b refactor: 감사 소형 정리 묶음 (B-121)
+```
+
+B-119 감사 보고(`f6a017c`)에서 사용자가 전건 승인한 후속 작업.
+손 B 부재로 파일 락 제약 없이 진행. 커밋 3개로 분리.
+
+**커밋① HANDOFF.md 로테이션**: 47개 엔트리·2,162줄(B-84까지 소급)을
+최신 3개(당시 B-31/B-118/B-114)만 남기고 절삭, 최상단에 로테이션
+규칙 명시. 절삭분은 git 이력·`HISTORY.md`에 그대로 남아있어 정보
+손실 아님(B-119가 샘플 대조로 중복 확인함).
+
+**커밋② CLAUDE.md 서술 갱신**: `index.html` "~670줄"→실제 1,042줄,
+`style.css` "~700줄"→실제 1,509줄로 정정. 구조 개편 없이 수치만.
+
+**커밋③ 감사 소형 정리**(`properties.js`+`utils.js`+`nav.js`+
+`style.css`+`CLAUDE.md`):
+- `properties.js`의 `--nav-h`/`--topbar-h`/`--overlay-top` 계산
+  코드(생산 함수 2개+스크롤 리스너+호출 5곳) 삭제 — B-53(`13a4b37`)
+  이후 `style.css` 소비처가 0건이었음을 삭제 전 재확인(grep). 매
+  스크롤 프레임마다 발생하던 `getBoundingClientRect`/
+  `getComputedStyle`/`setProperty` 호출이 사라짐(성능 개선,
+  시각적 변화 없음 — 애초에 아무 CSS도 이 값을 안 읽었으므로).
+- `claudeAPI`+`aiAvailable`+`aiUnavailableMsg`+`updateAiButtons`를
+  `properties.js`(로드순서 10번째)에서 `utils.js`(1번째)로 이관.
+  `actions.js`/`assets.js`/`scraps-form.js`/`scraps-import.js`가
+  `properties.js`보다 먼저 로드되면서도 `claudeAPI`를 참조하던
+  역방향 결합을 해소. `CLAUDE.md`의 `ai.js` 서술도 함께 정정
+  (claudeAPI 실제 위치가 ai.js가 아니었던 기존 오기까지 바로잡음).
+- 고아 함수 `assetTotal()`(`nav.js`, 정의 외 참조 0건) 삭제.
+- 미사용 CSS 셀렉터 25개 삭제 — 삭제 직전 각각 `index.html`+
+  `js/*.js`+`mockups/`까지 재검증(따옴표/경계 포함 정밀 grep,
+  동적 클래스 조합 오탐 없음 확인). `.side`/`.scard`/`.task`
+  (+`.box`/`.tx`)/`.arow`/`.atotal`/`.c-top-left`/`.og-info`/
+  `.og-title`/`.og-desc`/`.split-placeholder`/`.slash-desc`/
+  `.slash-none`/`.pam-*`(5개)/`.c-line`/`.atab.soon` 계열.
+- **레거시 `state.properties[]` CRUD 23곳·마이그레이션 프리뷰
+  죽은 코드(~160줄)는 지시대로 무접촉** — B-05 몫.
+- **`properties.js` 분할은 이번에 손대지 않음** — B-05 완료 후
+  재평가 확정 사항(사용자 결정, 2026-07-19).
+
+**검증**: `node --check` 전체 13개 js 파일 통과. `style.css` 중괄호
+balance(1005/1005) 확인. Playwright(로컬 Node UTF-8 정적 서버 —
+Python `http.server`는 Content-Type charset 누락으로 한글 정규식이
+깨져 오탐 발생하는 걸 발견해 자체 Node 서버로 교체, `window.naver`
+최소 스텁, marked/DOMPurify/Tiptap CDN 스텁) 데스크톱 1440×900+
+모바일 390×844 양쪽에서 게스트 로그인 후 5개 탭(대시/자산/매물/
+액션/수집함) 전환+스크롤 실행 — **콘솔 에러 0건**(파비콘 404 2건은
+테스트 서버 자체의 정적 경로 처리 차이일 뿐 실제 파일 존재, 코드
+무관). `typeof claudeAPI==='function'` 양쪽 뷰포트 확인(참조
+오류 없음, 이관 성공). `typeof assetTotal==='undefined'`로 완전
+제거 확인. `--nav-h` computed value가 빈 문자열로 소비처 0 재확인.
+
+- **B-120+B-121 완료. 커밋 3개(`32dc48f`/`4e7238b`/`b1bf51b`)**.
+- **다음**: 사용자 별도 지시 대기. B-05(레거시 완전 삭제, 손 B
+  복귀 후) 착수 시 이번에 무접촉한 23곳+~160줄이 그 대상.
+
+---
+
+# 이전 핸드오프 — B-31 완료 (2026-07-19) ⚠️ 손 B 구현 → 손 A 인수 마무리
 
 ## 최신 작업: 모바일 하단 탭바
 
@@ -236,66 +301,4 @@ drop측 `commuteMemo`에 삽입)가 실제 `<img>` 태그로 파싱되지
   미커밋 변경과 파일 충돌 없음.
 - **다음**: 별도 지시 대기(B-118로 실사용 피드백 3차 5건 전부
   발급 완료 — 커맨드센터 후속 판단).
-
----
-
-# 이전 핸드오프 — B-114 완료 (2026-07-19)
-
-## 최신 작업: 액션 순서 변경 — 드래그앤드롭 + 우선순위
-
-```
-765cbba feat: 액션 순서 드래그앤드롭 적용 (B-114)
-```
-
-`js/actions.js`(+129/-5줄)+`style.css`(+25/-2줄). 기존
-`actions[].priority`만 재부여해 스키마 변경 없음. `BACKLOG.md`
-무접촉. 손 A의 B-117(`properties.js`+`index.html`+`style.css`)이
-먼저 `932b794`/`9e145ca`로 push된 뒤 최신 origin/master에서
-`style.css` diff 비중첩을 확인하고 적용했다.
-
-- **데스크톱 드래그**: 미완료 행 왼쪽에 전용 손잡이(`⋮⋮`)를 추가.
-  손잡이에서만 HTML5 drag가 시작되므로 체크·인라인 편집·행 내부
-  버튼과 충돌하지 않는다. 같은 그룹 안의 앞/뒤 배치뿐 아니라
-  일반↔매물준비↔계약 칼럼 간 drop도 지원하며, 칼럼을 넘으면 기존
-  `category` 값까지 함께 변경한다. 빈 칼럼도 drag 중에는 제목+drop
-  영역을 표시해 진입 가능하다.
-- **저장 방식**: 이동 결과의 미완료 항목을 전역 우선순위 순으로
-  1..N 재번호화하고 기존 `save()`를 호출한다. 완료 구획은 drag
-  대상에서 제외하며 기존 done→priority 정렬을 그대로 유지한다.
-  대시보드 Top3도 이동 직후 다시 렌더된다.
-- **★ 충돌 정책**: 미완료 중 priority 최솟값 하나를 기존 의미대로
-  "맨 위 고정"으로 취급한다. 이 행 자체는 드래그/▲▼가 비활성이고
-  다른 행도 그 위로 이동할 수 없다. 고정 행을 옮기고 싶으면 먼저
-  다른 행의 ★를 눌러 고정 대상을 교체한다. ★가 어느 칼럼에 있든
-  전역 최우선이며 해당 그룹에서도 첫 행을 유지한다.
-- **필터 정책**: 검색 또는 분류 필터 중에는 숨은 행 사이 삽입 위치가
-  모호하므로 순서 손잡이와 ▲▼를 잠근다. 필터를 해제하면 즉시 다시
-  활성화된다.
-- **모바일 폴백**: 899px 이하에서는 불안정한 터치 drag 손잡이를
-  숨기고 각 행 왼쪽에 ▲▼를 표시한다. 같은 그룹 안에서 순서를 바꿀
-  수 있고 경계/★ 행 버튼은 disabled다. 데스크톱 손잡이는 포커스 후
-  ArrowUp/ArrowDown 키보드 이동도 지원한다.
-- **피드백**: drag 행 반투명, 삽입선, 대상 칼럼 배경만 기존 money
-  토큰으로 표시. 성공 시 기존 B-93 `toast()` 경로로 "순서를
-  바꿨어요"/"분류와 순서를 바꿨어요"를 알린다.
-
-**검증**: Playwright 실제 앱+Redis API mock, 미완료 12건/완료 2건.
-1440×900에서 AC3 3칼럼·손잡이 표시, 같은 그룹 재정렬과 칼럼 간
-category 변경, POST 저장 후 새로고침 순서/분류 유지, ★ 교체 후
-기존 고정 행 이동 가능+새 고정 행 이동 불가, 검색 중 순서 UI 잠금,
-인라인 편집 왕복, 추가→완료→삭제, 담당·마감 뱃지, 완료 구획
-drag 제외를 확인했다. 1440×500에서는 액션 패널 내부
-`maxScroll=226px`/document `maxScroll=0`, 입력은 draggable=false.
-390×844에서는 1칼럼·손잡이 숨김·▲▼ 표시/아래→위 왕복,
-document `maxScroll=0`, 가로 overflow 0,
-`overflow-y:auto`+`overscroll-behavior:contain`. 저장 POST 10회,
-브라우저 오류 0. `node --check js/actions.js`, `git diff --check`
-통과.
-
-로컬·미커밋 캡처:
-`mockups/b114-actions-reorder-{1440,390}.png`.
-
-- **B-114 완료. 제품 커밋 `765cbba`; 이 HANDOFF/HISTORY 문서
-  커밋과 함께 origin/master 반영.**
-- **다음**: 사용자 별도 지시.
 
