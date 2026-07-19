@@ -5763,3 +5763,144 @@ B-118(별도 지시).
 
 **→ B-114 완료**(`765cbba` + 이 HISTORY/HANDOFF 문서 커밋).
 두 커밋 모두 origin/master에 push 완료. 다음은 사용자 별도 지시.
+
+---
+
+## 2026-07-19 — B-118: 단지 병합 도구 — 중복 단지 정리 (커밋 1개, 실사례: 가양6단지 2개)
+
+B-19확(매칭 제안)이 있어도 표기 차이(예: "가양6단지" vs "가양6단지
+(재건축)")로 실제 중복 단지가 발생한다는 실사용 보고에 대한 사후
+정리 도구. `index.html`(+1줄)+`js/properties.js`(+261줄) 수정,
+`style.css`·`state.js`·`BACKLOG.md` 전부 무접촉 — 기존
+`.modal`/`.box`/`.mhead`/`.mbody`/`.cx-dl`/`.status-picker`/
+`.sp-opt`/`.btn-ghost`/`.btn-save` CSS만으로 UI 전체를 구성할 수
+있어 신규 CSS가 0줄이었다.
+
+### 진입점·구조
+
+단지 상세 mhead에 "⋯" 버튼(`cxDetailMoreBtn`)을 새로 추가하고,
+클릭 시 항목 1개짜리 드롭다운("다른 단지와 병합")을 연다 — 기존
+`showRouteMenu`/`showExportMenu`가 쓰던 `.status-picker.route-menu`
+패턴 그대로 재사용, 접기 숨김이 아니라 명시 항목으로 노출된다.
+
+병합 도구 자체는 `cxMatchInjectUI`(B-19확)와 동일한 방식으로
+`document.body.insertAdjacentHTML`로 `#cxMergeModal`을 동적
+주입한다 — `index.html`에 새 정적 마크업을 추가하지 않아 파일
+락 범위를 최소화했다. 제네릭 `[data-close]`/`.modal` 배경클릭
+핸들러는 스크립트 로드 시점에 이미 DOM을 스냅샷해 나중에
+동적으로 추가된 이 모달까지 자동으로 못 잡는다는 걸 B-19확
+코드에서 이미 확인했던 대로, 배경 클릭·닫기 버튼을 IIFE 안에서
+직접 수동으로 연결했다(`cxMatchInjectUI`와 동일 패턴).
+
+### 3단계 마법사 — 매 단계 사용자 확정, 자동 병합 절대 금지
+
+1. **후보 선택**: `findComplexCandidates()`/`cxMatchReason()`
+   (B-19확이 이미 만든 이름 유사·좌표 300m 이내 후보 로직)을
+   그대로 재사용해 후보를 먼저 보여주고, 직접 검색 입력도 함께
+   제공(로직 중복 구현 없음).
+2. **방향 선택**: 두 단지를 나란히(각자 소속 매물 건수 포함)
+   보여주고 어느 쪽을 남길지 명시적으로 고른다.
+3. **필드별 충돌 미리보기**: `cxComputeMerge(keep,drop)`(순수
+   함수 — 실행 전까지 실제 `state` 객체를 전혀 건드리지 않고
+   얕은 복사본만 계산)의 결과를 전부 나열해서 보여준다. 남길 값
+   기본, keep 쪽이 비어있을 때만 drop 값으로 채우고 "(상대 단지
+   값으로 채움)" 표시가 붙는다. 양쪽 다 대표매물이 있으면 "남는
+   단지 것을 유지한다"는 결과를 미리 경고 문구로 알린다. "병합
+   확정" 버튼을 눌러야만 실행 단계로 진행된다.
+
+### 병합 규칙(필드 종류별로 다르게 처리)
+
+- 단순 텍스트/숫자 14종(주소·역·노선·준공연도·강남/신사 레거시
+  통근·메모·장단점·판단·출퇴근메모 등)은 keep이 비어있을 때만
+  drop 값으로 채운다.
+- 세대수+세대수등급, 좌표(lat+lng), 주차+주차상태는 **짝으로
+  함께** 채운다 — 하나만 채우면 값과 등급/상태가 불일치하는
+  데이터가 생기기 때문.
+- `favorite`은 빈값 채움이 아니라 OR 규칙(둘 중 하나라도
+  즐겨찾기였으면 병합 후에도 유지) — boolean 필드라 "빈값" 개념이
+  안 맞아 별도 규칙을 뒀다.
+- `commutes[]`(통근 기준지 2인 기록)는 인덱스별로 개별 빈값
+  판정 후 채운다.
+- 단지명·`complexStatus`·`id`·`createdAt`은 항상 keep 쪽으로
+  고정하고 채움 대상에서 제외했다 — "어느 쪽 정보를 우선할지"
+  선택의 핵심 의미가 바로 이것(정체성·상태 판단은 안 섞임).
+
+### 실행(`cxMergeExecute`)과 백업
+
+`backupBeforeMerge()`가 두 단지+소속 매물 전체를 `localStorage`의
+`sh_mergeBackup_<timestamp>` 키에 JSON으로 저장한다. **백업이
+실패하면(브라우저 저장 공간 초과 등) 병합 자체를 진행하지 않고
+alert로 알린 뒤 중단**한다 — 지시서가 제시한 두 방식(기존 내보내기
+파일 재사용 vs localStorage 백업 키) 중 후자를 택했다. 파일
+다운로드는 브라우저 팝업 차단이나 저장 위치를 사용자가 놓칠 수
+있는 반면, localStorage 키 저장은 실패 여부를 코드가 즉시 확실히
+알 수 있어 "백업 없이는 병합 진행 안 함"이라는 요구를 더 안전하게
+지킬 수 있다고 판단했다.
+
+이후 `listings[].complexId`를 keep으로 일괄 이관하고, 양쪽 다
+대표매물이 있었다면 keep 쪽 대표는 유지하고 drop 쪽에서 넘어온
+대표는 해제한다. `state.complexes`에서 drop을 제거하고, 임장 루트
+선택 Set(`routeSelected`)에서도 drop id를 제거한 뒤 `save()`한다.
+
+**부수 발견·실행 전 수정**: 화면 갱신에 처음엔 `openComplexDetail
+(keep.id)`를 그대로 재사용하려 했으나, 이미 열려있는
+`complexDetailModal`에 `openModal()`을 한 번 더 부르면
+`lockBodyScroll()`의 참조 카운터가 여분으로 하나 더 늘어나
+이후 모달을 닫아도 `unlockBodyScroll()` 카운트가 0에 도달하지
+못해 body 스크롤 잠금이 안 풀리는 버그가 될 뻔했다 — 실행 전
+코드 검토로 발견해 수정, 모달을 다시 열지 않고 `cxDetailId`만
+갱신한 뒤 `renderComplexDetailBody`+`renderComplexes`로 내용만
+새로 그리는 방식으로 바꿨다.
+
+### 삭제된 단지 참조 잔존 0 — 전수 확인 방법과 결과
+
+`properties.js` 전체에서 `complexId`/`cxDetailId`/`.complexes`
+참조를 grep해 상태를 지속적으로 들고 있을 수 있는 지점을 전수
+조사했다. **실제로 복합 id를 캐싱하는 곳은 전역 변수
+`cxDetailId`와 Set `routeSelected` 단 둘뿐**이었다 — 나머지
+(`ovMarkers[]._cxid`, `lastVisibleMapKey`/`lastMarkerRenderKey`,
+`highlightCxCard`/`cxStripCenterId` 등)는 전부 매 렌더마다
+`state.complexes`/`state.listings`에서 새로 계산되는 파생값이라
+별도 정리가 불필요했다. 다른 파일(`nav.js`/`boot.js`/`actions.js`/
+`assets.js`/`scraps-*.js`/`ai.js`/`profile.js`)도 grep했는데
+`nav.js`의 대시보드 요약 카운트 계산 1곳만 `state.complexes`를
+참조했고 이 역시 매 렌더 시점에 그대로 읽는 파생 계산이라
+무관했다. `cxListingEditMode`/`cxSafetyExpanded`는 매물(listing)
+id 기준이라 애초에 무관 — 매물 자체는 삭제되지 않고 `complexId`
+만 바뀌므로 편집 중이던 상태도 병합 후 그대로 유효하다.
+
+**검증**: Playwright(로컬 node UTF-8 정적 서버, `window.naver`
+최소 스텁, 비guest 세션+`/api/state` GET/POST 모킹) 데스크톱
+1440×900, 단지 2개(가양6단지/가양6단지(재건축))·매물 3+2건
+fixture로 57개 체크 전부 통과:
+
+- ⋯ 메뉴 진입점 노출, 1~3단계 각각의 화면 전환(뒤로 버튼 2곳
+  포함).
+- **취소 4가지 경로**(1단계 닫기버튼·1단계 배경클릭·2단계 취소·
+  3단계 취소) **전부 데이터 무변경(단지 2개·매물 5건 그대로)+
+  백업 키 미생성** 확인.
+- 3단계 미리보기의 XSS 페이로드(`<img onerror>`, drop측
+  `commuteMemo`에 삽입)가 실제 `<img>` 태그로 파싱되지 않고
+  이스케이프 텍스트(`&lt;img`)로만 노출+스크립트 미실행.
+- 실행 후 단지 1개로 감소+매물 5건 손실 없이 전부 이관(3+2→
+  keep에 5), 대표매물 정확히 1개 보장(남는 쪽 유지·이관된 쪽
+  해제), 14개 텍스트 필드 중 실제로 빈 필드만 정확히 채워짐
+  (station/line/yearBuilt/pros 등 실측), 세대수+등급·좌표·주차
+  짝 채움, `commutes[0]` 채움, 이미 값 있던 필드(주소·좌표)는
+  유지, favorite OR 규칙, `complexStatus`는 채움 대상 아니고
+  keep 값 고정 — 전부 실측 확인.
+- 병합 도구 모달만 닫히고 단지 상세는 유지된 채 keep 기준으로
+  갱신(제목이 살아남은 단지명으로 정확히 표시).
+- 백업 스냅샷에 두 단지+매물 5건 전체 포함 확인.
+- **잔존 검사**: `JSON.stringify(state)`에 삭제된 단지 id 없음+
+  `routeSelected`에 없음+`cxDetailId`가 가리키지 않음 — 전부 통과.
+- 병합 후 요약 카운트·지도 마커 배열·단지 카드 목록이 1개로 갱신.
+- Redis 왕복: `flushPendingSync()` 강제 후 POST 바디에 병합된
+  단지 1개+매물 5건+삭제 id 잔존 없음 확인.
+
+`node --check` 통과.
+
+**→ B-118 완료·push 완료**(`cbe5917`). 손 B의 B-31
+(`nav.js`+`style.css`)과 파일 충돌 없음. 실사용 피드백 3차
+5건(B-112~118) 전부 발급·완료 — 다음은 커맨드센터 후속 판단
+대기.
