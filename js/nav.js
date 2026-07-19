@@ -163,7 +163,6 @@ function sumAmount(){return assetItems().reduce((s,it)=>s+(+it.amount||0),0);}
 function sumMob(){return assetItems().reduce((s,it)=>s+(+it.mobilizable||0),0);}
 function sumMobImmediate(){return assetItems().filter(it=>it.liquidity==='즉시').reduce((s,it)=>s+(+it.mobilizable||0),0);}
 function sumByOwner(o){return assetItems().filter(it=>it.owner===o).reduce((s,it)=>s+(+it.amount||0),0);}
-function assetTotal(){return sumMobImmediate();} // 실제 동원 가능(즉시) 기준
 
 function renderGates(){
   const p=state.profile;

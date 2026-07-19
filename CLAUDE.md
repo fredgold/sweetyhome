@@ -38,7 +38,7 @@ js/
   assets.js             자산 테이블 렌더·편집·노트
   properties.js         매물 폼·카드·지도·AI 평가·가중치·내보내기
   profile.js            프로필 모달·마일스톤
-  ai.js                 claudeAPI()·AI 채팅 UI
+  ai.js                 AI 채팅 UI (claudeAPI()는 utils.js)
   boot.js               renderAll() + load() 호출 (최후 로드)
 ```
 

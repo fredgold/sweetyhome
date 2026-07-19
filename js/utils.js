@@ -468,3 +468,31 @@ function showEditorFallbackNote(afterEl){
   note.textContent='편집기를 불러오지 못해 기본 입력창으로 표시돼요.';
   afterEl.insertAdjacentElement('afterend',note);
 }
+
+// ── AI 연동 (claudeAPI) — B-121: properties.js에서 이관.
+//    actions/assets/scraps-form/scraps-import가 properties.js보다
+//    먼저 로드되면서도 claudeAPI를 참조하던 역방향 결합 해소 ──
+let aiAvailable=null;
+async function claudeAPI(messages,tools,system){
+  if(aiAvailable===false) throw new Error('AI_UNAVAILABLE');
+  const body={model:"claude-haiku-4-5-20251001",max_tokens:1000,messages};
+  if(tools) body.tools=tools;
+  if(system) body.system=system;
+  const res=await fetch("/api/messages",{method:"POST",headers:authHeaders(),body:JSON.stringify(body)});
+  const data=await res.json();
+  if(data.error){
+    if(data.error.message && data.error.message.includes('credit balance')){
+      aiAvailable=false; updateAiButtons();
+      throw new Error('AI_UNAVAILABLE');
+    }
+    throw new Error(data.error.message||data.error);
+  }
+  return (data.content||[]).filter(i=>i.type==="text").map(i=>i.text).join("\n");
+}
+function aiUnavailableMsg(){ return 'AI 크레딧 충전 필요 → console.anthropic.com'; }
+function updateAiButtons(){
+  if(aiAvailable===false){
+    const s=document.getElementById('chatApiStatus');
+    if(s){s.className='ai-status warn';s.textContent='⚠️ AI 기능은 크레딧 충전이 필요해요. → console.anthropic.com';}
+  }
+}

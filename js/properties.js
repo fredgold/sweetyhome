@@ -48,9 +48,6 @@ function checklistHTML(p){
 
 function waitNaverMaps(cb){ if(typeof naver!=='undefined'&&naver.maps){cb();} else {setTimeout(()=>waitNaverMaps(cb),120);} }
 function initOverview(){
-  /* switchPanel('props') 진입마다 재측정 — 로그인 게이트 해제 직후 등 최초 --topbar-h
-     측정 시점에 header/apptabs 레이아웃이 아직 최종 상태가 아니었을 수 있는 경우 보정 */
-  updateNavHeightVar();
   waitNaverMaps(()=>{
     if(overview){refreshOverview();return;}
     overview=new naver.maps.Map('overviewMap',{center:new naver.maps.LatLng(CENTER[0],CENTER[1]),zoom:13,scrollWheel:true,zoomControl:true,zoomControlOptions:{position:naver.maps.Position.TOP_RIGHT}});
@@ -167,58 +164,25 @@ function setMapExpanded(on){
   if(btn) btn.textContent=on?'작게 보기':'크게 보기';
   setTimeout(()=>overview&&overview.refresh(true),300);
 }
-/* --nav-h 갱신 + sticky 탭 네비 높이가 바뀔 수 있는 모든 계기(리사이즈·브레이크포인트 전환)에서
-   지도 refresh(true) 재호출. 900px 경계를 "진입"할 때는 모바일 전용 상태(풀스크린·접기)가
-   남아있으면 2단 그리드가 깨지므로 강제 초기화 */
-function updateNavHeightVar(){
-  const nav=document.querySelector('.apptabs');
-  document.documentElement.style.setProperty('--nav-h',(nav?nav.getBoundingClientRect().height:64)+'px');
-  /* --topbar-h: header+apptabs를 합친, 뷰포트 상단에서 실제 콘텐츠가 시작되는 지점.
-     switchPanel()이 매번 scrollTo(top:0)을 호출하므로 이 시점의 .apptabs bottom이
-     header 높이까지 포함한 안정적인 값 — 모바일 매물탭 풀스크린 지도뷰(#panel-props)의
-     top 기준으로 사용(--nav-h는 apptabs 자체 높이만이라 헤더와 겹침) */
-  document.documentElement.style.setProperty('--topbar-h',(nav?nav.getBoundingClientRect().bottom:110)+'px');
-  updateOverlayTopVar();
-}
-/* --overlay-top: 모바일 매물탭 지도 위 오버레이(정렬칩·뷰토글·⋯버튼)의 top 기준값.
-   지도뷰는 #panel-props가 overflow:hidden이라 페이지가 항상 scrollY=0 → --topbar-h와 동일.
-   리스트뷰는 페이지가 실제로 스크롤되는데, header는 sticky가 아니라 스크롤에 딸려 올라가고
-   .apptabs만 top:0에 들러붙어 남음 — 오버레이가 --topbar-h(헤더 포함 높이)에 고정된 채면
-   스크롤 후 apptabs만 남은 좁은 공간을 넘어 카드 위에 얹힘. scrollY만큼 topbar-h에서 빼되
-   apptabs 자체 높이(nav-h) 밑으로는 내려가지 않게 클램프해 항상 탭바 바로 아래에 붙게 함 */
-function updateOverlayTopVar(){
-  const navH=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'))||64;
-  const topbarH=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h'))||110;
-  const top=Math.max(navH,topbarH-window.scrollY);
-  document.documentElement.style.setProperty('--overlay-top',top+'px');
-}
-let _overlayTopRaf=null;
-window.addEventListener('scroll',()=>{
-  if(_overlayTopRaf) return;
-  _overlayTopRaf=requestAnimationFrame(()=>{ _overlayTopRaf=null; updateOverlayTopVar(); });
-},{passive:true});
 function handleBreakpointChange(e){
   if(e.matches){
     document.getElementById('mapcard').classList.remove('expanded','collapsed');
     const btn=document.getElementById('mapExpand'); if(btn) btn.textContent='크게 보기';
     const tbtn=document.getElementById('mapToggle'); if(tbtn) tbtn.textContent='접기';
   }
-  updateNavHeightVar();
-  /* --nav-h 변경이 #overviewMap의 calc() 높이에 반영되는 레이아웃·페인트가 끝난 뒤에
-     불러야 해서 이중 rAF로 한 프레임 넘김 (동기 호출하면 갱신 전 크기로 refresh(true)가
+  /* 브레이크포인트 전환 직후 레이아웃·페인트가 끝난 뒤에 refresh해야 해서
+     이중 rAF로 한 프레임 넘김 (동기 호출하면 갱신 전 크기로 refresh(true)가
      실행돼 새로 넓어진 영역의 타일이 안 채워지는 문제가 실측됨) */
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     waitNaverMaps(()=>overview&&overview.refresh(true));
   }));
 }
 DESKTOP_MQ.addEventListener('change',handleBreakpointChange);
-updateNavHeightVar();
 (()=>{
   let raf=null;
   window.addEventListener('resize',()=>{
     if(raf) cancelAnimationFrame(raf);
     raf=requestAnimationFrame(()=>{
-      updateNavHeightVar();
       requestAnimationFrame(()=>{ if(overview) overview.refresh(true); });
     });
   });
@@ -561,30 +525,6 @@ function setFormPin(lat,lng,recenter){
 }
 function clearFormPin(){ if(formMarker&&formMapObj){formMarker.setMap(null);} formMarker=null; tempLatLng=null; }
 
-let aiAvailable=null;
-async function claudeAPI(messages,tools,system){
-  if(aiAvailable===false) throw new Error('AI_UNAVAILABLE');
-  const body={model:"claude-haiku-4-5-20251001",max_tokens:1000,messages};
-  if(tools) body.tools=tools;
-  if(system) body.system=system;
-  const res=await fetch("/api/messages",{method:"POST",headers:authHeaders(),body:JSON.stringify(body)});
-  const data=await res.json();
-  if(data.error){
-    if(data.error.message && data.error.message.includes('credit balance')){
-      aiAvailable=false; updateAiButtons();
-      throw new Error('AI_UNAVAILABLE');
-    }
-    throw new Error(data.error.message||data.error);
-  }
-  return (data.content||[]).filter(i=>i.type==="text").map(i=>i.text).join("\n");
-}
-function aiUnavailableMsg(){ return 'AI 크레딧 충전 필요 → console.anthropic.com'; }
-function updateAiButtons(){
-  if(aiAvailable===false){
-    const s=document.getElementById('chatApiStatus');
-    if(s){s.className='ai-status warn';s.textContent='⚠️ AI 기능은 크레딧 충전이 필요해요. → console.anthropic.com';}
-  }
-}
 let tempComplexPromotion=null;
 function parseNaver(t){
   const r={};
