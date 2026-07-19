@@ -6277,3 +6277,122 @@ B-41(임장 노트) 착수 예정이었으나, `BACKLOG.md`에 "착수 전
 커맨드센터가 B-27-lite 안전체크 입력 UI와 중복 검토 후 스펙 확정"
 전제조건이 명시돼 있고 이 전제가 아직 충족되지 않은 상태를 확인함
 — 스펙 미확정 상태로 임의 구현하지 않고 사용자에게 확인 요청.
+
+---
+
+## 2026-07-20 — B-41 임장 노트 — 단지 현장 관찰 기록
+
+커맨드센터·사용자가 2026-07-19 확정한 스펙 지시서로 착수. BACKLOG의
+"스펙 확정 선행" 조건은 이 지시서로 충족, B-27-lite 중복 검토 완료
+(안전체크=매물 단위 계약·서류 확인, 임장 노트=단지 단위 현장 관찰 —
+엔티티·목적 상이로 비중복, 입력 UI 패턴만 재사용). 손 B 부재로 파일
+락 제약 없이 진행, 2커밋(`4391487`/`0b66556`) 분리.
+
+### 스키마 (`js/state.js`)
+
+`complexes[].fieldNote = {visitedAt(날짜 문자열|null), items:{
+[FIELD_NOTE_ITEMS[].key]: {rating(null|1~5 정수), memo('')} },
+memo('', 자유 메모)}`. `FIELD_NOTE_ITEMS`(주차·밤길·상권·소음·
+경사도·관리상태 6개)를 `SAFETY_ITEMS`와 동일 패턴으로 신설,
+`defaultFieldNoteItem()`/`defaultComplexFieldNote()` 헬퍼 추가.
+
+`applyGuards()`는 `listings[].safety`와 동일하게 `complexes[].
+fieldNote`를 **항목별로 병합**한다 — 일부 항목만 저장된 기존
+데이터도 나머지 항목이 기본값으로 채워져 무손실. `rating` 검증은
+`Number()`로 관대하게 변환(다른 필드의 문자열 숫자 파싱 관례와
+동일 — 예: `'3'`→3 정상 수용)한 뒤 1~5 사이 정수인지만 확인 —
+범위밖(99)·0·음수(-1)·소수(3.5)·비수치 문자열('abc')·비객체
+값은 전부 `null`로 되돌려 미입력과 1점을 엄격히 구분하는 스펙을
+보호한다. 신규 단지가 생성되는 3곳(`commutes:defaultComplexCommutes()`
+동반 추가 지점 전부 — 붙여넣기 승격·TSV 벌크 임포트·중복정리
+그룹화)에 `fieldNote:defaultComplexFieldNote()`도 함께 추가했다 —
+빠뜨리면 다음 `applyGuards()` 재실행 전(예: 생성 직후 바로 단지
+상세를 여는 경우) `cx.fieldNote.items[key]` 접근에서 크래시할 수
+있었다. `renderComplexDetailBody()`에도 `if(!cx.fieldNote) cx.
+fieldNote=defaultComplexFieldNote();` 방어 폴백을 별도로 넣어
+이중 안전망을 갖췄다.
+
+### 입력 UI (`js/properties.js`+`index.html`+`style.css`)
+
+단지 상세 모달에 "임장 노트" 섹션을 판단메모(장점·단점·한줄판단·
+메모) 다음, 매물 목록 앞에 배치. 방문일(`<input type="date">`),
+항목 6개(별점+메모), 자유 메모 순.
+
+**항목 렌더**: B-27-lite의 `.safety-item`/`.safety-item-head`/
+`.safety-item-label`/`.safety-memo` 클래스를 그대로 재사용(신규
+CSS 0) — 위젯만 `<select>` 대신 별점 5개 버튼으로 교체. 별점은
+`.fn-star`(신규, `.c-fav-btn`과 동일 토큰 재사용: off=외곽선
+`--ink-faint`, hover=`--ink-soft`, on=골드 채움 `--line9`/
+`--line9-deep`) — **재클릭 시 해제**(`rating→null`)로 미입력과
+1점을 명확히 구분한다. 항목별 메모는 `data-fnfield="memo"
+data-fnkey`로 델리게이션.
+
+**자유 메모**: CLAUDE.md 에디터 표준(B-122에서 명문화한 바로 그
+패턴)을 그대로 적용 — `loadTiptapMods()`+`buildListBackspaceFix`+
+`buildTiptapPlaceholder`, 로드 실패 시 툴바+미리보기 토글+textarea
+폴백(`showEditorFallbackNote`), 저장은 마크다운 그대로·읽기는
+`renderMd`+DOMPurify. `em_memo`(984행 부근)와 동일하게 모달이
+여러 단지에 재사용되는 싱글턴 패턴(최초 1회 생성, 이후
+`setContent()`로 내용만 교체)이지만, 이 모달엔 `em_memo`처럼
+전체 저장 버튼이 없어 Tiptap `onBlur` 콜백으로 필드별 blur 저장
+(`cxDetailPros`/`Cons`/`Verdict`/`Memo`와 동일한 관례)을 유지했다.
+
+### 카드 요약 칩 (2번째 커밋)
+
+`fieldNoteChip(cx)` — `safetyBadgeChip`과 동일하게 집계만 하는
+순수 표시 함수. 별점 매긴 항목이 하나라도 있을 때만 "임장 ★평균
+· n/6 기록" 칩을 노출하고, 미기록 시 완전히 무표시한다. 평균은
+`toFixed(1)`로 표시용 계산할 뿐 저장·정렬·필터·자동판정 어디에도
+개입하지 않는다(스펙 4번 조건 그대로).
+
+### 검증 (Playwright, 66개 체크 — 데스크톱 1440×900+모바일 390×844)
+
+로컬 Node UTF-8 정적 서버(B-120/121에서 확립한 방식)+`window.naver`
+최소 스텁. esm.sh는 `route().abort()`로 **의도적으로 차단**해
+Tiptap 폴백 경로를 검증했다 — 성공 경로(esm.sh 정상 로드)는 기존
+6필드가 이미 공유하는 검증된 인프라라 필드마다 재검증하지 않기로
+판단(과잉 테스트 방지).
+
+- **별점**: 클릭→3, 같은 값 재클릭→`null`(1점이 아니라 해제임을
+  명시 확인), 1→5 순차 클릭 시 무정체(값이 바뀌지 않고 고착되는
+  버그 없음), DOM `on` 클래스 개수가 rating과 정확히 일치.
+- **항목 메모 XSS**: `<img src=x onerror=...>` payload를 저장 →
+  raw 문자열 그대로 저장됨(마크다운 필드가 아니라 순수 텍스트라
+  변형 없이 저장이 맞음) 확인 후, 재렌더 시 `esc()`로 이스케이프돼
+  스크립트 미실행 확인(`window.__xssFired` 플래그 안 뜸).
+- **방문일**: 저장 확인.
+- **자유 메모(폴백 경로)**: textarea blur 저장 확인, `<script>`+
+  `<img onerror>` 혼합 payload에 대해 `renderMd()` 호출이 크래시
+  없이 문자열을 반환하는지 확인(DOMPurify 자체 방어선은 B-64에서
+  이미 실측 완료된 공용 경로라 재검증 범위에서 제외).
+- **`applyGuards` 4개 케이스**: ①`fieldNote` 완전 누락 → 6항목
+  전부 기본값(`rating:null,memo:''`) 생성 ②일부만 있는 데이터
+  (`parking`만 `{rating:4,memo:'좁음'}`) → 있는 항목 보존+나머지만
+  기본값으로 채움(무손실 확인) ③오염값 6종(범위밖·0·음수·소수·
+  비수치 문자열·비객체) → 전부 올바르게 `null` 또는 정상 변환
+  (`'3'`→3은 정상 수용이 맞는 동작임을 코드 주석과 함께 확정)
+  ④동일 데이터에 `applyGuards()` 재적용 → 결과 동일(idempotent,
+  재로드해도 데이터 변형 없음).
+- **카드 칩**: `parking=4,noise=2` 세팅 후 "★3.0 · 2/6 기록" 정확히
+  표시, 전부 `null`로 리셋하면 칩 완전 무표시 확인.
+- **회귀**: **B-27-lite 안전체크 9항목 정상 렌더·토글 무회귀**,
+  **B-117 매물 상세 사이드 패널 오픈 무크래시**(별개 델리게이션
+  셀렉터라 이벤트 간섭 없음을 구조적으로도 확인 — `data-fnfield`
+  vs `data-safefield`, 겹치는 클래스는 있어도 속성이 달라 안전).
+- **모바일 390**: 실제 `page.tap()`(hasTouch 컨텍스트)으로 별점
+  클릭 동작 확인.
+- **콘솔 에러**: 0건(esm.sh 의도적 차단으로 인한 `net::ERR_FAILED`,
+  테스트 서버의 파비콘 404는 코드 무관으로 제외 판정 — B-120/121
+  세션에서 이미 같은 판정 확립).
+- `node --check` 13개 js 파일 전부 통과. 테스트 중 발견한 테스트
+  스크립트 자체의 버그 3건(DOM 셀렉터 과매칭·`applyGuards` 순차
+  호출 오해·의도적 CDN 차단을 실패로 오판)은 스크립트를 고쳐
+  해소했고 제품 코드는 무관했다 — 정직하게 구분해 기록.
+
+### 범위 밖 (지시대로 보고만, 미착수)
+
+CSV 내보내기에 임장 노트 반영 여부는 스펙 5번 항목대로 손대지
+않았다. 필요 여부는 사용자 판단 대기.
+
+**→ B-41 완료·push 완료(`4391487`/`0b66556`)**. 다음은 사용자
+별도 지시 대기.
