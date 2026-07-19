@@ -13,7 +13,7 @@
     --radius-sm:8px; --radius-md:10px; --radius-pill:999px; --radius-card:13px;
     /* 여백 — 기존 sm/md 유지 + 상위 3단 신규 */
     --gap-sm:6px; --gap-md:8px; --gap-lg:12px; --gap-xl:16px; --gap-2xl:24px;
-    --app-top-h:110px;
+    --app-top-h:110px; --app-bottom-h:0px; --app-visual-h:100dvh;
 
     /* 타이포 스케일 (Pretendard) — R4: 읽기용 최소값 상향(micro 11→12, label 12→13).
        micro=캡션·타임스탬프 최소, label=읽어야 하는 메타·액션 링크 최소, body=본문 기준선 */
@@ -1361,12 +1361,6 @@ html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
   .ph-more-menu #phExportRow{width:100%;}
   .ph-more-menu #phExportRow #propExportBtn{width:100%;justify-content:center;}
   .ph-more-menu #propBulkBtn,.ph-more-menu #propRouteBtn{width:100%;justify-content:center;}
-  /* 헤더 더보기 접기 — 프로필/잠금만 상시 노출, 나머지는 ⋯ 메뉴로 */
-  .header-more-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px 12px;}
-  .topacts>.sync-wrap,.topacts>#exportBtn,.topacts>#importBtn{display:none;}
-  .header-more-menu{min-width:180px;}
-  .header-more-menu .sync-wrap,.header-more-menu #exportBtn,.header-more-menu #importBtn{width:100%;justify-content:center;}
-  .header-more-menu .sync-chip{width:100%;justify-content:center;}
   /* 480 이하 — 액션 버튼 균등폭 44px 터치 타깃 */
   .c-actions{gap:8px;}
   .c-actions button,.c-actions a{padding:0 14px;flex:1 1 auto;justify-content:center;}
@@ -1394,6 +1388,117 @@ html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
   .tab{font-size:11px;padding:5px 8px;}
   /* addact 줄바꿈 */
   .addact{flex-wrap:wrap;}
+}
+
+/* B-31: 모바일은 기존 상단 탭 DOM을 하단 앱바로 재배치한다. 새 탭을 복제하지
+   않아 data-panel 이벤트·활성 상태는 데스크톱과 같은 단일 소스를 쓴다. */
+@media (max-width:899.98px){
+  :root{--app-bottom-h:calc(58px + env(safe-area-inset-bottom,0px));}
+  html.mobile-keyboard-open,
+  html:has(.modal.open){--app-bottom-h:0px;}
+  .wrap{
+    padding-left:calc(12px + env(safe-area-inset-left,0px));
+    padding-right:calc(12px + env(safe-area-inset-right,0px));
+    padding-bottom:0;
+  }
+  .app-topbar{
+    padding-top:calc(10px + env(safe-area-inset-top,0px));
+    padding-bottom:8px;margin-bottom:10px;
+  }
+  header{flex-wrap:nowrap;gap:8px;margin-bottom:0;}
+  .brand{flex:1;min-width:0;gap:8px;}
+  .brand .mark{width:32px;height:32px;border-radius:9px;}
+  .brand>div{min-width:0;}
+  .brand h1{font-size:19px;white-space:nowrap;}
+  .brand .sub{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .topacts{flex:none;gap:5px;flex-wrap:nowrap;}
+  .topacts>.sync-wrap{display:block;}
+  .topacts>#profileBtn,
+  .topacts>#exportBtn,
+  .topacts>#importBtn,
+  .topacts>#logoutBtn{display:none;}
+  .header-more-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:38px;height:38px;padding:0;font-size:18px;
+  }
+  .sync-chip{min-height:38px;font-size:10px;padding:5px 8px;}
+  .sync-panel{right:0;min-width:180px;}
+  .header-more-menu{min-width:190px;overflow-y:auto;}
+  .header-more-menu>.btn-mini{
+    display:flex;width:100%;min-height:42px;align-items:center;
+    justify-content:flex-start;gap:7px;text-align:left;
+  }
+
+  .apptabs{
+    position:fixed;left:0;right:0;bottom:0;z-index:1001;
+    height:var(--app-bottom-h);
+    display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;
+    padding:4px calc(6px + env(safe-area-inset-right,0px))
+      calc(4px + env(safe-area-inset-bottom,0px))
+      calc(6px + env(safe-area-inset-left,0px));
+    overflow:hidden;mask-image:none;-webkit-mask-image:none;
+    background:var(--surface);border-top:1px solid var(--hairline);
+    box-shadow:0 -4px 16px rgba(30,37,34,.08);
+    transition:opacity .12s,transform .12s;
+  }
+  .apptabs .atab{
+    min-width:0;padding:4px 2px;border-radius:var(--radius-md);
+    flex-direction:column;justify-content:center;gap:1px;
+    font-size:10.5px;line-height:1.15;white-space:nowrap;
+  }
+  .apptabs .atab .ic-lg{width:21px;height:21px;}
+  html.mobile-keyboard-open .apptabs,
+  html:has(.modal.open) .apptabs{
+    opacity:0;visibility:hidden;pointer-events:none;transform:translateY(100%);
+  }
+
+  body:has(#panel-dash.on) .wrap,
+  body:has(#panel-assets.on) .wrap,
+  body:has(#panel-actions.on) .wrap,
+  body:has(#panel-scraps.on) .wrap,
+  body:has(#panel-props.on) .wrap{
+    height:calc(var(--app-visual-h,100dvh) - var(--app-bottom-h));
+    overflow:hidden;padding-bottom:0;
+  }
+  #panel-dash.on,
+  #panel-assets.on,
+  #panel-actions.on,
+  #panel-scraps.on{
+    height:calc(var(--app-visual-h,100dvh) - var(--active-panel-top,var(--app-top-h)) - var(--app-bottom-h));
+    min-height:0;padding-bottom:24px;
+  }
+
+  #panel-props{
+    top:var(--app-top-h);bottom:auto;
+    height:calc(var(--app-visual-h,100dvh) - var(--app-top-h) - var(--app-bottom-h));
+  }
+  #panel-props[data-view="list"]{
+    position:fixed;top:var(--app-top-h);left:0;right:0;bottom:auto;
+    height:calc(var(--app-visual-h,100dvh) - var(--app-top-h) - var(--app-bottom-h));
+    overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    background:var(--bg);
+  }
+  #panel-props[data-view="list"] #cxListToolbar{top:0;}
+  .cx-sort-chips{left:calc(10px + env(safe-area-inset-left,0px));}
+  .prop-view-toggle{right:calc(58px + env(safe-area-inset-right,0px));}
+  .grid>section>#cxFilterBar{
+    left:calc(10px + env(safe-area-inset-left,0px));
+    right:calc(10px + env(safe-area-inset-right,0px));
+  }
+  .grid>section>.panel-head .ph-actions>#propMoreBtn{
+    right:calc(12px + env(safe-area-inset-right,0px));
+  }
+  .grid>section>.panel-head .ph-actions>#toggleForm{
+    right:calc(14px + env(safe-area-inset-right,0px));
+    bottom:calc(var(--app-bottom-h) + 14px);
+  }
+  .my-loc-btn{bottom:calc(var(--app-bottom-h) + 78px);}
+  .grid>section>.form.open{
+    bottom:var(--app-bottom-h);
+    max-height:calc(80dvh - var(--app-bottom-h));
+    padding-bottom:calc(13px + env(safe-area-inset-bottom,0px));
+  }
+  .prop-toast{bottom:calc(var(--app-bottom-h) + 16px);}
 }
 
 /* ===== 인라인 SVG 아이콘 ===== */
