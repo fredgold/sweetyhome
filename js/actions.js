@@ -187,7 +187,14 @@ function renderActions(){
     group.key,
     allLive.filter(a=>actGroupKey(a)===group.key)
   ]));
-  const liveRanks=new Map(live.map((a,i)=>[a.id,i+1]));
+  /* B-126: 표시 번호는 그룹 칼럼 내 1부터(전역 일련번호였던 것을 그룹
+     로컬로) — priority·정렬·드래그는 이미 그룹 내 독립 동작이라 무변경,
+     아래 group.key별 items 필터가 실제 렌더 순서(live, 우선순위 정렬+
+     검색/분류 필터 반영)와 동일해 렌더링과 번호가 항상 일치한다 */
+  const groupLiveRanks=new Map();
+  ACT_GROUPS.forEach(group=>{
+    live.filter(a=>actGroupKey(a)===group.key).forEach((a,i)=>groupLiveRanks.set(a.id,i+1));
+  });
   const actionRow=(a,doneRow=false)=>{
     const categoryLabel=a.category||'일반';
     const pinned=!doneRow&&a.id===pinnedId;
@@ -204,7 +211,7 @@ function renderActions(){
           <button type="button" class="act-move-btn" data-actf-move="${a.id}" data-direction="-1" aria-label="위로 이동"${canMoveUp?'':' disabled'}>▲</button>
           <button type="button" class="act-move-btn" data-actf-move="${a.id}" data-direction="1" aria-label="아래로 이동"${canMoveDown?'':' disabled'}>▼</button>
         </span>`}
-        <span class="rank tnum">${doneRow?'':liveRanks.get(a.id)}</span>
+        <span class="rank tnum">${doneRow?'':groupLiveRanks.get(a.id)}</span>
         <span class="box" data-actf-done="${a.id}">${CHECK}</span>
         <span class="atx">
           <span class="act-text">${esc(a.text)}</span>
