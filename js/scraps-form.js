@@ -21,6 +21,42 @@ function scRenderImgThumbs(containerId,arr){
 function scUpdateImgUploadLabel(labelId,arr,emptyText){
   document.getElementById(labelId).innerHTML=ic('camera')+(arr.length?` 사진 ${arr.length}장`:' '+emptyText);
 }
+/* B-123②: 클립보드 텍스트를 폴백(비Tiptap) contenteditable 커서 위치에
+   삽입 — sc_text/sem_text의 기존 paste 핸들러가 공유하던 로직을 추출,
+   이미지+텍스트 혼합 붙여넣기 처리에서도 재사용한다 */
+function scInsertFallbackText(el,text){
+  ceFlushDebounced(el);
+  const s=ceGetOffset(el);
+  const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
+  const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
+  el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
+  el.innerHTML=newRaw.split('\n').map(ceRenderLine).join('');
+  ceSetOffset(el,s+text.length);
+}
+/* B-123②: 클립보드에 이미지가 있으면(스크린샷 붙여넣기 등) imgs[]
+   첨부로 가져가고 에디터 안에는 인라인 삽입되지 않게 캡처 단계에서
+   가로챈다 — el(마운트 지점)에서 캡처해야 Tiptap 마운트 시 안쪽
+   .ProseMirror의 자체 붙여넣기 핸들러보다 먼저 개입할 수 있다. 이미지가
+   없는 순수 텍스트 붙여넣기는 손대지 않고 그대로 통과시켜(return) 기존
+   경로(Tiptap 기본 처리 또는 폴백 paste 핸들러) 무변화 */
+function scHandleEditorPaste(e,arr,max,containerId,labelId,emptyText,errEl,editor,fallbackEl){
+  const files=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith('image/'));
+  if(!files.length) return;
+  e.preventDefault(); e.stopPropagation();
+  const room=max-arr.length;
+  if(errEl) errEl.textContent=files.length>room?`사진은 최대 ${max}장까지 첨부할 수 있어요.`:'';
+  files.slice(0,room).forEach(f=>{
+    compressImage(f,dataUrl=>{
+      arr.push(dataUrl);
+      scRenderImgThumbs(containerId,arr);
+      scUpdateImgUploadLabel(labelId,arr,emptyText);
+    });
+  });
+  const text=(e.clipboardData||window.clipboardData).getData('text/plain');
+  if(!text) return;
+  if(editor) editor.chain().focus().insertContent(text).run();
+  else if(fallbackEl) scInsertFallbackText(fallbackEl,text);
+}
 
 function scUpdatePropFields(type){
   const hide=SC_PROPLESS.has(type);
@@ -65,14 +101,7 @@ function attachScTextFallbackListeners(){
   scTextEl.addEventListener('paste',e=>{
     e.preventDefault();
     const text=(e.clipboardData||window.clipboardData).getData('text/plain');
-    const el=e.target;
-    ceFlushDebounced(el);
-    const s=ceGetOffset(el);
-    const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
-    const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
-    el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
-    el.innerHTML=newRaw.split('\n').map(ceRenderLine).join('');
-    ceSetOffset(el,s+text.length);
+    scInsertFallbackText(e.target,text);
   });
   scTextEl.addEventListener('keydown',e=>{
     const el=e.target;
@@ -307,6 +336,12 @@ document.getElementById('sc_file').onchange=e=>{
   });
   e.target.value='';
 };
+/* B-123②: 캡처 단계라 Tiptap 마운트 여부와 무관하게 항상 먼저 개입 —
+   이미지가 없으면 스스로 return해 기존 텍스트 붙여넣기 경로를 그대로 둔다 */
+document.getElementById('sc_text').addEventListener('paste',e=>{
+  scHandleEditorPaste(e,scrapImgsData,SC_MAX_IMGS,'sc_preview','sc_uploadLabel','스크린샷 첨부',
+    document.getElementById('sc_formErr'),scTiptapEditor,document.getElementById('sc_text'));
+},true);
 document.getElementById('sc_preview').addEventListener('click',e=>{
   const btn=e.target.closest('.sc-img-thumb-del'); if(!btn)return;
   scrapImgsData.splice(+btn.dataset.idx,1);
@@ -494,13 +529,7 @@ function attachSemTextFallbackListeners(){
   semTextEl.addEventListener('paste',e=>{
     e.preventDefault();
     const text=(e.clipboardData||window.clipboardData).getData('text/plain');
-    const el=e.target;
-    ceFlushDebounced(el);
-    const s=ceGetOffset(el);
-    const raw=el.dataset.raw||el.innerText.replace(/\r\n?/g,'\n').replace(/\n$/,'');
-    const newRaw=raw.slice(0,s)+text.replace(/\r\n?/g,'\n')+raw.slice(s);
-    el.dataset.raw=newRaw; el.classList.toggle('is-empty',!newRaw.trim());
-    el.innerHTML=newRaw.split('\n').map(ceRenderLine).join(''); ceSetOffset(el,s+text.length);
+    scInsertFallbackText(e.target,text);
   });
   semTextEl.addEventListener('blur',()=>{
     const el=document.getElementById('sem_text');
@@ -614,6 +643,12 @@ document.getElementById('sem_imgs').addEventListener('click',e=>{
   scRenderImgThumbs('sem_imgs',semImgsData);
   scUpdateImgUploadLabel('sem_imgLabel',semImgsData,'사진 추가');
 });
+/* B-123②: sc_text와 동일 패턴 — 캡처 단계에서 이미지만 가로채 첨부로,
+   텍스트는 있으면 에디터에 그대로 삽입 */
+document.getElementById('sem_text').addEventListener('paste',e=>{
+  scHandleEditorPaste(e,semImgsData,SC_MAX_IMGS,'sem_imgs','sem_imgLabel','사진 추가',
+    document.getElementById('sem_err'),semTiptapEditor,document.getElementById('sem_text'));
+},true);
 function semResetSavedNote(){
   const sn=document.getElementById('savedNote');
   if(sn){sn.textContent='변경사항은 자동 저장됩니다';sn.style.color='';}
