@@ -2294,27 +2294,6 @@ function migApply(){
   renderProps();
   toast(`단지 ${newComplexes}개 신규 · 매물 ${newListings}건 등록${skippedListings?` · 중복 ${skippedListings}건 건너뜀`:''} (기존 매물 목록은 그대로 유지돼요)`);
 }
-/* B-47: 기준바(.gates) 접이식 — 자주 안 바뀌는 정보라 기본 접힘, 펼침 상태만 localStorage
-   기억(모바일은 .gates 자체가 display:none이라 이 토글은 데스크톱에서만 실제로 보임) */
-(function initGatesToggle(){
-  const box=document.getElementById('gatesBox');
-  const btn=document.getElementById('gatesToggleBtn');
-  if(!box||!btn) return;
-  const KEY='sh_gatesExpanded';
-  let expanded=false;
-  try{ expanded=localStorage.getItem(KEY)==='1'; }catch(e){}
-  const apply=()=>{
-    box.classList.toggle('expanded',expanded);
-    btn.innerHTML=(expanded?'접기':'펼치기')+' <span class="gates-toggle-caret">▾</span>';
-    btn.setAttribute('aria-expanded',String(expanded));
-  };
-  apply();
-  btn.onclick=()=>{
-    expanded=!expanded;
-    apply();
-    try{ localStorage.setItem(KEY,expanded?'1':'0'); }catch(e){}
-  };
-})();
 /* B-68: 이관 완료 후 진입 버튼 노출 제거 — 모달·마이그레이션 코드 본체(migApply·
    renderMigPreview 등)는 B-05(레거시 일괄 삭제 예정) 전까지 그대로 유지, 여기서는
    진입 버튼(migStartBtn)만 주입하지 않는다. 모달 자체는 코드상 남아있지만 여는
