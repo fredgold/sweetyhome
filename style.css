@@ -331,7 +331,7 @@
        뷰포트 밖으로 넓어짐 — 메뉴에 명시적 max-width를 줘서 방지 */
     .ph-more-menu{max-width:calc(100vw - 24px);}
     .ph-more-menu #unisearch,.ph-more-menu #cxFilterBar{width:100%;margin-bottom:0;}
-    #complexSection{position:absolute;left:0;right:0;bottom:14px;z-index:12;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 12px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    #complexSection{position:absolute;left:0;right:0;bottom:14px;z-index:12;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 12px calc(var(--app-bottom-h) + 78px);-webkit-overflow-scrolling:touch;scrollbar-width:none;}
     #complexSection::-webkit-scrollbar{display:none;}
     #complexSection>.card{flex:0 0 86%;scroll-snap-align:center;margin-bottom:0;box-shadow:var(--shadow);}
     #complexSection>.cx-empty{flex:0 0 100%;}
@@ -381,7 +381,7 @@
       flex-basis:100%;order:3;margin-top:2px;margin-bottom:0;
     }
     #panel-props[data-view="list"] #complexSection{
-      position:static;display:block;overflow-x:visible;scroll-snap-type:none;padding:12px 12px 10px;
+      position:static;display:block;overflow-x:visible;scroll-snap-type:none;padding:12px 12px calc(var(--app-bottom-h) + 78px);
     }
     #panel-props[data-view="list"] #complexSection>.card{flex:none;scroll-snap-align:none;margin-bottom:12px;}
     #panel-props[data-view="list"] #complexSection>.cx-empty{flex:none;}
