@@ -1,6 +1,21 @@
 /* ============ tab switching ============ */
 const APP_SCROLL_PANEL_IDS=new Set(['panel-dash','panel-assets','panel-props','panel-actions','panel-scraps']);
 const MOBILE_APP_MQ=window.matchMedia('(max-width:899.98px)');
+/* B-153: Safari가 sticky 조상(.app-topbar)을 fixed 자식(.apptabs)의 containing block으로
+   오취급해 페인트를 누락시킴(크롬은 스펙대로 정상 동작). 모바일 진입 시 body 직속으로
+   옮기고, 데스크톱 복귀 시 grid 배치를 위해 .app-topbar로 되돌린다 — DOM 이동만, 복제 없음. */
+function syncApptabsHome(){
+  const apptabsEl=document.getElementById('apptabs');
+  const topbar=document.getElementById('appTopbar');
+  if(!apptabsEl||!topbar) return;
+  if(MOBILE_APP_MQ.matches){
+    if(apptabsEl.parentElement!==document.body) document.body.appendChild(apptabsEl);
+  }else if(apptabsEl.parentElement!==topbar){
+    topbar.appendChild(apptabsEl);
+  }
+}
+MOBILE_APP_MQ.addEventListener('change',syncApptabsHome);
+syncApptabsHome();
 let panelHeightRaf=null;
 function syncPanelHeight(){
   const topbar=document.getElementById('appTopbar');
