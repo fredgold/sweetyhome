@@ -3400,14 +3400,15 @@ function complexInfoEditHTML(cx){
 }
 function renderComplexDetailInfo(cx,resetBuffer=false){
   document.getElementById('cxDetailTitle').textContent=cx.complexName||'(이름 없음)';
-  document.getElementById('cxDetailLoc').textContent=cx.loc||'주소 정보 없음';
-  document.getElementById('cxDetailStationLine').textContent=[cx.station,cx.line].filter(Boolean).join(' · ')||'—';
-  document.getElementById('cxDetailYear').textContent=cx.yearBuilt!=null?cx.yearBuilt+'년 준공':'—';
-  document.getElementById('cxDetailHouseholds').textContent=cx.households!=null?(cx.households+'세대'+(cx.householdGrade?' · '+cx.householdGrade:'')):'—';
-  document.getElementById('cxDetailCommute').textContent=[
+  const setDD=(id,val,empty)=>{const el=document.getElementById(id);el.textContent=val||empty;el.classList.toggle('is-empty',!val);};
+  setDD('cxDetailLoc',cx.loc,'주소 정보 없음');
+  setDD('cxDetailStationLine',[cx.station,cx.line].filter(Boolean).join(' · '),'역·노선 정보 없음');
+  setDD('cxDetailYear',cx.yearBuilt!=null?cx.yearBuilt+'년 준공':'','준공연도 미입력');
+  setDD('cxDetailHouseholds',cx.households!=null?(cx.households+'세대'+(cx.householdGrade?' · '+cx.householdGrade:'')):'','세대수 미입력');
+  setDD('cxDetailCommute',[
     cx.commuteGangnam!=null?'강남역 '+cx.commuteGangnam+'분':null,
     cx.commuteSinsa!=null?'신사역 '+cx.commuteSinsa+'분':null
-  ].filter(Boolean).join(' · ')||'—';
+  ].filter(Boolean).join(' · '),'출퇴근 정보 없음');
   const view=document.getElementById('cxDetailInfoView');
   const edit=document.getElementById('cxDetailInfoEdit');
   view.style.display=cxDetailInfoEditing?'none':'';
@@ -3550,6 +3551,8 @@ document.getElementById('cxDetailFindLocBtn')?.addEventListener('click',async fu
   }catch(e){ this.textContent='검색 실패 — 잠시 후 다시 시도'; }
   setTimeout(()=>{ this.disabled=false; this.textContent=old; },1600);
 });
+/* B-138: 값 없음을 "—"가 아니라 입력폼 placeholder 톤(.is-empty)으로 */
+function emptyHint(text){return `<span class="is-empty">${esc(text)}</span>`;}
 function renderCxListings(complexId){
   destroyAllListingMemoEditors();
   const wrap=document.getElementById('cxDetailListings'); if(!wrap)return;
@@ -3570,8 +3573,8 @@ function renderCxListings(complexId){
         ${l.isRepresentative?'<span class="chip ok">대표매물</span>':''}
         ${safetyBadgeChip(l)}
       </div>
-      <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} ${depositTrendBadge(l)} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'—')}</div>
-      <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · 확인 ${l.lastCheckedAt?esc(new Date(l.lastCheckedAt).toLocaleDateString('ko-KR')):'—'}</div>
+      <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} ${depositTrendBadge(l)} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades))?esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)):emptyHint('등급 미정')}</div>
+      <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):emptyHint('기록 없음')} · 확인 ${l.lastCheckedAt?esc(new Date(l.lastCheckedAt).toLocaleDateString('ko-KR')):emptyHint('기록 없음')}</div>
       ${!editing&&l.memo?`<div class="c-memo sc-md-content">${renderMd(l.memo)}</div>`:''}
       ${triStateHTML({field:'managementFee', value:l.managementFee, state:l.managementFeeState, caption:mgmtFeeCaption(l), unit:'만원', step:'1', placeholder:'예: 15', lid:l.id})}
       ${editing?listingEditFieldsHTML(l):''}
@@ -3645,9 +3648,9 @@ function listingDetailBodyHTML(l){
       <span class="chip ${listingStatusChipClass(l.listingStatus)}">${esc(l.listingStatus||'확인필요')}</span>
       ${l.isRepresentative?'<span class="chip ok">대표매물</span>':''}
     </div>
-    <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)||'—')}</div>
+    <div class="cx-listing-meta tnum">${l.deposit!=null?'보증금 '+l.deposit+'억':'보증금 미정'} · ${l.areaM2!=null?'전용 '+l.areaM2+'㎡':(l.areaText?esc(l.areaText):'면적 미정')} · ${(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades))?esc(l.areaGrade||calcAreaGrade(l.areaM2,state.settings.grades)):emptyHint('등급 미정')}</div>
     <div class="cx-listing-meta">${esc(mgmtFeeCaption(l))}</div>
-    <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):'—'} · ${esc(daysAgoLabel(l.lastCheckedAt))}</div>
+    <div class="cx-listing-meta">수집 ${l.capturedAt?esc(new Date(l.capturedAt).toLocaleDateString('ko-KR')):emptyHint('기록 없음')} · ${esc(daysAgoLabel(l.lastCheckedAt))}</div>
     ${safeHref?`<div class="c-actions" style="margin:6px 0"><a href="${safeHref}" target="_blank" rel="noopener">${ic('link')} URL 열기</a></div>`:''}
     ${l.memo?`<div class="c-memo sc-md-content">${renderMd(l.memo)}</div>`:'<div class="cx-listing-meta">메모 없음</div>'}
     <h3 style="font-size:13px;margin:14px 0 8px">전세 안전 체크</h3>

@@ -597,6 +597,7 @@
   .cx-dl{margin-bottom:10px;}
   .cx-dl .cx-dt{font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:2px;}
   .cx-dl .cx-dd{font-size:14px;font-weight:600;}
+  .cx-dl .cx-dd.is-empty,.cx-listing-meta .is-empty{color:var(--ink-faint);font-weight:500;}
   .cx-listing-row{border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;margin-bottom:8px;cursor:pointer;}
   /* B-117: 매물 상세 사이드 패널 — 기본은 숨김(JS가 .open 토글), 배경·flex 컬럼만
      공통 지정하고 크기·위치는 breakpoint별로(데스크톱: 위 #complexDetailModal 블록,
