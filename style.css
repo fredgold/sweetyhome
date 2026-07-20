@@ -384,6 +384,11 @@
       position:static;display:block;overflow-x:visible;scroll-snap-type:none;padding:12px 12px calc(var(--app-bottom-h) + 78px);
     }
     #panel-props[data-view="list"] #complexSection>.card{flex:none;scroll-snap-align:none;margin-bottom:12px;}
+    /* B-132: .card::before(rail 타임라인용 -25px 원형 점)는 .rail의 30px 좌측
+       거터를 전제로 함. 단지 카드는 .rail 없이 이 클래스를 재사용(+data-st도
+       미부여돼 색상 의미 없음)해 목록뷰에서 원형이 뷰포트 밖으로 잘려나감 —
+       캐러셀은 카드가 86% 폭+가운데 스냅이라 거터가 우연히 확보돼 미발생 */
+    #panel-props[data-view="list"] #complexSection>.card::before{display:none;}
     #panel-props[data-view="list"] #complexSection>.cx-empty{flex:none;}
   }
 
