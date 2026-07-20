@@ -659,6 +659,16 @@ document.getElementById('sem_cancel').onclick=()=>{
   semResetSavedNote();
   closeModal('scEditModal');
 };
+/* B-128: 카드뷰 카드엔 버튼이 없어(B-123 압축 의도) 삭제하려면 리스트뷰로
+   가야 했음 — 편집 모달에서도 삭제 가능하게. scraps-render.js의 목록
+   삭제(data-sc-del)와 동일 confirm·동일 경로 재사용 */
+document.getElementById('sem_delete').onclick=()=>{
+  if(!scModalEditId)return;
+  if(!confirm('이 항목을 삭제할까요?'))return;
+  state.scraps=state.scraps.filter(x=>x.id!==scModalEditId);
+  semImgsData=[];
+  save();renderScraps();closeModal('scEditModal');
+};
 document.getElementById('sem_save').onclick=()=>{
   const s=state.scraps.find(x=>x.id===scModalEditId);
   if(!s){closeModal('scEditModal');return;}
