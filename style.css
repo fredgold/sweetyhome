@@ -6,6 +6,7 @@
     --line9:#C7A14A; --line9-deep:#7A6020; --line9-wash:#F4ECD8;
     --money:#4F7A63; --money-deep:#356049; --money-wash:#E7F0EA;
     --ai:#6B4FA0; --ai-wash:#EDE7F4;
+    --warn:#8A4200; --warn-wash:#FBE0B0;
     /* 매물 상태 */
     --s-interest:#6B7C93; --s-visit:#C7853A; --s-review:#B89233; --s-final:#4F8A5B; --s-hold:#8A8F8A; --s-drop:#B16A63; --s-inquiry:#4B88CC;
     --shadow:0 1px 2px rgba(30,37,34,.04), 0 6px 20px rgba(30,37,34,.05);
@@ -161,9 +162,9 @@
   .regline{background:var(--line9-wash);border:1px solid var(--line9);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--line9-deep);font-weight:600;}
   .regline .ic{font-size:15px;}
   .regline em{font-style:normal;font-size:9.5px;font-weight:800;background:var(--line9-deep);color:#fff;border-radius:5px;padding:2px 6px;margin-left:auto;white-space:nowrap;}
-  /* B-80: 지난 세션 미동기 안내 — 기존 .chip-warn과 동일한 경고 색(#fff3cd/#856404) 재사용 */
-  .unsynced-banner{background:#fff3cd;color:#856404;border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600;}
-  .unsynced-banner button{background:none;border:none;color:#856404;font-size:14px;line-height:1;cursor:pointer;flex-shrink:0;padding:2px 4px;}
+  /* B-80: 지난 세션 미동기 안내 — 기존 .chip-warn과 동일한 경고 색(--warn/--warn-wash) 재사용 */
+  .unsynced-banner{background:var(--warn-wash);color:var(--warn);border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600;}
+  .unsynced-banner button{background:none;border:none;color:var(--warn);font-size:14px;line-height:1;cursor:pointer;flex-shrink:0;padding:2px 4px;}
 
   /* ================= ASSETS ================= */
   .asec{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px;}
@@ -735,7 +736,7 @@
 
   /* ===== AI 상태 ===== */
   .ai-status{margin-top:8px;padding:9px 12px;border-radius:var(--radius-md);font-size:12px;font-weight:600;line-height:1.5;}
-  .ai-status.warn{background:#FFF3E0;border:1px solid #FFB74D;color:#E65100;}
+  .ai-status.warn{background:var(--warn-wash);border:1px solid var(--warn);color:var(--warn);}
   .ai-status.ok{background:var(--money-wash);color:var(--money-deep);}
 
   /* ===== v3: 액션 전체 ===== */
@@ -1299,7 +1300,7 @@
    커스텀 인디케이터와 이중으로 겹쳐 보이지 않게 함 — 안드로이드 Chrome 등은 이 클래스가
    안 붙으므로 자체 pull-to-refresh가 그대로 유지됨(요구사항: 커스텀 비활성) */
 html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
-.chip.chip-warn{background:#fff3cd;color:#856404;}
+.chip.chip-warn{background:var(--warn-wash);color:var(--warn);}
 .act-cat-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
 .act-cat-chip{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);background:var(--surface);color:var(--ink-soft);cursor:pointer;}
 .act-cat-chip.on{background:var(--money);color:#fff;border-color:var(--money);}
