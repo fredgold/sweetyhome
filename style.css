@@ -7,6 +7,7 @@
     --money:#4F7A63; --money-deep:#356049; --money-wash:#E7F0EA;
     --ai:#6B4FA0; --ai-wash:#EDE7F4;
     --warn:#8A4200; --warn-wash:#FBE0B0;
+    --dim-bg:rgba(30,37,34,.45);
     /* 매물 상태 */
     --s-interest:#6B7C93; --s-visit:#C7853A; --s-review:#B89233; --s-final:#4F8A5B; --s-hold:#8A8F8A; --s-drop:#B16A63; --s-inquiry:#4B88CC;
     --shadow:0 1px 2px rgba(30,37,34,.04), 0 6px 20px rgba(30,37,34,.05);
@@ -326,6 +327,9 @@
       -webkit-overflow-scrolling:touch;border-radius:16px 16px 0 0;
       z-index:1100;animation:sheetup .22s ease;
     }
+    /* B-134: 모달과 동일한 dim(--dim-bg) — .form 자신이 아니라 body::before로 걸어야
+       시트 z-index(1100) 안 static 자식(입력필드 등)보다 뒤에 깔림, 시트 자체는 안 덮음 */
+    body:has(#form.open)::before{content:"";position:fixed;inset:0;background:var(--dim-bg);z-index:1099;}
     /* cxFilterBar의 .sc-filter-row는 overflow-x:auto로 스크롤되게 만들어졌지만,
        부모(.ph-more-menu)에 폭 제한이 없으면 auto가 무력화되고 메뉴 자체가
        뷰포트 밖으로 넓어짐 — 메뉴에 명시적 max-width를 줘서 방지 */
@@ -1014,7 +1018,7 @@
   .route-popup b{font-size:13.5px;}
   .route-popup a{color:#06be34;font-weight:700;text-decoration:none;}
 
-  .modal{position:fixed;inset:0;background:rgba(30,37,34,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1100;}
+  .modal{position:fixed;inset:0;background:var(--dim-bg);display:none;align-items:center;justify-content:center;padding:20px;z-index:1100;}
   @keyframes sheetup{from{transform:translateY(100%)}to{transform:translateY(0)}}
   .modal.open{display:flex;}
   /* B-59: .box를 flex 컬럼으로 — 헤더(.mhead)·푸터(.mfoot)는 고정, 본문(.mbody)만 스크롤 */
@@ -1324,6 +1328,8 @@ html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
    모바일 ⋯메뉴처럼 내용이 그 높이를 넘치면 overflow-y:auto로 메뉴 내부만 스크롤되고
    뒤 배경(body)은 lockBodyScroll()로 이미 잠겨 있어 안 움직임 */
 .ph-more-menu{overflow-y:auto;}
+/* B-134: 다른 status-picker(상태 빠른변경 등)엔 없이 이 메뉴에만 dim — 클래스 조합(.status-picker.ph-more-menu)으로 한정 */
+body:has(.status-picker.ph-more-menu)::before{content:"";position:fixed;inset:0;background:var(--dim-bg);z-index:1099;}
 .sp-opt{display:block;width:100%;text-align:left;padding:7px 12px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;border-radius:var(--radius-sm);color:var(--ink);transition:background .12s;}
 .sp-opt:hover,.sp-opt.on{background:var(--money-wash);color:var(--money);}
 .route-menu{min-width:220px;max-width:280px;}
