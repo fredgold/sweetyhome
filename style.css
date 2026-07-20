@@ -790,7 +790,11 @@
     #panel-actions .actfull .actrow.is-sortable{grid-template-columns:30px 20px 20px minmax(0,1fr) auto;}
     .act-order-tools{flex-direction:column;gap:2px;}
     .act-drag-handle{display:none;}
-    .act-move-btn{display:inline-flex;width:30px;height:26px;align-items:center;justify-content:center;border:1px solid var(--hairline);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink-soft);font-size:10px;line-height:1;touch-action:manipulation;}
+    .act-move-btn{position:relative;display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border:1px solid var(--hairline);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink-soft);font-size:10px;line-height:1;touch-action:manipulation;}
+    /* B-136: 바깥쪽으로만 hit area 확장(gap은 안 건드림) — ▲▼ 서로 안 겹침, 시각 크기는 그대로 */
+    .act-move-btn::after{content:"";position:absolute;left:-4px;right:-4px;}
+    .act-move-btn[data-direction="-1"]::after{top:-8px;bottom:0;}
+    .act-move-btn[data-direction="1"]::after{top:0;bottom:-8px;}
     .act-move-btn:disabled{opacity:.3;cursor:not-allowed;}
     .act-move-btn:not(:disabled):active{background:var(--money-wash);color:var(--money);}
   }
