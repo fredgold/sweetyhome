@@ -1191,6 +1191,8 @@
     .actrow{flex-wrap:wrap;}
     #panel-actions .actfull .actrow{grid-template-columns:20px 20px minmax(0,1fr) auto;padding:8px 0;}
     #panel-actions .actfull .actrow .atx{display:block;font-size:12.5px;}
+    /* B-133: inline span은 overflow:hidden이 무시돼 ellipsis가 안 먹고 아이콘 아래로 흘러넘침 */
+    #panel-actions .actfull .actrow .act-text{display:block;}
     #panel-actions .actfull .act-row-meta{margin-top:5px;flex-wrap:wrap;}
     #panel-actions .actfull .actrow:has(.act-edit-inp){flex-wrap:wrap;}
     #panel-actions .actfull .actrow:has(.act-edit-inp) .act-edit-inp{flex-basis:100%!important;}
