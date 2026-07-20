@@ -45,8 +45,14 @@ function renderScraps(){
       ].filter(Boolean).slice(0,2);
       if(metaParts.length<2&&dateStr) metaParts.push({icon:'calendar',text:dateStr});
       const title=s.title||'(제목 없음)';
+      const imgs=s.imgs||[];
+      /* B-123①: 사진 있는 카드는 이미지가 주인공 — 클릭 영역을 카드
+         본문(편집)과 분리해 별도 라이트박스로 열리게 한다 */
       return `<div class="sc-gallery-card" data-scid="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(title)} 편집">
-        ${(s.imgs||[]).length?`<img src="${esc(s.imgs[0])}" class="sc-gallery-img" loading="lazy" alt="${esc(title)} 사진">`:`<div class="sc-gallery-preview ${tCls}" aria-hidden="true"><span class="sc-gallery-preview-mark">${ic(typeKey==='policy'?'tip':typeKey==='note'?'edit':typeKey==='ai_log'?'sparkle':'home')}</span><span>${esc(tLabel)}</span></div>`}
+        ${imgs.length?`<div class="sc-gallery-imgwrap" data-sclight="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(title)} 사진 크게 보기">
+          <img src="${esc(imgs[0])}" class="sc-gallery-img" loading="lazy" alt="${esc(title)} 사진">
+          ${imgs.length>1?`<span class="sc-gallery-imgcount">⧉${imgs.length}</span>`:''}
+        </div>`:`<div class="sc-gallery-preview ${tCls}" aria-hidden="true"><span class="sc-gallery-preview-mark">${ic(typeKey==='policy'?'tip':typeKey==='note'?'edit':typeKey==='ai_log'?'sparkle':'home')}</span><span>${esc(tLabel)}</span></div>`}
         <div class="sc-gallery-body">
           <div class="sc-gallery-badges">
             <span class="sc-badge ${tCls}">${esc(tLabel)}</span>
@@ -63,6 +69,16 @@ function renderScraps(){
         if(e.key!=='Enter'&&e.key!==' ') return;
         e.preventDefault();
         openScEdit(c.dataset.scid);
+      };
+    });
+    /* B-123①: 이미지 클릭 = 라이트박스, stopPropagation으로 카드 본문
+       클릭(편집 모달 오픈)과 버블링 분리 */
+    el.querySelectorAll('[data-sclight]').forEach(w=>{
+      w.onclick=e=>{ e.stopPropagation(); scOpenLightbox(w.dataset.sclight); };
+      w.onkeydown=e=>{
+        if(e.key!=='Enter'&&e.key!==' ') return;
+        e.preventDefault(); e.stopPropagation();
+        scOpenLightbox(w.dataset.sclight);
       };
     });
     return;
@@ -155,4 +171,44 @@ scViewGalleryBtn.addEventListener('click',()=>{
   scViewListBtn.dataset.on='0';
   scViewGalleryBtn.dataset.on='1';
   renderScraps();
+});
+
+/* ── B-123① 갤러리 라이트박스: 기존 .modal(openModal/closeModal) 패턴
+   재사용, imgs[] 좌우 넘김만 자체 구현(신규 라이브러리 없음) ── */
+let scLightboxId=null, scLightboxIdx=0;
+function scLightboxImgs(){
+  const s=state.scraps.find(x=>x.id===scLightboxId);
+  return (s&&Array.isArray(s.imgs))?s.imgs:[];
+}
+function scRenderLightbox(){
+  const imgs=scLightboxImgs();
+  if(!imgs.length){ closeModal('scLightboxModal'); return; }
+  if(scLightboxIdx>=imgs.length) scLightboxIdx=imgs.length-1;
+  if(scLightboxIdx<0) scLightboxIdx=0;
+  const s=state.scraps.find(x=>x.id===scLightboxId);
+  const title=s?.title||'사진';
+  document.getElementById('scLightboxImg').src=imgs[scLightboxIdx];
+  document.getElementById('scLightboxImg').alt=title+' 사진 '+(scLightboxIdx+1);
+  document.getElementById('scLightboxTitle').textContent=title;
+  document.getElementById('scLightboxCounter').textContent=(scLightboxIdx+1)+' / '+imgs.length;
+  const multi=imgs.length>1;
+  document.getElementById('scLightboxPrev').style.display=multi?'':'none';
+  document.getElementById('scLightboxNext').style.display=multi?'':'none';
+}
+function scOpenLightbox(id){
+  scLightboxId=id; scLightboxIdx=0;
+  scRenderLightbox();
+  openModal('scLightboxModal');
+}
+function scLightboxMove(dir){
+  const imgs=scLightboxImgs(); if(imgs.length<2) return;
+  scLightboxIdx=(scLightboxIdx+dir+imgs.length)%imgs.length;
+  scRenderLightbox();
+}
+document.getElementById('scLightboxPrev').onclick=()=>scLightboxMove(-1);
+document.getElementById('scLightboxNext').onclick=()=>scLightboxMove(1);
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('scLightboxModal').classList.contains('open'))return;
+  if(e.key==='ArrowLeft'){e.preventDefault();scLightboxMove(-1);}
+  else if(e.key==='ArrowRight'){e.preventDefault();scLightboxMove(1);}
 });
