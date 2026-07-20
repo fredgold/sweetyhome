@@ -1452,29 +1452,33 @@ let _exportMenu=null;
 function closeExportMenu(){ if(_exportMenu){ _exportMenu.remove(); _exportMenu=null; } }
 function showExportMenu(btn){
   if(_exportMenu){ closeExportMenu(); return; }
+  let fmt='csv';
   const menu=document.createElement('div');
   menu.className='status-picker route-menu';
   menu.innerHTML=`
-    <button class="sp-opt" data-exp="cx" data-fmt="csv">단지 목록 (CSV)</button>
-    <button class="sp-opt" data-exp="cx" data-fmt="tsv">단지 목록 (TSV)</button>
+    <div class="rm-item">
+      <button type="button" class="sp-opt on" data-fmt="csv">CSV</button>
+      <button type="button" class="sp-opt" data-fmt="tsv">TSV</button>
+    </div>
     <div class="rm-sep"></div>
-    <button class="sp-opt" data-exp="listing" data-fmt="csv">매물 목록 (CSV)</button>
-    <button class="sp-opt" data-exp="listing" data-fmt="tsv">매물 목록 (TSV)</button>
-    <div class="rm-sep"></div>
-    <button class="sp-opt" data-exp="combined" data-fmt="csv">단지+대표매물 통합 (CSV)</button>
-    <button class="sp-opt" data-exp="combined" data-fmt="tsv">단지+대표매물 통합 (TSV)</button>
-    <div class="rm-sep"></div>
-    <button class="sp-opt" data-exp="legacy" data-fmt="csv">레거시(기존 매물) CSV</button>
-    <button class="sp-opt" data-exp="legacy" data-fmt="tsv">레거시(기존 매물) TSV</button>
+    <button class="sp-opt" data-exp="cx">단지 목록</button>
+    <button class="sp-opt" data-exp="listing">매물 목록</button>
+    <button class="sp-opt" data-exp="combined">단지+대표매물 통합</button>
+    <button class="sp-opt" data-exp="legacy">레거시(기존 매물)</button>
   `;
   document.body.appendChild(menu);
   _exportMenu=menu;
   const rect=btn.getBoundingClientRect();
   menu.style.top=(rect.bottom+window.scrollY+4)+'px';
   menu.style.left=Math.max(8,Math.min(rect.left+window.scrollX, window.innerWidth-240))+'px';
+  menu.querySelectorAll('[data-fmt]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    fmt=b.dataset.fmt;
+    menu.querySelectorAll('[data-fmt]').forEach(x=>x.classList.toggle('on',x===b));
+  });
   menu.querySelectorAll('[data-exp]').forEach(b=>b.onclick=e=>{
     e.stopPropagation();
-    const kind=b.dataset.exp, fmt=b.dataset.fmt;
+    const kind=b.dataset.exp;
     closeExportMenu();
     if(kind==='cx') exportComplexes(fmt);
     else if(kind==='listing') exportListings(fmt);
