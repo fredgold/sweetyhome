@@ -1371,7 +1371,7 @@ body:has(.status-picker.ph-more-menu)::before{content:"";position:fixed;inset:0;
   .regrow .del{position:absolute;top:2px;right:4px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;padding:0;}
   .regadd button{min-height:44px;}
   /* sc-md-toolbar 좁은 화면 — 줄바꿈 대신 가로 스크롤 스트립 */
-  .sc-md-toolbar{gap:2px;padding:4px 5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .sc-md-toolbar{gap:2px;padding:4px 5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;mask-image:var(--fade-mask-r);-webkit-mask-image:var(--fade-mask-r);}
   .sc-md-toolbar::-webkit-scrollbar{display:none;}
   .sc-md-toolbar button{padding:7px 10px;min-height:38px;flex-shrink:0;}
   .sc-md-toolbar .tb-sep{flex-shrink:0;}
