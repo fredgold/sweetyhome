@@ -275,16 +275,16 @@ function renderActions(){
     const legacyOwner=a.assignee&&!OWNERS.includes(a.assignee)?`<option value="${esc(a.assignee)}" selected>${esc(actOwnerLabel(a.assignee))}</option>`:'';
     const owners=legacyOwner+OWNERS.map(o=>`<option value="${esc(o)}"${a.assignee===o?' selected':''}>${esc(o)}</option>`).join('');
     row.innerHTML=`
-      <input class="act-edit-inp" value="${esc(a.text)}" style="flex:1;min-width:0;padding:4px 8px;border:1px solid var(--hairline);border-radius:6px;font-size:14px;">
-      <select class="act-edit-cat" style="padding:4px 6px;border:1px solid var(--hairline);border-radius:6px;font-size:12px;">
+      <input class="act-edit-inp" value="${esc(a.text)}">
+      <select class="act-edit-cat">
         <option value=""${!a.category?' selected':''}>일반</option>${cats}
       </select>
-      <select class="act-edit-owner" style="padding:4px 6px;border:1px solid var(--hairline);border-radius:6px;font-size:12px;">
+      <select class="act-edit-owner">
         <option value=""${!a.assignee?' selected':''}>담당 미지정</option>${owners}
       </select>
-      <input type="date" class="act-edit-due" value="${actDueValid(a.due)?esc(a.due):''}" style="padding:4px 6px;border:1px solid var(--hairline);border-radius:6px;font-size:12px;">
-      <button class="act-edit-ok" style="padding:4px 10px;background:var(--money);color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;">저장</button>
-      <button class="act-edit-cancel" style="padding:4px 8px;background:none;border:1px solid var(--hairline);border-radius:6px;font-size:13px;cursor:pointer;">취소</button>`;
+      <input type="date" class="act-edit-due" value="${actDueValid(a.due)?esc(a.due):''}">
+      <button class="act-edit-ok">저장</button>
+      <button class="act-edit-cancel">취소</button>`;
     const inp=row.querySelector('.act-edit-inp');
     const cat=row.querySelector('.act-edit-cat');
     const owner=row.querySelector('.act-edit-owner');

@@ -2973,7 +2973,7 @@ function safetyCountBadgeHTML(l){
   const okCnt=items.filter(s=>s.status==='ok').length;
   const warnCnt=items.filter(s=>s.status==='warning').length;
   const uncheckedCnt=items.filter(s=>s.status==='unchecked').length;
-  return `<div class="safety-item-row" style="margin-bottom:8px">
+  return `<div class="safety-item-row safety-count-badge">
     <span class="chip ok">확인 ${okCnt}</span>
     <span class="chip warn">경고 ${warnCnt}</span>
     <span class="chip">미확인 ${uncheckedCnt}</span>
