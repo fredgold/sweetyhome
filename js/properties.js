@@ -2962,6 +2962,19 @@ function safetyBadgeChip(l){
   if(allOk) return `<span class="chip ok">안전 체크 완료${lastCheckedAt?` · 마지막 확인 ${esc(lastCheckedAt)}`:''}</span>`;
   return `<span class="chip${warningCnt?' warn':''}">미확인 ${uncheckedCnt} · 주의 ${warningCnt}${lastCheckedAt?` · 마지막 확인 ${esc(lastCheckedAt)}`:''}</span>`;
 }
+/* B-139: 안전 체크 섹션 상단 진행 집계 — 9항목 status 세기만(자동판정·차단 없음).
+   색은 기존 안전체크 칩(.chip.ok/.chip.warn/기본)과 동일 */
+function safetyCountBadgeHTML(l){
+  const items=SAFETY_ITEMS.map(({key})=>l.safety[key]);
+  const okCnt=items.filter(s=>s.status==='ok').length;
+  const warnCnt=items.filter(s=>s.status==='warning').length;
+  const uncheckedCnt=items.filter(s=>s.status==='unchecked').length;
+  return `<div class="safety-item-row" style="margin-bottom:8px">
+    <span class="chip ok">확인 ${okCnt}</span>
+    <span class="chip warn">경고 ${warnCnt}</span>
+    <span class="chip">미확인 ${uncheckedCnt}</span>
+  </div>`;
+}
 /* B-41: 임장 노트 요약 칩 — 별점 매긴 항목이 하나라도 있을 때만 노출(기록
    자체가 없으면 무표시). 평균은 표시용 계산일 뿐 저장·정렬·필터에 전혀
    개입하지 않는다(safetyBadgeChip과 동일하게 집계만) */
@@ -2979,6 +2992,7 @@ function safetySectionHTML(l){
   return `<div class="safety-wrap${expanded?' expanded':''}">
     <button type="button" class="gates-toggle" data-safetoggle="${esc(l.id)}">전세 안전 체크 ${expanded?'접기':'펼치기'} <span class="gates-toggle-caret">▾</span></button>
     <div class="safety-list" style="${expanded?'':'display:none'}">
+      ${safetyCountBadgeHTML(l)}
       ${SAFETY_ITEMS.map(item=>{
         const s=l.safety[item.key];
         return `<div class="safety-item">
@@ -3611,6 +3625,7 @@ function daysAgoLabel(iso){
    같은 SAFETY_ITEMS/SAFETY_STATUS_LABEL(state.js)만 재사용, 새 데이터 형태 없음 */
 function safetyReadOnlyHTML(l){
   return `<div class="safety-list">
+    ${safetyCountBadgeHTML(l)}
     ${SAFETY_ITEMS.map(item=>{
       const s=l.safety[item.key];
       const cls=s.status==='warning'?' warn':(s.status==='ok'?' ok':'');
