@@ -828,6 +828,12 @@
   .sc-more-toggle:hover{color:var(--ink-soft);}
   .sc-more-fields{display:none;}
   .sc-more-fields.open{display:block;}
+  /* B-147b: 데스크톱은 공간 여유가 있어 접기 없이 상시 노출 — 모바일(필드 폭발 우려)만
+     기존 접기 유지. 토글 버튼도 숨겨 클릭해도 의미 없는 요소가 안 남게 함 */
+  @media (min-width:900px){
+    .sc-more-toggle{display:none;}
+    .sc-more-fields{display:block;}
+  }
   .sc-form-acts{display:flex;gap:var(--gap-md);align-items:center;margin-top:12px;flex-wrap:wrap;}
   .sc-save-btn{flex:1;padding:11px;background:var(--money);color:#fff;font-size:var(--fs-body);font-weight:800;border-radius:var(--radius-md);}
   .sc-save-btn:hover{background:var(--money-deep);}
