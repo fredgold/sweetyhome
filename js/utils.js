@@ -245,6 +245,36 @@ function unlockBodyScroll(){
 function openModal(id){document.getElementById(id).classList.add('open');lockBodyScroll();}
 function closeModal(id){document.getElementById(id).classList.remove('open');unlockBodyScroll();}
 
+/* B-127: ESC로 모달 닫기 — 라이트박스 > 매물 상세 사이드 패널(cxListingDetailBox,
+   complexDetailModal 안에 중첩) > 모달 본체 순으로 한 번에 한 겹씩만 닫는다.
+   기존 closeModal/closeListingDetail 경로 재사용(X 버튼·백드롭 클릭과 동일 동작).
+   슬래시 메뉴(Tiptap Suggestion·폴백 둘 다 e.preventDefault() 후 자체 처리)는
+   e.defaultPrevented로 우선 위임 + display 직접 확인까지 이중 안전망. 로그인
+   화면은 완전 제외(기존 동작 그대로). 에디터(입력/textarea/contenteditable)
+   포커스 중이면 1차 ESC는 포커스 해제만 — 작성 중 오타로 긴 메모가 그대로
+   모달과 함께 날아가는 사고 방지, 포커스가 빠진 뒤 2차 ESC부터 실제로 닫힘 */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if(e.defaultPrevented)return;
+  const loginOverlay=document.getElementById('loginOverlay');
+  if(loginOverlay&&!loginOverlay.classList.contains('hidden'))return;
+  if([...document.querySelectorAll('.slash-menu')].some(m=>m.style.display==='block'))return;
+  const active=document.activeElement;
+  if(active&&(active.tagName==='INPUT'||active.tagName==='TEXTAREA'||active.isContentEditable)){
+    active.blur();
+    return;
+  }
+  const lightbox=document.getElementById('scLightboxModal');
+  if(lightbox&&lightbox.classList.contains('open')){ closeModal('scLightboxModal'); return; }
+  const listingPanel=document.getElementById('cxListingDetailBox');
+  if(listingPanel&&listingPanel.classList.contains('open')){ closeListingDetail(); return; }
+  const openModals=[...document.querySelectorAll('.modal.open')];
+  if(!openModals.length)return;
+  const top=openModals[openModals.length-1];
+  closeModal(top.id);
+  if(top.id==='complexDetailModal')closeListingDetail();
+});
+
 /* ── 금액 단위 파싱 (억 숫자로 통일) ── */
 function parseEok(text){
   if(text==null)return null;
