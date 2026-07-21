@@ -2696,8 +2696,11 @@ syncSortChips();
 
 /* B-12 A안: 모바일 매물탭 지도뷰⇄리스트뷰 토글. #panel-props[data-view]로 CSS 분기,
    마커↔카드 스크롤 연동(focusCxCard 등)은 리스트뷰에선 지도가 안 보이니 애초에 호출될
-   경로가 없어(마커 클릭 불가) 별도 가드 불필요 — 세션 간 기억은 안 함(새로고침 시 지도뷰로) */
+   경로가 없어(마커 클릭 불가) 별도 가드 불필요.
+   B-149: 마지막 본 뷰는 localStorage(sh_propViewMode, state 스키마 밖 순수 UI 키)로
+   세션 간에도 기억 — 값 없거나 'list'가 아니면 지도로 폴백 */
 let propViewMode='map';
+try{ if(localStorage.getItem('sh_propViewMode')==='list') propViewMode='list'; }catch(e){}
 /* B-12 재수정A: 리스트뷰 스크롤 중 정렬칩/뷰토글/⋯버튼(지도뷰에선 position:fixed
    오버레이)이 카드 위에 겹쳐 보이던 문제(B-22) — 리스트뷰에서만 이 셋을 실제로
    #cxListToolbar 안으로 옮겨 position:sticky 불투명 바로 묶음(복제 없이 DOM을
@@ -2732,7 +2735,9 @@ function applyPropViewMode(){
   }));
 }
 { const vtb=document.getElementById('propViewToggleBtn'); if(vtb) vtb.onclick=()=>{
-  propViewMode=propViewMode==='map'?'list':'map'; applyPropViewMode();
+  propViewMode=propViewMode==='map'?'list':'map';
+  try{ localStorage.setItem('sh_propViewMode',propViewMode); }catch(e){}
+  applyPropViewMode();
 }; }
 applyPropViewMode();
 
