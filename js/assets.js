@@ -6,6 +6,16 @@ function ownerSel(v){
 }
 function typeSel(v){return ATYPES.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
 function liqSel(v){return LIQUIDITY.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');}
+/* B-148: 모바일 요약행→탭 펼침. state/localStorage 무저장, 세션 내 메모리 변수로만
+   기억(새로고침·재렌더 시 자연 초기화돼도 무방 — 접기 정책 예외인 "요약→상세" 패턴) */
+let expandedAssetId=null;
+function applyAssetExpandState(){
+  document.querySelectorAll('#a_rows .regrow').forEach(row=>{
+    const exp=row.dataset.id===expandedAssetId;
+    row.classList.toggle('is-expanded',exp);
+    const btn=row.querySelector('.reg-summary'); if(btn) btn.setAttribute('aria-expanded',String(exp));
+  });
+}
 function renderAssets(){
   const ownerFilterSel=document.getElementById('asset_ownerFilter');
   if(ownerFilterSel && ownerFilterSel.dataset.owners!==OWNERS.join(',')){
@@ -24,8 +34,22 @@ function renderAssets(){
   if(!items.length){
     box.innerHTML=`<div class="regempty">아직 자산 항목이 없어요.<br><b>＋ 항목 추가</b>로 한 줄씩 넣거나, <b>${ic('paste')} 시트 붙여넣기</b>로 한 번에 가져오세요.</div>`;
   } else {
-    box.innerHTML=items.map(it=>`
-      <div class="regrow ${it.liquidity==='즉시'?'imm':'lng'}" data-id="${it.id}">
+    box.innerHTML=items.map(it=>{
+      const expanded=it.id===expandedAssetId;
+      const mobDiffers=it.mobilizable!=null&&it.mobilizable!==it.amount;
+      return `
+      <div class="regrow ${it.liquidity==='즉시'?'imm':'lng'}${expanded?' is-expanded':''}" data-id="${it.id}">
+        <button type="button" class="reg-summary" aria-expanded="${expanded}">
+          <span class="reg-summary-main">
+            <span class="reg-summary-name">${esc(it.name||'(이름 없음)')}</span>
+            <span class="reg-summary-owner">${esc(assetOwnerLabel(it.owner)||'')}</span>
+          </span>
+          <span class="reg-summary-amt">
+            <b class="tnum">${comma(it.amount)}원</b>
+            ${mobDiffers?`<small class="tnum">동원 ${comma(it.mobilizable)}원</small>`:''}
+          </span>
+          <span class="reg-summary-caret">▶</span>
+        </button>
         <div class="rcell"><span class="regcardlab">소유자</span><select data-f="owner">${ownerSel(it.owner)}</select></div>
         <div class="rcell rc-name"><span class="regcardlab">자산 항목</span><input data-f="name" value="${esc(it.name||'')}" placeholder="예: 국민은행 월급통장"></div>
         <div class="rcell"><span class="regcardlab">현재 금액(원)</span><input class="num" data-f="amount" inputmode="numeric" value="${it.amount?comma(it.amount):''}" placeholder="0"></div>
@@ -34,7 +58,8 @@ function renderAssets(){
         <div class="rcell"><span class="regcardlab">동원 가능액(원)</span><input class="num" data-f="mobilizable" inputmode="numeric" value="${it.mobilizable?comma(it.mobilizable):''}" placeholder="0"></div>
         <div class="rcell rc-memo"><span class="regcardlab">메모</span><input data-f="memo" value="${esc(it.memo||'')}" placeholder="메모"></div>
         <div class="del" data-del-asset="${it.id}" title="삭제" aria-label="삭제">✕</div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
   bindAssetRows();
   renderAssetSummary();
@@ -49,9 +74,24 @@ function renderAssets(){
   if(updEl&&state.assets.updatedAt) updEl.textContent='마지막 수정: '+new Date(state.assets.updatedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
   updateTargetMsg();
 }
+/* B-148: 요약행(이름·소유자·금액·동원가능액)은 상세 필드 편집 중엔 재렌더하지
+   않으므로(포커스·스크롤 보존) 값이 바뀔 때 텍스트만 직접 갱신 */
+function syncRowSummaryText(row,it){
+  const nameEl=row.querySelector('.reg-summary-name'); if(nameEl) nameEl.textContent=it.name||'(이름 없음)';
+  const ownerEl=row.querySelector('.reg-summary-owner'); if(ownerEl) ownerEl.textContent=assetOwnerLabel(it.owner)||'';
+  const amtEl=row.querySelector('.reg-summary-amt');
+  if(amtEl){
+    const mobDiffers=it.mobilizable!=null&&it.mobilizable!==it.amount;
+    amtEl.innerHTML=`<b class="tnum">${comma(it.amount)}원</b>${mobDiffers?`<small class="tnum">동원 ${comma(it.mobilizable)}원</small>`:''}`;
+  }
+}
 function bindAssetRows(){
   document.querySelectorAll('#a_rows .regrow').forEach(row=>{
     const it=assetItems().find(x=>x.id===row.dataset.id); if(!it)return;
+    row.querySelector('.reg-summary')?.addEventListener('click',()=>{
+      expandedAssetId=(expandedAssetId===it.id)?null:it.id;
+      applyAssetExpandState();
+    });
     row.querySelectorAll('[data-f]').forEach(el=>{
       const f=el.dataset.f;
       const handler=()=>{
@@ -60,7 +100,14 @@ function bindAssetRows(){
           const prevAmt=it.amount;
           it[f]=n;
           if(f==='amount' && (it.mobilizable==null || it.mobilizable===prevAmt || !it.mobilizable)){ it.mobilizable=n; }
-        } else { it[f]=el.value; if(f==='liquidity') row.className='regrow '+(el.value==='즉시'?'imm':'lng'); }
+        } else {
+          it[f]=el.value;
+          if(f==='liquidity'){
+            row.classList.toggle('imm',el.value==='즉시');
+            row.classList.toggle('lng',el.value!=='즉시');
+          }
+        }
+        if(f==='name'||f==='owner'||f==='amount'||f==='mobilizable') syncRowSummaryText(row,it);
         state.assets.updatedAt=Date.now(); renderAssetSummary(); updateTargetMsg(); save();
       };
       el.addEventListener(el.tagName==='SELECT'?'change':'input',handler);
@@ -68,6 +115,7 @@ function bindAssetRows(){
     });
   });
   document.querySelectorAll('#a_rows [data-del-asset]').forEach(b=>b.onclick=()=>{
+    if(expandedAssetId===b.dataset.delAsset) expandedAssetId=null;
     state.assets.items=assetItems().filter(x=>x.id!==b.dataset.delAsset); save(); renderAssets();
   });
 }
@@ -86,10 +134,17 @@ function renderAssetSummary(){
 }
 function addAssetRow(prefill){
   state.assets.items=assetItems();
-  state.assets.items.push(Object.assign({id:'as'+Date.now()+Math.random().toString(36).slice(2,5),owner:OWNERS[0],name:'',amount:0,type:'현금',liquidity:'즉시',mobilizable:0,memo:''},prefill||{}));
+  const row=Object.assign({id:'as'+Date.now()+Math.random().toString(36).slice(2,5),owner:OWNERS[0],name:'',amount:0,type:'현금',liquidity:'즉시',mobilizable:0,memo:''},prefill||{});
+  state.assets.items.push(row);
   save(); renderAssets();
+  return row.id;
 }
-document.getElementById('addAssetRow').onclick=()=>{ addAssetRow(); toast('추가했어요'); const rows=document.querySelectorAll('#a_rows .regrow'); const last=rows[rows.length-1]; if(last){const nm=last.querySelector('[data-f="name"]'); if(nm)nm.focus();} };
+document.getElementById('addAssetRow').onclick=()=>{
+  expandedAssetId=addAssetRow(); // B-148: 모바일에서 새 행이 접혀 있으면 이름 입력칸이 안 보여 focus()가 무의미해짐 — 새 행은 펼친 채로 시작
+  applyAssetExpandState();
+  toast('추가했어요');
+  const rows=document.querySelectorAll('#a_rows .regrow'); const last=rows[rows.length-1]; if(last){const nm=last.querySelector('[data-f="name"]'); if(nm)nm.focus();}
+};
 
 function updateTargetMsg(){
   const total=sumMobImmediate(), tgt=(+state.settings.targetDeposit||0)*100000000;

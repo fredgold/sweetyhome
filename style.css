@@ -220,6 +220,34 @@
   .btn-paste{background:var(--money-wash);color:var(--money-deep);border:1px solid var(--money);}
   .regempty{padding:26px 16px;text-align:center;color:var(--ink-faint);font-size:var(--fs-label);line-height:1.6;}
   .regcardlab{display:none;}
+  /* B-148: 모바일 요약행(이름·금액) — 데스크톱은 항상 숨김, 테이블 그대로 */
+  .reg-summary{display:none;}
+  @media (max-width:899.98px){
+    .reghead{display:none;}
+    .regrow{grid-template-columns:1fr;gap:0;padding:0;border-top:8px solid var(--bg);position:relative;}
+    .reg-summary{
+      display:flex;align-items:center;justify-content:space-between;gap:var(--gap-md);
+      width:100%;padding:12px;text-align:left;cursor:pointer;
+    }
+    .regrow.is-expanded .reg-summary{grid-column:1/-1;}
+    .reg-summary-main{min-width:0;}
+    .reg-summary-name{display:block;font-size:var(--fs-label);font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .reg-summary-owner{display:block;font-size:var(--fs-tiny);color:var(--ink-faint);font-weight:600;margin-top:2px;}
+    .reg-summary-amt{flex-shrink:0;text-align:right;}
+    .reg-summary-amt b{display:block;font-size:var(--fs-label);font-weight:800;color:var(--money-deep);}
+    .reg-summary-amt small{display:block;font-size:var(--fs-tiny);color:var(--ink-faint);font-weight:600;margin-top:1px;}
+    .reg-summary-caret{flex-shrink:0;font-size:var(--fs-tiny);color:var(--ink-faint);transition:transform .15s;}
+    .regrow.is-expanded .reg-summary-caret{transform:rotate(90deg);}
+    .regrow:not(.is-expanded) .rcell,
+    .regrow:not(.is-expanded) .del{display:none;}
+    .regrow.is-expanded{grid-template-columns:1fr 1fr;gap:var(--gap-md);padding:0 12px 12px;}
+    .regrow.is-expanded .rc-name,.regrow.is-expanded .rc-memo{grid-column:1/-1;}
+    .regrow.is-expanded .del{position:absolute;top:8px;right:8px;display:block;}
+    .regrow>*{min-width:0;}
+    .regcardlab{display:block;font-size:var(--fs-tiny);font-weight:800;color:var(--ink-faint);margin-bottom:3px;}
+    .rcell{display:flex;flex-direction:column;}
+    .regrow input,.regrow select{font-size:var(--fs-body);}
+  }
 
   /* ================= PROPERTIES (흡수) ================= */
   .gates{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:13px 15px;margin-bottom:18px;box-shadow:var(--shadow);}
@@ -1142,13 +1170,6 @@
     .btn-ai{font-size:var(--fs-tiny);padding:6px 10px;}
     .asum{grid-template-columns:1fr;}
     .asum .sbig .val{font-size:22px;}
-    .reghead{display:none;}
-    .regrow{grid-template-columns:1fr 1fr;gap:var(--gap-md);padding:12px;border-top:8px solid var(--bg);position:relative;}
-    .regrow>*{min-width:0;}
-    .regrow .rc-name,.regrow .rc-memo{grid-column:1 / -1;}
-    .regrow .del{position:absolute;top:8px;right:8px;}
-    .regcardlab{display:block;font-size:var(--fs-tiny);font-weight:800;color:var(--ink-faint);margin-bottom:3px;}
-    .rcell{display:flex;flex-direction:column;}
     .gates{padding:11px 12px;}
     .gatelist{grid-template-columns:1fr 1fr;gap:var(--gap-md);}
     .gate .gt{font-size:var(--fs-micro);}
@@ -1220,9 +1241,6 @@
     #panel-actions .actfull .actrow:has(.act-edit-inp){flex-wrap:wrap;}
     #panel-actions .actfull .actrow:has(.act-edit-inp) .act-edit-inp{flex-basis:100%!important;}
     .act-group-body{padding:0 9px;}
-    /* 자산 테이블 입력박스 */
-    .regrow input,.regrow select{font-size:var(--fs-body);}
-    .regcardlab{font-size:var(--fs-tiny);font-weight:800;margin-bottom:4px;}
     /* 에디터 textarea 최소 높이 */
     .sc-md-textarea,.field textarea{min-height:80px;font-size:var(--fs-body);}
     /* 수집함 add form textarea */
@@ -1385,7 +1403,7 @@ body:has(.status-picker.ph-more-menu)::before{content:"";position:fixed;inset:0;
   .modal .mbody{padding:10px 12px;}
   .modal .mfoot{padding:8px 12px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0));}
   /* 자산 카드: 이름·메모는 전체폭, 나머지는 2열 유지해 세로 길이 절감 */
-  .regrow{grid-template-columns:1fr 1fr;gap:var(--gap-md);padding-top:14px;}
+  .regrow.is-expanded{grid-template-columns:1fr 1fr;gap:var(--gap-md);}
   .regrow input,.regrow select{min-height:44px;}
   .regrow .del{position:absolute;top:2px;right:4px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;padding:0;}
   .regadd button{min-height:44px;}
