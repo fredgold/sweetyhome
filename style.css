@@ -227,9 +227,14 @@
     .regrow{grid-template-columns:1fr;gap:0;padding:0;border-top:8px solid var(--bg);position:relative;}
     .reg-summary{
       display:flex;align-items:center;justify-content:space-between;gap:var(--gap-md);
-      width:100%;padding:12px;text-align:left;cursor:pointer;
+      width:100%;padding:var(--gap-lg);text-align:left;cursor:pointer;
     }
-    .regrow.is-expanded .reg-summary{grid-column:1/-1;}
+    /* B-148 후속: 삭제(✕)를 펼친 편집영역 맨 아래로 내리면서(아래) 요약행엔 접기
+       화살표만 남음 — 오탭 위험 요소였던 우측 상단 밀집을 물리적으로 분리 */
+    .regrow.is-expanded .reg-summary{
+      grid-column:1/-1;border-bottom:1px solid var(--hairline-soft);
+      margin-bottom:var(--gap-lg);padding-bottom:var(--gap-md);
+    }
     .reg-summary-main{min-width:0;}
     .reg-summary-name{display:block;font-size:var(--fs-label);font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .reg-summary-owner{display:block;font-size:var(--fs-tiny);color:var(--ink-faint);font-weight:600;margin-top:2px;}
@@ -240,9 +245,20 @@
     .regrow.is-expanded .reg-summary-caret{transform:rotate(90deg);}
     .regrow:not(.is-expanded) .rcell,
     .regrow:not(.is-expanded) .del{display:none;}
-    .regrow.is-expanded{grid-template-columns:1fr 1fr;gap:var(--gap-md);padding:0 12px 12px;}
+    .regrow.is-expanded{grid-template-columns:1fr 1fr;gap:var(--gap-md) var(--gap-md);padding:0 var(--gap-lg) var(--gap-lg);}
     .regrow.is-expanded .rc-name,.regrow.is-expanded .rc-memo{grid-column:1/-1;}
-    .regrow.is-expanded .del{position:absolute;top:8px;right:8px;display:block;}
+    /* 삭제는 편집 필드 맨 아래에 전체폭 텍스트 버튼으로 — 접기 화살표(요약행 우측)와
+       물리적으로 떨어뜨려 오탭 방지. 480px 블록의 44px 절대배치 del 규칙보다 특정도가
+       높아 여기서 확실히 덮어씀(위치·크기 전부 명시 재정의) */
+    .regrow.is-expanded .del{
+      grid-column:1/-1;position:static;width:100%;height:auto;min-height:40px;
+      display:flex;align-items:center;justify-content:center;gap:4px;
+      margin-top:var(--gap-xs);padding:var(--gap-md);
+      border-top:1px solid var(--hairline-soft);border-radius:0;
+      font-size:var(--fs-micro);font-weight:700;color:var(--s-drop);
+    }
+    .regrow.is-expanded .del::after{content:" 삭제";}
+    .regrow.is-expanded .del:hover{background:var(--caution-wash);}
     .regrow>*{min-width:0;}
     .regcardlab{display:block;font-size:var(--fs-tiny);font-weight:800;color:var(--ink-faint);margin-bottom:3px;}
     .rcell{display:flex;flex-direction:column;}
@@ -1402,10 +1418,9 @@ body:has(.status-picker.ph-more-menu)::before{content:"";position:fixed;inset:0;
   .modal .mhead{padding:10px 12px 6px;}
   .modal .mbody{padding:10px 12px;}
   .modal .mfoot{padding:8px 12px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0));}
-  /* 자산 카드: 이름·메모는 전체폭, 나머지는 2열 유지해 세로 길이 절감 */
-  .regrow.is-expanded{grid-template-columns:1fr 1fr;gap:var(--gap-md);}
+  /* 자산 카드: 이름·메모는 전체폭, 나머지는 2열 유지해 세로 길이 절감(2열·삭제
+     버튼 배치는 899.98px 블록의 .regrow.is-expanded 규칙이 이미 처리) */
   .regrow input,.regrow select{min-height:44px;}
-  .regrow .del{position:absolute;top:2px;right:4px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;padding:0;}
   .regadd button{min-height:44px;}
   /* sc-md-toolbar 좁은 화면 — 줄바꿈 대신 가로 스크롤 스트립 */
   .sc-md-toolbar{gap:2px;padding:4px 5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;mask-image:var(--fade-mask-r);-webkit-mask-image:var(--fade-mask-r);}
