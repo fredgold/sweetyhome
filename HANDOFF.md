@@ -1,7 +1,104 @@
-# HANDOFF — B-127+B-128 완료 (2026-07-20) ESC 모달 닫기 + 편집 모달 삭제 버튼
+# HANDOFF — B-05 완료 (2026-07-25) 레거시 properties[] 완전 삭제
 
 > **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
 > 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
+
+## 최신 작업: 레거시 `state.properties[]`(flat 스키마) 활성 CRUD·죽은 코드·스키마·데이터 완전 삭제 (B-81 동시 종결)
+
+```
+ad4a9d0 refactor: 마이그레이션 프리뷰 죽은 코드 삭제 (B-05 ①)
+be5760e refactor: 활성 레거시 매물 CRUD·렌더·내보내기 삭제 (B-05 ②)
+5acbed5 feat: 레거시 properties 스키마·가드·복원·AI 컨텍스트 정리 (B-05 ③)
+```
+
+커맨드센터 지시서(`dispatch-2026-07-25-B05.md`)로 착수. 사용자
+백업 완료 확인 후 게이트 통과. 손 A 단독, 지시대로 3커밋 분리
+(도달불가 죽은 코드 → 활성 CRUD → 스키마/데이터). 총 54줄 추가·
+905줄 삭제(순감소 851줄).
+
+**커밋①**(`properties.js`, 최저위험): `migBuildRows`/
+`renderMigPreview`/`migApply`/`migInjectUI`(진입 버튼 이미 제거된
+도달불가 마이그레이션 프리뷰 모달, B-68 주석 대상) + "기존(미정리)
+매물" 접기 토글(`legacyExpanded`/`updateLegacyToggleLabel`/
+`legacyToggleBtn` 핸들러) 삭제. `migComplexStatus`/`migParseName`은
+`saveAsComplexListing`·TSV 임포트가 여전히 써서 유지.
+
+**커밋②**(`properties.js`+`index.html`+`style.css`, 최대 덩어리):
+레거시 렌더 전체 — `renderTabs`/`renderList`/`actionsHTML`/
+`headlineText`/`subtitleText`/`parseDepositUpper`/`bodyMetaChips`/
+`checklistHTML`/`aiBlock`/`aiAnalyze`/`locate`/`reselectMarker`
+(단, `commuteCardChips`는 `renderComplexes`도 써서 유지). 편집 모달
+전체 — `openEdit`/`initEditMap`/`initEMMemoEditor`(Tiptap)/
+`em_saveBtn`/`em_cancelBtn`/`em_findBtn`/`em_img*`/`em_mdToolbar`/
+`propEditModal`(index.html). `delProp`/레거시 `showStatusPicker`
+(`showCxStatusPicker`와는 `.status-picker` 클래스만 공유, 별개 함수 —
+트랩① 확인 후 신규만 유지)/`#list` 클릭·키보드 위임/`updateUnisearch`.
+AI 자동평가 클러스터 — `WEIGHTS`/`renderWeights`/`weightLine`/
+`evalBtn`(`.wcard`는 실사용 `display:none` 하드코딩이라 이미 죽어있던
+UI, 감사 스코프 밖이지만 `state.properties` 유일 소비처라 동시 삭제).
+레거시 CSV 내보내기 `exportProps`+내보내기 메뉴 "레거시(기존 매물)"
+옵션. `saveBtn`은 트랩②대로 정확히 갈라냄 — `editId`가 실제로는
+아무 데서도 set되지 않아(`clearForm`이 매번 비움) `existing` 분기가
+100% 도달불가였음을 확인 후 그 죽은 분기만 제거, `saveAsComplexListing`
+호출(활성 2계층 저장 라우팅)은 무변경. `index.html`: `propEditModal`
+전체, `legacyToggleWrap`/`legacyWrap`(`#tabs`/`#list`), `.wcard`,
+`propSortSel`(레거시 정렬 전용, 단지엔 별도 `cxSort` 존재), `editId`
+히든필드, `unisearchResult`(레거시 렌더만 갱신하던 죽은 카운터)
+삭제. `style.css`: 위 DOM 전용 셀렉터(`.wcard`/`.tabs`/`.tab`/`.rail`/
+`.ck-*`/`.airep`/`.aiload`/`.card[data-st]`/`.card.dim`/
+`.card.expanded`/`.c-progress*`/`.c-body`) 삭제, `#complexSection`과
+공유하는 규칙(`.card`/`.c-actions`/`.card::before` 등)은 selector만
+좁혀 유지 — 전수 grep으로 각 클래스가 남은 코드에서 실제로 쓰이는지
+개별 확인 후 삭제(예: `.c-act-del`은 매물 상세 삭제 버튼이 여전히
+써서 유지, `.c-actions a.naver`는 무소비 확인 후 삭제).
+
+**커밋③**(`state.js`+`profile.js`+`ai.js`): `state.js` JSDoc의
+`state.properties` 스키마 블록, `DEFAULT`/`GUEST_STATE`의 `properties`
+시드, `applyGuards`의 `guardArr` 보정 블록 삭제 → `delete
+state.properties`로 교체(로드마다 옛 백업·미동기 클라이언트가 보낸
+필드를 폐기, 다음 save에서 Redis 반영 — 백업 게이트가 선행조건이던
+이유). `checklistHTML` 삭제로 유일 소비처를 잃은 `CHECKLIST`/`ORDER`
+상수도 함께 삭제(`CHECK`/`SC`/`HEX`는 `SC_CX`/`HEX_CX`가 파생해 쓰므로
+유지). **트랩③**: `profile.js`의 `doImport`(백업 복원) — 'full' 백업
+안 옛 `properties` 배열은 `applyGuards`가 조용히 버리므로, 복원 전
+개수를 미리 세어 "구버전 매물 N곳은 복원 대상 아님" 안내로 표시.
+'legacy'(구버전 properties-only, `집구하기맵::` 접두 포함) 백업은
+매물 복원 없이 prep/steps만 복원하도록 confirm 문구도 갱신 — 복원
+기능 자체는 유지, 조용히 버리지 않음. **B-81 동시 종결**: `ai.js`의
+`stateSnapshot()` AI 상담 프롬프트 `[매물]` 컨텍스트를
+`state.properties.map` → `state.complexes.map`+`cxRepOf`(대표매물)
+기준으로 교체(단지명/상태/대표매물 보증금·전용면적/위치/aiScore).
+AI 크레딧 소진으로 실행 검증 불가 — `node --check`+코드 리뷰로 갈음.
+
+**검증**: `node --check` 13개 파일 전부 통과. `grep -rn
+"state\.properties|properties\[" js/ index.html` 잔여 **1건**
+(`state.js`의 `delete state.properties` 자기 자신 — 삭제 코드가
+필연적으로 그 이름을 언급하는 것으로, 데이터를 읽거나 쓰는 잔재
+아님. `profile.js`의 백업 복원 코드는 외부 백업 객체(`o.state`)의
+필드를 읽는 것이라 대괄호 표기(`o.state['properties']`)로 실질
+분리). 나머지 읽기/쓰기 잔재 0건. Playwright 스모크(로컬 Node
+UTF-8 정적 서버, 게스트 로그인, 데스크톱 1440+모바일 390, 5탭
+순회 + 매물탭 폼 열기/내보내기 메뉴)로 커밋 전(3d0e5c1)·후 콘솔
+에러를 비교 — 둘 다 동일한 사전 존재 노이즈(오프라인 샌드박스의
+`/api/*` 404·네이버맵 401·무관한 `.box` null 오류 1건, 전부 이번
+세션 착수 전부터 재현됨)뿐이고 신규 에러 0건. `/api/login`+
+`/api/state` 목업으로 실제 로그인→state 변경→`save()` 왕복 재현 —
+POST 바디 최상위 키에 `properties` 부재, `complexes`/`listings`
+등 나머지 13개 키 정상 확인.
+
+**동시 작업 발견**: 이번 세션 도중 커맨드센터가 별도로 `api/ingest.js`
+(모바일 수집 인박스 API)+`js/boot.js`+`js/scraps-form.js`에
+직접 커밋 3개(`c26d2e0`/`a7ddd9a`/`de673ff`)를 올림 — B-05가 손댄
+파일과 완전히 겹치지 않아 충돌 없음, 파일 락 위반 아님. 참고로만 기록.
+
+- **B-05 완료·미푸시**(`ad4a9d0`/`be5760e`/`5acbed5`).
+- **다음**: properties.js 2분할 재평가(사용자 결정 2026-07-19, 이
+  지시서 범위 밖) — 커맨드센터가 별도 발급 예정. 사용자 실기기·
+  실배포 확인 권장(특히 백업 복원 문구, 매물 폼 저장 흐름).
+
+---
+
+# 이전 핸드오프 — B-127+B-128 완료 (2026-07-20) ESC 모달 닫기 + 편집 모달 삭제 버튼
 
 ## 최신 작업: ESC로 모달 닫기(중첩 3겹 대응) + 수집함 편집 모달 삭제 버튼
 
@@ -115,76 +212,3 @@ scraps=state.scraps.filter(...)`+`save()`+`renderScraps()`), 성공
 
 - **B-126 완료·push 완료**(`8a1f6f3`).
 - **다음**: 사용자 별도 지시 대기.
-
----
-
-# 이전 핸드오프 — B-123 완료 (2026-07-20) 인스타 레퍼런스 강화
-
-## 최신 작업: 갤러리 카드 이미지 중심 강화 + 클립보드 이미지 붙여넣기 수집
-
-```
-23cbeb7 feat: 갤러리 카드 이미지 중심 강화 + 라이트박스 (B-123 ①)
-fd9fbf8 feat: 클립보드 이미지 붙여넣기 수집 (B-123 ②)
-```
-
-커맨드센터 확정 스펙(일원화 방침 긍정 확인 → 2026-07-19 발급)으로
-착수. 손 B 부재로 파일 락 제약 없이 진행, 지시대로 2커밋 분리.
-
-**B-123①**(`scraps-render.js`+`index.html`+`style.css`): 갤러리 카드
-중 imgs 있는 항목은 커버 이미지를 4:5 비율(`.sc-gallery-imgwrap{
-aspect-ratio:4/5}`)로 확대해 인스타 피드에 가깝게, 다중 사진이면
-우상단 반투명 뱃지(`⧉3`형식). 사진 없는 카드는 기존 유형색 프리뷰
-완전 무변화. 이미지 클릭은 `data-sclight` 래퍼가 잡아 `stopPropagation`
-으로 카드 본문 클릭(기존 편집 모달 오픈)과 버블링 분리 — 새 라이트박스
-모달(`scLightboxModal`)은 기존 `.modal`/`openModal`/`closeModal`/
-`data-close` 제네릭 패턴 그대로 재사용(신규 라이브러리 0), `imgs[]`
-좌우 넘김은 prev/next 버튼 + 좌우 화살표 키(모달 열림 상태에서만
-document 레벨로 감지) 자체 구현. 리스트뷰(피드)는 완전 무변경.
-
-**B-123②**(`scraps-form.js`): 수집함 추가폼·편집모달 에디터(`sc_text`/
-`sem_text`)에 이미지 붙여넣기 지원. 캡처 단계(`{capture:true}`)로
-마운트 지점(`el`)에 리스너를 걸어 Tiptap 성공 시에도 내부 `.ProseMirror`
-자체 붙여넣기 핸들러보다 항상 먼저 개입 — 클립보드에 이미지 파일이
-있으면 `preventDefault`+`stopPropagation`으로 완전히 가로채
-`compressImage` 경유 후 `imgs[]`에 push(기존 파일선택 업로드와 동일
-썸네일 UI 재사용, `SC_MAX_IMGS` 상한 동일 적용), 텍스트가 함께 있으면
-Tiptap `insertContent` 또는 폴백 `scInsertFallbackText`(기존 두 paste
-핸들러가 중복 보유하던 삽입 로직을 공용 함수로 추출, 리팩터 겸함)로
-에디터에 삽입 — "텍스트는 에디터로, 이미지는 첨부로" 분리 처리. **이미지가
-없는 순수 텍스트 붙여넣기는 함수 맨 위에서 즉시 `return`해 기존 경로
-(Tiptap 기본 처리 또는 폴백 핸들러)를 그대로 통과**시켜 무회귀 보장.
-
-**검증**(Playwright, 로컬 Node UTF-8 정적 서버): 라이트박스 — 장수
-뱃지(다중만 노출·단일 무표시) 확인, 이미지 클릭 시 라이트박스만 열리고
-편집 모달은 안 열림(반대로 카드 본문 클릭은 편집 모달만 열림, 두
-클릭 영역 상호 간섭 없음) 확인, prev/next 버튼·화살표 키 넘김(순환)
-확인, `data-close` 버튼·백드롭 클릭 양쪽 닫기 확인, 모바일 390px
-`hasTouch` 컨텍스트로 탭 열기 확인. 이미지 붙여넣기 — 이 샌드박스는
-esm.sh(Tiptap CDN) 도달성이 실행마다 들쭉날쭉해(같은 스크립트 재실행
-시 성공/실패가 갈림) **두 경로 모두 실측**: Tiptap 활성 시
-`editor.chain().focus().insertContent()` 경로, `route().abort()`로
-CDN을 의도 차단한 폴백 강제 상태에서 `scInsertFallbackText` 경로 —
-둘 다 순수 텍스트 붙여넣기 무회귀, 이미지 단독 붙여넣기(텍스트 불변+
-이미지만 추가), 혼합 붙여넣기(텍스트 삽입 + 이미지 추가 동시),
-상한 초과(5장 캡+에러 문구) 전부 확인. `compressImage` 경유 확인
-(저장된 문자열이 원본 PNG가 아니라 항상 `data:image/jpeg;...`로
-재인코딩됨 — 원본 base64 직저장이 아님을 실측 증명). 편집 모달은
-기존 `imgs[]`(빈 배열 포함) 위에 정상 추가되고 썸네일 렌더까지 확인.
-캡처 단계 우선권 자체도 별도 DOM 구조 테스트로 재확인(조상 요소의
-capture 리스너에서 `stopPropagation`하면 하위 타깃 요소 자신의
-리스너가 아예 안 불림 — Tiptap의 `.ProseMirror` 자체 핸들러를 항상
-막을 수 있다는 전제의 근거). `node --check` 전체 js 통과.
-
-**범위 밖(지시대로 보고만)**: iOS 사파리 길게눌러 붙여넣기 — 이
-환경은 데스크톱 헤드리스 Chromium뿐이라 실기기 터치 붙여넣기
-제스처는 직접 재현 불가. 코드 레벨로는 표준 `paste` 이벤트(`
-clipboardData.files`)만 사용해 iOS Safari 자체는 이 이벤트를 길게눌러
-붙여넣기 시에도 지원하는 것으로 알려져 있으나(사파리 공유 시트가
-아니라 표준 붙여넣기 메뉴 경유), **실기기 최종 확인은 사용자 몫**.
-iOS 공유 시트에서 앱으로 직행하는 것은 별개 기능(PWA share target,
-iOS 미지원)이라 R-09로 이미 분리돼 있어 이번 범위 아님.
-
-- **B-123 완료·push 완료**(`23cbeb7`/`fd9fbf8`).
-- **다음**: 사용자 실사용 피드백 대기 — 라이트박스·이미지 붙여넣기
-  실기기(특히 iOS) 확인 결과에 따라 후속 조정 가능.
-
