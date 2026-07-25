@@ -27,12 +27,6 @@
  *                    index로 complexes[].commutes와 매칭. 이름 변경은 표시만
  *                    바꿀 뿐 기록과 무관(매칭은 이름이 아니라 index).
  *
- * state.properties: [{id, created, name, loc, station, line, deposit (억),
- *                     depositNum (억), area (㎡), households, householdGrade,
- *                     jeonseReal, saleReal, jeonseRatio, commuteGangnam,
- *                     commuteSinsa, url, memo, img (base64), status, lat, lng,
- *                     geocodePending, checks:{k1..k9}, aiScore, aiComment}]
- *
  * state.complexes : [{id, complexName, loc, geocodeQuery, groupCode, regionGroup,
  *                     station, line, yearBuilt, households, householdGrade,
  *                     commuteGangnam, commuteSinsa, complexStatus('관심' 기본),
@@ -201,19 +195,7 @@ document.getElementById('unsyncedBannerClose')?.addEventListener('click',()=>{
 const CHECK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 const SC={관심:'--s-interest',방문예정:'--s-visit',검토중:'--s-review',후보:'--s-final',문의예정:'--s-inquiry',보류:'--s-hold',탈락:'--s-drop'};
 const HEX={관심:'#6B7C93',방문예정:'#C7853A',검토중:'#B89233',후보:'#4F8A5B',문의예정:'#4B88CC',보류:'#8A8F8A',탈락:'#B16A63'};
-const ORDER={후보:0,검토중:1,문의예정:2,방문예정:3,관심:4,보류:5,탈락:6};
 const CENTER=[37.512,126.942];
-const CHECKLIST=[
-  {id:'k1',t:'동·층 / 일조',s:'로얄동·층 vs 저층, 햇빛'},
-  {id:'k2',t:'학군·초품아',s:'배정 초등학교, 통학거리',vl:'지도',vu:n=>nmapUrl(n+' 초등학교')},
-  {id:'k3',t:'생활 인프라',s:'마트·병원 + 지하철역 거리',vl:'주변보기',vu:n=>nmapUrl(n)},
-  {id:'k4',t:'세대수(대단지)',s:GRADE_DEFAULTS.bigComplex+'세대+면 관리·보증 유리',vl:'단지정보',vu:n=>landUrl(n)}, // B-18: 하드 문자열 대신 GRADE_DEFAULTS(utils.js) 참조
-  {id:'k5',t:'복도식 / 계단식',s:'채광·보안 차이',vl:'단지정보',vu:n=>landUrl(n)},
-  {id:'k6',t:'관리비 · 난방',s:'실제 월 관리비 수준'},
-  {id:'k7',t:'재건축·정비 리스크',s:'전세 이주 위험! 꼭 확인'},
-  {id:'k8',t:'세대당 주차',s:'세대당 몇 대인지',vl:'단지정보',vu:n=>landUrl(n)},
-  {id:'k9',t:'입주민 후기',s:'하자·집주인·실거주 평판'},
-];
 
 /* B-27-lite: 전세 안전 체크 9항목 — listings[].safety의 키 목록. 판정 없음,
    기록만(상태·메모·출처·확인일). state.js·properties.js 양쪽에서 공유. */
@@ -292,7 +274,6 @@ const DEFAULT={
     {id:'a2',text:'서울시 신혼부부 이자지원 오픈 모니터링 (~8월)',priority:2,done:false},
     {id:'a3',text:'협약은행 대출상담 예약 (KB·하나·신한)',priority:3,done:false},
   ],
-  properties:[],
   complexes:[],
   listings:[],
   regNews:[],
@@ -339,11 +320,6 @@ const GUEST_STATE={
     {id:'ga1',text:'(예시) 전세대출 조건 알아보기',priority:1,done:false},
     {id:'ga2',text:'(예시) 관심 지역 매물 검색하기',priority:2,done:false},
     {id:'ga3',text:'(예시) 은행 상담 예약',priority:3,done:true},
-  ],
-  properties:[
-    {id:'gp1',created:1,name:'(예시) 샘플 아파트 A',loc:'서울 OO구 · 지하철 도보 5분',deposit:4.0,area:59.9,status:'검토중',lat:37.5665,lng:126.978,memo:'데모 매물 · 500세대 · 계단식',checks:{k1:true,k3:true},aiScore:75,aiComment:'데모용 AI 평가입니다'},
-    {id:'gp2',created:2,name:'(예시) 샘플 아파트 B',loc:'서울 OO구 · 지하철 도보 10분',deposit:3.5,area:84.5,status:'관심',lat:37.55,lng:126.95,memo:'데모 매물 · 800세대',checks:{},aiScore:null,aiComment:''},
-    {id:'gp3',created:3,name:'(예시) 샘플 아파트 C',loc:'서울 OO구 · 역세권',deposit:4.5,area:74.2,status:'후보',lat:37.54,lng:126.99,memo:'데모 매물 · 1000세대 대단지',checks:{k1:true,k2:true,k3:true,k4:true},aiScore:85,aiComment:'데모용 AI 평가입니다'},
   ],
   regNews:[{id:'grn1',title:'(예시) 샘플 뉴스 제목',summary:'이것은 데모용 뉴스 요약입니다. 실제 뉴스가 아닙니다.',date:'2026-01',source:''}],
   savedRoutes:[{id:'groute1',name:'(예시) 주말 임장 루트',propertyIds:['gp1','gp2','gp3'],createdAt:Date.now()}],
@@ -434,32 +410,10 @@ function applyGuards(raw){
     (state.steps||[]).forEach(t=>{if(!ids.has(t.id))state.actions.push({id:t.id,text:t.tx+(t.sub?` (${t.sub})`:''),priority:++p,done:t.done||false,category:'계약'});});
     state._prepMigrated=true;
   }
-  state.properties=guardArr(state.properties,[],'properties').map(p=>{
-    // C) deposit 타입 보호: 계산용 depositNum 보정
-    const dn=p.depositNum!=null?p.depositNum:(typeof p.deposit==='number'?p.deposit:(typeof p.deposit==='string'&&p.deposit?parseEok(p.deposit):null));
-    const hh=p.households!=null?(parseInt(p.households)||null):null;
-    // B-18: householdGrade 계산은 calcHouseholdGrade(utils.js)로 단일화 —
-    // 기존 인라인 calcG는 properties.js의 동일 로직과 중복이었음
-    const hg=p.householdGrade||(hh!=null?calcHouseholdGrade(hh,state.settings.grades):'');
-    const jr=p.jeonseRatio!=null?p.jeonseRatio:(p.saleReal&&(p.jeonseReal!=null||dn!=null)?Math.round((p.jeonseReal!=null?p.jeonseReal:dn)/p.saleReal*100):null);
-    const VALID_ST=['관심','검토중','후보','문의예정','방문예정','보류','탈락'];
-    const rawSt=p.status==='후보확정'?'후보':(p.status||'관심');
-    const st=VALID_ST.includes(rawSt)?rawSt:'관심';
-    return {
-      station:'',line:'',yearBuilt:null,
-      householdGrade:'',jeonseReal:null,saleReal:null,jeonseRatio:null,
-      commuteGangnam:null,commuteSinsa:null,url:'',
-      depositNum:null,geocodePending:false,
-      importSource:'',importedAt:'',importBatchId:'',
-      ...p,
-      status:st,
-      checks:p.checks||{},
-      households:hh,
-      depositNum:dn,
-      householdGrade:hg,
-      jeonseRatio:jr,
-    };
-  });
+  /* B-05: 레거시 properties 배열 완전 삭제. 옛 백업·미동기 클라이언트가 여전히
+     보낼 수 있는 필드라 매 로드마다 제거(가드가 아니라 폐기) — 다음 save()에서
+     Redis에도 반영된다 */
+  delete state.properties;
   state.regNews=state.regNews||[];
   state.savedRoutes=state.savedRoutes||[];
   /* B-28: parking(단지)·managementFeeState(매물) 필드 누락 보정 — 기존 데이터

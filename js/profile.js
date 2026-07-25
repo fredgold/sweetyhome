@@ -121,16 +121,22 @@ document.getElementById('doImport').onclick=()=>{
   if(!o){ ok.style.color='var(--s-drop)'; ok.textContent='백업 코드를 읽을 수 없어요. 코드 전체를 정확히 붙여넣었는지 확인해주세요.'; return; }
   if(o.kind==='full'){
     if(!confirm('지금 보드 내용을 백업본으로 전부 교체할까요?')) return;
+    /* B-05: 옛 백업(v3 이전)엔 레거시 매물 배열이 들어있을 수 있음 — applyGuards가
+       조용히 버리므로(더 이상 보관할 필드가 없음) 복원 전 개수를 미리 세어 안내 */
+    const legacyProps=o.state&&o.state['properties'];
+    const legacyCount=Array.isArray(legacyProps)?legacyProps.length:0;
     applyGuards(o.state);
     save(); renderAll();
-    ok.style.color='var(--s-final)'; ok.textContent=`✓ 전체 보드를 복원했어요. (매물 ${state.properties.length}곳)`;
+    ok.style.color='var(--s-final)';
+    ok.textContent=legacyCount
+      ? `✓ 전체 보드를 복원했어요. (구버전 매물 ${legacyCount}곳은 복원 대상 아님)`
+      : '✓ 전체 보드를 복원했어요.';
   } else {
-    if(state.properties.length && !confirm(`현재 매물 ${state.properties.length}곳을 백업본(매물 ${o.properties.length}곳)으로 교체할까요?`)) return;
-    state.properties=o.properties||[];
-    state.properties.forEach(p=>{if(!p.checks)p.checks={};});
+    const legacyCount=o.properties.length;
+    if(!confirm(`이 백업은 구버전 형식이라 매물 ${legacyCount}곳은 복원되지 않아요. 할일 목록만 복원할까요?`)) return;
     if(o.prep)state.prep=o.prep; if(o.steps)state.steps=o.steps;
     save(); renderAll();
-    ok.style.color='var(--s-final)'; ok.textContent=`✓ 매물 ${state.properties.length}곳을 복원했어요.`;
+    ok.style.color='var(--s-final)'; ok.textContent=`✓ 할일 목록을 복원했어요. (구버전 매물 ${legacyCount}곳은 복원 대상 아님)`;
   }
   setTimeout(()=>closeModal('importModal'),1300);
 };
