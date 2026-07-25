@@ -32,19 +32,6 @@ const ICSVG={
   area:'<rect x="3" y="9" width="18" height="6" rx="1"/><path d="M7 9v2"/><path d="M11 9v2"/><path d="M15 9v2"/><path d="M19 9v2"/>',
 };
 function ic(name,cls){ return `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" aria-hidden="true">${ICSVG[name]}</svg>`; }
-function checklistHTML(p){
-  const ch=p.checks||{};
-  const done=CHECKLIST.filter(c=>ch[c.id]).length;
-  return `<div class="ck" data-pid="${p.id}">
-    <div class="ck-label">실사 체크 ${done}/${CHECKLIST.length}</div>
-    <div class="ck-body">
-      ${CHECKLIST.map(c=>`<div class="ck-item" data-ck="${p.id}|${c.id}" data-on="${ch[c.id]?1:0}">
-        <span class="cb">${CHECK}</span>
-        <span class="ct">${c.t}<small>${c.s}</small></span>
-        ${c.vu&&c.vl?`<a class="ck-verify" href="${c.vu(((p.name||'')+' '+(p.loc||'')).trim())}" target="_blank" rel="noopener">${ic('search')} ${c.vl}</a>`:''}
-      </div>`).join('')}
-    </div></div>`;
-}
 
 function waitNaverMaps(cb){ if(typeof naver!=='undefined'&&naver.maps){cb();} else {setTimeout(()=>waitNaverMaps(cb),120);} }
 function initOverview(){
@@ -54,7 +41,7 @@ function initOverview(){
     refreshOverview();
   });
 }
-/* v5 cutover: 지도 마커 소스를 properties[]→complexes[](대표매물 라벨)로 전환.
+/* 지도 마커는 complexes[](대표매물 라벨) 기준.
    마커 = 대표매물 보증금 라벨 pill + 단지상태색 테두리, 상세 열려있으면 선택 링(outline) + 최상단.
    히트영역은 CSS(.prop-marker padding)로 ~44px까지 확장 — 보이는 pill(~22px)보다 넓게 클릭 가능 */
 function cxMarkerLabel(rep){
@@ -151,11 +138,6 @@ function reselectCxMarker(id){
     }catch(e){}
   });
 }
-/* 레거시(기존 매물) 카드의 "지도에서 보기"(locate())가 호출하던 마커 재선택 로직 —
-   지도가 더 이상 매물 마커를 그리지 않아(모든 마커가 _cxid만 가짐) 실질적으로
-   무동작이 됨. properties[] 뷰 은퇴에 따른 알려진 부수효과이며, locate()의 지도
-   패닝 자체는 유지(좌표 확인 용도로는 여전히 유효해 남겨둠) */
-function reselectMarker(id){ /* no-op: 매물 마커 자체가 더 이상 존재하지 않음 */ }
 /* 모바일 전용 지도 풀스크린 토글 (≥900px에서는 버튼 자체가 CSS로 숨겨져 호출될 일 없음) */
 function setMapExpanded(on){
   const c=document.getElementById('mapcard');
@@ -488,7 +470,7 @@ async function geocode(q){
   }catch(e){}
   return {found:false};
 }
-/* v5 cutover: 좌표 자동 채우기 대상을 properties[]에서 complexes[]로 전환.
+/* 좌표 자동 채우기는 complexes[] 기준.
    geocodeQuery는 이미 [G#]·동/호·가격 등이 제거된 상태로 저장돼 있어 그대로 사용 */
 async function autoGeocode(){
   const noCoord=state.complexes.filter(cx=>!(cx.lat&&cx.lng)&&cx.geocodeQuery);
@@ -681,53 +663,10 @@ document.getElementById('findBtn').onclick=async()=>{
   setTimeout(()=>{btn.disabled=false;btn.innerHTML=old;},1600);
 };
 
-/* v5 cutover: 통계를 properties[] 기준에서 단지/매물(complexes/listings) 기준으로 전환 */
 function renderStats(){
   const cx=state.complexes;
   document.getElementById('stats').innerHTML=
     `단지 <b>${cx.length}</b>개 · 매물 <b>${state.listings.length}</b>건 · 후보 <b>${cx.filter(x=>x.complexStatus==='후보').length}</b> · 임장예정 <b>${cx.filter(x=>x.complexStatus==='임장예정').length}</b>`;
-}
-function renderTabs(){
-  const tabs=['전체','관심','검토중','문의예정','방문예정','후보','보류','탈락'];
-  const cnt={전체:state.properties.length}; tabs.slice(1).forEach(s=>cnt[s]=state.properties.filter(p=>p.status===s).length);
-  document.getElementById('tabs').innerHTML=tabs.map(t=>`<button class="tab" data-on="${activeTab===t?1:0}" data-tab="${t}">${t}<span class="ct tnum">${cnt[t]}</span></button>`).join('');
-  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;renderList();renderTabs();});
-}
-/* 카드 액션 링크 — 펼친 상태에서만 보이므로 4개 전부 상시 노출(더보기 접기 불필요).
-   호갱노노·실거래가는 매물별 딥링크가 불가능해(실거래가는 항상 홈페이지) 제거.
-   네이버 링크는 등록된 URL이 있으면 그 링크만, 없으면 이름 검색만 (둘 다 보여주지 않음) */
-function actionsHTML(p, urlSafe){
-  const _acts=[];
-  if(p.lat) _acts.push(`<button class="c-act" data-locate="${p.id}">${ic('map')} 지도에서 보기</button>`);
-  if(urlSafe) _acts.push(`<a class="c-act naver" href="${esc(urlSafe)}" target="_blank" rel="noopener">${ic('link')} 네이버 열기 ↗</a>`);
-  else _acts.push(`<a class="c-act naver" href="${naverUrl(p)}" target="_blank" rel="noopener">${ic('map')} 네이버지도</a>`);
-  _acts.push(`<button class="c-act" data-edit="${p.id}">${ic('edit')} 수정</button>`);
-  _acts.push(`<button class="c-act c-act-del" data-del="${p.id}" aria-label="매물 삭제">✕ 삭제</button>`);
-  return `<div class="c-actions">${_acts.join('')}</div>`;
-}
-/* 헤드라인 = 보증금·전용면적 (비교 1순위 정보). 부제 = 단지명·역·호선 */
-function headlineText(p){
-  const d=p.depositNum!=null?p.depositNum:(p.deposit!=null&&p.deposit!==''?parseFloat(p.deposit):null);
-  const a=p.area!=null&&p.area!==''?parseFloat(p.area):null;
-  const dTxt=(d!=null&&!isNaN(d))?`보증금 ${d}억`:'보증금 미정';
-  const aTxt=(a!=null&&!isNaN(a))?`전용 ${a}㎡`:'면적 미정';
-  return `${dTxt} · ${aTxt}`;
-}
-function subtitleText(p){
-  const parts=[];
-  if(p.name) parts.push(esc(p.name));
-  const st=p.station||p.loc;
-  if(st) parts.push(esc(st));
-  if(p.line) parts.push(esc(p.line));
-  return parts.join(' · ')||'정보 없음';
-}
-/* B-18: depositRange("4~5")에서 경고선 상한(마지막 숫자)만 추출 — 파싱 실패
-   시 fallback(과거 하드코딩 5) 유지, 동작 변화 없음 */
-function parseDepositUpper(rangeStr,fallback){
-  const nums=String(rangeStr||'').match(/[\d.]+/g);
-  if(!nums||!nums.length) return fallback;
-  const last=parseFloat(nums[nums.length-1]);
-  return isNaN(last)?fallback:last;
 }
 function commuteCardChips(cx){
   const commuters=state.settings.commuters||[];
@@ -748,121 +687,10 @@ function commuteCardChips(cx){
   }).filter(Boolean);
   return legacy.length?`<span class="chip tnum">${legacy.join(' · ')}</span>`:'';
 }
-/* 펼침 본문 메타칩 — 가격·면적은 헤드라인에 이미 있으므로 경고성 신호만 별도 칩으로 */
-function bodyMetaChips(p){
-  const chips=[];
-  const dn=p.depositNum!=null?p.depositNum:parseFloat(p.deposit);
-  const depositUpper=parseDepositUpper(state.profile.depositRange,5);
-  if(!isNaN(dn)&&dn>depositUpper) chips.push(`<span class="chip warn tnum">예산↑? · 보증금 ${dn}억</span>`);
-  const a=p.area!=null&&p.area!==''?parseFloat(p.area):null;
-  const maxArea=state.profile.maxArea!=null?state.profile.maxArea:85;
-  if(a!=null&&!isNaN(a)&&a>maxArea) chips.push(`<span class="chip warn tnum">전용 ${a}㎡ · 청약 영향 ⚠</span>`);
-  if(p.householdGrade) chips.push(`<span class="chip">${esc(p.householdGrade)}</span>`);
-  else if(p.households) chips.push(`<span class="chip tnum">${p.households}세대</span>`);
-  if(p.jeonseRatio!=null) chips.push(`<span class="chip tnum">전세가율 ${p.jeonseRatio}%</span>`);
-  const commuteChips=commuteCardChips(p);
-  if(commuteChips) chips.push(commuteChips);
-  if(p.aiScore!=null) chips.push(`<span class="chip score">AI ${p.aiScore}점</span>`);
-  if(p.geocodePending&&!p.lat) chips.push('<span class="chip chip-warn">좌표확인필요</span>');
-  else if(p.lat) chips.push(`<span class="chip geo">${ic('pin','ic-muted')} 위치 저장됨</span>`);
-  return chips.join('');
-}
-let propSearchQuery='';
-let expandedPropId=null;
-function togglePropCard(id){
-  expandedPropId = expandedPropId===id ? null : id;
-  renderList();
-}
-/* 탭 필터·검색 — renderList()와 refreshOverview() 둘 다 같은 "보이는 집합"을 써야
-   목록 필터 변경 시 지도 마커 집합도 함께 좁혀진다 (덱 스펙 "필터=지도 동기화") */
-function visibleProperties(){
-  let items=[...state.properties];
-  if(activeTab!=='전체') items=items.filter(p=>p.status===activeTab);
-  const pq=(document.getElementById('prop_search')?.value||'').trim().toLowerCase();
-  if(pq) items=items.filter(p=>[p.name,p.loc,p.memo,p.station,p.line,p.householdGrade,p.households].some(v=>String(v??'').toLowerCase().includes(pq)));
-  return items;
-}
-function renderList(){
-  let items=visibleProperties();
-  if(sortMode==='jeonse') items.sort((a,b)=>(a.jeonseReal??a.depositNum??999)-(b.jeonseReal??b.depositNum??999));
-  else if(sortMode==='households') items.sort((a,b)=>(b.households??0)-(a.households??0));
-  else if(sortMode==='ratio') items.sort((a,b)=>(a.jeonseRatio??999)-(b.jeonseRatio??999));
-  else items.sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||(b.created-a.created));
-  const el=document.getElementById('list');
-  updateUnisearch(items.length);
-  /* v5 cutover: 지도는 이제 complexes[] 기준(refreshOverview는 renderComplexes()에서 호출) —
-     레거시 매물 목록 자체 갱신에는 지도 리프레시가 더 이상 필요 없음 */
-  if(!items.length){el.innerHTML=`<div class="empty"><div class="big">${activeTab==='전체'?'아직 등록된 매물이 없어요':'이 상태의 매물이 없어요'}</div>${activeTab==='전체'?'＋ 매물 추가로 첫 후보를 올려보세요.':'다른 탭을 눌러보세요.'}</div>`;return;}
-  el.innerHTML=items.map(p=>{
-    const urlSafe=p.url?safeUrl(p.url):'';
-    const expanded=expandedPropId===p.id;
-    const done=CHECKLIST.filter(c=>(p.checks||{})[c.id]).length;
-    const pct=Math.round(done/CHECKLIST.length*100);
-    const color='var('+(SC[p.status]||'--hairline')+')';
-    return `<div class="card${expanded?' expanded':''}${(p.status==='탈락'||p.status==='보류')?' dim':''}" data-st="${p.status}">
-    <div class="c-top" data-cardtoggle="${p.id}" role="button" tabindex="0" aria-expanded="${expanded?'true':'false'}" aria-controls="cbody-${p.id}">
-      <div class="c-head-text">
-        <div class="c-headline">${ic('transit','ic-muted')} ${subtitleText(p)}</div>
-        <div class="c-sub tnum">${headlineText(p)}</div>
-      </div>
-      <div class="c-badge-col">
-        <span class="pill" data-statuspill="${p.id}" style="border-left-color:${color}"><i class="pill-dot" style="background:${color}"></i>${p.status}</span>
-        <div class="c-progress"><span class="c-progress-text tnum">실사 ${done}/${CHECKLIST.length}</span><span class="c-progress-track"><i style="width:${pct}%;background:${color}"></i></span></div>
-      </div>
-    </div>
-    <div class="c-body" id="cbody-${p.id}">
-      <div class="c-meta">${bodyMetaChips(p)}</div>
-      ${p.img?`<img src="${esc(p.img)}" class="card-img-thumb" loading="lazy" alt="${esc(p.name||'매물')} 사진">`:''}
-      ${p.memo?`<div class="c-memo sc-md-content">${renderMd(p.memo)}</div>`:''}
-      ${actionsHTML(p, urlSafe)}
-      ${aiBlock(p)}${checklistHTML(p)}
-    </div></div>`;
-  }).join('');
-  el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEdit(b.dataset.edit));
-  el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delProp(b.dataset.del));
-  el.querySelectorAll('[data-locate]').forEach(b=>b.onclick=()=>locate(b.dataset.locate));
-}
-function aiBlock(p){
-  if(p._aiLoading) return `<div class="aiload">AI가 분석 중…</div>`;
-  if(!p.aiReport && !p.aiComment) return '';
-  let h='<div class="airep"><div class="arh">AI 분석</div>';
-  if(p.aiReport){ h+=`<div>${esc(p.aiReport.summary||'')}</div>`; if(p.aiReport.risk) h+=`<div class="risk">⚠ ${esc(p.aiReport.risk)}</div>`; }
-  if(p.aiComment) h+=`<div class="cmt">“${esc(p.aiComment)}”</div>`;
-  return h+'</div>';
-}
-async function aiAnalyze(id){
-  const p=state.properties.find(x=>x.id===id); if(!p)return;
-  p._aiLoading=true; renderList();
-  try{
-    const out=await claudeAPI([{role:"user",content:
-      `우리 부부 전세 매물을 분석해줘. 설명·마크다운 금지, JSON만.\n`+
-      `형식:{"score":0~100정수,"summary":"우리 조건 대비 장단점·적합도 3~4문장","risk":"재건축·이주 등 핵심 리스크 한 줄(없으면 빈 문자열)"}\n`+
-      `[우리 조건] ${profileLine()}\n`+
-      `[매물] 이름:${p.name||'?'} / 위치:${p.loc||'?'} / 보증금:${p.deposit||'?'}억 / 전용:${p.area||'?'}㎡ / 메모:${p.memo||'없음'}\n`+
-      `시세·평판·재건축 단계는 web_search로 확인.`}],
-      [{type:"web_search_20250305",name:"web_search"}]);
-    const j=parseJSON(out);
-    if(j){ p.aiReport={summary:j.summary||'',risk:j.risk||''}; if(j.score!=null) p.aiScore=Math.max(0,Math.min(100,Math.round(j.score))); }
-    else { p.aiReport={summary:'분석 결과를 읽지 못했어요. 다시 시도해 주세요.',risk:''}; }
-  }catch(e){ p.aiReport={summary:e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 응답을 받지 못했어요.',risk:''}; }
-  p._aiLoading=false; save(); renderList();
-}
-function locate(id){
-  const p=state.properties.find(x=>x.id===id); if(!p||!p.lat)return;
-  document.getElementById('mapcard').classList.remove('collapsed');
-  document.getElementById('mapToggle').textContent='접기';
-  waitNaverMaps(()=>{
-    overview.refresh(true);
-    overview.panTo(new naver.maps.LatLng(p.lat,p.lng));
-    reselectMarker(id);
-  });
-  document.getElementById('mapcard').scrollIntoView({behavior:'smooth',block:'center'});
-}
-
 const form=document.getElementById('form');
 let propImgData=null;
 function clearForm(){
-  ['editId','f_name','f_loc','f_station','f_line','f_deposit','f_area','f_households','f_url','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_loc','f_station','f_line','f_deposit','f_area','f_households','f_url','f_memo','pasteBox'].forEach(id=>document.getElementById(id).value='');
   if(fMemoTiptapEditor) fMemoTiptapEditor.commands.setContent('');
   tempChecks=null;tempParking=null;tempManagementFee=null;tempComplexPromotion=null;clearFormPin();
   propImgData=null;
@@ -934,156 +762,6 @@ function initFMemoEditor(){
 document.getElementById('toggleForm').onclick=()=>{ if(form.classList.contains('open'))closeForm(); else {clearForm();openForm();} };
 document.getElementById('cancelBtn').onclick=closeForm;
 
-let propEditId='', editMapObj=null, editMapMarker=null, editTempLatLng=null, editImgData=null;
-function initEditMap(){
-  const el=document.getElementById('propEditMap'); if(!el)return;
-  if(editMapObj){editMapObj.refresh(true);return;}
-  editMapObj=new naver.maps.Map('propEditMap',{center:new naver.maps.LatLng(37.5665,126.9780),zoom:12,zoomControl:true,zoomControlOptions:{position:naver.maps.Position.TOP_RIGHT}});
-  naver.maps.Event.addListener(editMapObj,'click',e=>{
-    const pos=e.coord;
-    editTempLatLng={lat:pos.lat(),lng:pos.lng()};
-    if(editMapMarker) editMapMarker.setMap(null);
-    editMapMarker=new naver.maps.Marker({position:pos,map:editMapObj});
-  });
-}
-function openEdit(id){
-  const p=state.properties.find(x=>x.id===id); if(!p)return;
-  propEditId=id; editTempLatLng=null; editImgData=null;
-  document.getElementById('propEditTitle').textContent=p.name?p.name+' 수정':'매물 수정';
-  ['em_name','em_loc','em_station','em_line','em_deposit','em_area','em_households','em_url','em_memo'].forEach(k=>{
-    const field=k.replace('em_','');
-    document.getElementById(k).value=p[field]??'';
-  });
-  /* B-103 2-3: em_memo는 모달이 재사용되므로(다른 매물을 열 때마다
-     같은 인스턴스) sem_text와 동일 패턴 — 이미 활성이면 콘텐츠만
-     교체, 아직이면 위에서 이미 채운 textarea.value를 초기값 삼아
-     초기화하고 그 사이 다른 항목으로 안 바뀐 경우에만 반영 */
-  if(emMemoTiptapEditor){
-    emMemoTiptapEditor.commands.setContent(p.memo??'');
-  } else if(!emMemoTiptapFailed){
-    initEMMemoEditor().then(ok=>{
-      if(ok&&propEditId===id) emMemoTiptapEditor.commands.setContent(p.memo??'');
-    });
-  }
-  const prev=document.getElementById('em_imgPreview'), clr=document.getElementById('em_imgClear');
-  if(p.img){prev.src=p.img;prev.style.display='';clr.style.display='';}
-  else{prev.style.display='none';clr.style.display='none';}
-  document.getElementById('em_imgLabel').innerHTML=ic('camera')+(p.img?' 사진 변경':' 사진 추가');
-  document.getElementById('em_img').value='';
-  openModal('propEditModal');
-  setTimeout(()=>{
-    initEditMap(); editMapObj.refresh(true);
-    if(p.lat&&p.lng){
-      const pos=new naver.maps.LatLng(p.lat,p.lng);
-      editMapObj.setCenter(pos); editMapObj.setZoom(15);
-      if(editMapMarker) editMapMarker.setMap(null);
-      editMapMarker=new naver.maps.Marker({position:pos,map:editMapObj});
-    }
-  },120);
-}
-/* B-103 2-3: em_memo Tiptap 싱글턴 — 모달을 여러 매물에 재사용하므로
-   sem_text(B-103 2-2)와 동일하게 최초 1회만 생성, 이후엔 openEdit()에서
-   setContent()로 내용만 교체. 그림자 textarea 패턴은 f_memo와 동일 */
-let emMemoTiptapEditor=null, emMemoTiptapFailed=false, emMemoTiptapInitPromise=null;
-async function initEMMemoEditor(){
-  if(emMemoTiptapEditor) return true;
-  if(emMemoTiptapFailed) return false;
-  if(emMemoTiptapInitPromise) return emMemoTiptapInitPromise;
-  const ta=document.getElementById('em_memo');
-  emMemoTiptapInitPromise=(async()=>{
-    const mods=await loadTiptapMods().catch(()=>null);
-    if(!mods){ emMemoTiptapFailed=true; showEditorFallbackNote(ta); return false; }
-    let mount=document.getElementById('em_memoMount');
-    if(!mount){
-      mount=document.createElement('div');
-      mount.id='em_memoMount';
-      mount.className='sc-md-editor sc-md-content';
-      mount.dataset.placeholder=ta.placeholder||''; // B-110: 기존 textarea placeholder 재사용
-      ta.insertAdjacentElement('afterend',mount);
-    }
-    try{
-      const listFixExt=buildListBackspaceFix(mods); // B-110: B-109① 전파
-      const placeholderExt=buildTiptapPlaceholder(mods,mount); // B-110: B-109② 전파
-      emMemoTiptapEditor=new mods.core.Editor({
-        element:mount,
-        extensions:[mods.starterKit,mods.Markdown,listFixExt,placeholderExt],
-        content:ta.value||'',
-        onUpdate:({editor})=>{ ta.value=editor.storage.markdown.getMarkdown(); },
-      });
-      ta.style.display='none';
-      document.getElementById('em_memoPreviewToggle').style.display='none';
-      document.getElementById('em_mdToolbar').style.display='none';
-      document.getElementById('em_memoPreview').style.display='none';
-      return true;
-    }catch(e){
-      emMemoTiptapFailed=true; emMemoTiptapEditor=null; mount.remove();
-      showEditorFallbackNote(ta);
-      return false;
-    }
-  })();
-  const ok=await emMemoTiptapInitPromise;
-  emMemoTiptapInitPromise=null;
-  return ok;
-}
-document.getElementById('em_findBtn').onclick=async function(){
-  const name=(document.getElementById('em_name').value+' '+document.getElementById('em_loc').value).trim();
-  if(!name)return;
-  this.disabled=true; this.textContent='찾는 중…';
-  try{
-    const r=await fetch('/api/geocode?q='+encodeURIComponent(name),{headers:authHeaders()});
-    const d=await r.json();
-    if(d.lat){
-      editTempLatLng={lat:d.lat,lng:d.lng};
-      initEditMap(); editMapObj.refresh(true);
-      const pos=new naver.maps.LatLng(d.lat,d.lng);
-      editMapObj.setCenter(pos); editMapObj.setZoom(15);
-      if(editMapMarker) editMapMarker.setMap(null);
-      editMapMarker=new naver.maps.Marker({position:pos,map:editMapObj});
-      this.textContent='✓ 찾았어요';
-    } else {
-      /* B-90: 예전엔 실패 시 아무 표시 없이 조용히 원상복구돼 클릭이 씹힌
-         것처럼 보였다 — findBtn(추가 폼)과 동일하게 사람이 읽을 문구로 표시 */
-      this.textContent='못 찾음 — 지도 탭';
-    }
-  }catch(e){ this.textContent='검색 실패 — 지도 직접 탭'; }
-  setTimeout(()=>{ this.disabled=false; this.innerHTML=ic('pin')+' 위치 자동 찾기'; },1600);
-};
-document.getElementById('em_img').onchange=e=>{
-  const f=e.target.files[0]; if(!f)return;
-  compressImage(f,dataUrl=>{
-    editImgData=dataUrl;
-    const prev=document.getElementById('em_imgPreview');
-    prev.src=dataUrl; prev.style.display='';
-    document.getElementById('em_imgLabel').innerHTML=ic('camera')+' '+esc(f.name);
-    document.getElementById('em_imgClear').style.display='';
-  });
-};
-document.getElementById('em_imgClear').onclick=()=>{
-  editImgData=''; document.getElementById('em_img').value='';
-  document.getElementById('em_imgPreview').style.display='none';
-  document.getElementById('em_imgLabel').innerHTML=ic('camera')+' 사진 추가';
-  document.getElementById('em_imgClear').style.display='none';
-};
-document.getElementById('em_saveBtn').onclick=()=>{
-  const name=document.getElementById('em_name').value.trim();
-  if(!name){const f=document.getElementById('em_name');f.focus();f.style.borderColor='var(--s-drop)';return;}
-  const p=state.properties.find(x=>x.id===propEditId); if(!p)return;
-  Object.assign(p,{
-    name, loc:document.getElementById('em_loc').value.trim(),
-    station:document.getElementById('em_station').value.trim(),
-    line:document.getElementById('em_line').value.trim(),
-    deposit:document.getElementById('em_deposit').value,
-    area:document.getElementById('em_area').value,
-    households:document.getElementById('em_households').value,
-    url:safeUrl(document.getElementById('em_url').value.trim()),
-    memo:document.getElementById('em_memo').value.trim(),
-    img:editImgData===null?(p.img||''):(editImgData||''),
-    lat:editTempLatLng?editTempLatLng.lat:p.lat,
-    lng:editTempLatLng?editTempLatLng.lng:p.lng,
-  });
-  closeModal('propEditModal'); save(); renderProps(); refreshOverview();
-};
-document.getElementById('em_cancelBtn').onclick=()=>closeModal('propEditModal');
 document.getElementById('f_mdToolbar').onclick=e=>{
   const btn=e.target.closest('[data-fmtgt]');if(!btn)return;
   const ta=document.getElementById('f_memo');
@@ -1091,17 +769,6 @@ document.getElementById('f_mdToolbar').onclick=e=>{
   else if(btn.dataset.fmtgt==='line'){mdLine(ta,btn.dataset.prefix);}
 };
 document.getElementById('f_memo').addEventListener('keydown',e=>{
-  const mod=e.ctrlKey||e.metaKey;
-  if(mod&&e.key==='b'){e.preventDefault();mdWrap(e.target,'**','**');}
-  if(mod&&e.key==='i'){e.preventDefault();mdWrap(e.target,'*','*');}
-});
-document.getElementById('em_mdToolbar').onclick=e=>{
-  const btn=e.target.closest('[data-emtgt]');if(!btn)return;
-  const ta=document.getElementById('em_memo');
-  if(btn.dataset.emtgt==='wrap'){mdWrap(ta,btn.dataset.open,btn.dataset.close);}
-  else if(btn.dataset.emtgt==='line'){mdLine(ta,btn.dataset.prefix);}
-};
-document.getElementById('em_memo').addEventListener('keydown',e=>{
   const mod=e.ctrlKey||e.metaKey;
   if(mod&&e.key==='b'){e.preventDefault();mdWrap(e.target,'**','**');}
   if(mod&&e.key==='i'){e.preventDefault();mdWrap(e.target,'*','*');}
@@ -1121,9 +788,6 @@ function memoPreviewToggle(btn,ta,prev,toolbar){
 }
 document.getElementById('f_memoPreviewToggle').onclick=function(){
   memoPreviewToggle(this,document.getElementById('f_memo'),document.getElementById('f_memoPreview'),document.getElementById('f_mdToolbar'));
-};
-document.getElementById('em_memoPreviewToggle').onclick=function(){
-  memoPreviewToggle(this,document.getElementById('em_memo'),document.getElementById('em_memoPreview'),document.getElementById('em_mdToolbar'));
 };
 document.getElementById('f_img').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
@@ -1145,8 +809,6 @@ document.getElementById('f_imgClear').onclick=()=>{
 document.getElementById('saveBtn').onclick=async()=>{
   const name=document.getElementById('f_name').value.trim();
   if(!name){const f=document.getElementById('f_name');f.focus();f.style.borderColor='var(--s-drop)';return;}
-  const cur=document.getElementById('editId').value;
-  const existing=cur?state.properties.find(x=>x.id===cur):null;
   const data={
     name, loc:document.getElementById('f_loc').value.trim(),
     station:document.getElementById('f_station').value.trim(),
@@ -1155,11 +817,11 @@ document.getElementById('saveBtn').onclick=async()=>{
     households:document.getElementById('f_households').value,
     url:safeUrl(document.getElementById('f_url').value.trim()),
     memo:document.getElementById('f_memo').value.trim(),
-    img:propImgData===null?((existing&&existing.img)||''):(propImgData||''),
-    status:existing?existing.status:'관심',
-    lat:tempLatLng?tempLatLng.lat:(existing?existing.lat:null),
-    lng:tempLatLng?tempLatLng.lng:(existing?existing.lng:null),
-    checks:Object.assign({}, existing?existing.checks:{}, tempChecks||{}),
+    img:propImgData||'',
+    status:'관심',
+    lat:tempLatLng?tempLatLng.lat:null,
+    lng:tempLatLng?tempLatLng.lng:null,
+    checks:Object.assign({}, tempChecks||{}),
   };
   /* B-90: 매칭 제안 모달이 뜨면 사용자 선택을 기다리는 동안(그리고 예전엔
      지오코딩 응답까지) 버튼에 아무 표시가 없어 클릭이 무시된 것처럼 보였고,
@@ -1168,16 +830,11 @@ document.getElementById('saveBtn').onclick=async()=>{
   const btn=document.getElementById('saveBtn');
   btn.disabled=true; const old=btn.textContent; btn.textContent='처리 중…';
   try{
-    if(existing){
-      Object.assign(existing,data);
-    } else {
-      /* v5 stage5a: 신규 매물은 properties[]가 아니라 단지(complexes)/매물(listings)
-         2계층으로 라우팅. properties[]는 기존 데이터 백업용으로 손대지 않는다 */
-      const saved=await saveAsComplexListing(data);
-      /* B-19확: 매칭 제안에서 "취소"를 고르면 저장을 중단하고 폼을 그대로 둔다
-         (입력값 유실 방지) */
-      if(saved===false) return;
-    }
+    /* 신규 매물은 단지(complexes)/매물(listings) 2계층으로 라우팅 */
+    const saved=await saveAsComplexListing(data);
+    /* B-19확: 매칭 제안에서 "취소"를 고르면 저장을 중단하고 폼을 그대로 둔다
+       (입력값 유실 방지) */
+    if(saved===false) return;
     closeForm(); save(); renderProps(); refreshOverview();
   } finally {
     btn.disabled=false; btn.textContent=old;
@@ -1273,114 +930,13 @@ async function saveAsComplexListing(data){
   tempParking=null; tempManagementFee=null; tempComplexPromotion=null;
   return true;
 }
-function delProp(id){if(!confirm('이 매물을 삭제할까요?'))return;state.properties=state.properties.filter(x=>x.id!==id);save();renderProps();refreshOverview();}
+function renderProps(){renderStats();renderComplexes();}
 
-document.getElementById('list').addEventListener('click',e=>{
-  const pill=e.target.closest('.pill');
-  if(pill){
-    const p=state.properties.find(x=>x.id===pill.dataset.statuspill); if(!p)return;
-    showStatusPicker(pill, p);
-    return;
-  }
-  const item=e.target.closest('.ck-item');
-  if(item){
-    if(e.target.closest('a')) return;
-    const [pid,cid]=item.dataset.ck.split('|');
-    const p=state.properties.find(x=>x.id===pid); if(!p)return;
-    p.checks=p.checks||{}; p.checks[cid]=!p.checks[cid];
-    item.dataset.on=p.checks[cid]?'1':'0';
-    const done=CHECKLIST.filter(c=>p.checks[c.id]).length;
-    const card=item.closest('.card');
-    const label=card.querySelector('.ck-label'); if(label) label.textContent=`실사 체크 ${done}/${CHECKLIST.length}`;
-    const progText=card.querySelector('.c-progress-text'); if(progText) progText.textContent=`실사 ${done}/${CHECKLIST.length}`;
-    const progBar=card.querySelector('.c-progress-track i'); if(progBar) progBar.style.width=Math.round(done/CHECKLIST.length*100)+'%';
-    save(); return;
-  }
-  const ctoggle=e.target.closest('[data-cardtoggle]');
-  if(ctoggle){ togglePropCard(ctoggle.dataset.cardtoggle); return; }
-});
-document.getElementById('list').addEventListener('keydown',e=>{
-  if(e.key!=='Enter'&&e.key!==' ') return;
-  const ctoggle=e.target.closest('[data-cardtoggle]');
-  if(ctoggle){ e.preventDefault(); togglePropCard(ctoggle.dataset.cardtoggle); }
-});
-
-let _statusPicker=null;
-function showStatusPicker(pill, p){
-  if(_statusPicker){ _statusPicker.remove(); _statusPicker=null; }
-  const opts=['관심','검토중','문의예정','방문예정','후보','보류','탈락'];
-  const picker=document.createElement('div');
-  picker.className='status-picker';
-  picker.innerHTML=opts.map(s=>`<button class="sp-opt${p.status===s?' on':''}" data-sp="${esc(s)}" style="border-left:3px solid var(${SC[s]||'--hairline'})">${esc(s)}</button>`).join('');
-  document.body.appendChild(picker);
-  _statusPicker=picker;
-  const rect=pill.getBoundingClientRect();
-  const top=rect.bottom+window.scrollY+4;
-  const left=Math.min(rect.left+window.scrollX, window.innerWidth-130);
-  picker.style.top=top+'px'; picker.style.left=Math.max(8,left)+'px';
-  picker.querySelectorAll('[data-sp]').forEach(b=>b.onclick=e=>{
-    e.stopPropagation();
-    p.status=b.dataset.sp; picker.remove(); _statusPicker=null;
-    save(); renderProps(); refreshOverview();
-  });
-  const close=ev=>{ if(!picker.contains(ev.target)){ picker.remove(); _statusPicker=null; document.removeEventListener('click',close,true); } };
-  setTimeout(()=>document.addEventListener('click',close,true),0);
-}
-/* 통합검색 — 입력값에 따라 "내 목록 N곳" 안내 갱신 */
-function updateUnisearch(matchCount){
-  const input=document.getElementById('prop_search'); if(!input) return;
-  const q=input.value.trim();
-  const resultEl=document.getElementById('unisearchResult');
-  const textEl=document.getElementById('unisearchText');
-  if(resultEl) resultEl.style.display=q?'':'none';
-  if(textEl&&q) textEl.innerHTML=`내 목록 <b>${matchCount}곳</b> 검색됨`;
-}
-
-function renderProps(){renderStats();renderTabs();renderList();renderWeights();renderComplexes();}
-
-(()=>{ const ps=document.getElementById('prop_search'); if(ps) ps.addEventListener('input',()=>{renderList();renderComplexes();}); })();
+(()=>{ const ps=document.getElementById('prop_search'); if(ps) ps.addEventListener('input',()=>{renderComplexes();}); })();
 
 
-/* ============ v2: 가중치 · 자동 평가 · 정렬 ============ */
-const WEIGHTS=[['commute','통근'],['budget','예산'],['area','면적'],['complex','단지조건'],['risk','리스크']];
-let sortMode='status';
-function renderWeights(){
-  const w=state.settings.weights||{};
-  const el=document.getElementById('weights'); if(!el)return;
-  el.innerHTML=WEIGHTS.map(([k,ko])=>`<div class="wrow"><label>${ko}</label><input type="range" min="1" max="5" step="1" data-w="${k}" value="${w[k]||3}"><span class="wv tnum">${w[k]||3}</span></div>`).join('');
-  el.querySelectorAll('input[data-w]').forEach(inp=>{
-    inp.oninput=()=>{ state.settings.weights[inp.dataset.w]=+inp.value; inp.nextElementSibling.textContent=inp.value; save(); };
-  });
-}
-function weightLine(){const w=state.settings.weights||{};return WEIGHTS.map(([k,ko])=>`${ko} ${w[k]||3}`).join(', ');}
-document.getElementById('evalBtn').onclick=async()=>{
-  const list=state.properties.filter(p=>p.status!=='탈락');
-  if(!list.length){alert('평가할 매물이 없어요. 먼저 매물을 추가하세요.');return;}
-  const btn=document.getElementById('evalBtn'); btn.disabled=true; const old=btn.textContent;
-  let done=0;
-  for(const p of list){
-    btn.textContent=`평가 중 ${++done}/${list.length}…`;
-    try{
-      const out=await claudeAPI([{role:"user",content:
-        `우리 부부 전세 매물을 0~100점으로 채점하고 한 줄 코멘트. 설명·마크다운 금지, JSON만.\n`+
-        `형식:{"score":정수,"comment":"한 줄"}\n`+
-        `[우리 조건] ${profileLine()}\n`+
-        `[가중치 1~5] ${weightLine()}.\n`+
-        `[매물] 이름:${p.name||'?'} / 위치:${p.loc||'?'} / 보증금:${p.deposit||'?'}억 / 전용:${p.area||'?'}㎡ / 메모:${p.memo||'없음'}\n`+
-        `재건축 이주 리스크가 크면 감점.`}],
-        [{type:"web_search_20250305",name:"web_search"}]);
-      const j=parseJSON(out);
-      if(j&&j.score!=null){ p.aiScore=Math.max(0,Math.min(100,Math.round(j.score))); p.aiComment=j.comment||''; save(); renderList(); }
-    }catch(e){ btn.textContent=e.message==='AI_UNAVAILABLE'?aiUnavailableMsg():'AI 연결 실패'; setTimeout(()=>{btn.disabled=false;btn.textContent=old;},1800); return; }
-  }
-  sortMode='status';
-  const ss=document.getElementById('propSortSel'); if(ss) ss.value='status';
-  save(); renderList();
-  btn.disabled=false; btn.textContent=old;
-};
-document.getElementById('propSortSel').onchange=function(){sortMode=this.value;renderList();};
 /* v5 stage6a: 내보내기 공용 헬퍼 — CSV injection 이스케이프(=,+,-,@)·BOM 유지 로직을
-   단지/매물/통합/레거시 4개 내보내기가 공유 */
+   단지/매물/통합 내보내기가 공유 */
 function csvCell(v,fmt){
   const s=String(v==null?'':v);
   const danger=fmt==='csv'?/[,\n"]/.test(s):(/[\t\n"]/.test(s));
@@ -1395,19 +951,6 @@ function downloadDelimited(filename,cols,rows,fmt){
   a.href=URL.createObjectURL(new Blob(['﻿'+content],{type:mime+';charset=utf-8'}));
   a.download=filename+(fmt==='csv'?'.csv':'.tsv');
   a.click(); URL.revokeObjectURL(a.href);
-}
-/* 레거시(기존 매물) 내보내기 — properties[] 원본, 컬럼 구성은 기존과 동일(회귀 없음) */
-function exportProps(fmt){
-  const COLS=['단지명','위치','역','호선','전세호가(억)','전세호가숫자','매매호가','전용면적','세대수','세대수등급','준공년도','전세가율(%)','강남출퇴근','신사출퇴근','상태','URL','메모','메모2'];
-  const rows=state.properties.map(p=>[
-    p.name||'',p.loc||'',p.station||'',p.line||'',
-    p.jeonseReal!=null?p.jeonseReal:'',p.depositNum!=null?p.depositNum:'',
-    p.saleReal!=null?p.saleReal:'',
-    p.area!=null?p.area:'',p.households!=null?p.households:'',p.householdGrade||'',p.yearBuilt||'',
-    p.jeonseRatio!=null?p.jeonseRatio:'',
-    p.commuteGangnam||'',p.commuteSinsa||'',p.status||'',p.url||'',p.memo||'',''
-  ]);
-  downloadDelimited('매물목록(레거시)_'+new Date().toISOString().slice(0,10),COLS,rows,fmt);
 }
 /* 단지 목록 내보내기 — complexes[] 기준 */
 function exportComplexes(fmt){
@@ -1464,7 +1007,6 @@ function showExportMenu(btn){
     <button class="sp-opt" data-exp="cx">단지 목록</button>
     <button class="sp-opt" data-exp="listing">매물 목록</button>
     <button class="sp-opt" data-exp="combined">단지+대표매물 통합</button>
-    <button class="sp-opt" data-exp="legacy">레거시(기존 매물)</button>
   `;
   document.body.appendChild(menu);
   _exportMenu=menu;
@@ -1483,7 +1025,6 @@ function showExportMenu(btn){
     if(kind==='cx') exportComplexes(fmt);
     else if(kind==='listing') exportListings(fmt);
     else if(kind==='combined') exportComplexesWithRep(fmt);
-    else if(kind==='legacy') exportProps(fmt);
   });
   const close=ev=>{ if(!menu.contains(ev.target)&&ev.target!==btn){ closeExportMenu(); document.removeEventListener('click',close,true); } };
   setTimeout(()=>document.addEventListener('click',close,true),0);
@@ -2047,9 +1588,8 @@ document.getElementById('propImportSubmitBtn').onclick=async()=>{
   const toImport=chkEls.map(cb=>importParsedRows[+cb.dataset.idx]).filter(r=>r&&r.name&&!r.listingDup);
   if(!toImport.length)return;
 
-  /* v5 stage5b: TSV 임포트 결과는 properties[]에 push하지 않고 complexes/listings에만
-     기록(이중 저장 방지). 같은 배치 안 동일 단지(mergeKey)는 실제 complexId 1개로
-     합쳐 매물만 여러 개 추가한다. */
+  /* TSV 임포트 결과는 complexes/listings에 기록. 같은 배치 안 동일 단지(mergeKey)는
+     실제 complexId 1개로 합쳐 매물만 여러 개 추가한다. */
   const now=new Date().toISOString();
   const resolvedCxId=new Map();
   const newComplexIds=[];
@@ -2153,9 +1693,9 @@ function migParseName(rawName){
 const SC_CX=Object.assign({},SC,{임장예정:SC['방문예정']});
 const HEX_CX=Object.assign({},HEX,{임장예정:HEX['방문예정']});
 /* B-116: 단지 카드 상태 뱃지 빠른 변경 — E-01 이관 후 소실된 카드 즉시변경 경로 복원.
-   레거시 showStatusPicker(state.properties[].status용, 1367행)와 같은 .status-picker
-   플로팅 메뉴를 재사용하되 대상은 complexStatus. 옵션 6개는 cxDetailStatusSel(상세
-   select, index.html)과 동일한 값 집합 — migComplexStatus의 ALLOWED(1916행)와도 일치 */
+   기존 .status-picker 플로팅 메뉴 패턴을 재사용하되 대상은 complexStatus. 옵션 6개는
+   cxDetailStatusSel(상세 select, index.html)과 동일한 값 집합 — migComplexStatus의
+   ALLOWED와도 일치 */
 let _cxStatusPicker=null;
 function showCxStatusPicker(pill, cx){
   if(_cxStatusPicker){ _cxStatusPicker.remove(); _cxStatusPicker=null; }
@@ -2360,30 +1900,19 @@ function requestMyLoc(){
 function renderComplexes(){
   const wrap=document.getElementById('complexSection');
   const filterBar=document.getElementById('cxFilterBar');
-  const legacyToggleWrap=document.getElementById('legacyToggleWrap');
-  const legacyWrap=document.getElementById('legacyWrap');
-  if(!wrap||!legacyToggleWrap||!legacyWrap) return;
+  if(!wrap) return;
 
   if(!state.complexes.length){
     wrap.innerHTML=`<div class="cx-empty">
       아직 등록된 단지가 없어요. 매물 탭에서 단지를 추가해보세요.
     </div>`;
     if(filterBar) filterBar.style.display='none';
-    legacyToggleWrap.style.display='none';
-    legacyWrap.style.display='';
     refreshOverview([]);
     return;
   }
 
   if(filterBar) filterBar.style.display='';
   renderCxFilterOptions();
-
-  /* B-48: 단지 이관 완료(단지 1개 이상) 후엔 레거시 토글·상태 탭칩(.tabs)·목록(.rail)을
-     통째로 숨겨 단지 카드 공간을 확보 — properties[]/renderList/renderTabs 로직과 ⋯메뉴
-     "레거시 내보내기"(백업 수단)는 그대로 보존, 화면 노출만 제거. 단지 0(미마이그레이션)
-     경로는 위 분기에서 legacyWrap을 이미 마이그레이션 유도 화면으로 그대로 씀 */
-  legacyToggleWrap.style.display='none';
-  legacyWrap.style.display='none';
 
   const _cxBase=state.complexes.filter(cxMatchesFilters).filter(cxMatchesSearch);
   const filtered=DESKTOP_MQ.matches?favoritesFirst(_cxBase):sortComplexes(_cxBase);

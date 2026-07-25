@@ -321,16 +321,14 @@
     /* A안: 매물탭을 뷰포트 고정 풀스크린 지도뷰로. 세로 스크롤 자체를 없애 스크롤·z-index 혼선을 원천 차단.
        #panel-props가 position:fixed 컨테이닝 블록이 되어 .mapcard(absolute;inset:0)가 이를 기준으로 꽉 채움 */
     #panel-props{position:fixed;top:var(--app-top-h);left:0;right:0;bottom:0;overflow:hidden;z-index:0;}
-    #panel-props .gates,#panel-props .wcard{display:none;}
+    #panel-props .gates{display:none;}
     .mapcard{position:absolute;inset:0;margin:0;border-radius:0;border:none;box-shadow:none;z-index:0;}
     .mapcard .mh{display:none;}
     #overviewMap{position:absolute;inset:0;width:100%;height:100%;}
     /* 검색·필터·정렬셀렉트·내보내기·시트붙여넣기·임장루트 본문은 지도 위에선 자리를 차지하지
-       않고 ⋯메뉴(showMoreMenu, propMoreBtn)로만 진입 — 레거시 목록도 계속 숨김 */
+       않고 ⋯메뉴(showMoreMenu, propMoreBtn)로만 진입 */
     .grid>section>.unisearch,
-    .grid>section>.route-bar,
-    #legacyToggleWrap,
-    #legacyWrap{display:none;}
+    .grid>section>.route-bar{display:none;}
     .grid>section>.panel-head>div:first-child,
     .grid>section>.panel-head .ph-actions>*{display:none;}
     /* B-35: 필터 칩 바는 더보기(⋯)메뉴가 아니라 지도 위 상단 오버레이 2번째 줄(정렬칩
@@ -479,18 +477,15 @@
     .mapcard .mh{flex-shrink:0;}
     #overviewMap{flex:1;min-height:0;}
     #mapToggle,#mapExpand{display:none;}
-    .rail{flex:1;min-height:0;overflow-y:auto;padding-right:4px;}
-    #legacyWrap{display:flex;flex-direction:column;flex:1;min-height:0;}
     #cxFilterBar{flex-shrink:0;}
     /* B-36: 좌측 컬럼(.grid>section)은 max-height로 뷰포트에 고정되지만 #complexSection
        (단지 카드 목록)엔 overflow가 없어 카드가 많으면 컬럼 자체가 늘어나 페이지 전체가
        스크롤되던 문제 — 카드 목록만 컬럼 내부에서 스크롤되게 하고 검색·필터·통계·폼은
-       고정폭으로 유지(레거시 .rail과 동일 패턴) */
-    .unisearch,.panel-head,.form,#legacyToggleWrap{flex-shrink:0;}
+       고정폭으로 유지 */
+    .unisearch,.panel-head,.form{flex-shrink:0;}
     #complexSection{flex:1;min-height:0;overflow-y:auto;padding-right:4px;}
-    /* B-44②: 데스크톱 단지 카드 밀도 개선 — #complexSection 안으로 스코프해 레거시
-       .rail .card(properties[] 미마이그레이션 목록, 같은 .card/.c-top/.c-meta 클래스
-       공유)는 그대로 두고 단지 카드만 컴팩트하게. 모바일(지도 위 스트립·리스트뷰)은
+    /* B-44②: 데스크톱 단지 카드 밀도 개선 — #complexSection 안으로 스코프해
+       단지 카드만 컴팩트하게. 모바일(지도 위 스트립·리스트뷰)은
        터치 타깃·가독성 유지를 위해 건드리지 않음 */
     #complexSection .card{margin-bottom:4px;}
     #complexSection .c-top{padding:8px 15px;gap:var(--gap-md);}
@@ -517,11 +512,6 @@
   .addbtn:hover{background:var(--ink);transform:translateY(-1px);} .addbtn:active{opacity:.9;}
   .addbtn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
 
-  .tabs{display:flex;flex-shrink:0;gap:var(--gap-sm);flex-wrap:nowrap;overflow-x:auto;margin:14px 0 16px;padding-bottom:2px;scrollbar-width:none;mask-image:var(--fade-mask-r);-webkit-mask-image:var(--fade-mask-r);}
-  .tabs::-webkit-scrollbar{display:none;}
-  .tab{font-size:var(--fs-label);font-weight:600;color:var(--ink-soft);padding:6px 11px;border-radius:999px;border:1px solid var(--hairline);background:var(--surface);flex-shrink:0;}
-  .tab[data-on="1"]{background:var(--ink);color:#fff;border-color:var(--ink);}
-  .tab .ct{opacity:.6;margin-left:3px;font-weight:700;}
 
   .form{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin-bottom:18px;box-shadow:var(--shadow);display:none;}
   .form.open{display:block;animation:drop .18s ease;}
@@ -560,24 +550,15 @@
   .btn-primary{background:var(--money);color:#fff;font-size:var(--fs-label);font-weight:700;padding:8px 14px;border-radius:var(--radius-md);}
   .btn-primary:hover{background:var(--money-deep);}
 
-  .rail{position:relative;padding-left:30px;}
-  .rail,#complexSection{overscroll-behavior:contain;}
-  .rail::before{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:3px;background:linear-gradient(var(--line9),var(--line9-wash));border-radius:3px;}
+  #complexSection{overscroll-behavior:contain;}
   .card{position:relative;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);margin-bottom:12px;box-shadow:var(--shadow);transition:box-shadow .15s;}
-  .card.expanded{box-shadow:var(--shadow-pop);}
   .card::before{content:"";position:absolute;left:-25px;top:20px;width:13px;height:13px;border-radius:50%;background:var(--surface);border:3px solid var(--line9);box-shadow:0 0 0 3px var(--bg);}
-  .card[data-st="후보"]::before{border-color:var(--s-final);}
-  .card[data-st="문의예정"]::before{border-color:var(--s-inquiry);}
-  .card[data-st="탈락"]::before{border-color:var(--s-drop);opacity:.6;}
-  .card[data-st="보류"]::before{border-color:var(--s-hold);}
-  .card.dim{opacity:.62;}
-  /* 카드 헤드라인 = 단지명·역·호선, 부제 = 보증금·전용면적. 접힘 기본(2줄), 클릭 시 아코디언 펼침 */
+  /* 카드 헤드라인 = 단지명·역·호선, 부제 = 보증금·전용면적 */
   .c-top{display:flex;align-items:flex-start;gap:var(--gap-mlg);padding:14px 15px;cursor:pointer;}
   .c-top:focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:var(--radius-card);}
   .c-head-text{flex:1;min-width:0;}
   .c-headline{font-size:var(--fs-title);font-weight:800;letter-spacing:-.02em;line-height:1.3;}
   .c-sub{font-size:var(--fs-label);color:var(--ink-soft);font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .card.expanded .c-sub{white-space:normal;overflow:visible;text-overflow:clip;}
   .c-badge-col{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:var(--gap-md);}
   /* B-39: 즐겨찾기 토글 — .ic 기본값(fill:none, stroke만)이 이미 "off=외곽선"을
      충족해 별도 off 스타일 불필요. on일 때만 골드(--line9)로 채움. 카드·상세
@@ -594,12 +575,6 @@
   .fn-star.on .ic{fill:var(--line9);}
   .pill{display:inline-flex;align-items:center;gap:var(--gap-sm);font-size:var(--fs-tiny);font-weight:700;padding:4px 10px;border-radius:var(--radius-pill);background:var(--surface);border:1px solid var(--hairline);border-left:3px solid var(--hairline);color:var(--ink);white-space:nowrap;cursor:pointer;}
   .pill-dot{width:7px;height:7px;border-radius:50%;flex:none;}
-  .c-progress{display:flex;align-items:center;gap:var(--gap-sm);}
-  .c-progress-text{font-size:var(--fs-micro);color:var(--ink-soft);font-weight:600;white-space:nowrap;}
-  .c-progress-track{position:relative;flex:none;width:34px;height:5px;border-radius:3px;background:var(--hairline-soft);overflow:hidden;}
-  .c-progress-track i{position:absolute;left:0;top:0;bottom:0;display:block;border-radius:3px;transition:width .2s;}
-  .c-body{display:none;padding:0 15px 14px;}
-  .card.expanded .c-body{display:block;animation:drop .15s ease;}
   .c-meta{display:flex;gap:var(--gap-md);flex-wrap:wrap;margin-bottom:8px;}
   .chip{font-size:var(--fs-micro);font-weight:700;background:var(--hairline-soft);border-radius:var(--radius-sm);padding:5px 9px;letter-spacing:-.01em;}
   .chip.ok{background:var(--money-wash);color:#3C7A4C;}
@@ -609,7 +584,6 @@
   .c-memo{font-size:var(--fs-label);color:var(--ink-soft);margin-bottom:10px;white-space:pre-wrap;line-height:1.55;}
   .c-actions{display:flex;gap:var(--gap-md);margin-top:2px;flex-wrap:wrap;align-items:center;}
   .c-actions button,.c-actions a{font-size:var(--fs-label);font-weight:600;color:var(--ink);padding:0 13px;min-height:44px;box-sizing:border-box;border:1px solid var(--hairline);border-radius:var(--radius-sm);text-decoration:none;display:inline-flex;align-items:center;gap:var(--gap-sm);}
-  .c-actions a.naver{color:#06be34;}
   .c-actions button:hover,.c-actions a:hover{background:var(--hairline-soft);}
   .c-act-del{color:var(--s-drop);}
 
@@ -629,7 +603,6 @@
   .rb-leg-row{font-size:var(--fs-tiny);color:var(--ink-soft);font-weight:600;padding-left:56px;}
 
   /* ---- v5 단지 카드 / 단지 상세 ---- */
-  .legacy-toggle{margin:2px 0 10px;}
   /* B-44②: 대표가격을 단지명 바로 아래 헤드라인급으로 — "사람은 단지가 아니라
      가격을 기억"(c-meta의 deposit 칩은 중복이라 제거, 여기로 이전) */
   .c-price{font-size:var(--fs-lg);font-weight:800;color:var(--line9-deep);letter-spacing:-.02em;line-height:1.25;margin-top:1px;}
@@ -732,20 +705,6 @@
   .unisearch-box .ic{position:absolute;left:12px;color:var(--ink-faint);pointer-events:none;}
   .unisearch-box input{width:100%;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:11px 12px 11px 36px;font-size:var(--fs-lg);background:var(--surface);box-sizing:border-box;}
   .unisearch-box input:focus{outline:none;border-color:var(--line9);}
-  .unisearch-result{margin-top:9px;padding-top:9px;border-top:1px dashed var(--hairline);}
-  .unisearch-result .ur-text{font-size:var(--fs-label);color:var(--ink-soft);font-weight:600;margin-bottom:8px;line-height:1.5;}
-  .unisearch-result .ur-text b{color:var(--ink);}
-  .ck{margin-top:11px;border-top:1px dashed var(--hairline);padding-top:9px;}
-  .ck-label{font-size:var(--fs-label);font-weight:700;color:var(--ink-soft);margin-bottom:8px;}
-  .ck-item{display:flex;gap:var(--gap-md);align-items:center;padding:5px 0;cursor:pointer;}
-  .ck-item .cb{flex:none;width:17px;height:17px;border-radius:var(--radius-sm);border:2px solid var(--hairline);margin-top:1px;display:flex;align-items:center;justify-content:center;transition:.12s;}
-  .ck-item[data-on="1"] .cb{background:var(--s-final);border-color:var(--s-final);}
-  .ck-item[data-on="1"] .cb svg{opacity:1;} .ck-item .cb svg{opacity:0;}
-  .ck-item .ct{font-size:var(--fs-label);font-weight:600;line-height:1.35;flex:1;}
-  .ck-item[data-on="1"] .ct{color:var(--ink-faint);}
-  .ck-item .ct small{display:block;font-weight:500;color:var(--ink-faint);}
-  .ck-verify{flex:none;font-size:var(--fs-tiny);font-weight:700;color:var(--line9-deep);border:1px solid var(--line9);border-radius:var(--radius-sm);padding:5px 10px;text-decoration:none;white-space:nowrap;transition:.12s;}
-  .ck-verify:hover{background:var(--line9-wash);}
   .empty{text-align:center;padding:40px 16px;color:var(--ink-faint);}
   .empty .big{font-size:var(--fs-body);font-weight:700;color:var(--ink-soft);margin-bottom:4px;}
 
@@ -1108,25 +1067,6 @@
   .og-card img{width:80px;height:80px;object-fit:cover;border-radius:var(--radius-sm);flex-shrink:0;}
   .og-card .og-loading{font-size:var(--fs-tiny);color:var(--ink-faint);font-weight:600;}
 
-  /* ===== v2: AI ===== */
-  .chip.score{background:var(--ai-wash);color:var(--ai);}
-  .airep{margin-top:10px;border-top:1px dashed var(--hairline);padding-top:9px;font-size:var(--fs-label);color:var(--ink-soft);line-height:1.5;}
-  .airep .arh{font-size:var(--fs-tiny);font-weight:800;color:var(--ai);margin-bottom:4px;letter-spacing:.02em;}
-  .airep .risk{margin-top:6px;color:var(--caution);font-weight:600;}
-  .airep .cmt{color:var(--ink);font-weight:600;margin-top:5px;}
-  .aiload{font-size:var(--fs-micro);color:var(--ai);font-weight:700;margin-top:9px;}
-
-  .wcard{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:14px 15px;margin-bottom:16px;box-shadow:var(--shadow);}
-  .wcard .wh{display:flex;align-items:center;justify-content:space-between;gap:var(--gap-mlg);flex-wrap:wrap;margin-bottom:4px;}
-  .wcard .wh h3{font-size:var(--fs-label);font-weight:800;}
-  .wcard .wdesc{font-size:var(--fs-tiny);color:var(--ink-faint);font-weight:500;margin-bottom:12px;}
-  .wgrid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-mlg) 18px;}
-  .wrow{display:flex;align-items:center;gap:var(--gap-mlg);}
-  .wrow label{flex:none;width:62px;font-size:var(--fs-micro);font-weight:700;color:var(--ink-soft);}
-  .wrow input[type=range]{flex:1;accent-color:var(--ai);}
-  .wrow .wv{flex:none;width:18px;text-align:right;font-size:var(--fs-micro);font-weight:800;color:var(--ai);font-variant-numeric:tabular-nums;}
-  .btn-eval{background:var(--ai);color:#fff;font-size:var(--fs-label);font-weight:700;padding:8px 14px;border-radius:var(--radius-md);white-space:nowrap;}
-  .btn-eval:disabled{opacity:.6;cursor:default;}
 
   .chatwrap{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:62vh;}
   .chathead{padding:14px 16px;border-bottom:1px solid var(--hairline);}
@@ -1193,24 +1133,17 @@
     .mapcard .mh{padding:9px 12px;flex-wrap:wrap;gap:var(--gap-sm);}
     .mapcard .mh h3{font-size:var(--fs-micro);}
     .unisearch{padding:10px 11px;}
-    .wcard{padding:12px 13px;}
-    .wcard .wh h3{font-size:var(--fs-micro);}
-    .wgrid{grid-template-columns:1fr;}
     .panel-head{flex-wrap:wrap;gap:var(--gap-md);}
     .panel-head h2{font-size:var(--fs-body);}
     .addbtn{font-size:var(--fs-micro);padding:7px 12px;}
-    .tabs{gap:var(--gap-xs);margin:10px 0 12px;}
-    .tab{font-size:var(--fs-micro);padding:5px 9px;}
     .form{padding:13px;}
     .form .row{grid-template-columns:1fr;}
     .c-top{padding:12px 13px;}
-    .c-body{padding:0 13px 12px;}
     .c-headline{font-size:var(--fs-body-lg);}
     .c-meta{gap:var(--gap-sm);}
     .chip{padding:4px 7px;}
     .c-actions{gap:var(--gap-sm);}
     .c-actions button,.c-actions a{padding:0 11px;}
-    .rail{padding-left:24px;}
     .card::before{left:-20px;top:18px;width:11px;height:11px;}
     .chatwrap{min-height:55vh;}
     .chathead{padding:11px 13px;}
@@ -1239,7 +1172,6 @@
     .sync-chip{font-size:var(--fs-tiny);padding:4px 8px;}
     .sync-panel{min-width:180px;}
     .ph-actions{display:flex;gap:var(--gap-sm);flex-wrap:wrap;}
-    .btn-eval{font-size:var(--fs-tiny);padding:7px 11px;}
     /* 모달 내 row도 1컬럼 접힘 */
     .modal .box .row{grid-template-columns:1fr;}
     /* ph-actions 필터 wrap */
@@ -1413,7 +1345,6 @@ body:has(.status-picker.ph-more-menu)::before{content:"";position:fixed;inset:0;
   .chip{font-size:var(--fs-micro);padding:4px 8px;}
   .pill{padding:6px 11px;}
   .c-top{padding:10px 11px;}
-  .c-body{padding:0 11px 10px;}
   .c-headline{font-size:var(--fs-body);}
   .modal .mhead{padding:10px 12px 6px;}
   .modal .mbody{padding:10px 12px;}
@@ -1429,8 +1360,6 @@ body:has(.status-picker.ph-more-menu)::before{content:"";position:fixed;inset:0;
   .sc-md-toolbar .tb-sep{flex-shrink:0;}
   /* B-72: 좁은 화면에서 칩 1개가 카드 폭을 과점하지 않도록 축소 */
   .sc-meta-chip{max-width:150px;}
-  /* tabs: 더 작은 탭 */
-  .tab{font-size:var(--fs-tiny);padding:5px 8px;}
   /* addact 줄바꿈 */
   .addact{flex-wrap:wrap;}
 }
