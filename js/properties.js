@@ -1570,8 +1570,8 @@ function mapCxImportStatus(s){
     문의예정:'문의예정',방문예정:'임장예정',임장예정:'임장예정',보류:'보류',탈락:'탈락'};
   return statusMap[s]||'관심';
 }
-/* 단지/매물 중복 판정 공용 헬퍼 — Stage5b TSV 프리뷰·migApply 재실행 idempotency
-   가드가 공통으로 씀. 단지 중복: normalize(complexName)+'|'+normalize(loc||station).
+/* 단지/매물 중복 판정 공용 헬퍼 — TSV 프리뷰 임포트가 재실행 idempotency
+   가드로 씀. 단지 중복: normalize(complexName)+'|'+normalize(loc||station).
    매물 중복: URL 우선(없으면 complexId+dongHo+areaM2+deposit 조합) */
 function cxMergeKey(complexName,loc,station){
   return normalizeStr(complexName)+'|'+normalizeStr(loc||station||'');
@@ -2130,9 +2130,7 @@ document.getElementById('propBulkBtn').onclick=()=>{
   openModal('propImportModal');
 };
 
-/* ============ v5 Stage 2: properties[] → complexes/listings 마이그레이션 (프리뷰, 비파괴) ============
-   properties[]는 읽기 전용 소스. 여기서 삭제·변경 없음 — 적용해도 그대로 남는다.
-   자동 실행 없음: 버튼 클릭 → 프리뷰 → 체크 → "선택 적용" 클릭 시에만 complexes/listings에 기록 */
+/* 단지 저장 공용 헬퍼 — saveAsComplexListing()과 TSV 임포트가 함께 씀 */
 function migComplexStatus(st){
   if(st==='후보확정') return '후보';
   if(st==='방문예정') return '임장예정';
@@ -2150,178 +2148,8 @@ function migParseName(rawName){
   if(dm){ dongHo=dm[1]; name=name.slice(0,dm.index).trim(); }
   return {complexName:name, groupCode, dongHo};
 }
-function migBuildRows(){
-  const rows=state.properties.map(p=>{
-    const {complexName,groupCode,dongHo}=migParseName(p.name);
-    const loc=p.loc||'';
-    const geocodeQuery=buildGeocodeQuery(loc,complexName);
-    const mergeKey=normalizeStr(complexName)+'|'+normalizeStr(loc||p.station||'');
-    return {p,complexName,groupCode,dongHo,loc,geocodeQuery,mergeKey,confident:!!complexName};
-  });
-  const groupRows=new Map(), groupNoMap=new Map();
-  let groupNo=0;
-  rows.forEach(r=>{
-    if(!groupRows.has(r.mergeKey)) groupRows.set(r.mergeKey,[]);
-    groupRows.get(r.mergeKey).push(r);
-  });
-  rows.forEach(r=>{
-    if(!groupNoMap.has(r.mergeKey)) groupNoMap.set(r.mergeKey,++groupNo);
-    r.groupNo=groupNoMap.get(r.mergeKey);
-    r.groupSize=groupRows.get(r.mergeKey).length;
-  });
-  return rows;
-}
-let migRows=[];
-function renderMigPreview(){
-  migRows=migBuildRows();
-  const area=document.getElementById('migPreviewArea');
-  const applyBtn=document.getElementById('migApplyBtn');
-  if(!migRows.length){
-    area.innerHTML='<p class="mdesc">정리할 매물이 없어요.</p>';
-    applyBtn.disabled=true; applyBtn.textContent='선택 0개 적용';
-    document.getElementById('migSummary').textContent='';
-    return;
-  }
-  area.innerHTML=`<div style="overflow-x:auto"><table class="import-tbl">
-    <thead><tr>
-      <th><input type="checkbox" id="migChkAll" checked></th>
-      <th>기존이름</th><th>탐색그룹</th><th>추정 단지명</th><th>추정 동/호</th>
-      <th>주소</th><th>지도 검색어</th><th>병합예정 단지</th>
-    </tr></thead>
-    <tbody>${migRows.map((r,i)=>`<tr>
-      <td><input type="checkbox" class="mig-chk" data-idx="${i}"${r.confident?' checked':''}></td>
-      <td>${esc(r.p.name||'—')}</td>
-      <td>${esc(r.groupCode||'—')}</td>
-      <td>${esc(r.complexName||'—')}${r.confident?'':' <span class="chip warn">단지명 추정 실패</span>'}</td>
-      <td>${esc(r.dongHo||'—')}</td>
-      <td>${esc(r.loc||'—')}</td>
-      <td>${esc(r.geocodeQuery||'—')}</td>
-      <td>#${r.groupNo} ${esc(r.complexName||r.p.name||'—')}${r.groupSize>1?` <span class="chip ok">${r.groupSize}건 병합</span>`:''}</td>
-    </tr>`).join('')}</tbody>
-  </table></div>`;
-  const updateCount=()=>{
-    const n=[...document.querySelectorAll('.mig-chk:checked')].length;
-    applyBtn.textContent=`선택 ${n}개 적용`; applyBtn.disabled=n===0;
-  };
-  document.getElementById('migChkAll').onchange=e=>{
-    document.querySelectorAll('.mig-chk').forEach(cb=>cb.checked=e.target.checked);
-    updateCount();
-  };
-  document.querySelectorAll('.mig-chk').forEach(cb=>cb.onchange=updateCount);
-  updateCount();
-  const groupCount=new Set(migRows.map(r=>r.mergeKey)).size;
-  document.getElementById('migSummary').textContent=`매물 ${migRows.length}건 → 단지 ${groupCount}개로 정리 예정`;
-}
-/* B-14: idempotency 가드 — "정리" 재실행 시 단지는 findExistingComplexId()로 재사용
-   (새로 안 만듦), 매물은 listingExists()에 걸리면 건너뜀. 여러 번 눌러도 중복 생성 없음 */
-function migApply(){
-  const toApply=[...document.querySelectorAll('.mig-chk:checked')]
-    .map(cb=>migRows[+cb.dataset.idx]).filter(Boolean);
-  if(!toApply.length) return;
-  const groups=new Map();
-  toApply.forEach(r=>{
-    if(!groups.has(r.mergeKey)) groups.set(r.mergeKey,[]);
-    groups.get(r.mergeKey).push(r);
-  });
-  const now=new Date().toISOString();
-  let newComplexes=0, newListings=0, skippedListings=0;
-  groups.forEach(rowsInGroup=>{
-    const first=rowsInGroup[0].p;
-    const groupCode=rowsInGroup.map(r=>r.groupCode).find(Boolean)||'';
 
-    let complexId=findExistingComplexId(rowsInGroup[0].complexName||first.name,first.loc,first.station);
-    if(!complexId){
-      complexId='cx'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-      const cx={
-        id:complexId,
-        complexName:rowsInGroup[0].complexName||first.name||'',
-        loc:first.loc||'',
-        geocodeQuery:rowsInGroup[0].geocodeQuery||'',
-        groupCode, regionGroup:'',
-        station:first.station||'', line:first.line||'',
-        yearBuilt:first.yearBuilt??null,
-        households:first.households??null,
-        householdGrade:first.householdGrade||'',
-        commuteGangnam:first.commuteGangnam??null,
-        commuteSinsa:first.commuteSinsa??null,
-        complexStatus:migComplexStatus(first.status),
-        lat:first.lat??null, lng:first.lng??null,
-        memo:first.memo||'',
-        parking:null, parkingState:'unknown',
-        pros:'', cons:'', verdict:'', favorite:false,
-        commutes:defaultComplexCommutes(), commuteMemo:'',
-        fieldNote:defaultComplexFieldNote(),
-        createdAt:now, updatedAt:now,
-      };
-      if(first.aiScore!=null) cx.aiScore=first.aiScore;
-      if(first.aiComment) cx.aiComment=first.aiComment;
-      if(first.aiReport) cx.aiReport=first.aiReport;
-      state.complexes.push(cx);
-      newComplexes++;
-    }
-
-    rowsInGroup.forEach(r=>{
-      const p=r.p;
-      const areaNum=p.area!=null&&p.area!==''?parseFloat(p.area):null;
-      const depositVal=p.depositNum!=null?p.depositNum:(p.deposit?parseEok(p.deposit):null);
-      if(listingExists(complexId,p.url,r.dongHo,areaNum,depositVal)){ skippedListings++; return; }
-      const isFirstListing=state.listings.filter(l=>l.complexId===complexId).length===0;
-      state.listings.push({
-        id:'lst'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+newListings,
-        complexId,
-        source:p.importSource||'',
-        url:p.url||'',
-        capturedAt:p.created?new Date(p.created).toISOString():now,
-        lastCheckedAt:now,
-        dongHo:r.dongHo||'',
-        areaM2:(areaNum!=null&&!isNaN(areaNum))?areaNum:null,
-        areaText:p.area!=null&&p.area!==''?String(p.area):'',
-        areaGrade:'',
-        deposit:depositVal,
-        managementFee:null,
-        managementFeeState:'unknown',
-        listingStatus:'확인필요',
-        isRepresentative:isFirstListing,
-        memo:p.memo||'',
-        safety:defaultListingSafety(),
-        history:[{at:now,deposit:depositVal,listingStatus:'확인필요',source:'create'}],
-      });
-      newListings++;
-    });
-  });
-  save();
-  closeModal('migPreviewModal');
-  renderProps();
-  toast(`단지 ${newComplexes}개 신규 · 매물 ${newListings}건 등록${skippedListings?` · 중복 ${skippedListings}건 건너뜀`:''} (기존 매물 목록은 그대로 유지돼요)`);
-}
-/* B-68: 이관 완료 후 진입 버튼 노출 제거 — 모달·마이그레이션 코드 본체(migApply·
-   renderMigPreview 등)는 B-05(레거시 일괄 삭제 예정) 전까지 그대로 유지, 여기서는
-   진입 버튼(migStartBtn)만 주입하지 않는다. 모달 자체는 코드상 남아있지만 여는
-   경로가 없어 사실상 비활성 */
-(function migInjectUI(){
-  document.body.insertAdjacentHTML('beforeend',`
-    <div class="modal" id="migPreviewModal">
-      <div class="box" style="max-width:1080px;width:96vw;max-height:90vh;overflow-y:auto">
-        <h3>${ic('listings')} 기존 매물을 단지로 정리 (미리보기)</h3>
-        <p class="mdesc">매물 목록을 단지(장기추적)·매물(시점 스냅샷) 구조로 정리해요.
-          체크된 항목만 적용되고, 기존 매물 목록은 그대로 남아요.</p>
-        <div id="migPreviewArea"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px">
-          <span id="migSummary" style="font-size:12px;color:var(--ink-soft)"></span>
-          <div style="display:flex;gap:8px">
-            <button class="btn-ghost" id="migCloseBtn">닫기</button>
-            <button class="btn-save" id="migApplyBtn" disabled>선택 0개 적용</button>
-          </div>
-        </div>
-      </div>
-    </div>`);
-  const modal=document.getElementById('migPreviewModal');
-  modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('open'); });
-  document.getElementById('migCloseBtn').onclick=()=>closeModal('migPreviewModal');
-  document.getElementById('migApplyBtn').onclick=migApply;
-})();
-
-/* ============ v5 Stage 3+4: 단지 카드 목록 + 단지 상세·매물 목록 (properties[] 뷰 공존) ============ */
+/* ============ 단지 카드 목록 + 단지 상세·매물 목록 ============ */
 const SC_CX=Object.assign({},SC,{임장예정:SC['방문예정']});
 const HEX_CX=Object.assign({},HEX,{임장예정:HEX['방문예정']});
 /* B-116: 단지 카드 상태 뱃지 빠른 변경 — E-01 이관 후 소실된 카드 즉시변경 경로 복원.
@@ -2370,11 +2198,6 @@ function listingStatusChipClass(st){
 const LISTING_STATUS_OPTIONS=['게시중','사라짐','가격변동','다른동호수등장','확인필요'];
 
 /* ---- (3) 단지 카드 목록 ---- */
-let legacyExpanded=null;
-function updateLegacyToggleLabel(){
-  const btn=document.getElementById('legacyToggleBtn'); if(!btn)return;
-  btn.textContent=`${legacyExpanded?'▾':'▸'} 기존(미정리) 매물 (${state.properties.length})`;
-}
 
 /* ---- v5 stage6c: 단지 목록 필터 (6종) ---- */
 let cxFilters={region:'',status:'',listing:'',area:'',hh:'',line:'',favorite:false};
@@ -2616,11 +2439,6 @@ function renderComplexes(){
   }).join('');
   refreshOverview(filtered);
 }
-document.getElementById('legacyToggleBtn').onclick=()=>{
-  legacyExpanded=!legacyExpanded;
-  document.getElementById('legacyWrap').style.display=legacyExpanded?'':'none';
-  updateLegacyToggleLabel();
-};
 /* B-39: 즐겨찾기 토글 — 카드(delegated)·상세(cxDetailFavBtn) 공용. 새 저장
    경로 없이 기존 cx 필드 갱신 + save() + 재렌더 패턴 재사용 */
 function toggleFavorite(id){
