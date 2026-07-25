@@ -39,7 +39,10 @@ function restoreLastView(){
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveViewState(); });
 window.addEventListener('pagehide',saveViewState);
 
-load().then(restoreLastView);
+load().then(async()=>{
+  restoreLastView();
+  await pullInbox();
+});
 
 (async()=>{
   try{

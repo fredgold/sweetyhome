@@ -403,6 +403,85 @@ document.getElementById('sc_saveBtn').onclick=()=>{
   toast(isEdit?'저장했어요':'추가했어요');
 };
 
+function inboxScrapId(inboxId){
+  return 'sc_inbox_'+inboxId;
+}
+function inboxScrap(item){
+  const memo=typeof item.memo==='string'?item.memo.trim():'';
+  const url=typeof item.url==='string'?item.url.trim():'';
+  let title=memo.split('\n').find(Boolean)||url;
+  try{ if(!memo) title=new URL(url).hostname; }catch(e){}
+  return {
+    id:inboxScrapId(item.id),
+    inboxId:item.id,
+    createdAt:Number.isFinite(Date.parse(item.receivedAt))?Date.parse(item.receivedAt):Date.now(),
+    title:(title||'새 링크').slice(0,80),
+    type:'note',
+    raw:memo?memo+'\n\n'+url:url,
+    location:'',
+    price:'',
+    area:'',
+    schedule:'',
+    condition:'',
+    source:'',
+    status:'new',
+    tags:[],
+    fit:'',
+    img:'',
+    imgs:[],
+    parsed:null,
+  };
+}
+async function pullInbox(){
+  if(isGuestMode) return;
+  let additions=[];
+  let stateConfirmed=false;
+  const rollback=()=>{
+    if(!additions.length) return;
+    state.scraps=state.scraps.filter(scrap=>!additions.includes(scrap));
+    try{ localStorage.setItem('sweetyhome',JSON.stringify(state)); }catch(e){}
+  };
+  try{
+    const inboxRes=await fetch('/api/ingest',{headers:authHeaders()});
+    if(!inboxRes.ok) return;
+    const payload=await inboxRes.json();
+    const items=Array.isArray(payload.items)?payload.items.filter(item=>
+      item&&typeof item.id==='string'&&typeof item.url==='string'
+    ):[];
+    if(!items.length) return;
+
+    const existingIds=new Set(state.scraps.flatMap(scrap=>
+      [scrap.inboxId,typeof scrap.id==='string'&&scrap.id.startsWith('sc_inbox_')?scrap.id.slice(9):null]
+        .filter(Boolean)
+    ));
+    additions=items.filter(item=>!existingIds.has(item.id)).map(inboxScrap);
+    if(additions.length) state.scraps.unshift(...additions);
+    await save();
+
+    const stateRes=await fetch('/api/state',{
+      method:'POST',
+      headers:authHeaders(),
+      body:JSON.stringify({state}),
+    });
+    const stateResult=await stateRes.json();
+    if(!stateRes.ok||!stateResult.ok){
+      rollback();
+      return;
+    }
+    stateConfirmed=true;
+    if(additions.length) renderScraps();
+
+    const ackRes=await fetch('/api/ingest',{
+      method:'DELETE',
+      headers:authHeaders(),
+      body:JSON.stringify({ids:items.map(item=>item.id)}),
+    });
+    if(!ackRes.ok) return;
+  }catch(e){
+    if(!stateConfirmed) rollback();
+  }
+}
+
 function scClearForm(){
   ['sc_title','sc_text','sc_location','sc_price','sc_area','sc_schedule','sc_condition','sc_source','sc_tags'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('sc_fit').value='';
