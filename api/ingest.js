@@ -34,6 +34,25 @@ function hasIngestToken(req) {
   return Boolean(expected) && auth.startsWith('Bearer ') && auth.slice(7) === expected;
 }
 
+function parseHttpUrl(value) {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractHttpUrl(urlText, memoText) {
+  const direct = parseHttpUrl(urlText);
+  if (direct) return direct;
+
+  const match = `${urlText}\n${memoText}`.match(/https?:\/\/\S+/i);
+  if (!match) return null;
+  const candidate = match[0].trim();
+  return parseHttpUrl(candidate.replace(/[)\],.;!?]+$/, '')) || parseHttpUrl(candidate);
+}
+
 async function enforcePostRateLimit(req, res) {
   const ipKey = `sweetyhome:ingest:ip:${getClientIP(req)}`;
   const globalKey = 'sweetyhome:ingest:global';
@@ -103,26 +122,25 @@ export default async function handler(req, res) {
       }
 
       const body = parseBody(req);
-      if (typeof body.url !== 'string') {
-        return res.status(400).json({ ok: false, error: 'url 필드가 필요합니다.' });
+      if ((body.url != null && typeof body.url !== 'string')
+        || (body.memo != null && typeof body.memo !== 'string')) {
+        return res.status(400).json({ ok: false, error: 'url과 memo는 문자열이어야 합니다.' });
       }
-      let url;
-      try {
-        url = new URL(body.url.trim());
-      } catch {
-        return res.status(400).json({ ok: false, error: '올바른 URL이 아닙니다.' });
-      }
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-        return res.status(400).json({ ok: false, error: 'http(s) URL만 지원합니다.' });
-      }
-      if (body.memo != null && typeof body.memo !== 'string') {
-        return res.status(400).json({ ok: false, error: 'memo는 문자열이어야 합니다.' });
+      const urlText = body.url || '';
+      const memoText = body.memo || '';
+      const url = extractHttpUrl(urlText, memoText);
+      if (!url) {
+        return res.status(400).json({
+          ok: false,
+          error: '요청에서 링크를 찾지 못했습니다',
+          received: { urlLen: urlText.length, memoLen: memoText.length },
+        });
       }
 
       const item = {
         id: crypto.randomUUID(),
         url: url.href,
-        memo: (body.memo || '').trim(),
+        memo: memoText.trim(),
         receivedAt: new Date().toISOString(),
       };
       if (Number(await addItem(item)) !== 1) {
