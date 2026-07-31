@@ -378,8 +378,13 @@
     /* B-161: 카드 스트립을 탭바 바로 위(~12px)로 내림 — 이전엔 bottom:14px+
        padding-bottom(app-bottom-h+78px) 이중 가산으로 탭바 위 최대 184px까지
        뜸(B-131 "FAB 아래 카드" 구조의 부작용). FAB·현위치는 이제 이 스트립
-       실측 높이(--cx-strip-h, properties.js measureCxStripH) 위로 올라감 */
-    #complexSection{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;gap:var(--gap-lg);overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 12px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+       실측 높이(--cx-strip-h, properties.js measureCxStripH) 위로 올라감.
+       회귀 수정: padding-bottom을 flat 12px로 뒀더니 실기기에서 .apptabs
+       (fixed, height:app-bottom-h)가 카드 하단만큼 그대로 가림 — bottom:0
+       인 이 요소의 컨테이닝 블록 바닥이 탭바 상단과 항상 정확히 일치한다는
+       가정이 실기기에서 깨짐(100dvh·safe-area 렌더링 차 추정). padding-bottom
+       에 app-bottom-h를 다시 더해 탭바 높이만큼 확실히 띄움 */
+    #complexSection{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;gap:var(--gap-lg);overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 12px calc(var(--app-bottom-h) + 12px);-webkit-overflow-scrolling:touch;scrollbar-width:none;}
     #complexSection::-webkit-scrollbar{display:none;}
     #complexSection>.card{flex:0 0 86%;scroll-snap-align:center;margin-bottom:0;box-shadow:var(--shadow);}
     #complexSection>.cx-empty{flex:0 0 100%;}
