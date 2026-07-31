@@ -8,7 +8,19 @@
 ```
 51bbe68 fix: 모바일 지도뷰 카드 스트립을 탭바 위로 재배치 (B-161)
 c7ce20e fix: 단지·매물 상세 시트 가로 스크롤 제거 (B-162)
+518abcd fix: 지도뷰 카드 하단이 탭바에 가려지던 회귀 수정 (B-161)
 ```
+
+**B-161 회귀 수정**(`518abcd`): 사용자가 실기기에서 카드 하단·"최근
+확인" 줄이 `.apptabs`(fixed)에 가려짐을 확인해 리포트. 원인 — `51bbe68`
+에서 `padding-bottom`을 flat `12px`로 줄이며 "bottom:0인 `#complexSection`
+컨테이너 바닥이 `.apptabs` 상단과 항상 일치한다"고 가정했는데, 로컬
+헤드리스 Chromium(env(safe-area-inset-*) 항상 0, 100dvh 고정)에선
+성립해도 실기기(동적 safe-area·100dvh)에선 깨짐. 지시서 원안대로
+`padding-bottom:calc(var(--app-bottom-h) + 12px)`로 되돌려 탭바 높이만큼
+확실히 띄우도록 수정(`--cx-strip-h` 측정 로직은 `apptabs.top` 기준
+실측이라 무변경). Playwright 스크린샷(390px)으로 카드 전체(뱃지·
+"최근 확인" 줄 포함)가 탭바 위에 완전히 노출됨을 육안 확인.
 
 커맨드센터 지시서(`dispatch-2026-07-31-B161-B162.md`)로 착수. 손 A
 단독, 지시대로 2커밋 분리. 파일 락: `style.css`+`js/properties.js`
@@ -57,7 +69,7 @@ vs `clientWidth` 390) — 앱 전체에 `overflow-wrap`/`word-break`가
 `mhead` 위치 불변(B-59 sticky 무회귀) 확인. 두 항목 모두 신규 콘솔
 에러 0.
 
-- **B-161/B-162 완료·push 대기**(`51bbe68`/`c7ce20e`).
+- **B-161/B-162 완료·push 대기**(`51bbe68`/`c7ce20e`/`518abcd`).
 - **B-158잔여 확인**: BACKLOG의 "다음 세션 HANDOFF에 B-158 엔트리
   추가" 항목 — 아래 이전 섹션에 이미 `**B-158**: iOS PWA가...` 전체
   단락이 존재함(2026-07-26 세션에서 이미 기록 완료). 추가 기록 불필요,
