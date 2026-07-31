@@ -1,4 +1,78 @@
-# HANDOFF — B-158+B-160 완료 (2026-07-26) 모바일 수집 인박스 + 입력 관용화
+# HANDOFF — B-161+B-162 완료 (2026-07-31) 모바일 지도뷰 카드 위치 + 단지상세 가로스크롤
+
+> **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
+> 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
+
+## 최신 작업: 지도뷰 카드 스트립 재배치 + 단지·매물 상세 시트 가로 스크롤 제거
+
+```
+51bbe68 fix: 모바일 지도뷰 카드 스트립을 탭바 위로 재배치 (B-161)
+c7ce20e fix: 단지·매물 상세 시트 가로 스크롤 제거 (B-162)
+```
+
+커맨드센터 지시서(`dispatch-2026-07-31-B161-B162.md`)로 착수. 손 A
+단독, 지시대로 2커밋 분리. 파일 락: `style.css`+`js/properties.js`
+(①)·`style.css`(②) — 겹치는 파일이지만 순차 단독 작업이라 충돌 없음.
+
+**B-161**(`style.css`+`js/properties.js`): 모바일 지도뷰에서 카드
+캐러셀 하단이 탭바에서 최대 184px 위에 떠 있던 버그 — `#complexSection`의
+`bottom:14px`(위치)과 `padding-bottom:calc(app-bottom-h+78px)`이
+이중으로 가산되던 게 원인(B-131에서 FAB 겹침을 피하려 카드 전체를
+위로 올린 구조적 부작용). `bottom:0`+`padding-bottom:12px`로 단순화해
+탭바 바로 위 12px로 내림. FAB(`#toggleForm`)·현위치(`.my-loc-btn`)는
+카드 높이가 verdict·뱃지 유무로 가변이라 고정값을 쓸 수 없어,
+`measureCxStripH()`(`ResizeObserver`가 `#complexSection` 크기 변화를
+자동 포착)로 실측한 높이를 `--cx-strip-h` CSS 변수에 반영하고 두
+버튼의 `bottom`을 그 위로 쌓음(`#panel-props:not([data-view="list"])`
+로 지도뷰만 스코프, 리스트뷰는 기존 `calc` 그대로 무변경).
+
+**B-162**(`style.css`): 단지 상세(`#complexDetailModal`)·매물 상세
+(`#cxListingDetailBody`) 시트를 세로 스크롤하다 좌우로도 밀려 라벨이
+잘려 보이던 버그. 지시서의 진단 스니펫(`mb.getBoundingClientRect()`
+기준 우측 초과 자식 찾기)을 실제 렌더에 돌려 범인을 실측 — 지시서가
+제시한 후보(②편집 폼 flex·③정보수정 폼)는 재현 안 됨(`.row`가
+`display:grid`가 아니라 `block`으로 세로 쌓여 애초에 겹칠 구조가
+아니었음, `node`로 컴퓨티드 스타일 직접 확인). 대신 **영문 역명·주소
+등 공백 없는 긴 토큰**을 넣어보니 재현됨(`mbody.scrollWidth` 561
+vs `clientWidth` 390) — 앱 전체에 `overflow-wrap`/`word-break`가
+어디에도 없어 텍스트가 박스를 그냥 넘치는 게 근본 원인이었음(라벨
+잘림 증상은 이 오버플로 상태에서 스와이프 도중 옆으로 밀렸을 때
+보이는 것). `#complexDetailModal .mbody{overflow-wrap:anywhere}`
+하나로 근본 수정(상속 속성이라 dt/dd·메모·안전체크 등 모든 자손에
+자동 적용, `#cxListingDetailBody`도 같은 조상의 자손이라 함께 커버)
++`overflow-x:hidden` 방어선 추가. 지시서 후보①(네이버 지도 내부
+절대배치 타일)은 `#formMap,#propEditMap,#cxDetailMap`에
+`overflow:hidden` 방어를 추가했으나, 로컬은 네이버 API 키가 배포
+도메인으로 제한돼 있어 지도 자체가 초기화되지 않아(500 에러) 재현·
+검증 불가 — Safari 실기기 확인 시 이 후보도 함께 봐 주시면 좋음.
+
+**검증**(Playwright, 로컬 Node UTF-8 정적 서버+게스트 모드+주입한
+샘플 단지·매물 데이터, `node --check js/properties.js` 통과): B-161 —
+390px에서 카드 하단~탭바 여백 12px(목표 부합), FAB·현위치가 카드
+1장/2장(verdict 긴 카드 포함)에서 전부 안 겹침(gap 12~16px), 리스트뷰
+전환 후 되돌아와도 무회귀, 리스트뷰 자체 calc·매물추가 시트 동작
+무변경 확인. B-162 — 390px·360px 양쪽에서 단지 상세(수정모드+안전
+체크 펼침+긴 토큰 전부 넣은 상태)·매물 상세 사이드 패널 모두
+`scrollWidth===clientWidth`(가로 스크롤 0) 확인, 세로 스크롤 후
+`mhead` 위치 불변(B-59 sticky 무회귀) 확인. 두 항목 모두 신규 콘솔
+에러 0.
+
+- **B-161/B-162 완료·push 대기**(`51bbe68`/`c7ce20e`).
+- **B-158잔여 확인**: BACKLOG의 "다음 세션 HANDOFF에 B-158 엔트리
+  추가" 항목 — 아래 이전 섹션에 이미 `**B-158**: iOS PWA가...` 전체
+  단락이 존재함(2026-07-26 세션에서 이미 기록 완료). 추가 기록 불필요,
+  BACKLOG에서 삭제 검토 요청.
+- **사용자 확인 요청**(Safari 실기기, 390px 근처 실제 화면):
+  ① 지도뷰에서 카드 하단이 탭바 바로 위(safe-area 포함)로 붙었는지,
+  스와이프 중 어느 카드에서도 FAB·현위치에 안 가려지는지.
+  ② 단지 상세·매물 상세 시트를 세로로 쭉 스크롤해도 좌우로 안 밀리는지
+  (특히 영문 단지명·역명이 있는 실데이터가 있다면 그 항목으로).
+  ③ 후보① 네이버 지도 타일이 시트 밖으로 삐져나오지 않는지(로컬
+  미검증 항목).
+
+---
+
+# 이전 핸드오프 — B-158+B-160 완료 (2026-07-26) 모바일 수집 인박스 + 입력 관용화
 
 > **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
 > 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
@@ -144,77 +218,3 @@ POST 바디 최상위 키에 `properties` 부재, `complexes`/`listings`
 - **다음**: properties.js 2분할 재평가(사용자 결정 2026-07-19, 이
   지시서 범위 밖) — 커맨드센터가 별도 발급 예정. 사용자 실기기·
   실배포 확인 권장(특히 백업 복원 문구, 매물 폼 저장 흐름).
-
----
-
-# 이전 핸드오프 — B-127+B-128 완료 (2026-07-20) ESC 모달 닫기 + 편집 모달 삭제 버튼
-
-## 최신 작업: ESC로 모달 닫기(중첩 3겹 대응) + 수집함 편집 모달 삭제 버튼
-
-```
-0e0efda feat: ESC로 모달 닫기 (B-127)
-fc9e1ec feat: 수집함 편집 모달에 삭제 버튼 (B-128)
-```
-
-커맨드센터 발급 지시서로 착수(사용자 피드백 2건). 손 A 단독,
-지시대로 2커밋 분리. 파일 락: `utils.js`(①)·`scraps-form.js`+
-`index.html`(②) — `properties.js`는 이번엔 무편집(닫기 함수를
-전역 식별자로 참조만 해서 됨, 아래 설명).
-
-**B-127**(`utils.js`, `openModal`/`closeModal` 바로 아래): 전역
-`keydown` 리스너 1개로 라이트박스(`scLightboxModal`) > 매물 상세
-사이드 패널(`cxListingDetailBox`, `complexDetailModal` 안에 중첩) >
-`.modal.open` 본체(DOM상 마지막 = 최상위) 순으로 한 겹씩만 닫음 —
-`closeModal`/`closeListingDetail`은 properties.js가 정의한 전역
-식별자를 utils.js에서 이름으로 그대로 참조(클래식 스크립트라 로드
-순서와 무관하게 실행 시점엔 이미 정의돼 있음 — properties.js 무편집
-가능했던 이유). **우선순위 판정**: ①`e.defaultPrevented`면 즉시
-리턴 — 슬래시 메뉴가 Tiptap Suggestion 경로든 폴백 경로든 둘 다
-Escape에서 `preventDefault()` 후 자체 처리하므로 이걸로 위임(Tiptap
-쪽은 `@tiptap/suggestion`이 `onKeyDown`이 `true` 리턴 시 내부적으로
-preventDefault 호출한다는 걸 실제 CDN 로드 성공 케이스로 3회 반복
-재현해 확인 — 문서로만 신뢰하지 않음). ②`.slash-menu` 요소가 실제
-`display:block`인지 추가 확인(이중 안전망). ③로그인 오버레이가
-안 숨겨져 있으면 완전 제외(로그인 화면에서 ESC 무동작, 기존 그대로).
-④`document.activeElement`가 input/textarea/contenteditable이면
-`blur()`만 하고 리턴 — **1차 ESC는 포커스 해제, 2차 ESC부터 실제로
-닫힘**(오타로 긴 메모 작성 중 실수로 모달이 통째로 닫히는 사고 방지).
-status-picker는 `.modal` 클래스가 아니라(`position:absolute` 플로팅
-메뉴, 기존 바깥클릭으로만 닫힘) 이 로직 자체가 손대지 않아 자연히
-제외됨 — 별도 예외처리 코드 불필요.
-
-**검증**(Playwright, 로컬 Node UTF-8 정적 서버+`/api/state` 목업):
-3겹 인위 스택(`complexDetailModal`+`cxListingDetailBox`+
-`scLightboxModal` 동시 open) → ESC 3연타로 라이트박스→패널→모달
-순서대로 한 겹씩만 닫힘 실측. 에디터 포커스 케이스 — `sem_title`
-포커스 중 1차 ESC는 blur만(모달 유지), 2차 ESC에서 닫힘. 슬래시
-메뉴 — 폴백 경로(esm.sh `route().abort()`로 강제)와 Tiptap 성공
-경로(재시도로 3회 모두 CDN 도달) **양쪽 다** 실측: ESC 1회에 메뉴만
-닫히고 모달은 안 닫히고 포커스도 안 풀림(슬래시 처리가 전량 소비),
-그 다음 ESC로 blur, 그 다음 ESC로 모달 닫힘 — 3단 체인 전부 확인.
-로그인 오버레이에서 ESC 무동작(오버레이 계속 표시) 확인. 아무것도
-안 열려있을 때 ESC 눌러도 에러 없음(no-op) 확인. 모바일 390에서
-기존 취소 버튼 닫기 무회귀 확인. `node --check` 전체 js 통과.
-
-**B-128**(`index.html`+`scraps-form.js`): B-123이 카드뷰를 압축하며
-카드 자체에 버튼을 없앤 부작용으로, 카드뷰에서 삭제하려면 리스트뷰로
-가야 했던 것 해소 — 편집 모달(`scEditModal`) `mfoot`에 "삭제" 버튼
-추가(왼쪽 끝 `margin-right:auto`로 저장/취소와 시각 분리, 기존
-`--s-drop` 위험 톤 재사용 — 리스트뷰 삭제 버튼과 동일 색상 재사용,
-새 색상 없음). 클릭 시 `scraps-render.js`의 목록 삭제(`data-sc-del`)
-와 **완전히 동일한 confirm 문구·동일 필터 경로** 재사용(`state.
-scraps=state.scraps.filter(...)`+`save()`+`renderScraps()`), 성공
-시 `closeModal('scEditModal')`.
-
-**검증**: 갤러리 카드 클릭(카드 본문, B-123①의 이미지 클릭과 분리된
-그 영역) → 편집 모달 열림 → 삭제 클릭 → confirm **거부** 시 항목·
-모달 상태 완전 무변화 확인 → 삭제 다시 클릭 → confirm **수락** 시
-해당 항목만 제거되고 다른 항목은 그대로, 갤러리 DOM에서도 카드
-사라짐, 모달 닫힘 확인. **Redis 왕복**: `/api/state` POST 바디를
-목업 서버로 캡처해 삭제된 스크랩 id가 실제로 전송 바디에서 빠져있고
-남은 항목만 있음을 실측(로컬 상태만이 아니라 동기화 페이로드까지
-확인). 모바일 390에서 버튼 노출·좌우 위치(삭제 x=32, 취소 x=256로
-확연히 분리)·클릭 동작 확인. `node --check` 통과.
-
-- **B-127/B-128 완료·push 완료**(`0e0efda`/`fc9e1ec`).
-- **다음**: 사용자 별도 지시 대기.
