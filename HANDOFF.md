@@ -8,19 +8,25 @@
 ```
 51bbe68 fix: 모바일 지도뷰 카드 스트립을 탭바 위로 재배치 (B-161)
 c7ce20e fix: 단지·매물 상세 시트 가로 스크롤 제거 (B-162)
-518abcd fix: 지도뷰 카드 하단이 탭바에 가려지던 회귀 수정 (B-161)
+518abcd fix: 지도뷰 카드 하단이 탭바에 가려지던 회귀 수정 (B-161, 이후 오판으로 확인)
+32e4723 fix: 지도뷰 카드 하단 위치 재수정 — flat 12px 복원 (B-161)
 ```
 
-**B-161 회귀 수정**(`518abcd`): 사용자가 실기기에서 카드 하단·"최근
-확인" 줄이 `.apptabs`(fixed)에 가려짐을 확인해 리포트. 원인 — `51bbe68`
-에서 `padding-bottom`을 flat `12px`로 줄이며 "bottom:0인 `#complexSection`
-컨테이너 바닥이 `.apptabs` 상단과 항상 일치한다"고 가정했는데, 로컬
-헤드리스 Chromium(env(safe-area-inset-*) 항상 0, 100dvh 고정)에선
-성립해도 실기기(동적 safe-area·100dvh)에선 깨짐. 지시서 원안대로
-`padding-bottom:calc(var(--app-bottom-h) + 12px)`로 되돌려 탭바 높이만큼
-확실히 띄우도록 수정(`--cx-strip-h` 측정 로직은 `apptabs.top` 기준
-실측이라 무변경). Playwright 스크린샷(390px)으로 카드 전체(뱃지·
-"최근 확인" 줄 포함)가 탭바 위에 완전히 노출됨을 육안 확인.
+**B-161 왕복 정리(`518abcd`→`32e4723`)**: 사용자가 실기기에서 카드
+하단이 `.apptabs`에 가려짐을 리포트해 `518abcd`에서 `padding-bottom`을
+`calc(app-bottom-h+12px)`로 되돌렸으나, 이 진단(“컨테이닝 블록 정렬이
+실기기에서 깨짐”)이 **오판**이었음이 이후 커맨드센터 확인으로 밝혀짐.
+실제로는 `#panel-props`가 B-31 override(1465행,
+`bottom:auto;height:calc(...-app-bottom-h)`)로 323행 `bottom:0`을
+덮어써 패널 바닥이 이미 탭바 상단과 정확히 일치 — `padding-bottom`에
+`app-bottom-h`를 또 더한 `518abcd`가 오히려 이중 가산이 되어 카드를
+탭바 위 ~104px에 띄우는 회귀를 냄(사용자 실기기 실측이 이를 확인).
+`32e4723`에서 `51bbe68`의 원래 값(flat `12px`)으로 복원하고, 주석의
+잘못된 진단도 정확한 근거(1465행 override)로 교체. `--cx-strip-h`·
+FAB 규칙은 `apptabs.top` 기준 실측이라 두 왕복 내내 무접촉·무영향.
+**검증은 육안이 아니라 수치로**: Playwright 390px에서
+`apptabs.getBoundingClientRect().top(786) − card.getBoundingClientRect().bottom(774) = 12` —
+목표(~12px)와 정확히 일치 확인.
 
 커맨드센터 지시서(`dispatch-2026-07-31-B161-B162.md`)로 착수. 손 A
 단독, 지시대로 2커밋 분리. 파일 락: `style.css`+`js/properties.js`
@@ -69,7 +75,7 @@ vs `clientWidth` 390) — 앱 전체에 `overflow-wrap`/`word-break`가
 `mhead` 위치 불변(B-59 sticky 무회귀) 확인. 두 항목 모두 신규 콘솔
 에러 0.
 
-- **B-161/B-162 완료·push 대기**(`51bbe68`/`c7ce20e`/`518abcd`).
+- **B-161/B-162 완료·push 완료**(`51bbe68`/`c7ce20e`/`518abcd`/`32e4723`).
 - **B-158잔여 확인**: BACKLOG의 "다음 세션 HANDOFF에 B-158 엔트리
   추가" 항목 — 아래 이전 섹션에 이미 `**B-158**: iOS PWA가...` 전체
   단락이 존재함(2026-07-26 세션에서 이미 기록 완료). 추가 기록 불필요,
