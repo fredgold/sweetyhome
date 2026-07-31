@@ -2088,6 +2088,27 @@ function applyPropViewMode(){
 }; }
 applyPropViewMode();
 
+/* B-161: FAB(#toggleForm)·현위치(.my-loc-btn)를 카드 스트립 위로 띄우기 위해
+   카드 스트립의 실제 높이를 --cx-strip-h로 실측(카드 높이가 verdict·뱃지
+   유무로 가변이라 고정값 불가). 리스트뷰는 별도 calc(style.css 429행)라
+   무관하지만, 값 자체는 매번 갱신해도 무해(list일 땐 소비하는 CSS 규칙이
+   없음). ResizeObserver가 카드 내용 변경(verdict 길이 등)에 따른 스트립
+   높이 변화를 자동 포착 */
+function measureCxStripH(){
+  if(!MOBILE_APP_MQ.matches) return;
+  const cs=document.getElementById('complexSection');
+  const at=document.querySelector('.apptabs');
+  if(!cs||!at) return;
+  const h=at.getBoundingClientRect().top-cs.getBoundingClientRect().top;
+  document.documentElement.style.setProperty('--cx-strip-h',Math.max(0,h)+'px');
+}
+if(typeof ResizeObserver!=='undefined'){
+  const cxStripEl=document.getElementById('complexSection');
+  if(cxStripEl) new ResizeObserver(measureCxStripH).observe(cxStripEl);
+}
+window.addEventListener('resize',measureCxStripH);
+MOBILE_APP_MQ.addEventListener('change',measureCxStripH);
+
 /* ---- (4) 단지 상세 + 매물 목록 ---- */
 let cxDetailId=null, cxDetailMapObj=null, cxDetailMarker=null;
 /* B-27-lite: 전세 안전 체크 섹션 기본 접힘 — 펼친 매물 id만 기억(모달 재열림 시 초기화) */

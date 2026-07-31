@@ -375,7 +375,11 @@
        뷰포트 밖으로 넓어짐 — 메뉴에 명시적 max-width를 줘서 방지 */
     .ph-more-menu{max-width:calc(100vw - 24px);}
     .ph-more-menu #unisearch,.ph-more-menu #cxFilterBar{width:100%;margin-bottom:0;}
-    #complexSection{position:absolute;left:0;right:0;bottom:14px;z-index:12;display:flex;gap:var(--gap-lg);overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 12px calc(var(--app-bottom-h) + 78px);-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    /* B-161: 카드 스트립을 탭바 바로 위(~12px)로 내림 — 이전엔 bottom:14px+
+       padding-bottom(app-bottom-h+78px) 이중 가산으로 탭바 위 최대 184px까지
+       뜸(B-131 "FAB 아래 카드" 구조의 부작용). FAB·현위치는 이제 이 스트립
+       실측 높이(--cx-strip-h, properties.js measureCxStripH) 위로 올라감 */
+    #complexSection{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;gap:var(--gap-lg);overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 12px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
     #complexSection::-webkit-scrollbar{display:none;}
     #complexSection>.card{flex:0 0 86%;scroll-snap-align:center;margin-bottom:0;box-shadow:var(--shadow);}
     #complexSection>.cx-empty{flex:0 0 100%;}
@@ -1467,6 +1471,15 @@ body:has(.status-picker.ph-more-menu)::before{content:"";position:fixed;inset:0;
     bottom:calc(var(--app-bottom-h) + 14px);
   }
   .my-loc-btn{bottom:calc(var(--app-bottom-h) + 78px);}
+  /* B-161: 지도뷰에서만 카드 스트립(--cx-strip-h, JS 실측) 위로 쌓음 —
+     리스트뷰는 캐러셀이 아니라 이 겹침 문제 자체가 없어 기존 값 유지.
+     기존 FAB(14px)·현위치(78px) 간 64px 간격은 그대로 보존 */
+  #panel-props:not([data-view="list"]) .grid>section>.panel-head .ph-actions>#toggleForm{
+    bottom:calc(var(--app-bottom-h) + var(--cx-strip-h,0px) + 14px);
+  }
+  #panel-props:not([data-view="list"]) .my-loc-btn{
+    bottom:calc(var(--app-bottom-h) + var(--cx-strip-h,0px) + 78px);
+  }
   .grid>section>.form.open{
     bottom:var(--app-bottom-h);
     max-height:calc(80dvh - var(--app-bottom-h));
