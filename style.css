@@ -542,7 +542,10 @@
   .fmaprow label{font-size:var(--fs-tiny);font-weight:700;color:var(--ink-soft);}
   .btn-find{font-size:var(--fs-micro);font-weight:700;color:var(--line9-deep);border:1px solid var(--line9);border-radius:var(--radius-md);padding:5px 10px;display:inline-flex;gap:var(--gap-xs);align-items:center;}
   .btn-find:disabled{opacity:.55;cursor:default;}
-  #formMap,#propEditMap,#cxDetailMap{height:170px;width:100%;border-radius:var(--radius-md);border:1px solid var(--hairline);background:var(--hairline-soft);}
+  /* B-162 방어: 지도 위젯은 내부 절대배치 타일이 컨테이너보다 커질 수 있어
+     overflow:hidden으로 항상 자체 클립(실기기 확인 대상 후보①, 로컬 재현은
+     네이버 API 키의 배포 도메인 제한으로 불가 — Safari 실기기로만 확인 가능) */
+  #formMap,#propEditMap,#cxDetailMap{height:170px;width:100%;border-radius:var(--radius-md);border:1px solid var(--hairline);background:var(--hairline-soft);overflow:hidden;}
   .fm-hint{font-size:var(--fs-tiny);color:var(--ink-faint);margin-top:5px;}
   .form-actions{display:flex;gap:var(--gap-md);justify-content:flex-end;margin-top:8px;}
   .btn-ghost{font-size:var(--fs-label);font-weight:600;color:var(--ink-soft);padding:8px 13px;border-radius:var(--radius-md);}
@@ -1052,6 +1055,14 @@
   .modal .mhead{flex:0 0 auto;padding:18px 20px 12px;border-bottom:1px solid var(--hairline);background:var(--surface);}
   .modal .mhead h3{margin:0;}
   .modal .mbody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px 20px;}
+  /* B-162: 단지 상세·매물 상세 시트에서 세로 스크롤 중 좌우로도 밀리던 버그 —
+     실측(scrollWidth 561 vs clientWidth 390) 결과 원인은 특정 자식 요소가
+     아니라, 영문 역명·주소 등 공백 없는 긴 토큰을 감쌀 overflow-wrap이 앱
+     전체에 하나도 없어 텍스트가 박스를 넘친 것(라벨 잘림 증상의 실제 원인).
+     상속 속성이라 .mbody 1곳에 걸면 dt/dd·메모·안전체크 등 모든 자손에
+     자동 적용됨. overflow-x:hidden은 방어선 — #cxListingDetailBody도
+     #complexDetailModal의 자손이라 이 규칙 하나로 함께 적용됨 */
+  #complexDetailModal .mbody{overflow-wrap:anywhere;overflow-x:hidden;}
   .modal .mfoot{flex:0 0 auto;display:flex;gap:var(--gap-md);justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--hairline);background:var(--surface);}
   .modal h3{font-size:var(--fs-lg);font-weight:800;letter-spacing:-.02em;margin-bottom:4px;}
   .modal .mdesc{font-size:var(--fs-label);color:var(--ink-soft);margin-bottom:13px;line-height:1.5;}
