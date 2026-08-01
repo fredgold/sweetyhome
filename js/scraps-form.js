@@ -561,7 +561,7 @@ function openScEdit(id){
   }
   document.getElementById('sem_err').textContent='';
   const sn=document.getElementById('savedNote');
-  if(sn){sn.textContent='저장 버튼으로 반영됩니다';sn.style.color='var(--ink-soft)';}
+  if(sn){sn.textContent='저장 버튼으로 반영됩니다';sn.style.color='var(--ink-soft)';sn.classList.remove('is-err');}
   // 이미지 초기화
   semImgsData=(Array.isArray(s.imgs)&&s.imgs.length)?s.imgs.slice():(s.img?[s.img]:[]);
   scRenderImgThumbs('sem_imgs',semImgsData);
@@ -730,7 +730,7 @@ document.getElementById('sem_text').addEventListener('paste',e=>{
 },true);
 function semResetSavedNote(){
   const sn=document.getElementById('savedNote');
-  if(sn){sn.textContent='변경사항은 자동 저장됩니다';sn.style.color='';}
+  if(sn){sn.textContent='변경사항은 자동 저장됩니다';sn.style.color='';sn.classList.remove('is-err');}
 }
 document.getElementById('scEditModal').addEventListener('click',e=>{if(e.target===document.getElementById('scEditModal'))semResetSavedNote();});
 document.getElementById('sem_cancel').onclick=()=>{

@@ -1221,7 +1221,11 @@
     .btn-save{font-size:var(--fs-micro);padding:7px 13px;}
     .btn-ghost{font-size:var(--fs-micro);}
     .privacy{font-size:var(--fs-tiny);padding:8px 10px;}
-    .saved{font-size:var(--fs-tiny);}
+    /* B-172: 헤더 동기화 칩(setSyncState)과 정보 중복+패널 밑에 붕 뜬 띠로
+       보여 모바일만 숨김. 단, 클라우드·로컬 모두 로드 실패(state.js load())
+       같은 드문 치명적 안내는 칩에 없는 유일한 문구라 .is-err일 때만 노출 */
+    .saved{font-size:var(--fs-tiny);display:none;}
+    .saved.is-err{display:block;}
     .sync-chip{font-size:var(--fs-tiny);padding:4px 8px;}
     .sync-panel{min-width:180px;}
     .ph-actions{display:flex;gap:var(--gap-sm);flex-wrap:wrap;}

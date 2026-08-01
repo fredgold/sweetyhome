@@ -538,7 +538,11 @@ async function load(){
   else setSyncState('local');
   if(!raw && !redisOk){
     const n=document.getElementById('savedNote');
-    if(n){ n.textContent='클라우드·로컬 모두 불러오기 실패. 새로고침하거나 잠시 후 다시 시도하세요.'; n.style.color='var(--s-drop)'; }
+    /* B-172: 모바일은 .saved를 기본 숨김 처리하지만, 이 치명적 안내(칩엔
+       없는 유일한 문구)만은 .is-err로 예외 노출 — save() 등 다른 곳에서
+       텍스트를 덮어쓸 때 반드시 함께 제거해야 함(안 그러면 무관한 문구가
+       계속 떠 있게 됨) */
+    if(n){ n.textContent='클라우드·로컬 모두 불러오기 실패. 새로고침하거나 잠시 후 다시 시도하세요.'; n.style.color='var(--s-drop)'; n.classList.add('is-err'); }
   }
   applyGuards(raw);
   recordStateJsonSize(JSON.stringify(state));
@@ -561,8 +565,8 @@ async function load(){
 const SYNC_DEBOUNCE_MS=800, SYNC_MAX_WAIT_MS=5000;
 let syncTimer=null, syncBurstStartedAt=null;
 async function save(){
-  if(isGuestMode){ const n=document.getElementById('savedNote'); n.textContent='데모 모드 — 저장되지 않아요'; n.style.color='var(--ink-faint)'; return; }
-  const n=document.getElementById('savedNote'); n.textContent='저장 중…'; n.style.color='var(--ink-soft)';
+  if(isGuestMode){ const n=document.getElementById('savedNote'); n.textContent='데모 모드 — 저장되지 않아요'; n.style.color='var(--ink-faint)'; n.classList.remove('is-err'); return; }
+  const n=document.getElementById('savedNote'); n.textContent='저장 중…'; n.style.color='var(--ink-soft)'; n.classList.remove('is-err');
   const json=JSON.stringify(state);
   const bytes=recordStateJsonSize(json);
   try{
