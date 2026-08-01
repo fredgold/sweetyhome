@@ -240,7 +240,7 @@
       grid-column:1/-1;border-bottom:1px solid var(--hairline-soft);
       margin-bottom:var(--gap-lg);padding-bottom:var(--gap-md);
     }
-    .reg-summary-main{min-width:0;}
+    .reg-summary-main{min-width:0;flex:1;}
     .reg-summary-name{display:block;font-size:var(--fs-label);font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .reg-summary-owner{display:block;font-size:var(--fs-tiny);color:var(--ink-faint);font-weight:600;margin-top:2px;}
     .reg-summary-amt{flex-shrink:0;text-align:right;}
