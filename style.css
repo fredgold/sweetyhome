@@ -41,7 +41,12 @@
     font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum";}
+  /* B-168: 영문 역명·주소·URL 등 공백 없는 긴 토큰이 곳곳(대시보드 액션 요약·
+     매물 리스트뷰 필터·수집함 카드 태그 등)에서 박스를 넘치던 것 — B-162가
+     #complexDetailModal .mbody 1곳에만 걸었던 overflow-wrap을 body로 올려
+     상속으로 전역 적용(넘칠 때만 개입해 짧은 라벨·nowrap+ellipsis 요소는
+     무영향, 전 탭+주요 모달 감사로 실측 확인 — HANDOFF 참고) */
+  body{background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum";overflow-wrap:anywhere;}
   /* B-46: 하단 padding 64px는 과함(매물탭에 특히 불필요한 잔여 스크롤 유발) — 24px로 축소 */
   .wrap{max-width:1440px;margin:0 auto;padding:0 20px 24px;}
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
@@ -1085,15 +1090,13 @@
   .modal .box{background:var(--surface);border-radius:16px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden;}
   .modal .mhead{flex:0 0 auto;padding:18px 20px 12px;border-bottom:1px solid var(--hairline);background:var(--surface);}
   .modal .mhead h3{margin:0;}
-  .modal .mbody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px 20px;}
-  /* B-162: 단지 상세·매물 상세 시트에서 세로 스크롤 중 좌우로도 밀리던 버그 —
-     실측(scrollWidth 561 vs clientWidth 390) 결과 원인은 특정 자식 요소가
-     아니라, 영문 역명·주소 등 공백 없는 긴 토큰을 감쌀 overflow-wrap이 앱
-     전체에 하나도 없어 텍스트가 박스를 넘친 것(라벨 잘림 증상의 실제 원인).
-     상속 속성이라 .mbody 1곳에 걸면 dt/dd·메모·안전체크 등 모든 자손에
-     자동 적용됨. overflow-x:hidden은 방어선 — #cxListingDetailBody도
-     #complexDetailModal의 자손이라 이 규칙 하나로 함께 적용됨 */
-  #complexDetailModal .mbody{overflow-wrap:anywhere;overflow-x:hidden;}
+  /* B-162가 #complexDetailModal .mbody 1곳에 걸었던 overflow-x:hidden 방어를
+     B-168에서 모든 모달로 일반화 — 의도된 가로 스크롤 요소(임포트 표
+     `<div style="overflow-x:auto">`·sc-import-tbl 등)는 자체 overflow-x:auto
+     선언이 있는 자손이라 부모의 hidden과 무관하게 내부 스크롤 유지(실측
+     확인, scroller.scrollWidth>clientWidth 그대로). overflow-wrap은 body로
+     이관돼 이 규칙에서 제거(중복) */
+  .modal .mbody{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:16px 20px;}
   .modal .mfoot{flex:0 0 auto;display:flex;gap:var(--gap-md);justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--hairline);background:var(--surface);}
   .modal h3{font-size:var(--fs-lg);font-weight:800;letter-spacing:-.02em;margin-bottom:4px;}
   .modal .mdesc{font-size:var(--fs-label);color:var(--ink-soft);margin-bottom:13px;line-height:1.5;}
@@ -1106,7 +1109,11 @@
   .pf-grid input{width:100%;border:1.5px solid var(--hairline);border-radius:var(--radius-sm);padding:8px 10px;font-size:var(--fs-label);font-weight:600;margin-top:3px;background:var(--surface);}
   .pf-grid input:focus{outline:none;border-color:var(--line9);}
   .ms-row{display:flex;gap:var(--gap-sm);align-items:center;margin-bottom:6px;}
-  .ms-row input{flex:1;border:1.5px solid var(--hairline);border-radius:var(--radius-sm);padding:7px 9px;font-size:var(--fs-micro);font-weight:600;}
+  /* B-168 감사에서 발견한 구조적 원인(overflow-wrap 무관, min-width:0 누락) —
+     라벨+날짜 두 input이 flex:1을 나눠 가지는데 각각 기본 min-width:auto라
+     내용이 길면 줄어들지 못해 프로필 모달이 좌우로 밀렸음(실측
+     scrollWidth 412 vs clientWidth 350) */
+  .ms-row input{flex:1;min-width:0;border:1.5px solid var(--hairline);border-radius:var(--radius-sm);padding:7px 9px;font-size:var(--fs-micro);font-weight:600;}
   .ms-row input:focus{outline:none;border-color:var(--line9);}
   .ms-row .ms-del{background:none;border:none;font-size:var(--fs-body);cursor:pointer;color:var(--s-drop);padding:4px;}
   .og-card{display:flex;gap:var(--gap-mlg);background:#FAFAF8;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;margin-top:8px;}
