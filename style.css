@@ -593,7 +593,7 @@
   .chip.warn{background:var(--caution-wash);color:var(--caution);}
   .chip.geo{background:#EAEEF3;color:#566B86;}
   .chip.gone{background:var(--s-drop-wash);color:var(--s-drop);}
-  .c-memo{font-size:var(--fs-label);color:var(--ink-soft);margin-bottom:10px;white-space:pre-wrap;line-height:1.55;}
+  .c-memo{font-size:var(--fs-label);color:var(--ink-soft);margin-bottom:10px;line-height:1.55;}
   .c-actions{display:flex;gap:var(--gap-md);margin-top:2px;flex-wrap:wrap;align-items:center;}
   .c-actions button,.c-actions a{font-size:var(--fs-label);font-weight:600;color:var(--ink);padding:0 13px;min-height:44px;box-sizing:border-box;border:1px solid var(--hairline);border-radius:var(--radius-sm);text-decoration:none;display:inline-flex;align-items:center;gap:var(--gap-sm);}
   .c-actions button:hover,.c-actions a:hover{background:var(--hairline-soft);}
