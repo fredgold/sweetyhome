@@ -59,6 +59,12 @@ function scheduleMobileViewport(){
     const viewportKeyboard=occluded>Math.max(120,window.innerHeight*.15);
     root.classList.toggle('mobile-keyboard-open',mobileKeyboardFocus||viewportKeyboard);
     schedulePanelHeight();
+    /* B-169: --app-visual-h가 바뀌면 #overviewMap의 실제 CSS 크기도 함께
+       바뀌는데(Safari 동적 툴바 show/hide, 백그라운드 복귀 등), 네이버 지도는
+       컨테이너 리사이즈를 자동 감지하지 않아 내부 캔버스가 예전 크기로 굳어
+       부분 렌더·좌표 어긋남이 생김(실측: 이 콜백에서 refresh 호출 0회였음).
+       이미 rAF로 디바운스돼 있으니 여기 한 줄로 안정된 크기에 맞춰 재동기화 */
+    if(activePanel==='props'&&propViewMode==='map'&&overview) overview.refresh(true);
   });
 }
 document.addEventListener('focusin',e=>{
