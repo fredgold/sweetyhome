@@ -582,6 +582,15 @@
   .c-fav-btn:hover{color:var(--ink-soft);}
   .c-fav-btn.on{color:var(--line9-deep);}
   .c-fav-btn.on .ic{fill:var(--line9);}
+  /* B-167: 별점(B-164, `5548cbf`)과 동일 처방 — 모바일에서만 터치 타깃 확대,
+     데스크톱 무변경. 카드(.c-badge-col)·상세 mhead(이웃 .btn-ghost와
+     align-items:center로 이미 세로중앙 정렬돼 행이 커져도 자동으로 유지)
+     양쪽에서 재사용되므로 클래스 하나로 두 곳 다 커버 */
+  @media (max-width:899.98px){
+    .c-fav-btn{padding:11px;}
+    .c-fav-btn .ic{width:20px;height:20px;}
+    .c-fav-btn:active{background:var(--hairline-soft);border-radius:50%;}
+  }
   /* B-41: 임장 노트 별점 — .c-fav-btn과 동일 토큰(off=외곽선, on=골드 채움) */
   .fn-stars{display:flex;gap:1px;}
   .fn-star{border:none;background:none;padding:2px;cursor:pointer;color:var(--ink-faint);line-height:1;}
