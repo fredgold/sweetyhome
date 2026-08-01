@@ -1,4 +1,59 @@
-# HANDOFF — B-161+B-162 완료 (2026-07-31) 모바일 지도뷰 카드 위치 + 단지상세 가로스크롤
+# HANDOFF — B-164+B-165 완료 (2026-08-01) 임장노트 별점 UI + 매물메모 행간
+
+> **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
+> 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
+
+## 최신 작업: 임장 노트 별점 터치 타깃·정렬 개선 + 매물 메모 행간 폭발 버그 수정
+
+```
+9263b33 fix: 매물 메모 행간 폭발 — .c-memo white-space:pre-wrap 제거 (B-165)
+5548cbf feat: 임장 노트 별점 터치 타깃·정렬 개선 (B-164)
+```
+
+커맨드센터 지시서(`dispatch-2026-07-31-B164-B165.md`)로 착수. 사용자
+iPhone 실사용 피드백 2건. 손 A 단독, 지시대로 버그(B-165) 먼저·2커밋
+분리. 둘 다 `style.css`만(properties.js 무접촉, 로직 무변경).
+
+**B-165**(1줄): `.c-memo{white-space:pre-wrap}`이 평문 시절 유물로
+남아있었는데, 지금 `.c-memo`는 `renderMd()` HTML(properties.js 2곳:
+매물 행 메모·상세 패널 메모)과만 쓰여 marked.js가 블록 태그 사이에
+넣는 소스 개행을 pre-wrap이 실제 빈 줄로 렌더 → 불릿·문단 사이 과도한
+간격. 커밋 전 `grep -rn "c-memo" js/ index.html`로 사용처 2곳 재확인
+후 pre-wrap 제거.
+
+**B-164**(모바일 미디어쿼리만): `.fn-star`(임장 노트 별점) 터치 타깃이
+패딩 2px+아이콘 1.15em으로 ~19px(iOS 44px 미달)·gap 1px·hover만
+있던 것을 `@media(max-width:899.98px)` 안에서만 패딩 11px+아이콘
+20px 고정+gap 4px+`:active` 배경 피드백으로 개선(B-136 hit area
+전례처럼 시각 크기와 터치 영역 분리). `.safety-item-head`의 기존
+`align-items:center`가 별점 행이 커져도 라벨과 자동 정렬해줘 별도
+정렬 규칙 불필요했음. 메모 입력 전체폭은 `.safety-item>.safety-memo`
+자식결합자로 좁혀 적용 — 매물 안전체크의 `.safety-item-row` 안
+`.safety-memo`(select·date와 flex 공유, 폭 지정 필요)는 그대로 유지,
+두 용도가 클래스는 같지만 부모 구조가 달라 안전하게 분리됨.
+
+**검증**(Playwright, 로컬 Node UTF-8 정적 서버+게스트 모드+주입한
+샘플 데이터, `node --check` 불필요(CSS만)): B-165 — 불릿 목록/불릿+
+빈 줄/일반 문단 2개 세 케이스 전부 `white-space`가 `normal`로 계산되고
+간격이 `.sc-md-content li/p` 마진(3.9px)만 남음 실측 확인(이전엔 pre-wrap
+때문에 훨씬 큰 간격이었을 자리). B-164 — 390px에서 `.fn-star`
+`getBoundingClientRect()` 42×42.3(≥40 충족), 별 사이 gap 4px 일관,
+라벨-별점행 중심Y 차이 0.008px(정렬 확인), 임장노트 메모 폭
+366px=`.safety-item` 폭과 동일(전체폭) vs 매물 안전체크 메모는 여전히
+230px(select·date와 공유, 무회귀) 확인. 데스크톱(1440px)은 별
+19.3×19.7px·패딩 2px·메모 163px로 완전 무변경 확인.
+
+- **B-164/B-165 완료·push 완료**(`9263b33`/`5548cbf`).
+- **사용자 확인 요청**(Safari 실기기, 390px 근처):
+  ① 매물 메모(불릿·문단 있는 실제 메모)에서 줄 간격이 정상으로 보이는지.
+  ② 임장 노트 별점을 실제 손가락으로 눌러보고 터치가 편해졌는지·
+  `:active` 눌림 피드백이 보이는지·별 5개가 서로 안 붙어 보이는지.
+- **B-163 관찰 계속**: 핀치줌 팬 의심(재현 조건 미확정) — 이번 지시서
+  범위 밖, 별도 관찰 지속.
+
+---
+
+# 이전 핸드오프 — B-161+B-162 완료 (2026-07-31) 모바일 지도뷰 카드 위치 + 단지상세 가로스크롤
 
 > **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
 > 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
@@ -137,102 +192,3 @@ de673ff docs: iPhone 인박스 단축어 설정 안내
   공유 입력을 다시 보내 수집함 `new` 카드 생성 확인. 실패 시 응답의
   `received.urlLen`/`memoLen` 숫자만 전달(원문·토큰 공유 금지).
 
----
-
-# 이전 핸드오프 — B-05 완료 (2026-07-25) 레거시 properties[] 완전 삭제
-
-> **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
-> 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
-
-## 최신 작업: 레거시 `state.properties[]`(flat 스키마) 활성 CRUD·죽은 코드·스키마·데이터 완전 삭제 (B-81 동시 종결)
-
-```
-ad4a9d0 refactor: 마이그레이션 프리뷰 죽은 코드 삭제 (B-05 ①)
-be5760e refactor: 활성 레거시 매물 CRUD·렌더·내보내기 삭제 (B-05 ②)
-5acbed5 feat: 레거시 properties 스키마·가드·복원·AI 컨텍스트 정리 (B-05 ③)
-```
-
-커맨드센터 지시서(`dispatch-2026-07-25-B05.md`)로 착수. 사용자
-백업 완료 확인 후 게이트 통과. 손 A 단독, 지시대로 3커밋 분리
-(도달불가 죽은 코드 → 활성 CRUD → 스키마/데이터). 총 54줄 추가·
-905줄 삭제(순감소 851줄).
-
-**커밋①**(`properties.js`, 최저위험): `migBuildRows`/
-`renderMigPreview`/`migApply`/`migInjectUI`(진입 버튼 이미 제거된
-도달불가 마이그레이션 프리뷰 모달, B-68 주석 대상) + "기존(미정리)
-매물" 접기 토글(`legacyExpanded`/`updateLegacyToggleLabel`/
-`legacyToggleBtn` 핸들러) 삭제. `migComplexStatus`/`migParseName`은
-`saveAsComplexListing`·TSV 임포트가 여전히 써서 유지.
-
-**커밋②**(`properties.js`+`index.html`+`style.css`, 최대 덩어리):
-레거시 렌더 전체 — `renderTabs`/`renderList`/`actionsHTML`/
-`headlineText`/`subtitleText`/`parseDepositUpper`/`bodyMetaChips`/
-`checklistHTML`/`aiBlock`/`aiAnalyze`/`locate`/`reselectMarker`
-(단, `commuteCardChips`는 `renderComplexes`도 써서 유지). 편집 모달
-전체 — `openEdit`/`initEditMap`/`initEMMemoEditor`(Tiptap)/
-`em_saveBtn`/`em_cancelBtn`/`em_findBtn`/`em_img*`/`em_mdToolbar`/
-`propEditModal`(index.html). `delProp`/레거시 `showStatusPicker`
-(`showCxStatusPicker`와는 `.status-picker` 클래스만 공유, 별개 함수 —
-트랩① 확인 후 신규만 유지)/`#list` 클릭·키보드 위임/`updateUnisearch`.
-AI 자동평가 클러스터 — `WEIGHTS`/`renderWeights`/`weightLine`/
-`evalBtn`(`.wcard`는 실사용 `display:none` 하드코딩이라 이미 죽어있던
-UI, 감사 스코프 밖이지만 `state.properties` 유일 소비처라 동시 삭제).
-레거시 CSV 내보내기 `exportProps`+내보내기 메뉴 "레거시(기존 매물)"
-옵션. `saveBtn`은 트랩②대로 정확히 갈라냄 — `editId`가 실제로는
-아무 데서도 set되지 않아(`clearForm`이 매번 비움) `existing` 분기가
-100% 도달불가였음을 확인 후 그 죽은 분기만 제거, `saveAsComplexListing`
-호출(활성 2계층 저장 라우팅)은 무변경. `index.html`: `propEditModal`
-전체, `legacyToggleWrap`/`legacyWrap`(`#tabs`/`#list`), `.wcard`,
-`propSortSel`(레거시 정렬 전용, 단지엔 별도 `cxSort` 존재), `editId`
-히든필드, `unisearchResult`(레거시 렌더만 갱신하던 죽은 카운터)
-삭제. `style.css`: 위 DOM 전용 셀렉터(`.wcard`/`.tabs`/`.tab`/`.rail`/
-`.ck-*`/`.airep`/`.aiload`/`.card[data-st]`/`.card.dim`/
-`.card.expanded`/`.c-progress*`/`.c-body`) 삭제, `#complexSection`과
-공유하는 규칙(`.card`/`.c-actions`/`.card::before` 등)은 selector만
-좁혀 유지 — 전수 grep으로 각 클래스가 남은 코드에서 실제로 쓰이는지
-개별 확인 후 삭제(예: `.c-act-del`은 매물 상세 삭제 버튼이 여전히
-써서 유지, `.c-actions a.naver`는 무소비 확인 후 삭제).
-
-**커밋③**(`state.js`+`profile.js`+`ai.js`): `state.js` JSDoc의
-`state.properties` 스키마 블록, `DEFAULT`/`GUEST_STATE`의 `properties`
-시드, `applyGuards`의 `guardArr` 보정 블록 삭제 → `delete
-state.properties`로 교체(로드마다 옛 백업·미동기 클라이언트가 보낸
-필드를 폐기, 다음 save에서 Redis 반영 — 백업 게이트가 선행조건이던
-이유). `checklistHTML` 삭제로 유일 소비처를 잃은 `CHECKLIST`/`ORDER`
-상수도 함께 삭제(`CHECK`/`SC`/`HEX`는 `SC_CX`/`HEX_CX`가 파생해 쓰므로
-유지). **트랩③**: `profile.js`의 `doImport`(백업 복원) — 'full' 백업
-안 옛 `properties` 배열은 `applyGuards`가 조용히 버리므로, 복원 전
-개수를 미리 세어 "구버전 매물 N곳은 복원 대상 아님" 안내로 표시.
-'legacy'(구버전 properties-only, `집구하기맵::` 접두 포함) 백업은
-매물 복원 없이 prep/steps만 복원하도록 confirm 문구도 갱신 — 복원
-기능 자체는 유지, 조용히 버리지 않음. **B-81 동시 종결**: `ai.js`의
-`stateSnapshot()` AI 상담 프롬프트 `[매물]` 컨텍스트를
-`state.properties.map` → `state.complexes.map`+`cxRepOf`(대표매물)
-기준으로 교체(단지명/상태/대표매물 보증금·전용면적/위치/aiScore).
-AI 크레딧 소진으로 실행 검증 불가 — `node --check`+코드 리뷰로 갈음.
-
-**검증**: `node --check` 13개 파일 전부 통과. `grep -rn
-"state\.properties|properties\[" js/ index.html` 잔여 **1건**
-(`state.js`의 `delete state.properties` 자기 자신 — 삭제 코드가
-필연적으로 그 이름을 언급하는 것으로, 데이터를 읽거나 쓰는 잔재
-아님. `profile.js`의 백업 복원 코드는 외부 백업 객체(`o.state`)의
-필드를 읽는 것이라 대괄호 표기(`o.state['properties']`)로 실질
-분리). 나머지 읽기/쓰기 잔재 0건. Playwright 스모크(로컬 Node
-UTF-8 정적 서버, 게스트 로그인, 데스크톱 1440+모바일 390, 5탭
-순회 + 매물탭 폼 열기/내보내기 메뉴)로 커밋 전(3d0e5c1)·후 콘솔
-에러를 비교 — 둘 다 동일한 사전 존재 노이즈(오프라인 샌드박스의
-`/api/*` 404·네이버맵 401·무관한 `.box` null 오류 1건, 전부 이번
-세션 착수 전부터 재현됨)뿐이고 신규 에러 0건. `/api/login`+
-`/api/state` 목업으로 실제 로그인→state 변경→`save()` 왕복 재현 —
-POST 바디 최상위 키에 `properties` 부재, `complexes`/`listings`
-등 나머지 13개 키 정상 확인.
-
-**동시 작업 발견**: 이번 세션 도중 커맨드센터가 별도로 `api/ingest.js`
-(모바일 수집 인박스 API)+`js/boot.js`+`js/scraps-form.js`에
-직접 커밋 3개(`c26d2e0`/`a7ddd9a`/`de673ff`)를 올림 — B-05가 손댄
-파일과 완전히 겹치지 않아 충돌 없음, 파일 락 위반 아님. 참고로만 기록.
-
-- **B-05 완료·미푸시**(`ad4a9d0`/`be5760e`/`5acbed5`).
-- **다음**: properties.js 2분할 재평가(사용자 결정 2026-07-19, 이
-  지시서 범위 밖) — 커맨드센터가 별도 발급 예정. 사용자 실기기·
-  실배포 확인 권장(특히 백업 복원 문구, 매물 폼 저장 흐름).
