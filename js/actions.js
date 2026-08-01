@@ -243,7 +243,7 @@ function renderActions(){
   html+='</div>';
   if(!live.length){
     html+=state.actions.length
-      ?'<div class="empty"><div class="big">모든 액션 완료!</div>새 할 일을 추가하거나 AI 제안을 받아보세요.</div>'
+      ?'<div class="empty"><div class="big">모든 액션 완료!</div>새 할 일을 추가하세요.</div>'
       :'<div class="empty"><div class="big">아직 액션이 없어요</div>아래에 할 일을 적어보세요.</div>';
   }
   if(done.length){
