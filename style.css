@@ -1237,7 +1237,11 @@
     #panel-actions .actfull .actrow{grid-template-columns:20px 20px minmax(0,1fr) auto;padding:8px 0;}
     #panel-actions .actfull .actrow .atx{display:block;font-size:var(--fs-label);}
     /* B-133: inline span은 overflow:hidden이 무시돼 ellipsis가 안 먹고 아이콘 아래로 흘러넘침 */
-    #panel-actions .actfull .actrow .act-text{display:block;}
+    /* B-170: 말줄임이 전문을 가려 읽을 방법이 없었음(수정 버튼으로만 확인 가능) —
+       모바일은 접기·펼침 같은 새 인터랙션 대신 그냥 줄바꿈해서 다 보여줌(접기
+       지양 정책). align-items:center(808행, 이 미디어쿼리에서도 유지)가 늘어난
+       행 높이에도 체크박스·▲▼·수정/★/✕를 자동으로 세로중앙 정렬해줌 */
+    #panel-actions .actfull .actrow .act-text{display:block;white-space:normal;}
     #panel-actions .actfull .act-row-meta{margin-top:5px;flex-wrap:wrap;}
     #panel-actions .actfull .actrow:has(.act-edit-inp){flex-wrap:wrap;}
     #panel-actions .actfull .actrow:has(.act-edit-inp) .act-edit-inp{flex-basis:100%!important;}
