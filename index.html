@@ -549,6 +549,14 @@
           <button class="sc-view-btn" id="sc_viewList" data-on="1" title="목록">≡</button>
           <button class="sc-view-btn" id="sc_viewGallery" data-on="0" title="갤러리">⊞</button>
         </div>
+        <button type="button" class="sc-view-btn" id="sc_selectModeBtn" title="여러 개 선택">선택</button>
+      </div>
+
+      <!-- B-174: 다중선택 일괄 삭제 액션바 (선택 모드일 때만 노출) -->
+      <div class="sc-select-bar" id="scSelectBar" style="display:none">
+        <span id="scSelectCount">0개 선택</span>
+        <button type="button" class="btn-ghost" id="scSelectCancelBtn">취소</button>
+        <button type="button" class="sc-select-delbtn" id="scSelectDelBtn">삭제</button>
       </div>
 
       <!-- 필터 바 -->

@@ -913,6 +913,10 @@
   .sc-filter-chip.on{border-color:var(--money);background:var(--money-wash);color:var(--money-deep);}
   /* 카드 */
   .sc-list{display:flex;flex-direction:column;gap:var(--gap-mlg);}
+  /* B-174: 카드 본문 텍스트 복사는 편집 모달에서 하므로(카드 자체는 편집
+     진입 트리거일 뿐) long-press 시 iOS 콜아웃 메뉴·텍스트 선택은 항상
+     차단 — 선택 모드 여부와 무관 */
+  .sc-card,.sc-gallery-card{-webkit-touch-callout:none;user-select:none;position:relative;}
   .sc-card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);padding:14px 15px;box-shadow:var(--shadow);}
   .sc-card-head{display:flex;gap:var(--gap-sm);align-items:flex-start;margin-bottom:7px;flex-wrap:wrap;}
   .sc-card-title{font-size:var(--fs-body);font-weight:800;flex:1;min-width:120px;letter-spacing:-.02em;line-height:1.3;}
@@ -1263,6 +1267,35 @@
   .sc-view-toggle{display:flex;border:1px solid var(--hairline);border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0;}
   .sc-view-btn{border:none;background:none;padding:5px 10px;font-size:var(--fs-lg);cursor:pointer;color:var(--ink-soft);line-height:1;transition:background .15s;}
   .sc-view-btn[data-on="1"]{background:var(--money-wash);color:var(--money-deep);}
+  #sc_selectModeBtn{font-size:var(--fs-micro);font-weight:700;}
+
+  /* ── B-174: 다중선택 일괄 삭제 ── */
+  /* 체크 표시 — 항상 마크업엔 있고 선택 모드일 때만 노출(재렌더 비용
+     최소화). 카드 좌상단, 기존 .actrow .box 체크 컨벤션과 동일 톤 */
+  .sc-select-check{display:none;position:absolute;top:8px;left:8px;width:22px;height:22px;
+    border-radius:50%;border:2px solid var(--hairline);background:var(--surface);
+    align-items:center;justify-content:center;z-index:3;box-shadow:var(--shadow);}
+  .sc-select-check.on{background:var(--line9);border-color:var(--line9);}
+  body.sc-select-mode .sc-select-check{display:flex;}
+  /* 선택 모드 중엔 카드 안 어떤 요소를 눌러도(수정·삭제·상태 select 등)
+     통째로 카드 탭으로만 처리 — <select>는 click이 아니라 mousedown/터치
+     시점에 네이티브로 열려 JS stopPropagation으로 못 막으므로 여기서
+     pointer-events 자체를 꺼서 탭이 무조건 카드로 떨어지게 함(1차 방어,
+     scraps-render.js의 캡처 click 핸들러는 2차 안전망) */
+  body.sc-select-mode #sc_cards .sc-card *,
+  body.sc-select-mode #sc_cards .sc-gallery-card *{pointer-events:none;}
+  body.sc-select-mode #sc_cards .sc-card,
+  body.sc-select-mode #sc_cards .sc-gallery-card{cursor:pointer;}
+  /* 액션바 — .prop-toast 티어 참고, 탭바 위(모바일은 max-width:899.98px
+     블록에서 app-bottom-h만큼 추가 오프셋) */
+  .sc-select-bar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+    z-index:20;display:flex;align-items:center;gap:var(--gap-md);
+    background:var(--ink);color:var(--surface);padding:10px 16px;
+    border-radius:var(--radius-md);box-shadow:var(--shadow-pop);
+    font-size:var(--fs-label);font-weight:600;}
+  .sc-select-bar #scSelectCancelBtn{color:var(--surface);}
+  .sc-select-delbtn{background:var(--s-drop);color:#fff;padding:7px 14px;
+    border-radius:var(--radius-sm);font-weight:700;}
 
   /* ── B-104-3 수집함 뷰 재정립 ── */
   /* 리스트 = 상세 정보·원문·상태·버튼을 읽는 1열 피드. 전체폭 앱 프레임
@@ -1543,6 +1576,7 @@ body:has(.status-picker.ph-more-menu)::before{content:"";position:fixed;inset:0;
     padding-bottom:calc(13px + env(safe-area-inset-bottom,0px));
   }
   .prop-toast{bottom:calc(var(--app-bottom-h) + 16px);}
+  .sc-select-bar{bottom:calc(var(--app-bottom-h) + 16px);}
 }
 
 /* ===== 인라인 SVG 아이콘 ===== */

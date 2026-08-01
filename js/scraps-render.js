@@ -4,6 +4,40 @@ let scSearchQuery='';
    탈출구. 뷰 상태일 뿐이라 state 스키마엔 저장하지 않음(세션 내에만
    유지, 새로고침하면 초기화) — cxListingEditMode 등과 동일한 패턴 */
 let scRawViewIds=new Set();
+/* B-174: 다중선택 일괄 삭제(만) — 상태는 scRawViewIds와 동일하게 순수 UI
+   메모리(state 스키마 무접촉, 저장 안 함). scSelectedIds는 renderScraps()
+   끝에서 매번 "현재 화면에 실제로 보이는 id" 교집합으로 정리(prune)해,
+   필터·정렬 변경으로 화면에서 사라진 항목이 눈에 안 보인 채로 함께
+   삭제되는 사고를 막는다(선택 개수 표시=실제 삭제 개수 항상 일치). */
+let scSelectMode=false, scSelectedIds=new Set();
+function scSelectCheckHTML(id){
+  const on=scSelectedIds.has(id);
+  return `<div class="sc-select-check${on?' on':''}">${on?CHECK:''}</div>`;
+}
+function scUpdateSelectBar(){
+  const bar=document.getElementById('scSelectBar');
+  if(!bar) return;
+  bar.style.display=scSelectMode?'flex':'none';
+  if(scSelectMode) document.getElementById('scSelectCount').textContent=scSelectedIds.size+'개 선택';
+}
+function scEnterSelectMode(){
+  if(scSelectMode) return;
+  scSelectMode=true;
+  document.body.classList.add('sc-select-mode');
+  document.getElementById('sc_selectModeBtn').dataset.on='1';
+  renderScraps();
+}
+function scExitSelectMode(){
+  if(!scSelectMode) return;
+  scSelectMode=false; scSelectedIds.clear();
+  document.body.classList.remove('sc-select-mode');
+  document.getElementById('sc_selectModeBtn').dataset.on='0';
+  renderScraps();
+}
+function scToggleSelect(id){
+  if(scSelectedIds.has(id)) scSelectedIds.delete(id); else scSelectedIds.add(id);
+  renderScraps();
+}
 function renderScraps(){
   document.querySelectorAll('[data-ftype]').forEach(c=>c.classList.toggle('on',c.dataset.ftype===scFilterType));
   document.querySelectorAll('[data-fstatus]').forEach(c=>c.classList.toggle('on',c.dataset.fstatus===scFilterStatus));
@@ -20,6 +54,11 @@ function renderScraps(){
   else if(sortKey==='status') list.sort((a,b)=>a.status.localeCompare(b.status));
   else if(sortKey==='type') list.sort((a,b)=>a.type.localeCompare(b.type));
   else list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(scSelectedIds.size){
+    const visibleIds=new Set(list.map(s=>s.id));
+    for(const id of [...scSelectedIds]) if(!visibleIds.has(id)) scSelectedIds.delete(id);
+  }
+  scUpdateSelectBar();
   if(!list.length){
     el.innerHTML=`<div class="sc-empty">${state.scraps.length?'조건에 맞는 항목이 없어요.':'아직 항목이 없어요.<br>위 버튼으로 첫 번째 항목을 추가해보세요!'}</div>`;
     return;
@@ -49,6 +88,7 @@ function renderScraps(){
       /* B-123①: 사진 있는 카드는 이미지가 주인공 — 클릭 영역을 카드
          본문(편집)과 분리해 별도 라이트박스로 열리게 한다 */
       return `<div class="sc-gallery-card" data-scid="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(title)} 편집">
+        ${scSelectCheckHTML(s.id)}
         ${imgs.length?`<div class="sc-gallery-imgwrap" data-sclight="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(title)} 사진 크게 보기">
           <img src="${esc(imgs[0])}" class="sc-gallery-img" loading="lazy" alt="${esc(title)} 사진">
           ${imgs.length>1?`<span class="sc-gallery-imgcount">⧉${imgs.length}</span>`:''}
@@ -103,6 +143,7 @@ function renderScraps(){
     const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
     const rawMode=scRawViewIds.has(s.id);
     return `<div class="sc-card" data-scid="${s.id}">
+      ${scSelectCheckHTML(s.id)}
       <div class="sc-card-head">
         <div class="sc-card-title">${esc(s.title||'(제목 없음)')}</div>
         <span class="sc-badge ${tCls}">${esc(tLabel)}</span>
@@ -142,6 +183,66 @@ function renderScraps(){
     renderScraps();
   });
 }
+
+/* B-174: 다중선택 진입 ①명시적 "선택" 버튼 */
+document.getElementById('sc_selectModeBtn').onclick=()=>{
+  if(scSelectMode) scExitSelectMode(); else scEnterSelectMode();
+};
+document.getElementById('scSelectCancelBtn').onclick=scExitSelectMode;
+document.getElementById('scSelectDelBtn').onclick=()=>{
+  const n=scSelectedIds.size;
+  if(!n) return;
+  if(!confirm(`선택한 ${n}개 항목을 삭제할까요?`)) return;
+  state.scraps=state.scraps.filter(x=>!scSelectedIds.has(x.id));
+  save();
+  scExitSelectMode();
+};
+/* 선택 모드 중 카드 탭 = 토글. 캡처 단계라 기존 카드별 핸들러(수정 열기·
+   라이트박스·개별 삭제·상태 select 등)보다 먼저 걸려 도달 자체를 막는다
+   (평소=scSelectMode false엔 즉시 return이라 기존 동작 100% 무변경).
+   <select>의 네이티브 드롭다운은 click 이전(mousedown/터치)에 열려
+   stopPropagation으로 못 막으므로 style.css의 pointer-events:none이
+   1차 방어, 이건 2차 안전망 */
+document.getElementById('sc_cards').addEventListener('click',e=>{
+  if(!scSelectMode) return;
+  const card=e.target.closest('.sc-card,.sc-gallery-card');
+  if(!card) return;
+  e.preventDefault(); e.stopPropagation();
+  scToggleSelect(card.dataset.scid);
+},true);
+/* 진입 ②카드 long-press(~500ms, 보조 지름길). touchmove로 10px 넘게
+   움직이면 스크롤로 보고 타이머 취소 — 오발동 방지. long-press가 실제
+   발동했으면 touchend에서 preventDefault로 뒤이어 오는 합성 click을
+   무력화(안 그러면 캡처 핸들러가 한 번 더 토글해 방금 켠 선택이 바로
+   꺼짐) */
+let scLongPressTimer=null, scLongPressFired=false, scTouchStartX=0, scTouchStartY=0;
+document.getElementById('sc_cards').addEventListener('touchstart',e=>{
+  const card=e.target.closest('.sc-card,.sc-gallery-card');
+  if(!card) return;
+  scLongPressFired=false;
+  const t=e.touches[0];
+  scTouchStartX=t.clientX; scTouchStartY=t.clientY;
+  scLongPressTimer=setTimeout(()=>{
+    scLongPressTimer=null; scLongPressFired=true;
+    if(!scSelectMode){
+      scSelectMode=true;
+      document.body.classList.add('sc-select-mode');
+      document.getElementById('sc_selectModeBtn').dataset.on='1';
+    }
+    scToggleSelect(card.dataset.scid); // 1회만 재렌더
+  },500);
+},{passive:true});
+document.getElementById('sc_cards').addEventListener('touchmove',e=>{
+  if(!scLongPressTimer) return;
+  const t=e.touches[0];
+  if(Math.abs(t.clientX-scTouchStartX)>10||Math.abs(t.clientY-scTouchStartY)>10){
+    clearTimeout(scLongPressTimer); scLongPressTimer=null;
+  }
+},{passive:true});
+document.getElementById('sc_cards').addEventListener('touchend',e=>{
+  if(scLongPressTimer){ clearTimeout(scLongPressTimer); scLongPressTimer=null; }
+  if(scLongPressFired){ e.preventDefault(); scLongPressFired=false; }
+},{passive:false});
 
 document.getElementById('sc_typeFilter').onclick=e=>{
   const c=e.target.closest('[data-ftype]');if(!c)return;

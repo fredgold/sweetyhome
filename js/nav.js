@@ -91,6 +91,8 @@ function switchPanel(name){
   closeMobileHeaderMoreMenu();
   activePanel=name;
   if(name!=='props' && typeof exitRouteMode==='function' && routeMode!=='off') exitRouteMode();
+  /* B-174: 수집함 다중선택은 순수 UI 상태 — 다른 탭으로 나가면 해제 */
+  if(name!=='scraps' && typeof scSelectMode!=='undefined' && scSelectMode) scExitSelectMode();
   document.querySelectorAll('.atab[data-panel]').forEach(b=>b.dataset.on=b.dataset.panel===name?'1':'0');
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+name));
   if(name==='dash') renderDash();
