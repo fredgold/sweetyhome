@@ -291,7 +291,10 @@
   .cx-sort-chips{position:fixed;top:calc(var(--app-top-h) + 10px);left:10px;z-index:5;display:none;gap:var(--gap-sm);}
   .cx-chip{font-size:var(--fs-micro);padding:5px 11px;border-radius:16px;background:var(--surface);border:1px solid var(--hairline);color:var(--ink-soft);font-weight:600;cursor:pointer;box-shadow:var(--shadow);}
   .cx-chip.on{background:var(--line9-wash);border-color:var(--line9);color:var(--line9-deep);}
-  .cx-chip:disabled{opacity:.45;cursor:not-allowed;}
+  /* B-166: 거리순 칩은 위치 미획득 시에도 탭 가능해야 함(탭→권한요청 경로,
+     properties.js 2038행) — disabled 속성 대신 클래스로 dim만 유지, cursor는
+     여전히 pointer(클릭 가능함을 시사) */
+  .cx-chip.needs-loc{opacity:.45;}
   .my-loc-btn{position:fixed;bottom:14px;right:14px;z-index:5;width:38px;height:38px;border-radius:50%;background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;color:var(--money-deep);cursor:pointer;}
   .prop-view-toggle{position:fixed;top:calc(var(--app-top-h) + 10px);right:58px;z-index:11;width:38px;height:38px;border-radius:50%;background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;font-size:var(--fs-tiny);font-weight:700;color:var(--ink-soft);cursor:pointer;padding:0;}
   .myloc-pin{width:14px;height:14px;border-radius:50%;background:#2f6df6;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,109,246,.5);}

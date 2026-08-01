@@ -1879,7 +1879,8 @@ function sortComplexes(arr){
 }
 function syncSortChips(){
   document.querySelectorAll('[data-cxsort]').forEach(b=>b.classList.toggle('on',b.dataset.cxsort===cxSort));
-  const d=document.querySelector('[data-cxsort="dist"]'); if(d) d.disabled=!myLoc;
+  const d=document.querySelector('[data-cxsort="dist"]');
+  if(d){ d.classList.toggle('needs-loc',!myLoc); d.setAttribute('aria-disabled',myLoc?'false':'true'); }
 }
 function drawMyLocMarker(){
   if(!overview||!myLoc) return;
