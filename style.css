@@ -89,7 +89,12 @@
     .brand h1{font-size:var(--fs-head);}
     .brand .sub{font-size:var(--fs-tiny);margin-top:0;}
     .btn-mini{padding:6px 10px;}
-    .atab{padding:7px 13px;}
+    /* B-178: .apptabs가 3열 grid의 minmax(0,1fr) 칼럼이라 900px 근방에서
+       열 폭이 탭 내용보다 좁아질 수 있는데 .atab에 white-space:nowrap이
+       없어 글자가 세로로 줄바꿈됨. flex-shrink:0+nowrap으로 탭 자체
+       폭은 지키고, 정말 좁으면 .apptabs 기존 overflow-x:auto(80행)가
+       가로 스크롤로 흡수(새 breakpoint 없이 기존 구조 재사용) */
+    .atab{padding:7px 13px;white-space:nowrap;flex-shrink:0;}
   }
   .atab{font-size:var(--fs-body);font-weight:700;color:var(--ink-soft);padding:9px 15px;border-radius:11px;border:1px solid transparent;transition:.12s;display:inline-flex;align-items:center;gap:var(--gap-sm);}
   .atab:hover{background:var(--hairline-soft);}
