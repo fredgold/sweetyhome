@@ -386,6 +386,21 @@ function scExtractFirstUrl(text){
   }
   return null;
 }
+/* B-189: 도착 시점에 스크랩·이미지 상태를 다시 확인 — compressImage는
+   비동기라 그 사이 사용자가 수정 모달에서 직접 이미지를 첨부했을 수
+   있음(레이스). "사용자 첨부 우선" 원칙을 도착 시점에도 재적용해
+   덮어쓰기로 인한 유실을 막음. og:image 경로·유튜브 직행 경로 둘 다
+   여기로 모아 가드를 한 곳에만 둠 */
+function scApplyPreviewThumb(scrapId,blob){
+  compressImage(blob,dataUrl=>{
+    const s=state.scraps.find(x=>x.id===scrapId); // 도착 전 삭제됐으면 스킵
+    if(!s) return;
+    if(s.imgs&&s.imgs.length) return; // 도착 전 사용자가 직접 첨부했으면 유실 방지
+    s.imgs=[dataUrl];
+    s.img=dataUrl; // CLAUDE.md: imgs[0]과 항상 동기화 필수
+    save();renderScraps();
+  });
+}
 async function scFetchPreviewThumb(scrapId,url){
   try{
     const metaRes=await fetch('/api/preview?mode=meta&url='+encodeURIComponent(url),{headers:authHeaders()});
@@ -394,21 +409,59 @@ async function scFetchPreviewThumb(scrapId,url){
     if(!meta||!meta.image) return;
     const imgRes=await fetch('/api/preview?mode=image&src='+encodeURIComponent(meta.image),{headers:authHeaders()});
     if(!imgRes.ok) return;
-    const blob=await imgRes.blob();
-    compressImage(blob,dataUrl=>{
-      const s=state.scraps.find(x=>x.id===scrapId); // 도착 전 삭제됐으면 스킵
-      if(!s) return;
-      s.imgs=[dataUrl];
-      s.img=dataUrl; // CLAUDE.md: imgs[0]과 항상 동기화 필수
-      save();renderScraps();
-    });
+    scApplyPreviewThumb(scrapId,await imgRes.blob());
   }catch(e){ /* 무음 — 썸네일 없음이 곧 폴백 */ }
+}
+/* B-189: 유튜브는 og:image 파싱(mode=meta) 없이 비디오 ID로 확정
+   썸네일 URL 직행 — i.ytimg.com은 IP 리터럴이 아니라 서버 SSRF
+   가드를 자연히 통과하므로 api/preview.js 무접촉. maxresdefault는
+   영상별로 없는 경우가 잦아 hqdefault로 1회만 폴백(480px지만
+   compressImage 상한이 600px라 화질 손실 무의미) */
+function scYoutubeHostname(urlStr){
+  try{
+    const h=new URL(urlStr).hostname.toLowerCase();
+    if(h==='youtube.com'||h.endsWith('.youtube.com')||h==='youtu.be') return h;
+  }catch(e){}
+  return null;
+}
+function scYoutubeVideoId(urlStr){
+  let u;
+  try{ u=new URL(urlStr); }catch(e){ return null; }
+  const host=u.hostname.toLowerCase();
+  let id=null;
+  if(host==='youtu.be'){
+    id=u.pathname.split('/').filter(Boolean)[0]||null;
+  }else if(u.pathname.startsWith('/shorts/')){
+    id=u.pathname.slice('/shorts/'.length).split('/')[0]||null;
+  }else if(u.pathname.startsWith('/embed/')){
+    id=u.pathname.slice('/embed/'.length).split('/')[0]||null;
+  }else if(u.pathname==='/watch'){
+    id=u.searchParams.get('v');
+  }
+  return (id&&/^[A-Za-z0-9_-]{11}$/.test(id))?id:null;
+}
+async function scFetchYoutubeThumb(scrapId,videoId){
+  try{
+    const mkSrc=name=>'/api/preview?mode=image&src='+encodeURIComponent('https://i.ytimg.com/vi/'+videoId+'/'+name+'.jpg');
+    let imgRes=await fetch(mkSrc('maxresdefault'),{headers:authHeaders()});
+    if(!imgRes.ok){
+      imgRes=await fetch(mkSrc('hqdefault'),{headers:authHeaders()});
+      if(!imgRes.ok) return;
+    }
+    scApplyPreviewThumb(scrapId,await imgRes.blob());
+  }catch(e){ /* 무음 */ }
 }
 function scMaybeFetchPreviewThumb(scrap){
   if(scrap.imgs&&scrap.imgs.length) return; // 사용자 첨부 이미지 우선
   const url=scExtractFirstUrl(scrap.raw);
   if(!url) return;
   if(scPreviewSkipDomain(url)) return; // 인스타/페북은 서버 왕복 낭비 방지(크롤링 차단 기결정)
+  if(scYoutubeHostname(url)){
+    const id=scYoutubeVideoId(url);
+    if(!id) return; // 채널·재생목록 등 ID 추출 불가 — mode=meta로도 안 넘어감(무음)
+    scFetchYoutubeThumb(scrap.id,id);
+    return;
+  }
   scFetchPreviewThumb(scrap.id,url);
 }
 document.getElementById('sc_saveBtn').onclick=()=>{
