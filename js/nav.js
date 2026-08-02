@@ -242,12 +242,12 @@ function renderTop3(){
   const el=document.getElementById('d_top3');
   if(!state.actions.length){ el.innerHTML=`<div class="empty"><div class="big">아직 액션이 없어요</div>아래에 할 일을 적어보세요.</div>`; document.getElementById('d_actMore').textContent=''; return; }
   el.innerHTML=show.map((a,i)=>`
-    <div class="actrow" data-done="${a.done?1:0}" data-id="${a.id}">
+    <div class="actrow" data-done="${a.done?1:0}" data-id="${esc(a.id)}">
       <span class="rank tnum">${i+1}</span>
-      <span class="box" data-act-done="${a.id}">${CHECK}</span>
+      <span class="box" data-act-done="${esc(a.id)}">${CHECK}</span>
       <span class="atx">${esc(a.text)}</span>
-      <button class="star ${a.priority<=1?'on':''}" data-act-top="${a.id}" title="맨 위로" aria-label="맨 위로">${ic('star')}</button>
-      <button class="xx" data-act-del="${a.id}" aria-label="삭제">✕</button>
+      <button class="star ${a.priority<=1?'on':''}" data-act-top="${esc(a.id)}" title="맨 위로" aria-label="맨 위로">${ic('star')}</button>
+      <button class="xx" data-act-del="${esc(a.id)}" aria-label="삭제">✕</button>
     </div>`).join('') || `<div class="empty"><div class="big">우선순위 액션 완료!</div>새 할 일을 추가하거나 다른 탭을 채워보세요.</div>`;
   const doneCnt=state.actions.filter(a=>a.done).length;
   const moreLive=Math.max(0,live.length-3);

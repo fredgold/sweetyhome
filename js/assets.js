@@ -38,7 +38,7 @@ function renderAssets(){
       const expanded=it.id===expandedAssetId;
       const mobDiffers=it.mobilizable!=null&&it.mobilizable!==it.amount;
       return `
-      <div class="regrow ${it.liquidity==='즉시'?'imm':'lng'}${expanded?' is-expanded':''}" data-id="${it.id}">
+      <div class="regrow ${it.liquidity==='즉시'?'imm':'lng'}${expanded?' is-expanded':''}" data-id="${esc(it.id)}">
         <button type="button" class="reg-summary" aria-expanded="${expanded}">
           <span class="reg-summary-main">
             <span class="reg-summary-name">${esc(it.name||'(이름 없음)')}</span>
@@ -57,7 +57,7 @@ function renderAssets(){
         <div class="rcell"><span class="regcardlab">유동성</span><select data-f="liquidity">${liqSel(it.liquidity)}</select></div>
         <div class="rcell"><span class="regcardlab">동원 가능액(원)</span><input class="num" data-f="mobilizable" inputmode="numeric" value="${it.mobilizable?comma(it.mobilizable):''}" placeholder="0"></div>
         <div class="rcell rc-memo"><span class="regcardlab">메모</span><input data-f="memo" value="${esc(it.memo||'')}" placeholder="메모"></div>
-        <div class="del" data-del-asset="${it.id}" title="삭제" aria-label="삭제">✕</div>
+        <div class="del" data-del-asset="${esc(it.id)}" title="삭제" aria-label="삭제">✕</div>
       </div>`;
     }).join('');
   }

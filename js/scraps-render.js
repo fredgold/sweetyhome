@@ -142,7 +142,7 @@ function renderScraps(){
     const rawText=s.raw||'';
     const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
     const rawMode=scRawViewIds.has(s.id);
-    return `<div class="sc-card" data-scid="${s.id}">
+    return `<div class="sc-card" data-scid="${esc(s.id)}">
       ${scSelectCheckHTML(s.id)}
       <div class="sc-card-head">
         <div class="sc-card-title">${esc(s.title||'(제목 없음)')}</div>
@@ -155,16 +155,16 @@ function renderScraps(){
       ${s.fit?`<span class="sc-fit-badge ${fitCls}">${fitLbl}</span>`:''}
       ${(s.imgs||[]).length?`<img src="${esc(s.imgs[0])}" class="sc-card-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진">`:''}
       ${rawText?`<div style="display:flex;justify-content:flex-end;margin-top:8px;">
-        <button type="button" class="sc-preview-toggle" data-scraw="${s.id}">${rawMode?ic('eye')+' 서식 보기':ic('edit')+' 원문 보기'}</button>
+        <button type="button" class="sc-preview-toggle" data-scraw="${esc(s.id)}">${rawMode?ic('eye')+' 서식 보기':ic('edit')+' 원문 보기'}</button>
       </div>
       <div class="sc-card-raw sc-md-content" onclick="this.classList.toggle('expand')">${rawMode?`<pre style="white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;">${esc(rawText)}</pre>`:renderMd(rawText)}</div>`:''}
       <div class="sc-card-actions">
-        <select class="sc-status-sel" data-scst="${s.id}">
+        <select class="sc-status-sel" data-scst="${esc(s.id)}">
           ${Object.entries(SC_STATUS).map(([v,l])=>`<option value="${v}"${s.status===v?' selected':''}>${l}</option>`).join('')}
         </select>
-        <button data-sc-edit="${s.id}">수정</button>
-        <button data-sc-fit="${s.id}" disabled title="AI 자격확인 — 크레딧 필요">${ic('search')} 자격확인</button>
-        <button data-sc-del="${s.id}" style="color:var(--s-drop)">삭제</button>
+        <button data-sc-edit="${esc(s.id)}">수정</button>
+        <button data-sc-fit="${esc(s.id)}" disabled title="AI 자격확인 — 크레딧 필요">${ic('search')} 자격확인</button>
+        <button data-sc-del="${esc(s.id)}" style="color:var(--s-drop)">삭제</button>
       </div>
     </div>`;
   }).join('')+'</div>';

@@ -205,14 +205,14 @@ function renderActions(){
     const dragEnabled=!doneRow&&!orderLocked&&!pinned;
     const orderTitle=orderLocked?'검색·분류 필터 해제 후 순서 변경':pinned?'★ 고정 행은 다른 항목의 ★를 누른 뒤 이동':'끌어서 순서·분류 변경';
     return `
-      <div class="actrow${doneRow?'':' is-sortable'}${pinned?' is-pinned':''}" data-done="${doneRow?'1':'0'}" data-id="${a.id}">
+      <div class="actrow${doneRow?'':' is-sortable'}${pinned?' is-pinned':''}" data-done="${doneRow?'1':'0'}" data-id="${esc(a.id)}">
         ${doneRow?'':`<span class="act-order-tools">
-          <button type="button" class="act-drag-handle${dragEnabled?'':' is-disabled'}" data-actf-drag="${a.id}" draggable="${dragEnabled?'true':'false'}" aria-label="${esc(orderTitle)}" title="${esc(orderTitle)}"${dragEnabled?'':' disabled'}><span aria-hidden="true">⋮⋮</span></button>
-          <button type="button" class="act-move-btn" data-actf-move="${a.id}" data-direction="-1" aria-label="위로 이동"${canMoveUp?'':' disabled'}>▲</button>
-          <button type="button" class="act-move-btn" data-actf-move="${a.id}" data-direction="1" aria-label="아래로 이동"${canMoveDown?'':' disabled'}>▼</button>
+          <button type="button" class="act-drag-handle${dragEnabled?'':' is-disabled'}" data-actf-drag="${esc(a.id)}" draggable="${dragEnabled?'true':'false'}" aria-label="${esc(orderTitle)}" title="${esc(orderTitle)}"${dragEnabled?'':' disabled'}><span aria-hidden="true">⋮⋮</span></button>
+          <button type="button" class="act-move-btn" data-actf-move="${esc(a.id)}" data-direction="-1" aria-label="위로 이동"${canMoveUp?'':' disabled'}>▲</button>
+          <button type="button" class="act-move-btn" data-actf-move="${esc(a.id)}" data-direction="1" aria-label="아래로 이동"${canMoveDown?'':' disabled'}>▼</button>
         </span>`}
         <span class="rank tnum">${doneRow?'':groupLiveRanks.get(a.id)}</span>
-        <span class="box" data-actf-done="${a.id}">${CHECK}</span>
+        <span class="box" data-actf-done="${esc(a.id)}">${CHECK}</span>
         <span class="atx">
           <span class="act-text">${esc(a.text)}</span>
           <span class="act-row-meta">
@@ -222,9 +222,9 @@ function renderActions(){
           </span>
         </span>
         <span class="act-row-actions">
-          <button class="act-edit" data-actf-edit="${a.id}" title="수정" aria-label="수정">${ic('edit')}</button>
-          ${doneRow?'':`<button class="star ${pinned?'on':''}" data-actf-top="${a.id}" title="${pinned?'맨 위 고정됨':'맨 위로'}" aria-label="${pinned?'맨 위 고정됨':'맨 위로'}">${ic('star')}</button>`}
-          <button class="xx" data-actf-del="${a.id}" aria-label="삭제">✕</button>
+          <button class="act-edit" data-actf-edit="${esc(a.id)}" title="수정" aria-label="수정">${ic('edit')}</button>
+          ${doneRow?'':`<button class="star ${pinned?'on':''}" data-actf-top="${esc(a.id)}" title="${pinned?'맨 위 고정됨':'맨 위로'}" aria-label="${pinned?'맨 위 고정됨':'맨 위로'}">${ic('star')}</button>`}
+          <button class="xx" data-actf-del="${esc(a.id)}" aria-label="삭제">✕</button>
         </span>
       </div>`;
   };

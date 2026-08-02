@@ -387,8 +387,8 @@ function showRouteMenu(btn){
   menu.innerHTML=`<button class="sp-opt" data-newroute="1">+ 새 루트 만들기</button>`
     +(saved.length?`<div class="rm-sep"></div>`:'')
     +saved.map(r=>`<div class="rm-item">
-        <button class="sp-opt" data-loadroute="${r.id}">${esc(r.name)} <small>(${r.propertyIds.length}곳)</small></button>
-        <button class="rm-del" data-delroute="${r.id}" title="삭제" aria-label="삭제">✕</button>
+        <button class="sp-opt" data-loadroute="${esc(r.id)}">${esc(r.name)} <small>(${r.propertyIds.length}곳)</small></button>
+        <button class="rm-del" data-delroute="${esc(r.id)}" title="삭제" aria-label="삭제">✕</button>
       </div>`).join('');
   document.body.appendChild(menu);
   _routeMenu=menu;
@@ -1945,10 +1945,10 @@ function renderComplexes(){
     const weeklyBadge=needsWeeklyCheck(cx,rep)?'<span class="chip warn">7일+ 미확인</span>':'';
     const routeCheckHTML = routeMode!=='select' ? '' :
       (cx.lat&&cx.lng
-        ? `<label class="c-routecheck-wrap"><input type="checkbox" class="c-routecheck" aria-label="임장 루트에 포함" data-routecheck="${cx.id}"${routeSelected.has(cx.id)?' checked':''}></label>`
+        ? `<label class="c-routecheck-wrap"><input type="checkbox" class="c-routecheck" aria-label="임장 루트에 포함" data-routecheck="${esc(cx.id)}"${routeSelected.has(cx.id)?' checked':''}></label>`
         : `<span class="c-routecheck-disabled" title="좌표가 없어 루트에 포함할 수 없어요">${ic('pin','ic-muted')} 위치없음</span>`);
-    return `<div class="card" data-cxid="${cx.id}">
-      <div class="c-top" data-cxopen="${cx.id}" role="button" tabindex="0">
+    return `<div class="card" data-cxid="${esc(cx.id)}">
+      <div class="c-top" data-cxopen="${esc(cx.id)}" role="button" tabindex="0">
         ${routeCheckHTML}
         <div class="c-head-text">
           <div class="c-headline">${cx.groupCode?`<span class="chip" style="margin-right:5px">${esc(cx.groupCode)}</span>`:''}${cx.regionGroup?esc(cx.regionGroup)+' · ':''}${esc(cx.complexName||'(이름 없음)')}</div>
@@ -1956,8 +1956,8 @@ function renderComplexes(){
           <div class="c-sub">${esc([cx.station,cx.line,cx.householdGrade].filter(Boolean).join(' · ')||'정보 없음')}${(myLoc&&cx.lat&&cx.lng)?' · <span class="cx-dist">'+(cxDistM(cx)/1000).toFixed(1)+'km</span>':''}</div>
         </div>
         <div class="c-badge-col">
-          <button type="button" class="c-fav-btn${cx.favorite?' on':''}" data-favtoggle="${cx.id}" aria-label="즐겨찾기" aria-pressed="${cx.favorite?'true':'false'}">${ic('star')}</button>
-          <span class="pill" style="border-left-color:${color}" data-cxstatuspill="${cx.id}"><i class="pill-dot" style="background:${color}"></i>${esc(st)}</span>
+          <button type="button" class="c-fav-btn${cx.favorite?' on':''}" data-favtoggle="${esc(cx.id)}" aria-label="즐겨찾기" aria-pressed="${cx.favorite?'true':'false'}">${ic('star')}</button>
+          <span class="pill" style="border-left-color:${color}" data-cxstatuspill="${esc(cx.id)}"><i class="pill-dot" style="background:${color}"></i>${esc(st)}</span>
         </div>
       </div>
       <div class="cx-card-body">
@@ -2365,7 +2365,7 @@ function safetySectionHTML(l){
               <option value="">출처 선택</option>
               ${SAFETY_SOURCES.map(src=>`<option value="${src}" ${s.source===src?'selected':''}>${src}</option>`).join('')}
             </select>
-            <input type="date" class="safety-date" data-safefield="checkedAt" data-safekey="${item.key}" data-lid="${esc(l.id)}" value="${s.checkedAt||''}">
+            <input type="date" class="safety-date" data-safefield="checkedAt" data-safekey="${item.key}" data-lid="${esc(l.id)}" value="${esc(s.checkedAt||'')}">
           </div>
         </div>`;
       }).join('')}
@@ -2937,7 +2937,7 @@ function renderCxListings(complexId){
   wrap.innerHTML=listings.map(l=>{
     const safeHref=l.url?safeUrl(l.url):'';
     const editing=cxListingEditMode.has(l.id);
-    return `<div class="cx-listing-row" data-lid="${l.id}">
+    return `<div class="cx-listing-row" data-lid="${esc(l.id)}">
       <div class="cx-listing-top">
         <span class="cx-listing-dongho">${esc(l.dongHo||'동/호 미상')}</span>
         <span class="chip ${listingStatusChipClass(l.listingStatus)}">${esc(l.listingStatus||'확인필요')}</span>
@@ -2951,7 +2951,7 @@ function renderCxListings(complexId){
       ${editing?listingEditFieldsHTML(l):''}
       ${safetySectionHTML(l)}
       <div class="c-actions">
-        ${editing?'':`<button type="button" data-lstedit="${l.id}">수정</button>`}
+        ${editing?'':`<button type="button" data-lstedit="${esc(l.id)}">수정</button>`}
         ${l.isRepresentative?'':`<button data-lact="rep">대표매물로 설정</button>`}
         <button data-lact="check">게시중 확인</button>
         <button data-lact="gone">사라짐 처리</button>
