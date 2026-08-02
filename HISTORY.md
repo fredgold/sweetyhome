@@ -6599,3 +6599,9 @@ height:40px}` 1줄만 추가 — 내부 좌표계는 `viewBox`로 고정하고
 B-43 매물 스냅샷→B-42 가격 타임라인) 전 3건 완주. 다음은 사용자
 별도 지시 대기 — BACKLOG.md상 다음 후보는 B-05(레거시 `properties[]`
 완전 삭제, 손 B 복귀 2026-07-25 후) 또는 신규 실사용 피드백.
+
+---
+
+## 2026-08-02 — B-188: 수집함 링크 og:image 자동 썸네일 (커밋 2개)
+
+`api/preview.js` 신설(SSRF 가드: IP 리터럴·localhost/.local/.internal 거부, redirect 매 hop 재검증, 스트리밍 상한 512KB/5MB) + `scraps-form.js` 배선(추가 시 og:image 백그라운드 조회→`compressImage()`→`imgs[0]`+`img` 미러, 저장 논블로킹, 인스타/페북 스킵, 전 실패 무음) — 네이버 블로그·뉴스는 정상 동작, 유튜브는 og:image가 512KB 상한 밖(문서 691KB 지점)이라 안전장치 완화 없이는 구조적으로 불가(`20e0457`/`7a9adbd`).
