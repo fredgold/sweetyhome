@@ -7,12 +7,12 @@
     --money:#4F7A63; --money-deep:#356049; --money-wash:#E7F0EA;
     --ai:#6B4FA0; --ai-wash:#EDE7F4;
     --warn:#8A4200; --warn-wash:#FBE0B0;
-    --caution:#B5602F; --caution-wash:#FBEDE5;
+    --caution:#A6582B; --caution-wash:#FBEDE5;
     --dim-bg:rgba(30,37,34,.45);
     /* 매물 상태 */
-    --s-interest:#6B7C93; --s-visit:#C7853A; --s-review:#B89233; --s-final:#4F8A5B; --s-hold:#8A8F8A; --s-drop:#B16A63; --s-drop-wash:#F3E5E3; --s-inquiry:#4B88CC;
+    --s-interest:#5F6F83; --s-visit:#C7853A; --s-review:#B89233; --s-final:#4F8A5B; --s-hold:#8A8F8A; --s-drop:#9B554E; --s-drop-wash:#F3E5E3; --s-inquiry:#4B88CC;
     /* 수집함 유형 */
-    --sc-sale-wash:#EEF0F6; --sc-review:#6B5EA8; --sc-review-wash:#F0EEF6; --sc-note:#7A7A50; --sc-note-wash:#F6F6EE; --sc-ai:#3A7A6A; --sc-ai-wash:#EEF6F4;
+    --sc-sale-wash:#EEF0F6; --sc-review:#6B5EA8; --sc-review-wash:#F0EEF6; --sc-note:#73734B; --sc-note-wash:#F6F6EE; --sc-ai:#3A7A6A; --sc-ai-wash:#EEF6F4;
     --shadow:0 1px 2px rgba(30,37,34,.04), 0 6px 20px rgba(30,37,34,.05);
     /* 반경 스케일 — 새 컴포넌트는 이 4개 중에서 고를 것 (아이콘형 버튼=sm, 일반 버튼=md, 칩/토글=pill, 카드/패널=card) */
     --radius-sm:8px; --radius-md:10px; --radius-pill:999px; --radius-card:13px;
@@ -611,7 +611,7 @@
   .pill-dot{width:7px;height:7px;border-radius:50%;flex:none;}
   .c-meta{display:flex;gap:var(--gap-md);flex-wrap:wrap;margin-bottom:8px;}
   .chip{font-size:var(--fs-micro);font-weight:700;background:var(--hairline-soft);border-radius:var(--radius-sm);padding:5px 9px;letter-spacing:-.01em;}
-  .chip.ok{background:var(--money-wash);color:#3C7A4C;}
+  .chip.ok{background:var(--money-wash);color:#3B784B;}
   .chip.warn{background:var(--caution-wash);color:var(--caution);}
   .chip.geo{background:#EAEEF3;color:#566B86;}
   .chip.gone{background:var(--s-drop-wash);color:var(--s-drop);}
