@@ -321,7 +321,7 @@
      top은 단일 topbar 높이(--app-top-h)를 더해야 함, bottom/right는 #panel-props가
      뷰포트 바닥/우측과 맞닿아 있어 절대위치일 때와 동일한 값 사용 가능 */
   .cx-sort-chips{position:fixed;top:calc(var(--app-top-h) + 10px);left:10px;z-index:5;display:none;gap:var(--gap-sm);}
-  .cx-chip{font-size:var(--fs-micro);padding:5px 11px;border-radius:16px;background:var(--surface);border:1px solid var(--hairline);color:var(--ink-soft);font-weight:600;cursor:pointer;box-shadow:var(--shadow);}
+  .cx-chip{font-size:var(--fs-micro);padding:5px 11px;border-radius:16px;background:var(--surface);border:1px solid var(--hairline);color:var(--ink-soft);font-weight:600;cursor:pointer;box-shadow:var(--shadow);position:relative;}
   .cx-chip.on{background:var(--line9-wash);border-color:var(--line9);color:var(--line9-deep);}
   /* B-166: 거리순 칩은 위치 미획득 시에도 탭 가능해야 함(탭→권한요청 경로,
      properties.js 2038행) — disabled 속성 대신 클래스로 dim만 유지, cursor는
@@ -340,7 +340,7 @@
   #cxFilterBar{display:flex;gap:var(--gap-sm);overflow-x:auto;margin-bottom:14px;scrollbar-width:none;}
   #cxFilterBar::-webkit-scrollbar{display:none;}
   .cxf-group{position:relative;flex-shrink:0;}
-  .cxf-trigger{display:flex;align-items:center;gap:var(--gap-xs);font-size:var(--fs-micro);font-weight:700;padding:6px 11px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);background:var(--surface);color:var(--ink-soft);white-space:nowrap;cursor:pointer;}
+  .cxf-trigger{display:flex;align-items:center;gap:var(--gap-xs);font-size:var(--fs-micro);font-weight:700;padding:6px 11px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);background:var(--surface);color:var(--ink-soft);white-space:nowrap;cursor:pointer;position:relative;}
   .cxf-trigger.active{border-color:var(--money);background:var(--money-wash);color:var(--money-deep);}
   .cxf-caret{font-size:var(--fs-tiny);transition:transform .15s;}
   .cxf-group.open .cxf-caret{transform:rotate(180deg);}
@@ -588,9 +588,9 @@
   #formMap,#propEditMap,#cxDetailMap{height:170px;width:100%;border-radius:var(--radius-md);border:1px solid var(--hairline);background:var(--hairline-soft);overflow:hidden;}
   .fm-hint{font-size:var(--fs-tiny);color:var(--ink-faint);margin-top:5px;}
   .form-actions{display:flex;gap:var(--gap-md);justify-content:flex-end;margin-top:8px;}
-  .btn-ghost{font-size:var(--fs-label);font-weight:600;color:var(--ink-soft);padding:8px 13px;border-radius:var(--radius-md);}
+  .btn-ghost{font-size:var(--fs-label);font-weight:600;color:var(--ink-soft);padding:8px 13px;border-radius:var(--radius-md);box-sizing:border-box;min-height:38px;}
   .btn-ghost:hover{background:var(--hairline-soft);}
-  .btn-save{background:var(--line9);color:var(--ink);font-size:var(--fs-label);font-weight:700;padding:8px 16px;border-radius:var(--radius-md);}
+  .btn-save{background:var(--line9);color:var(--ink);font-size:var(--fs-label);font-weight:700;padding:8px 16px;border-radius:var(--radius-md);box-sizing:border-box;min-height:38px;}
   .btn-save:hover{background:var(--line9-deep);}
   /* B-146: btn-primary는 CSS 정의가 없던 유령 클래스(자산 노트 저장 버튼) — addbtn과
      동일 구조(패딩/폰트/radius)에 자산 탭 색(--money) 적용, hover는 기존 money 버튼들과 동일 패턴 */
@@ -691,13 +691,22 @@
   .tri-state{margin:6px 0;}
   .tri-caption{font-size:var(--fs-micro);font-weight:700;color:var(--ink);margin-bottom:4px;}
   .tri-state[data-state="unknown"] .tri-caption,.tri-state[data-state="na"] .tri-caption{color:var(--ink-faint);font-weight:600;}
-  .tri-seg{display:inline-flex;border:1px solid var(--hairline);border-radius:var(--radius-sm);overflow:hidden;}
-  .tri-seg button{border:none;background:var(--surface);padding:5px 10px;font-size:var(--fs-micro);font-weight:700;color:var(--ink-soft);cursor:pointer;transition:.12s;border-right:1px solid var(--hairline);}
+  .tri-seg{display:inline-flex;border:1px solid var(--hairline);border-radius:var(--radius-sm);}
+  .tri-seg button{border:none;background:var(--surface);padding:5px 10px;font-size:var(--fs-micro);font-weight:700;color:var(--ink-soft);cursor:pointer;transition:.12s;border-right:1px solid var(--hairline);position:relative;}
   .tri-seg button:last-child{border-right:none;}
+  .tri-seg button:first-child{border-top-left-radius:var(--radius-sm);border-bottom-left-radius:var(--radius-sm);}
+  .tri-seg button:last-child{border-top-right-radius:var(--radius-sm);border-bottom-right-radius:var(--radius-sm);}
   .tri-seg button.on{background:var(--line9-wash);color:var(--line9-deep);}
   .tri-seg button:hover{background:var(--hairline-soft);}
   .tri-input-row{display:flex;align-items:center;gap:var(--gap-sm);margin-top:6px;}
-  .tri-num{width:90px;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:var(--fs-label);font-weight:600;color:var(--ink);}
+  .tri-num{width:90px;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:var(--fs-label);font-weight:600;color:var(--ink);box-sizing:border-box;min-height:38px;}
+  /* B-181-3: overflow:hidden 제거(위) — 세그먼트 사이는 구분선으로 딱 붙어있어
+     좌우 확장은 바깥쪽 모서리에만(가운데 버튼끼리 겹침 방지), 상하는 공통 */
+  @media (max-width:899.98px){
+    .tri-seg button::after{content:"";position:absolute;top:-6px;bottom:-6px;left:0;right:0;}
+    .tri-seg button:first-child::after{left:-4px;}
+    .tri-seg button:last-child::after{right:-4px;}
+  }
   .tri-num:disabled{background:var(--hairline-soft);color:var(--ink-faint);}
   .tri-unit{font-size:var(--fs-micro);color:var(--ink-soft);font-weight:600;}
   /* B-27-lite: 전세 안전 체크 9항목. 기록·표시 전용, 판정 없음.
@@ -942,20 +951,25 @@
   .sc-img-thumb-del{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;border:none;font-size:var(--fs-micro);line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;}
   /* 필터 바 */
   .sc-search-bar,.act-search-bar,.asset-filter-bar{display:flex;align-items:center;gap:var(--gap-md);margin-bottom:10px;flex-wrap:wrap;}
-  .sc-search-input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 12px;font-size:var(--fs-label);color:var(--ink);background:var(--surface);}
+  .sc-search-input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 12px;font-size:var(--fs-label);color:var(--ink);background:var(--surface);box-sizing:border-box;min-height:38px;}
   .sc-search-input:focus,.act-search-input:focus,.asset-search-input:focus{outline:none;border-color:var(--money);}
   .act-search-input,.asset-search-input{flex:1;min-width:140px;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 12px;font-size:var(--fs-label);color:var(--ink);background:var(--surface);min-height:38px;}
   .asset-owner-sel{font-size:var(--fs-micro);font-weight:700;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px;color:var(--ink-soft);background:var(--surface);min-height:38px;}
   .card-img-thumb{width:100%;max-height:180px;object-fit:cover;border-radius:var(--radius-sm);margin:8px 0;display:block;}
   .card-img-sm{width:56px;height:40px;object-fit:cover;border-radius:var(--radius-sm);flex-shrink:0;}
   .sc-card-img{width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-sm);margin:8px 0;display:block;}
-  .sc-sort-select{font-size:var(--fs-micro);font-weight:700;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px;color:var(--ink-soft);background:var(--surface);}
+  .sc-sort-select{font-size:var(--fs-micro);font-weight:700;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px;color:var(--ink-soft);background:var(--surface);box-sizing:border-box;min-height:38px;}
   .sc-filter-bar{margin-bottom:14px;}
   .sc-filter-label{font-size:var(--fs-tiny);font-weight:700;color:var(--ink-faint);margin-bottom:5px;margin-top:9px;}
   .sc-filter-row{display:flex;gap:var(--gap-sm);overflow-x:auto;padding-bottom:4px;scrollbar-width:none;mask-image:var(--fade-mask-r);-webkit-mask-image:var(--fade-mask-r);}
   .sc-filter-row::-webkit-scrollbar{display:none;}
-  .sc-filter-chip{font-size:var(--fs-micro);font-weight:700;padding:5px 12px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);color:var(--ink-soft);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:.1s;user-select:none;}
+  .sc-filter-chip{font-size:var(--fs-micro);font-weight:700;padding:5px 12px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);color:var(--ink-soft);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:.1s;user-select:none;position:relative;}
   .sc-filter-chip.on{border-color:var(--money);background:var(--money-wash);color:var(--money-deep);}
+  /* B-181-3: .sc-filter-row(스크롤)·.cxf-dropdown(줄바꿈) 양쪽 다 gap 6px라
+     겹침 없이 상하좌우 절반(3px)씩만 확장 가능 — 구조적 한계로 38px 미만 */
+  @media (max-width:899.98px){
+    .sc-filter-chip::after{content:"";position:absolute;top:-3px;bottom:-3px;left:-3px;right:-3px;}
+  }
   /* 카드 */
   .sc-list{display:flex;flex-direction:column;gap:var(--gap-mlg);}
   /* B-174: 카드 본문 텍스트 복사는 편집 모달에서 하므로(카드 자체는 편집
@@ -1102,10 +1116,21 @@
   .sc-md-content th,.sc-md-content td{border:1px solid var(--hairline);padding:5px 8px;text-align:left;}
   .sc-md-content th{background:var(--hairline-soft);font-weight:700;}
   .sc-card-actions{display:flex;gap:var(--gap-sm);margin-top:10px;flex-wrap:wrap;align-items:center;}
-  .sc-card-actions button{font-size:var(--fs-micro);font-weight:600;color:var(--ink-soft);padding:5px 9px;border-radius:var(--radius-sm);border:1px solid var(--hairline);}
+  .sc-card-actions button{font-size:var(--fs-micro);font-weight:600;color:var(--ink-soft);padding:5px 9px;border-radius:var(--radius-sm);border:1px solid var(--hairline);position:relative;}
   .sc-card-actions button:hover:not([disabled]){background:var(--hairline-soft);}
   .sc-card-actions button[disabled]{opacity:.4;cursor:not-allowed;}
-  .sc-card-actions select{font-size:var(--fs-micro);font-weight:600;padding:4px 7px;border-radius:var(--radius-sm);border:1px solid var(--hairline);color:var(--ink);background:var(--surface);font-family:inherit;}
+  .sc-card-actions select{font-size:var(--fs-micro);font-weight:600;padding:4px 7px;border-radius:var(--radius-sm);border:1px solid var(--hairline);color:var(--ink);background:var(--surface);font-family:inherit;position:relative;}
+  /* B-181-3: flex-wrap 행이라 gap 6px 절반(3px)만 안전 — 구조적 한계 */
+  @media (max-width:899.98px){
+    .sc-card-actions button::after,.sc-card-actions select::after{content:"";position:absolute;top:-3px;bottom:-3px;left:-3px;right:-3px;}
+  }
+  /* B-181-3: 수집함 카드/매물 메모 "원문·미리보기" 토글 — 전용 CSS가 없어
+     네이티브 버튼 크기(h16.3)였음. 각자 단독 행(형제 없음)이라 pseudo
+     hit-area로 안전하게 38px 확보 가능 */
+  .sc-preview-toggle{font-size:var(--fs-micro);font-weight:600;color:var(--ink-soft);position:relative;}
+  @media (max-width:899.98px){
+    .sc-preview-toggle::after{content:"";position:absolute;top:-11px;bottom:-11px;left:-8px;right:-8px;}
+  }
   .sc-empty{padding:28px 16px;text-align:center;color:var(--ink-faint);font-size:var(--fs-label);line-height:1.8;}
   .sc-import-trigger{font-size:var(--fs-micro);font-weight:700;color:var(--money-deep);border:1.5px solid var(--money);border-radius:var(--radius-md);padding:6px 11px;background:var(--money-wash);white-space:nowrap;flex-shrink:0;}
   .sc-import-trigger:hover{opacity:.8;}
@@ -1315,10 +1340,19 @@
   .chip.tnum{background:var(--hairline);color:var(--ink-soft);}
 
   /* ── 수집함 뷰 토글 ── */
-  .sc-view-toggle{display:flex;border:1px solid var(--hairline);border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0;}
-  .sc-view-btn{border:none;background:none;padding:5px 10px;font-size:var(--fs-lg);cursor:pointer;color:var(--ink-soft);line-height:1;transition:background .15s;}
+  .sc-view-toggle{display:flex;border:1px solid var(--hairline);border-radius:var(--radius-sm);flex-shrink:0;}
+  .sc-view-btn{border:none;background:none;padding:5px 10px;font-size:var(--fs-lg);cursor:pointer;color:var(--ink-soft);line-height:1;transition:background .15s;position:relative;}
   .sc-view-btn[data-on="1"]{background:var(--money-wash);color:var(--money-deep);}
+  .sc-view-toggle .sc-view-btn:first-child{border-top-left-radius:var(--radius-sm);border-bottom-left-radius:var(--radius-sm);}
+  .sc-view-toggle .sc-view-btn:last-child{border-top-right-radius:var(--radius-sm);border-bottom-right-radius:var(--radius-sm);}
   #sc_selectModeBtn{font-size:var(--fs-micro);font-weight:700;}
+  /* B-181-3: overflow:hidden를 컨테이너에서 빼고(위) 자식별 모서리 radius로 대체해
+     ::after 히트영역이 부모에 잘리지 않게 함 — 시각은 기존과 동일 */
+  @media (max-width:899.98px){
+    .sc-view-toggle .sc-view-btn:first-child::after{content:"";position:absolute;top:-6px;bottom:-6px;left:-6px;right:0;}
+    .sc-view-toggle .sc-view-btn:last-child::after{content:"";position:absolute;top:-6px;bottom:-6px;left:0;right:-6px;}
+    #sc_selectModeBtn::after{content:"";position:absolute;top:-8px;bottom:-8px;left:-4px;right:-4px;}
+  }
 
   /* ── B-174: 다중선택 일괄 삭제 ── */
   /* 체크 표시 — 항상 마크업엔 있고 선택 모드일 때만 노출(재렌더 비용
@@ -1396,7 +1430,7 @@
   .sc-lightbox-box{max-width:720px;}
   .sc-lightbox-body{display:flex;align-items:center;justify-content:center;gap:var(--gap-mlg);background:#161816;min-height:280px;}
   .sc-lightbox-img{max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--radius-sm);}
-  .sc-lightbox-nav{flex:none;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:var(--fs-head);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .sc-lightbox-nav{flex:none;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:var(--fs-head);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;}
   .sc-lightbox-nav:hover{background:rgba(255,255,255,.28);}
   .sc-lightbox-foot{justify-content:space-between;align-items:center;}
   .sc-lightbox-foot .tnum{font-size:var(--fs-micro);color:var(--ink-soft);}
@@ -1469,6 +1503,14 @@ html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
   #panel-actions .star::after{content:"";position:absolute;top:-6px;bottom:-6px;left:-1.5px;right:-1.5px;}
   #panel-actions .xx::after{content:"";position:absolute;top:-7px;bottom:-7px;left:-1.5px;right:0;}
 }
+/* B-181-3: 매물 정렬칩(cx-sort-chips)·필터트리거(cxFilterBar) — 둘 다 gap 6px라
+   절반(3px)씩만 안전. 데스크톱은 무변경(모바일 전용 스코프) */
+@media (max-width:899.98px){
+  .cx-chip::after{content:"";position:absolute;top:-3px;bottom:-3px;left:-3px;right:-3px;}
+  .cxf-trigger::after{content:"";position:absolute;top:-3px;bottom:-3px;left:-3px;right:-3px;}
+  /* 라이트박스 이전/다음 36×36 — 반대편 끝 버튼끼리라 이웃 충돌 없어 넉넉히 확장 */
+  .sc-lightbox-nav::after{content:"";position:absolute;top:-4px;bottom:-4px;left:-4px;right:-4px;}
+}
 .status-picker{position:absolute;z-index:2000;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);box-shadow:0 4px 20px rgba(0,0,0,.13);padding:6px;display:flex;flex-direction:column;gap:3px;min-width:120px;}
 /* B-12 재수정B: showMoreMenu()가 menu.style.maxHeight를 버튼 아래 남는 세로 공간
    기준으로 항상 계산해 넣어줌(properties.js) — 검색+필터 6줄+버튼 3개가 다 들어가는
@@ -1495,7 +1537,9 @@ body:has(.status-picker.ph-more-menu)::before{content:"";position:fixed;inset:0;
   .ph-actions{gap:var(--gap-xs);}
   .ph-actions .prop-filter-sel,.ph-actions .addbtn{font-size:var(--fs-tiny);padding:5px 8px;}
   /* 매물탭 툴바 더보기 접기 — 정렬/매물추가만 상시 노출, 나머지는 ⋯ 메뉴로 */
-  .ph-more-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px 12px;}
+  .ph-more-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px 12px;position:relative;}
+  /* B-181-3: 이 폭에서 .ph-actions gap이 4px(위)로 줄어 좌우는 절반(2px)만 안전 */
+  .ph-more-btn::after{content:"";position:absolute;top:-7px;bottom:-7px;left:-2px;right:-2px;}
   .ph-actions>#phExportRow,.ph-actions>#propBulkBtn,.ph-actions>#propRouteBtn{display:none;}
   .ph-more-menu{min-width:210px;}
   .ph-more-menu #phExportRow{width:100%;}
