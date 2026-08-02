@@ -165,7 +165,7 @@
   .dcard .dt a{font-size:var(--fs-micro);font-weight:700;color:var(--line9-deep);text-decoration:none;position:relative;}
   /* B-181②: 대시보드 카드 빠른 링크 h18 — 위아래 여유 있어 확장. 데스크톱 무변경 */
   @media (max-width:899.98px){
-    .dcard .dt a::after{content:"";position:absolute;top:-9px;bottom:-9px;left:-6px;right:-6px;}
+    .dcard .dt a::after{content:"";position:absolute;top:-10px;bottom:-10px;left:-6px;right:-6px;}
   }
   .bignum{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1;}
   .bignum small{font-size:var(--fs-body);font-weight:700;color:var(--ink-soft);margin-left:3px;}
@@ -199,11 +199,17 @@
     #d_top3 .xx::after{content:"";position:absolute;top:-7px;bottom:-7px;left:-4px;right:0;}
   }
   .addact{display:flex;gap:var(--gap-md);margin-top:13px;}
-  .addact input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:9px 11px;background:var(--surface);min-height:38px;}
+  .addact input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:9px 11px;background:var(--surface);}
   .addact input:focus{outline:none;border-color:var(--line9);}
   /* B-30: 날짜 입력은 텍스트 입력(act_input)만큼 넓을 필요 없음 — flex:1 대신 고정폭 */
   .addact input.act-due-input{flex:none;width:150px;}
-  .addact button{background:var(--ink);color:#fff;font-size:var(--fs-label);font-weight:700;padding:0 16px;border-radius:var(--radius-md);white-space:nowrap;min-height:38px;}
+  .addact button{background:var(--ink);color:#fff;font-size:var(--fs-label);font-weight:700;padding:0 16px;border-radius:var(--radius-md);white-space:nowrap;}
+  /* B-181R-1: min-height:38px가 전역(데스크톱 포함)에 새 것 없이도 이미
+     충분한 높이인 컴포넌트 크기를 강제로 키웠음(verify-2026-08-02 §7.4) —
+     모바일 전용으로 재스코프 */
+  @media (max-width:899.98px){
+    .addact input,.addact button{min-height:38px;}
+  }
   .actmore{font-size:var(--fs-micro);color:var(--ink-faint);font-weight:600;margin-top:10px;text-align:center;cursor:pointer;}
 
   .regline{background:var(--line9-wash);border:1px solid var(--line9);border-radius:12px;padding:12px 14px;display:flex;gap:var(--gap-mlg);align-items:center;font-size:var(--fs-label);color:var(--line9-deep);font-weight:600;}
@@ -227,8 +233,12 @@
   .btn-ai em{font-style:normal;font-size:var(--fs-tiny);font-weight:800;background:var(--money);color:#fff;border-radius:4px;padding:1px 5px;}
   .atarget{margin-top:14px;}
   .atarget .trow{display:flex;align-items:center;gap:var(--gap-mlg);font-size:var(--fs-label);font-weight:600;color:var(--ink-soft);margin-bottom:8px;flex-wrap:wrap;}
-  .atarget .trow input{width:70px;text-align:right;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 9px;background:var(--surface);font-weight:700;min-height:38px;}
+  .atarget .trow input{width:70px;text-align:right;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 9px;background:var(--surface);font-weight:700;}
   .atarget .trow input:focus{outline:none;border-color:var(--money);}
+  /* B-181R-1: 전역 누수 재스코프(위 .addact와 동일 사유) */
+  @media (max-width:899.98px){
+    .atarget .trow input{min-height:38px;}
+  }
   .anote .sc-md-toolbar{margin-bottom:6px;}
   .anote .sc-md-textarea{width:100%;min-height:80px;max-height:300px;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;font-size:var(--fs-label);box-sizing:border-box;resize:vertical;}
   .anote{margin-top:16px;}
@@ -321,7 +331,7 @@
      확장(위아래 여유 충분, B-180으로 모바일 전용이 돼 유일한 펼침 진입점이라
      더 중요해짐). 데스크톱은 이 버튼 자체가 숨겨져 있어 무관 */
   @media (max-width:899.98px){
-    .gates-toggle::after{content:"";position:absolute;top:-10px;bottom:-10px;left:0;right:0;}
+    .gates-toggle::after{content:"";position:absolute;top:-10.5px;bottom:-10.5px;left:0;right:0;}
   }
   .gates-toggle-caret{font-size:var(--fs-tiny);transition:transform .15s;}
   .gatelist{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap-mlg);}
@@ -610,13 +620,22 @@
   #formMap,#propEditMap,#cxDetailMap{height:170px;width:100%;border-radius:var(--radius-md);border:1px solid var(--hairline);background:var(--hairline-soft);overflow:hidden;}
   .fm-hint{font-size:var(--fs-tiny);color:var(--ink-faint);margin-top:5px;}
   .form-actions{display:flex;gap:var(--gap-md);justify-content:flex-end;margin-top:8px;}
-  .btn-ghost{font-size:var(--fs-label);font-weight:600;color:var(--ink-soft);padding:8px 13px;border-radius:var(--radius-md);box-sizing:border-box;min-height:38px;}
+  .btn-ghost{font-size:var(--fs-label);font-weight:600;color:var(--ink-soft);padding:8px 13px;border-radius:var(--radius-md);}
   .btn-ghost:hover{background:var(--hairline-soft);}
-  .btn-save{background:var(--line9);color:var(--ink);font-size:var(--fs-label);font-weight:700;padding:8px 16px;border-radius:var(--radius-md);box-sizing:border-box;min-height:38px;}
+  .btn-save{background:var(--line9);color:var(--ink);font-size:var(--fs-label);font-weight:700;padding:8px 16px;border-radius:var(--radius-md);}
+  /* B-181R-1: 전역 누수 재스코프 — footer 버튼(닫기·저장) 모바일 전용 */
+  @media (max-width:899.98px){
+    .btn-ghost,.btn-save{box-sizing:border-box;min-height:38px;}
+  }
   .btn-save:hover{background:var(--line9-deep);}
   /* B-146: btn-primary는 CSS 정의가 없던 유령 클래스(자산 노트 저장 버튼) — addbtn과
      동일 구조(패딩/폰트/radius)에 자산 탭 색(--money) 적용, hover는 기존 money 버튼들과 동일 패턴 */
   .btn-primary{background:var(--money);color:#fff;font-size:var(--fs-label);font-weight:700;padding:8px 14px;border-radius:var(--radius-md);}
+  /* B-181R-2: 자산 노트 저장(#an_saveBtn, 유일 사용처) h31.5 — 단독 행이라
+     min-height로 안전하게 38px */
+  @media (max-width:899.98px){
+    .btn-primary{box-sizing:border-box;min-height:38px;}
+  }
   .btn-primary:hover{background:var(--money-deep);}
 
   #complexSection{overscroll-behavior:contain;}
@@ -721,13 +740,15 @@
   .tri-seg button.on{background:var(--line9-wash);color:var(--line9-deep);}
   .tri-seg button:hover{background:var(--hairline-soft);}
   .tri-input-row{display:flex;align-items:center;gap:var(--gap-sm);margin-top:6px;}
-  .tri-num{width:90px;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:var(--fs-label);font-weight:600;color:var(--ink);box-sizing:border-box;min-height:38px;}
+  .tri-num{width:90px;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:var(--fs-label);font-weight:600;color:var(--ink);}
   /* B-181-3: overflow:hidden 제거(위) — 세그먼트 사이는 구분선으로 딱 붙어있어
-     좌우 확장은 바깥쪽 모서리에만(가운데 버튼끼리 겹침 방지), 상하는 공통 */
+     좌우 확장은 바깥쪽 모서리에만(가운데 버튼끼리 겹침 방지), 상하는 공통.
+     B-181R-1: tri-num min-height도 전역 누수라 재스코프 */
   @media (max-width:899.98px){
-    .tri-seg button::after{content:"";position:absolute;top:-6px;bottom:-6px;left:0;right:0;}
+    .tri-seg button::after{content:"";position:absolute;top:-4px;bottom:-6px;left:0;right:0;}
     .tri-seg button:first-child::after{left:-4px;}
     .tri-seg button:last-child::after{right:-4px;}
+    .tri-num{box-sizing:border-box;min-height:38px;}
   }
   .tri-num:disabled{background:var(--hairline-soft);color:var(--ink-faint);}
   .tri-unit{font-size:var(--fs-micro);color:var(--ink-soft);font-weight:600;}
@@ -973,14 +994,18 @@
   .sc-img-thumb-del{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;border:none;font-size:var(--fs-micro);line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;}
   /* 필터 바 */
   .sc-search-bar,.act-search-bar,.asset-filter-bar{display:flex;align-items:center;gap:var(--gap-md);margin-bottom:10px;flex-wrap:wrap;}
-  .sc-search-input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 12px;font-size:var(--fs-label);color:var(--ink);background:var(--surface);box-sizing:border-box;min-height:38px;}
+  .sc-search-input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 12px;font-size:var(--fs-label);color:var(--ink);background:var(--surface);}
   .sc-search-input:focus,.act-search-input:focus,.asset-search-input:focus{outline:none;border-color:var(--money);}
-  .act-search-input,.asset-search-input{flex:1;min-width:140px;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 12px;font-size:var(--fs-label);color:var(--ink);background:var(--surface);min-height:38px;}
-  .asset-owner-sel{font-size:var(--fs-micro);font-weight:700;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px;color:var(--ink-soft);background:var(--surface);min-height:38px;}
+  .act-search-input,.asset-search-input{flex:1;min-width:140px;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 12px;font-size:var(--fs-label);color:var(--ink);background:var(--surface);}
+  .asset-owner-sel{font-size:var(--fs-micro);font-weight:700;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px;color:var(--ink-soft);background:var(--surface);}
   .card-img-thumb{width:100%;max-height:180px;object-fit:cover;border-radius:var(--radius-sm);margin:8px 0;display:block;}
   .card-img-sm{width:56px;height:40px;object-fit:cover;border-radius:var(--radius-sm);flex-shrink:0;}
   .sc-card-img{width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-sm);margin:8px 0;display:block;}
-  .sc-sort-select{font-size:var(--fs-micro);font-weight:700;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px;color:var(--ink-soft);background:var(--surface);box-sizing:border-box;min-height:38px;}
+  .sc-sort-select{font-size:var(--fs-micro);font-weight:700;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px;color:var(--ink-soft);background:var(--surface);}
+  /* B-181R-1: 검색/정렬/소유자필터 입력류 min-height 전역 누수 재스코프 */
+  @media (max-width:899.98px){
+    .sc-search-input,.act-search-input,.asset-search-input,.asset-owner-sel,.sc-sort-select{box-sizing:border-box;min-height:38px;}
+  }
   .sc-filter-bar{margin-bottom:14px;}
   .sc-filter-label{font-size:var(--fs-tiny);font-weight:700;color:var(--ink-faint);margin-bottom:5px;margin-top:9px;}
   .sc-filter-row{display:flex;gap:var(--gap-sm);overflow-x:auto;padding-bottom:4px;scrollbar-width:none;mask-image:var(--fade-mask-r);-webkit-mask-image:var(--fade-mask-r);}
@@ -1151,7 +1176,7 @@
      hit-area로 안전하게 38px 확보 가능 */
   .sc-preview-toggle{font-size:var(--fs-micro);font-weight:600;color:var(--ink-soft);position:relative;}
   @media (max-width:899.98px){
-    .sc-preview-toggle::after{content:"";position:absolute;top:-11px;bottom:-11px;left:-8px;right:-8px;}
+    .sc-preview-toggle::after{content:"";position:absolute;top:-11.5px;bottom:-11.5px;left:-8px;right:-8px;}
   }
   .sc-empty{padding:28px 16px;text-align:center;color:var(--ink-faint);font-size:var(--fs-label);line-height:1.8;}
   .sc-import-trigger{font-size:var(--fs-micro);font-weight:700;color:var(--money-deep);border:1.5px solid var(--money);border-radius:var(--radius-md);padding:6px 11px;background:var(--money-wash);white-space:nowrap;flex-shrink:0;}
@@ -1372,7 +1397,7 @@
      ::after 히트영역이 부모에 잘리지 않게 함 — 시각은 기존과 동일 */
   @media (max-width:899.98px){
     .sc-view-toggle .sc-view-btn:first-child::after{content:"";position:absolute;top:-6px;bottom:-6px;left:-6px;right:0;}
-    .sc-view-toggle .sc-view-btn:last-child::after{content:"";position:absolute;top:-6px;bottom:-6px;left:0;right:-6px;}
+    .sc-view-toggle .sc-view-btn:last-child::after{content:"";position:absolute;top:-6px;bottom:-6px;left:0;right:-5px;}
     #sc_selectModeBtn::after{content:"";position:absolute;top:-8px;bottom:-8px;left:-4px;right:-4px;}
   }
 
@@ -1471,6 +1496,11 @@
   .slash-label{color:var(--ink);}
 /* ── v4 벌크 임포트 ── */
 .prop-filter-sel{font-size:var(--fs-micro);padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--hairline);background:var(--surface);color:var(--ink);cursor:pointer;}
+/* B-181R-2: 액션탭 카테고리/담당자 select(act_catSel·act_ownerSel, 이
+   클래스의 유일 사용처) h33 — 모바일 min-height */
+@media (max-width:899.98px){
+  .prop-filter-sel{box-sizing:border-box;min-height:38px;}
+}
 #propImportTable{overflow-x:auto;}
 .import-tbl{width:100%;border-collapse:collapse;font-size:var(--fs-micro);}
 .import-tbl th,.import-tbl td{padding:6px 8px;border-bottom:1px solid var(--hairline);text-align:left;white-space:nowrap;}
@@ -1521,7 +1551,7 @@ html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
   #panel-actions .act-edit,
   #panel-actions .star,
   #panel-actions .xx{position:relative;}
-  #panel-actions .act-edit::after{content:"";position:absolute;top:-9px;bottom:-9px;left:-4px;right:-1.5px;}
+  #panel-actions .act-edit::after{content:"";position:absolute;top:-9.5px;bottom:-9.5px;left:-4px;right:-1.5px;}
   #panel-actions .star::after{content:"";position:absolute;top:-6px;bottom:-6px;left:-1.5px;right:-1.5px;}
   #panel-actions .xx::after{content:"";position:absolute;top:-7px;bottom:-7px;left:-1.5px;right:0;}
 }
