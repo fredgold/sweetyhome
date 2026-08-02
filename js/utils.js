@@ -242,8 +242,85 @@ function unlockBodyScroll(){
     window.scrollTo(0,_scrollLockY);
   }
 }
-function openModal(id){document.getElementById(id).classList.add('open');lockBodyScroll();}
-function closeModal(id){document.getElementById(id).classList.remove('open');unlockBodyScroll();}
+/* B-182: 모달 포커스 격리·키보드 접근 — openModal/closeModal 두 곳에 중앙화해
+   9개 모달 개별 수정 없이 전부 적용. 겹쳐 열리는 경우(스택)엔 최상단만
+   상호작용 가능하게 하고 나머지(배경 앱 콘텐츠 + 그 아래 모달)는 inert.
+   트리거는 호출부 수정 없이 열릴 때 시점의 document.activeElement를 자동
+   캡처(거의 항상 클릭한 버튼 자신) — 닫히면 그 트리거로 포커스 복귀 */
+let _modalOpenStack=[];
+function _wrapTopChildren(){
+  const wrap=document.querySelector('.wrap');
+  return wrap?[...wrap.children].filter(c=>c.tagName!=='SCRIPT'):[];
+}
+function _focusableIn(container){
+  if(!container) return [];
+  return [...container.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]')]
+    .filter(el=>el.tabIndex!==-1&&el.offsetParent!==null);
+}
+function _focusFirstIn(container){
+  const focusables=_focusableIn(container);
+  if(focusables.length) focusables[0].focus();
+  else if(container){ container.setAttribute('tabindex','-1'); container.focus(); }
+}
+/* 모달 스택 최상단(또는 로그인 오버레이, auth.js에서 확장)만 상호작용 가능하게
+   나머지는 inert — 배경 tab/click/스크린리더 전부 차단. inert 미지원
+   브라우저 폴백은 아래 keydown Tab 트랩(별도, inert 유무와 무관하게 항상 동작) */
+function _refreshModalInert(){
+  const top=_modalOpenStack[_modalOpenStack.length-1];
+  _wrapTopChildren().forEach(child=>{
+    if(!top){ child.removeAttribute('inert'); return; }
+    if(child.id===top.id) child.removeAttribute('inert');
+    else child.setAttribute('inert','');
+  });
+}
+/* 현재 상호작용 가능해야 할 컨테이너(로그인 오버레이 > 모달 스택 최상단) —
+   auth.js가 로그인 오버레이 분기를 추가해 확장 */
+function _activeTrapContainer(){
+  const top=_modalOpenStack[_modalOpenStack.length-1];
+  return top?document.getElementById(top.id):null;
+}
+/* inert 지원 여부와 무관하게 항상 동작 — 경계(첫/끝 focusable)에서만 개입해
+   기존 Tab 이동을 방해하지 않음. inert가 있는 브라우저에선 배경이 애초에
+   focusable 후보에서 빠지므로 사실상 중복 방어, 없는 브라우저에선 이게
+   유일한 방어선(요구사항: 단독 작동) */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Tab')return;
+  const container=_activeTrapContainer();
+  if(!container)return;
+  const focusables=_focusableIn(container);
+  if(!focusables.length)return;
+  const first=focusables[0], last=focusables[focusables.length-1];
+  const inside=container.contains(document.activeElement);
+  if(e.shiftKey){
+    if(!inside||document.activeElement===first){ e.preventDefault(); last.focus(); }
+  }else{
+    if(!inside||document.activeElement===last){ e.preventDefault(); first.focus(); }
+  }
+});
+function openModal(id,trigger){
+  const el=document.getElementById(id);
+  if(!el)return;
+  if(!_modalOpenStack.some(s=>s.id===id)){
+    const trig=trigger||document.activeElement;
+    _modalOpenStack.push({id,trigger:(trig&&trig!==document.body)?trig:null});
+  }
+  el.classList.add('open');
+  lockBodyScroll();
+  _refreshModalInert();
+  requestAnimationFrame(()=>_focusFirstIn(el));
+}
+function closeModal(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.classList.remove('open');
+  unlockBodyScroll();
+  const idx=_modalOpenStack.findIndex(s=>s.id===id);
+  const entry=idx!==-1?_modalOpenStack.splice(idx,1)[0]:null;
+  _refreshModalInert();
+  if(entry&&entry.trigger&&document.contains(entry.trigger)&&typeof entry.trigger.focus==='function'){
+    entry.trigger.focus();
+  }
+}
 
 /* B-127: ESC로 모달 닫기 — 라이트박스 > 매물 상세 사이드 패널(cxListingDetailBox,
    complexDetailModal 안에 중첩) > 모달 본체 순으로 한 번에 한 겹씩만 닫는다.
