@@ -715,6 +715,9 @@
   .cx-dl .cx-dd{font-size:var(--fs-body);font-weight:600;}
   .cx-dl .cx-dd.is-empty,.cx-listing-meta .is-empty{color:var(--ink-faint);font-weight:500;}
   .cx-listing-row{border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;margin-bottom:8px;cursor:pointer;}
+  /* B-182③: role="button" tabindex="0" 추가(수정모드 아닐 때만)에 맞춰
+     .c-top와 동일한 포커스 링 지정 */
+  .cx-listing-row[tabindex]:focus-visible{outline:none;box-shadow:var(--focus-ring);}
   /* B-117: 매물 상세 사이드 패널 — 기본은 숨김(JS가 .open 토글), 배경·flex 컬럼만
      공통 지정하고 크기·위치는 breakpoint별로(데스크톱: 위 #complexDetailModal 블록,
      모바일: 아래 @media max-width 899.98px 블록) 따로 정의 */
@@ -1012,6 +1015,9 @@
   .sc-filter-row::-webkit-scrollbar{display:none;}
   .sc-filter-chip{font-size:var(--fs-micro);font-weight:700;padding:5px 12px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);color:var(--ink-soft);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:.1s;user-select:none;position:relative;}
   .sc-filter-chip.on{border-color:var(--money);background:var(--money-wash);color:var(--money-deep);}
+  /* B-182③: span+tabindex라 브라우저 기본 포커스 링이 없어 .c-top 등과
+     동일하게 명시 지정 */
+  .sc-filter-chip:focus-visible{outline:none;box-shadow:var(--focus-ring);}
   /* B-181-3: .sc-filter-row(스크롤)·.cxf-dropdown(줄바꿈) 양쪽 다 gap 6px라
      겹침 없이 상하좌우 절반(3px)씩만 확장 가능 — 구조적 한계로 38px 미만 */
   @media (max-width:899.98px){

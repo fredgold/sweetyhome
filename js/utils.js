@@ -325,6 +325,20 @@ function closeModal(id){
   }
 }
 
+/* B-182③(UX-03): .sc-filter-chip(수집함 유형·상태 필터, 단지 필터
+   드롭다운 내 칩들)가 span+click 위임만 있어 키보드로 접근 불가했음.
+   HTML/템플릿 쪽엔 role="button" tabindex="0"만 추가하고, 기존 click
+   위임 로직은 그대로 두고 여기서 Enter/Space를 그 click으로 전환만
+   — 델리게이션 로직 중복 없이 모든 사용처(수집함 2곳+단지 필터
+   5곳+지역/노선 동적 렌더)에 한 번에 적용 */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ') return;
+  const chip=e.target.closest&&e.target.closest('.sc-filter-chip[tabindex]');
+  if(!chip) return;
+  e.preventDefault();
+  chip.click();
+});
+
 /* B-127: ESC로 모달 닫기 — 라이트박스 > 매물 상세 사이드 패널(cxListingDetailBox,
    complexDetailModal 안에 중첩) > 모달 본체 순으로 한 번에 한 겹씩만 닫는다.
    기존 closeModal/closeListingDetail 경로 재사용(X 버튼·백드롭 클릭과 동일 동작).

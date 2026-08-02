@@ -1744,12 +1744,12 @@ let cxFilters={region:'',status:'',listing:'',area:'',hh:'',line:'',favorite:fal
 function renderCxFilterOptions(){
   const regionSet=new Set(state.complexes.map(c=>c.regionGroup).filter(Boolean));
   const regionWrap=document.getElementById('cxFilterRegion');
-  if(regionWrap) regionWrap.innerHTML=`<span class="sc-filter-chip${cxFilters.region===''?' on':''}" data-fregion="">전체</span>`
-    +[...regionSet].map(r=>`<span class="sc-filter-chip${cxFilters.region===r?' on':''}" data-fregion="${esc(r)}">${esc(r)}</span>`).join('');
+  if(regionWrap) regionWrap.innerHTML=`<span class="sc-filter-chip${cxFilters.region===''?' on':''}" role="button" tabindex="0" data-fregion="">전체</span>`
+    +[...regionSet].map(r=>`<span class="sc-filter-chip${cxFilters.region===r?' on':''}" role="button" tabindex="0" data-fregion="${esc(r)}">${esc(r)}</span>`).join('');
   const lineSet=new Set(state.complexes.map(c=>c.line).filter(Boolean));
   const lineWrap=document.getElementById('cxFilterLine');
-  if(lineWrap) lineWrap.innerHTML=`<span class="sc-filter-chip${cxFilters.line===''?' on':''}" data-fline="">전체</span>`
-    +[...lineSet].map(l=>`<span class="sc-filter-chip${cxFilters.line===l?' on':''}" data-fline="${esc(l)}">${esc(l)}</span>`).join('');
+  if(lineWrap) lineWrap.innerHTML=`<span class="sc-filter-chip${cxFilters.line===''?' on':''}" role="button" tabindex="0" data-fline="">전체</span>`
+    +[...lineSet].map(l=>`<span class="sc-filter-chip${cxFilters.line===l?' on':''}" role="button" tabindex="0" data-fline="${esc(l)}">${esc(l)}</span>`).join('');
   document.querySelectorAll('#cxFilterStatus [data-fstatus]').forEach(c=>c.classList.toggle('on',c.dataset.fstatus===cxFilters.status));
   document.querySelectorAll('#cxFilterListingStatus [data-flisting]').forEach(c=>c.classList.toggle('on',c.dataset.flisting===cxFilters.listing));
   document.querySelectorAll('#cxFilterAreaGrade [data-farea]').forEach(c=>c.classList.toggle('on',c.dataset.farea===cxFilters.area));
@@ -2937,7 +2937,11 @@ function renderCxListings(complexId){
   wrap.innerHTML=listings.map(l=>{
     const safeHref=l.url?safeUrl(l.url):'';
     const editing=cxListingEditMode.has(l.id);
-    return `<div class="cx-listing-row" data-lid="${esc(l.id)}">
+    /* B-182③: 행 전체가 클릭 가능(사이드 패널 열기)한데 role/tabindex가
+       없어 키보드로 접근 불가했음(UX-03) — 수정모드 행은 이미 입력
+       폼이라 이 행 자체는 상세 열기 대상에서 빠지므로(아래 keydown
+       핸들러의 editing 가드와 동일) role/tabindex도 그때만 제외 */
+    return `<div class="cx-listing-row" data-lid="${esc(l.id)}"${editing?'':' role="button" tabindex="0"'}>
       <div class="cx-listing-top">
         <span class="cx-listing-dongho">${esc(l.dongHo||'동/호 미상')}</span>
         <span class="chip ${listingStatusChipClass(l.listingStatus)}">${esc(l.listingStatus||'확인필요')}</span>
@@ -3071,6 +3075,17 @@ document.getElementById('cxDetailListings').addEventListener('click',e=>{
   if(e.target.closest('a,button,input,select,textarea')) return;
   const row=e.target.closest('[data-lid]'); if(!row) return;
   if(cxListingEditMode.has(row.dataset.lid)) return;
+  openListingDetail(row.dataset.lid);
+});
+/* B-182③: 위 클릭 핸들러의 키보드 대응 — role="button" tabindex="0"인
+   행 자체에 포커스가 있을 때만 반응(자식 버튼/입력은 각자 네이티브
+   Enter/Space를 가지므로 여기서 건드리지 않음) */
+document.getElementById('cxDetailListings').addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ') return;
+  const row=e.target.closest('.cx-listing-row');
+  if(!row||e.target!==row) return;
+  if(cxListingEditMode.has(row.dataset.lid)) return;
+  e.preventDefault();
   openListingDetail(row.dataset.lid);
 });
 document.getElementById('cxDetailListings').addEventListener('click',e=>{
