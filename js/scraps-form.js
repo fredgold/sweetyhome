@@ -363,6 +363,54 @@ document.getElementById('sc_moreToggle').onclick=()=>{
   a.textContent=open?'▼':'▶';
 };
 
+/* B-188: 스크랩 "추가"(신규만, 수정 모달·붙여넣기 임포트는 스코프 밖) 시
+   og:image 자동 썸네일. 저장 자체는 이 백그라운드 작업을 절대 기다리지
+   않음(UX 블로킹 금지) — 완료되면 imgs[0]+img 레거시 미러를 함께 채워
+   save()+renderScraps()로 반영. 모든 실패는 무음(토스트·콘솔 에러 없이
+   썸네일 없는 현재 상태가 곧 폴백) */
+function scPreviewSkipDomain(urlStr){
+  try{
+    const h=new URL(urlStr).hostname.toLowerCase();
+    return h==='instagram.com'||h.endsWith('.instagram.com')||h==='facebook.com'||h.endsWith('.facebook.com');
+  }catch(e){ return true; }
+}
+/* api/ingest.js의 extractHttpUrl과 동일 패턴(문장 속 URL 뒤에 붙은
+   구두점을 우선 떼고 시도, 실패하면 원문 그대로 재시도) */
+function scExtractFirstUrl(text){
+  const m=(text||'').match(/https?:\/\/\S+/i);
+  if(!m) return null;
+  const candidate=m[0].trim();
+  const stripped=candidate.replace(/[)\],.;!?]+$/,'');
+  for(const cand of [stripped,candidate]){
+    try{ const u=new URL(cand); if(u.protocol==='http:'||u.protocol==='https:') return u.href; }catch(e){}
+  }
+  return null;
+}
+async function scFetchPreviewThumb(scrapId,url){
+  try{
+    const metaRes=await fetch('/api/preview?mode=meta&url='+encodeURIComponent(url),{headers:authHeaders()});
+    if(!metaRes.ok) return;
+    const meta=await metaRes.json();
+    if(!meta||!meta.image) return;
+    const imgRes=await fetch('/api/preview?mode=image&src='+encodeURIComponent(meta.image),{headers:authHeaders()});
+    if(!imgRes.ok) return;
+    const blob=await imgRes.blob();
+    compressImage(blob,dataUrl=>{
+      const s=state.scraps.find(x=>x.id===scrapId); // 도착 전 삭제됐으면 스킵
+      if(!s) return;
+      s.imgs=[dataUrl];
+      s.img=dataUrl; // CLAUDE.md: imgs[0]과 항상 동기화 필수
+      save();renderScraps();
+    });
+  }catch(e){ /* 무음 — 썸네일 없음이 곧 폴백 */ }
+}
+function scMaybeFetchPreviewThumb(scrap){
+  if(scrap.imgs&&scrap.imgs.length) return; // 사용자 첨부 이미지 우선
+  const url=scExtractFirstUrl(scrap.raw);
+  if(!url) return;
+  if(scPreviewSkipDomain(url)) return; // 인스타/페북은 서버 왕복 낭비 방지(크롤링 차단 기결정)
+  scFetchPreviewThumb(scrap.id,url);
+}
 document.getElementById('sc_saveBtn').onclick=()=>{
   const title=document.getElementById('sc_title').value.trim();
   const type=document.querySelector('.sc-type-chip.on')?.dataset.type||'subscription';
@@ -394,10 +442,12 @@ document.getElementById('sc_saveBtn').onclick=()=>{
     const s=state.scraps.find(x=>x.id===scEditId);
     if(s) Object.assign(s,fields);
   } else {
-    state.scraps.unshift({
+    const newScrap={
       id:'sc'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
       createdAt:Date.now(),status:'new',parsed:null,...fields
-    });
+    };
+    state.scraps.unshift(newScrap);
+    scMaybeFetchPreviewThumb(newScrap); // 백그라운드 — 저장을 기다리지 않음
   }
   scCloseForm();save();renderScraps();
   toast(isEdit?'저장했어요':'추가했어요');
