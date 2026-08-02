@@ -278,7 +278,13 @@
   /* ================= PROPERTIES (흡수) ================= */
   .gates{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:13px 15px;margin-bottom:18px;box-shadow:var(--shadow);}
   .gates .gh{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-tiny);font-weight:700;color:var(--line9-deep);letter-spacing:.06em;margin-bottom:9px;}
-  .gates-toggle{font-size:var(--fs-tiny);font-weight:700;color:var(--ink-soft);letter-spacing:0;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:3px;padding:2px 0;}
+  .gates-toggle{font-size:var(--fs-tiny);font-weight:700;color:var(--ink-soft);letter-spacing:0;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:3px;padding:2px 0;position:relative;}
+  /* B-181 우선순위: 안전체크 펼치기 토글 h17 — 폭은 이미 충분(103px), 세로만
+     확장(위아래 여유 충분, B-180으로 모바일 전용이 돼 유일한 펼침 진입점이라
+     더 중요해짐). 데스크톱은 이 버튼 자체가 숨겨져 있어 무관 */
+  @media (max-width:899.98px){
+    .gates-toggle::after{content:"";position:absolute;top:-10px;bottom:-10px;left:0;right:0;}
+  }
   .gates-toggle-caret{font-size:var(--fs-tiny);transition:transform .15s;}
   .gatelist{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap-mlg);}
   .gate{display:flex;gap:var(--gap-md);align-items:flex-start;}
@@ -1137,7 +1143,13 @@
      scrollWidth 412 vs clientWidth 350) */
   .ms-row input{flex:1;min-width:0;border:1.5px solid var(--hairline);border-radius:var(--radius-sm);padding:7px 9px;font-size:var(--fs-micro);font-weight:600;}
   .ms-row input:focus{outline:none;border-color:var(--line9);}
-  .ms-row .ms-del{background:none;border:none;font-size:var(--fs-body);cursor:pointer;color:var(--s-drop);padding:4px;}
+  .ms-row .ms-del{background:none;border:none;font-size:var(--fs-body);cursor:pointer;color:var(--s-drop);padding:4px;position:relative;}
+  /* B-181 우선순위: 프로필 마일스톤·담당자 삭제(.ms-del 공유) 18.7×25 —
+     좌측에 여유가 커서(라벨 입력칸과 159px 간격) 왼쪽 위주로 확장,
+     우측은 모달 가장자리라 확장 없음. 데스크톱 무변경 */
+  @media (max-width:899.98px){
+    .ms-row .ms-del::after{content:"";position:absolute;top:-8px;bottom:-8px;left:-20px;right:0;}
+  }
   .og-card{display:flex;gap:var(--gap-mlg);background:#FAFAF8;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;margin-top:8px;}
   .og-card img{width:80px;height:80px;object-fit:cover;border-radius:var(--radius-sm);flex-shrink:0;}
   .og-card .og-loading{font-size:var(--fs-tiny);color:var(--ink-faint);font-weight:600;}
@@ -1417,8 +1429,20 @@ html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
    토큰(--s-drop)으로 강조, 새 색상 없음 */
 .act-due-badge{display:inline-block;font-size:var(--fs-tiny);font-weight:800;padding:1px 6px;border-radius:var(--radius-sm);background:var(--hairline-soft);color:var(--ink-soft);margin-left:6px;vertical-align:middle;}
 .act-due-badge.overdue{color:var(--s-drop);}
-.act-edit{font-size:var(--fs-micro);padding:2px 6px;border:none;background:none;color:var(--ink-faint);cursor:pointer;border-radius:var(--radius-sm);flex-shrink:0;}
+.act-edit{font-size:var(--fs-micro);padding:2px 6px;border:none;background:none;color:var(--ink-faint);cursor:pointer;border-radius:var(--radius-sm);flex-shrink:0;position:relative;}
 .act-edit:hover{color:var(--money);background:var(--money-wash);}
+/* B-181 우선순위: 액션 행 수정·별·삭제가 25~29px대(파괴/정밀 조작인데 미달) —
+   B-136 pseudo hit-area 전례. 시각 크기는 그대로 두고 ::after만 확장.
+   버튼 사이 gap이 3px뿐이라 겹침 방지로 절반(1.5px)씩만 좌우로, 세로는
+   행 높이에 여유가 커서(위아래 27px+) 넉넉히. 데스크톱은 마우스라 무변경 */
+@media (max-width:899.98px){
+  #panel-actions .act-edit,
+  #panel-actions .star,
+  #panel-actions .xx{position:relative;}
+  #panel-actions .act-edit::after{content:"";position:absolute;top:-9px;bottom:-9px;left:-4px;right:-1.5px;}
+  #panel-actions .star::after{content:"";position:absolute;top:-6px;bottom:-6px;left:-1.5px;right:-1.5px;}
+  #panel-actions .xx::after{content:"";position:absolute;top:-7px;bottom:-7px;left:-1.5px;right:0;}
+}
 .status-picker{position:absolute;z-index:2000;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-card);box-shadow:0 4px 20px rgba(0,0,0,.13);padding:6px;display:flex;flex-direction:column;gap:3px;min-width:120px;}
 /* B-12 재수정B: showMoreMenu()가 menu.style.maxHeight를 버튼 아래 남는 세로 공간
    기준으로 항상 계산해 넣어줌(properties.js) — 검색+필터 6줄+버튼 3개가 다 들어가는
