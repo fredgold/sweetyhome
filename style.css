@@ -678,8 +678,10 @@
   .tri-num{width:90px;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:var(--fs-label);font-weight:600;color:var(--ink);}
   .tri-num:disabled{background:var(--hairline-soft);color:var(--ink-faint);}
   .tri-unit{font-size:var(--fs-micro);color:var(--ink-soft);font-weight:600;}
-  /* B-27-lite: 전세 안전 체크 9항목 — 기본 접힘, .gates-toggle/.gates-toggle-caret
-     재사용(같은 접이식 패턴). 기록·표시 전용, 판정 없음 */
+  /* B-27-lite: 전세 안전 체크 9항목. 기록·표시 전용, 판정 없음.
+     B-180: 접기는 모바일 공간 제약 예외로만 유지(B-147b 패턴) — 데스크톱은
+     상시 노출(접기 지양 정책, POL-02). JS는 inline style 없이 항상 렌더,
+     노출 여부는 이 CSS가 전담(인라인은 미디어쿼리로 못 이김) */
   .safety-wrap{margin-top:8px;}
   .safety-wrap.expanded .gates-toggle-caret{transform:rotate(180deg);}
   .safety-list{margin-top:8px;display:flex;flex-direction:column;gap:var(--gap-md);}
@@ -692,6 +694,17 @@
   .safety-memo{flex:1 1 140px;min-width:0;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:var(--fs-label);color:var(--ink);}
   .safety-source-sel{border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:var(--fs-micro);color:var(--ink-soft);}
   .safety-date{border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 8px;font-size:var(--fs-micro);color:var(--ink-soft);}
+  /* B-180: 데스크톱 상시 노출(POL-02), 모바일만 접기 유지(반응형 예외).
+     .safety-list는 safetyReadOnlyHTML()(매물 상세 읽기 전용 패널)도
+     공유하는 클래스라 .safety-wrap 자손일 때만(=편집 가능한 토글 버전)
+     좁혀서 적용 — 읽기 전용 쪽은 토글 자체가 없어 항상 노출 그대로 */
+  @media (max-width:899.98px){
+    .safety-wrap .safety-list{display:none;}
+    .safety-wrap.expanded .safety-list{display:flex;}
+  }
+  @media (min-width:900px){
+    .safety-wrap .gates-toggle{display:none;}
+  }
   /* B-164: 임장 노트 별점 터치 타깃 ~19px(iOS 44px 미달)+gap 1px+hover만 있던 것
      모바일에서만 확대 — 데스크톱은 마우스라 현 크기 유지(B-136 hit area 전례처럼
      시각 아이콘 크기와 패딩을 분리). safety-item-head가 이미 align-items:center라

@@ -2348,7 +2348,7 @@ function safetySectionHTML(l){
   const expanded=cxSafetyExpanded.has(l.id);
   return `<div class="safety-wrap${expanded?' expanded':''}">
     <button type="button" class="gates-toggle" data-safetoggle="${esc(l.id)}">전세 안전 체크 ${expanded?'접기':'펼치기'} <span class="gates-toggle-caret">▾</span></button>
-    <div class="safety-list" style="${expanded?'':'display:none'}">
+    <div class="safety-list">
       ${safetyCountBadgeHTML(l)}
       ${SAFETY_ITEMS.map(item=>{
         const s=l.safety[item.key];
