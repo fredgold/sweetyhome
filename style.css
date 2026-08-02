@@ -96,6 +96,28 @@
        가로 스크롤로 흡수(새 breakpoint 없이 기존 구조 재사용) */
     .atab{padding:7px 13px;white-space:nowrap;flex-shrink:0;}
   }
+  /* B-187: 900~1199.98px에서 탭 5개 실폭(약 447px)이 apptabs 열 폭(약
+     212px, topacts가 383px를 다 차지해 밀림)보다 커서 overflow-x:auto로
+     스크롤 처리는 되지만 스크롤 안 한 기본 위치에서 뒤 탭 3개의 미스크롤
+     bounding rect가 옆 topacts 열과 같은 화면 좌표를 차지해(overflow로
+     클리핑돼 실제로는 안 그려짐) elementFromPoint가 topacts 버튼을
+     반환 — 클릭 불가. 이미 존재하는 모바일 header-more 축소 패턴(아래
+     899.98px 이하 규칙과 동일 메커니즘)을 이 구간에도 적용해 topacts
+     실폭을 줄여 apptabs에 열 폭을 돌려줌 — 새 UI 패턴 추가 없이 기존
+     것 재사용. 실제로 동작하는 핸들러는 js/nav.js의
+     showMobileHeaderMoreMenu(DOMContentLoaded에서 #headerMoreBtn.onclick을
+     나중에 덮어씀 — js/profile.js의 showHeaderMoreMenu는 로드 순서상
+     이미 죽은 코드, 이번 스코프 밖이라 무접촉)이고 이건 profileBtn·
+     exportBtn·importBtn·logoutBtn 4개를 CSS 표시 여부와 무관하게 항상
+     더보기 메뉴로 옮기므로 4개 다 숨겨도 실제로는 계속 접근 가능 */
+  @media (min-width:900px) and (max-width:1199.98px){
+    .topacts{flex-wrap:nowrap;}
+    .topacts>#profileBtn,
+    .topacts>#exportBtn,
+    .topacts>#importBtn,
+    .topacts>#logoutBtn{display:none;}
+    .header-more-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0;font-size:18px;}
+  }
   .atab{font-size:var(--fs-body);font-weight:700;color:var(--ink-soft);padding:9px 15px;border-radius:11px;border:1px solid transparent;transition:.12s;display:inline-flex;align-items:center;gap:var(--gap-sm);}
   .atab:hover{background:var(--hairline-soft);}
   .atab[data-on="1"]{background:var(--ink);color:#fff;}
