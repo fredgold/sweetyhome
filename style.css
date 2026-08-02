@@ -140,7 +140,11 @@
   .dcards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
   .dcard{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;box-shadow:var(--shadow);}
   .dcard .dt{font-size:var(--fs-micro);font-weight:800;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
-  .dcard .dt a{font-size:var(--fs-micro);font-weight:700;color:var(--line9-deep);text-decoration:none;}
+  .dcard .dt a{font-size:var(--fs-micro);font-weight:700;color:var(--line9-deep);text-decoration:none;position:relative;}
+  /* B-181②: 대시보드 카드 빠른 링크 h18 — 위아래 여유 있어 확장. 데스크톱 무변경 */
+  @media (max-width:899.98px){
+    .dcard .dt a::after{content:"";position:absolute;top:-9px;bottom:-9px;left:-6px;right:-6px;}
+  }
   .bignum{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1;}
   .bignum small{font-size:var(--fs-body);font-weight:700;color:var(--ink-soft);margin-left:3px;}
   .subnum{font-size:var(--fs-label);color:var(--ink-soft);font-weight:600;margin-top:8px;}
@@ -161,16 +165,23 @@
   .actrow .rank{flex:none;width:20px;text-align:center;font-size:var(--fs-micro);font-weight:800;color:var(--line9-deep);font-variant-numeric:tabular-nums;}
   .actrow .atx{flex:1;font-size:var(--fs-body);font-weight:600;line-height:1.35;}
   .actrow[data-done="1"] .atx{color:var(--ink-faint);text-decoration:line-through;}
-  .actrow .star{flex:none;font-size:var(--fs-label);color:var(--ink-faint);padding:5px 7px;border-radius:var(--radius-sm);}
+  .actrow .star{flex:none;font-size:var(--fs-label);color:var(--ink-faint);padding:5px 7px;border-radius:var(--radius-sm);position:relative;}
   .actrow .star.on{color:var(--line9-deep);}
   .actrow .star:hover,.actrow .xx:hover{background:var(--hairline-soft);}
-  .actrow .xx{flex:none;font-size:var(--fs-micro);color:var(--ink-faint);padding:5px 8px;border-radius:var(--radius-sm);font-weight:700;}
+  .actrow .xx{flex:none;font-size:var(--fs-micro);color:var(--ink-faint);padding:5px 8px;border-radius:var(--radius-sm);font-weight:700;position:relative;}
+  /* B-181②: 대시보드 Top3 별·삭제 — gap이 10px로 액션탭보다 여유 있어
+     더 넉넉히 확장(#panel-actions 쪽은 B-181①에서 3px gap 기준 별도 처리
+     이미 완료, 대시보드는 다른 DOM이라 별도 스코프 필요). 데스크톱 무변경 */
+  @media (max-width:899.98px){
+    #d_top3 .star::after{content:"";position:absolute;top:-6px;bottom:-6px;left:-6px;right:-4px;}
+    #d_top3 .xx::after{content:"";position:absolute;top:-7px;bottom:-7px;left:-4px;right:0;}
+  }
   .addact{display:flex;gap:var(--gap-md);margin-top:13px;}
-  .addact input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:9px 11px;background:var(--surface);}
+  .addact input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:9px 11px;background:var(--surface);min-height:38px;}
   .addact input:focus{outline:none;border-color:var(--line9);}
   /* B-30: 날짜 입력은 텍스트 입력(act_input)만큼 넓을 필요 없음 — flex:1 대신 고정폭 */
   .addact input.act-due-input{flex:none;width:150px;}
-  .addact button{background:var(--ink);color:#fff;font-size:var(--fs-label);font-weight:700;padding:0 16px;border-radius:var(--radius-md);white-space:nowrap;}
+  .addact button{background:var(--ink);color:#fff;font-size:var(--fs-label);font-weight:700;padding:0 16px;border-radius:var(--radius-md);white-space:nowrap;min-height:38px;}
   .actmore{font-size:var(--fs-micro);color:var(--ink-faint);font-weight:600;margin-top:10px;text-align:center;cursor:pointer;}
 
   .regline{background:var(--line9-wash);border:1px solid var(--line9);border-radius:12px;padding:12px 14px;display:flex;gap:var(--gap-mlg);align-items:center;font-size:var(--fs-label);color:var(--line9-deep);font-weight:600;}
@@ -185,11 +196,16 @@
   .asec .ah{display:flex;align-items:center;justify-content:space-between;gap:var(--gap-mlg);margin-bottom:4px;flex-wrap:wrap;}
   .asec .ah h2{font-size:var(--fs-lg);font-weight:800;letter-spacing:-.02em;}
   .asec .adesc{font-size:var(--fs-micro);color:var(--ink-soft);font-weight:500;margin-bottom:16px;}
-  .btn-ai{font-size:var(--fs-micro);font-weight:700;color:var(--money-deep);border:1px solid var(--money);border-radius:var(--radius-md);padding:7px 12px;display:inline-flex;gap:var(--gap-sm);align-items:center;background:var(--money-wash);}
+  .btn-ai{font-size:var(--fs-micro);font-weight:700;color:var(--money-deep);border:1px solid var(--money);border-radius:var(--radius-md);padding:7px 12px;display:inline-flex;gap:var(--gap-sm);align-items:center;background:var(--money-wash);position:relative;}
+  /* B-181②: AI/시트 붙여넣기·최신 규제 확인 버튼(둘 다 .btn-ai) h27 —
+     고립된 버튼이라 여유 있게 확장. 데스크톱 무변경 */
+  @media (max-width:899.98px){
+    .btn-ai::after{content:"";position:absolute;top:-6px;bottom:-6px;left:-4px;right:-4px;}
+  }
   .btn-ai em{font-style:normal;font-size:var(--fs-tiny);font-weight:800;background:var(--money);color:#fff;border-radius:4px;padding:1px 5px;}
   .atarget{margin-top:14px;}
   .atarget .trow{display:flex;align-items:center;gap:var(--gap-mlg);font-size:var(--fs-label);font-weight:600;color:var(--ink-soft);margin-bottom:8px;flex-wrap:wrap;}
-  .atarget .trow input{width:70px;text-align:right;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 9px;background:var(--surface);font-weight:700;}
+  .atarget .trow input{width:70px;text-align:right;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:6px 9px;background:var(--surface);font-weight:700;min-height:38px;}
   .atarget .trow input:focus{outline:none;border-color:var(--money);}
   .anote .sc-md-toolbar{margin-bottom:6px;}
   .anote .sc-md-textarea{width:100%;min-height:80px;max-height:300px;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;font-size:var(--fs-label);box-sizing:border-box;resize:vertical;}
@@ -811,8 +827,13 @@
   .login-box .login-hint{font-size:var(--fs-tiny);color:var(--ink-faint);margin-top:8px;}
   .login-box .login-err{font-size:var(--fs-micro);color:var(--s-drop);font-weight:700;margin-top:8px;min-height:18px;}
   .login-box .login-btn{width:100%;background:var(--ink);color:#fff;font-size:var(--fs-body);font-weight:700;padding:13px;border-radius:var(--radius-md);margin-top:14px;}
-  .login-box .login-guest{font-size:var(--fs-micro);color:var(--ink-faint);font-weight:600;margin-top:16px;cursor:pointer;text-decoration:underline;}
+  .login-box .login-guest{font-size:var(--fs-micro);color:var(--ink-faint);font-weight:600;margin-top:16px;cursor:pointer;text-decoration:underline;position:relative;}
   .login-box .login-guest:hover{color:var(--ink-soft);}
+  /* B-181②: 로그인 진입 경로 h18 — 아래 여유 충분(박스 하단까지 37px),
+     시각 크기 그대로 pseudo hit-area만 확장. 데스크톱은 마우스라 무변경 */
+  @media (max-width:899.98px){
+    .login-box .login-guest::after{content:"";position:absolute;top:-6px;bottom:-14px;left:-10px;right:-10px;}
+  }
 
   .guest-badge{display:none;font-size:var(--fs-tiny);font-weight:700;background:var(--line9-wash);color:var(--line9-deep);border-radius:var(--radius-sm);padding:4px 9px;margin-left:8px;}
   body.guest .guest-badge{display:inline-block;}
@@ -923,8 +944,8 @@
   .sc-search-bar,.act-search-bar,.asset-filter-bar{display:flex;align-items:center;gap:var(--gap-md);margin-bottom:10px;flex-wrap:wrap;}
   .sc-search-input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 12px;font-size:var(--fs-label);color:var(--ink);background:var(--surface);}
   .sc-search-input:focus,.act-search-input:focus,.asset-search-input:focus{outline:none;border-color:var(--money);}
-  .act-search-input,.asset-search-input{flex:1;min-width:140px;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 12px;font-size:var(--fs-label);color:var(--ink);background:var(--surface);}
-  .asset-owner-sel{font-size:var(--fs-micro);font-weight:700;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px;color:var(--ink-soft);background:var(--surface);}
+  .act-search-input,.asset-search-input{flex:1;min-width:140px;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:7px 12px;font-size:var(--fs-label);color:var(--ink);background:var(--surface);min-height:38px;}
+  .asset-owner-sel{font-size:var(--fs-micro);font-weight:700;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:6px 10px;color:var(--ink-soft);background:var(--surface);min-height:38px;}
   .card-img-thumb{width:100%;max-height:180px;object-fit:cover;border-radius:var(--radius-sm);margin:8px 0;display:block;}
   .card-img-sm{width:56px;height:40px;object-fit:cover;border-radius:var(--radius-sm);flex-shrink:0;}
   .sc-card-img{width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-sm);margin:8px 0;display:block;}
@@ -1422,7 +1443,12 @@
 html.ios-pwa,html.ios-pwa body{overscroll-behavior-y:contain;}
 .chip.chip-warn{background:var(--warn-wash);color:var(--warn);}
 .act-cat-chips{display:flex;gap:var(--gap-sm);flex-wrap:wrap;margin-bottom:10px;}
-.act-cat-chip{font-size:var(--fs-micro);font-weight:700;padding:4px 10px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);background:var(--surface);color:var(--ink-soft);cursor:pointer;}
+.act-cat-chip{font-size:var(--fs-micro);font-weight:700;padding:4px 10px;border-radius:var(--radius-pill);border:1.5px solid var(--hairline);background:var(--surface);color:var(--ink-soft);cursor:pointer;position:relative;}
+/* B-181②: 카테고리 칩 h25.5 — flex-wrap 행이라 gap(6px) 절반만 좌우로,
+   위아래는 줄바꿈 행 간격도 같은 gap이라 동일하게 절반씩. 데스크톱 무변경 */
+@media (max-width:899.98px){
+  .act-cat-chip::after{content:"";position:absolute;top:-3px;bottom:-3px;left:-2.5px;right:-2.5px;}
+}
 .act-cat-chip.on{background:var(--money);color:#fff;border-color:var(--money);}
 .act-cat-badge{display:inline-block;font-size:var(--fs-tiny);font-weight:800;padding:1px 6px;border-radius:var(--radius-sm);background:var(--hairline-soft);color:var(--ink-soft);margin-left:6px;vertical-align:middle;}
 /* B-30: 마감 뱃지 — 표시만(정렬 기준 아님). 지남(overdue)일 때만 기존 경고
