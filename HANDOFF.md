@@ -1,4 +1,114 @@
-# HANDOFF — B-173+B-172+B-174 완료 (2026-08-01) 자산금액정렬·저장문구숨김·수집함다중선택
+# HANDOFF — B-176~B-181 완료, B-182 계획 승인 대기 (2026-08-02) 감사2회차 후속
+
+> **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
+> 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
+
+## 최신 작업: backdrop 스크롤잠금·esc()일관화·900px탭깨짐·AA대비·안전체크상시노출·터치타깃38px 일괄(3커밋)
+
+```
+88165cf fix: 모달 backdrop 닫기 시 body 스크롤 잠금 잔류 (B-176)
+c9dd145 fix: 동적 속성 삽입 esc() 일관화 (B-177)
+c3d19d0 fix: 900px 정확 지점 상단 탭 세로 파손 (B-178)
+caf224a fix: 상태 텍스트 5종 AA 대비 미달 수정 (B-179)
+fe589c7 feat: 전세 안전체크 9필드 데스크톱 상시 노출 전환 (B-180)
+874e7d3 fix: 모바일 터치 타깃 38px 일괄 ①파괴·정밀 조작 우선 (B-181-1)
+2d9bf68 fix: 모바일 터치 타깃 38px 일괄 ②대시보드·자산·액션나머지·로그인 (B-181-2)
+a82f733 style: 터치 타깃 38px 확대 — 수집함·매물·모달 나머지 (B-181-3)
+```
+
+커맨드센터 지시서(`dispatch-2026-08-02-B176-B182.md`)로 착수. 근거는
+`audit-2026-08-01.md`(감사 2회차). 손 A 단독, B-176→...→B-181 순서
+엄수(한 항목=한 커밋, B-181만 영역별 분할 허용). 착수/커밋 전후
+`git status`로 손 B(B-160) 미확정 변경 확인 — 이번 세션 전 구간에서
+충돌 없었음(작업 내내 클린).
+
+**B-176**(`js/properties.js` 1줄): 공용 backdrop 핸들러가
+`m.classList.remove('open')`만 호출해 `unlockBodyScroll()` 미호출 →
+lock count 잔류 → `body.style.position:fixed` 영구 고착. `closeModal(m.id)`
+경유로 교체(`complexDetailModal`의 `closeListingDetail()` 분기는 유지).
+`classList.remove('open')` 직접 호출 전수 grep — 모달 아닌 `.open`
+사용처(폼시트 등)는 무접촉 확인. 검증: backdrop 닫기 후
+`body.style.position===''`, ESC 중첩(B-127)·라이트박스 backdrop·
+모달 2개 연속 열기/닫기 lock count 회귀 없음.
+
+**B-177**(`assets.js`+`nav.js`+`actions.js`+`scraps-render.js`+
+`properties.js`+`profile.js`): 백업 임포트로 유입되는 `id`가 다수
+`data-*` 속성에 비이스케이프 삽입되던 것 전수 `esc()` 적용(리스트뷰
+vs 갤러리뷰 불일치가 실증 사례). `properties.js`의 `CSS.escape(lid)`
+4곳은 전부 `querySelector()` CSS셀렉터 컨텍스트라 정상 사용 확인(false
+alarm, 무수정). 오염 ID(`sc7" data-audit-x="1`) 합성 주입 검증 —
+임의 속성 미생성, `data-scid` 원문 보존, 수정/삭제 핸들러 정상.
+**applyGuards ID 형식 제한은 계획만**(코딩 안 함) — 기존 백업 비정형
+ID 마이그레이션 매핑, `complexId` 등 관계키 참조무결성, 정규식 밖
+ID 처리 정책 3가지가 걸려있어 별도 지시 필요.
+
+**B-178**(`style.css` 1줄): `@media(min-width:900px)`에서 `.atab`에
+`white-space:nowrap`+`flex-shrink:0` 추가 — 정확히 900px 지점에서
+"대시보드" 등이 한 글자씩 세로줄바꿈되던 것 해소. 899(하단앱바
+58px)/900/901/1440(상단탭 40px) 4점 실측 — 900px 탭 높이 40px대,
+세로줄바꿈 0, 로고·동기화칩 밀림 없음.
+
+**B-179**(`style.css` 5개 색상값): 전경색만 진하게(배경·hue 유지,
+B-129/130 선례) — 액션 마감초과 `#B16A63`→`#9B554E`, 수집함 매매
+`#6B7C93`→`#5F6F83`, 제외 `#B5602F`→`#A6582B`, 메모 `#7A7A50`→
+`#73734B`, `.chip.ok` `#3C7A4C`→`#3B784B`. 5종 전부 4.5:1 이상
+확보, `--sc-*` 토큰 공유 소비처 전수 재검산 완료(개선만, 악화 없음).
+
+**B-180**(`js/properties.js`+`style.css`): `safetySectionHTML()`의
+인라인 `style="display:none"`을 클래스+미디어쿼리로 전환 —
+데스크톱(≥900px) 9필드 상시노출, 모바일 접기 유지(B-147b 반응형
+예외 패턴). **함정 발견·수정**: `.safety-list` 클래스가 읽기전용
+패널(`safetyReadOnlyHTML()`)과 공유돼 있어 바레 셀렉터로 숨기면
+읽기전용 패널까지 깨짐 — `.safety-wrap .safety-list` 자손 셀렉터로
+스코프. 데스크톱 즉시노출·입력동작, 모바일 접기/펼치기, safety 상태
+저장 무변경 확인.
+
+**B-181**(`style.css`, 3커밋 분할): audit §3.14 터치 타깃 38px
+미달 표 전체 — 시각 크기 유지 + pseudo hit-area(`::after`)/
+min-height(B-136 패턴). ①파괴·정밀 우선(액션 수정·별·삭제,
+마일스톤삭제, 안전체크토글) ②대시보드·자산·액션나머지·로그인게스트
+③수집함(검색/정렬/뷰토글/필터칩/카드액션/원문토글)·매물(정렬칩/
+더보기/필터/tri-state/입력)·모달(라이트박스·footer버튼). **구조적
+블로커 2건 해결**: `.sc-view-toggle`·`.tri-seg` 둘 다 `overflow:hidden`
+컨테이너라 `::after` 확장이 부모에 잘렸음 — overflow:hidden을 빼고
+`:first-child`/`:last-child`에 개별 모서리 radius를 줘서 같은 시각을
+유지하며 해제, 세그먼트 사이 0px 인접이라 바깥쪽 모서리만 확장(가운데
+겹침 방지). gap 기반 항목(필터칩·카드액션·정렬칩 등)은 gap의 절반만
+확장해 형제와 안 겹치게 — 이 경우들은 38px에 못 미쳐도 구조적 최대치로
+문서화(B-136/①의 전례). Playwright 390×844 실측: 각 항목 effective
+hit area, 인접 겹침 0, 데스크톱(1440) `::after content:none` 무변경,
+뷰토글·tri-state 클릭 기능 정상.
+
+- **B-176~B-181 완료·push 완료**(`88165cf`~`a82f733`, 위 8커밋).
+- **B-182[P1·게이트] 모달 포커스 격리·키보드 접근 — 계획만 보고, 코딩
+  미착수, 승인 대기**:
+  - 대상: `.modal` 9개(export/import/scEdit/scLightbox/scImport/
+    assetAi/profile/propImport/complexDetail, 전부 openModal/
+    closeModal 공용) + 로그인 overlay(별도 메커니즘, 소규모 병행).
+    폼시트·⋯더보기 메뉴는 audit 재현 목록 밖이라 제외.
+  - 방식: `inert` 우선(모달 열림 시 형제 컨텐츠에 부여, 배경 tab/
+    click/스크린리더 전부 차단) + keydown Tab순환 폴백 이중화(B-127
+    slash-menu와 동일 계층). openModal/closeModal 중앙화로 개별
+    모달 수정 최소화, 트리거 엘리먼트 전달용 옵셔널 파라미터 추가.
+  - 회귀검증계획: B-127 ESC 중첩 순서, 중첩모달(단지상세>라이트박스)
+    inert 계층, 폼시트/⋯메뉴 비대상 확인, Tab/Shift+Tab 순환, 초기
+    포커스·트리거 복귀, 데스크톱/모바일 각 진입경로.
+  - 부수(UX-03, 별도 트랙 제안): 로그인 게스트 div·필터칩 span·매물행
+    — 포인터전용 컨트롤 키보드화. 메커니즘이 달라 리스크 낮아 트랩
+    작업과 분리 가능.
+  - audit이 "위험도 높음"(모든 close 경로 단일화와 겹침)으로 표시한
+    항목이라 승인 후 착수.
+- **Safari 실기기 확인 필요**: 이번 배치(B-176~181)는 전부 Chromium
+  computed-style 정밀 측정으로 검증, 새로 추가된 Safari 전용 우려
+  없음. 기존 audit 플래그 2건(sticky/`:has()`)은 그대로 유효.
+- **B-164~171잔여**(이전 세션들, 아직 미확인): 매물 메모 행간·별점/
+  즐겨찾기 별 탭 감각. 대부분은 후속 세션에서 이미 처리됨(B-166~174).
+- **B-163 관찰 계속**: 핀치줌 팬 의심(재현 조건 미확정), 이번
+  지시서 범위 밖.
+
+---
+
+# 이전 핸드오프 — B-173+B-172+B-174 완료 (2026-08-01) 자산금액정렬·저장문구숨김·수집함다중선택
 
 > **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
 > 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
@@ -139,73 +249,3 @@ API 키가 배포 도메인으로 제한돼 로컬 재현 불가(기존 세션�
   별은 12:09 스크린샷에서 이미 정상 확인됨).
 - **B-163 관찰 계속**: 핀치줌 팬 의심(재현 조건 미확정), 이번
   지시서 범위 밖.
-
----
-
-# 이전 핸드오프 — B-166+B-167+B-168 완료 (2026-08-01) 거리순칩·즐겨찾기별·오버플로 전역감사
-
-> **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
-> 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
-
-## 최신 작업: 거리순 칩 권한요청 경로 복구 + 즐겨찾기 별 터치 타깃 + 텍스트 오버플로 전역 감사·일괄 처방
-
-```
-d67eb3e fix: 거리순 칩 disabled가 위치 권한 요청 경로를 죽이던 것 수정 (B-166)
-1d8c68a feat: 즐겨찾기 별 터치 타깃 개선 — B-164와 동일 처방 (B-167)
-131dbbf fix: 텍스트 오버플로·좌우 밀림 전역 감사 및 일괄 처방 (B-168)
-```
-
-커맨드센터 지시서(`dispatch-2026-07-31-B166-B168.md`)로 착수. 사용자
-iPhone 실사용 피드백 3차. 손 A 단독, 지시대로 3커밋 순서 진행.
-
-**B-166**(`style.css`+`js/properties.js`): `syncSortChips()`가
-`d.disabled=!myLoc`로 거리순 칩을 막아 클릭 핸들러(2038행)의
-`requestMyLoc()` 분기가 도달불가였음(disabled 버튼은 click 미발화 —
-사용자가 "왜 흐릿하냐"고 물은 것이 증거). `disabled` 대신
-`.needs-loc` 클래스 토글(+`aria-disabled`)로 교체 — dim은 유지하되
-클릭은 항상 발화. Playwright로 위치 권한 grant/deny 양쪽 실측:
-grant→`cxSort:'dist'`+칩 `on`+토스트 없음, deny→기존 토스트("위치
-권한이 필요해요")+칩 `needs-loc` 유지. 현위치 버튼(`#myLocBtn`) 경로는
-무접촉이라 회귀 불가능.
-
-**B-167**(`style.css`만): 즐겨찾기 별(`.c-fav-btn`, 카드+단지상세
-mhead 2사용처)에 B-164(`5548cbf`)와 동일 처방 — 모바일만 패딩
-11px+아이콘 20px+`:active` 피드백. mhead 이웃 버튼(⋯·닫기,
-`.btn-ghost`)과의 정렬 우려는 실측으로 해소 — 셋 다 centerY 차이
-<0.01px(기존 `align-items:center`가 커진 행에도 자동 적용), 겹침
-없음. 데스크톱 무변경(19.3px) 확인.
-
-**B-168**(`style.css`만, B-162 확장): **감사 먼저** — 실제 긴
-영문 토큰(역명·주소·URL)을 주입해 전 탭(대시·자산·매물 리스트뷰·
-액션·수집함 목록/갤러리)+주요 모달(단지상세·매물상세 사이드패널·
-매물추가폼·수집함편집·프로필·임포트 2종: JSON백업+TSV붙여넣기) **12개
-지점**을 `scrollWidth vs clientWidth` + B-162 진단 스니펫으로 실측.
-발견: 대시보드 액션요약(`.atx`, 액션탭과 다른 컴포넌트라 B-133 수정
-미적용 상태)·매물 리스트뷰 필터·수집함 카드 태그·프로필 마일스톤
-행 4곳이 실제로 넘침. **일괄 처방 검토** — `body{overflow-wrap:anywhere}`
-1줄 주입 실험 후 재감사: 프로필 마일스톤 행만 빼고 나머지 전부 해소.
-`overflow-wrap`은 body로 승격(상속, B-162의 `#complexDetailModal
-.mbody` 전용 선언은 흡수돼 삭제), `overflow-x:hidden` 방어는 `.modal
-.mbody` 전체로 일반화. **구조적 원인은 분리** — 프로필 마일스톤 행
-(`.ms-row input`, 라벨+날짜 두 `flex:1` input에 `min-width:0` 누락)은
-overflow-wrap으로 안 잡혀 그 지점만 개별 수정(일괄 처방에 안 욱여넣음).
-**의도된 가로 스크롤 무영향 실확인**: `cxFilterFavoriteBtn`·
-`.sc-filter-chip`(각각 `cxFilterBar`·`.sc-filter-row` 자체
-`overflow-x:auto` 자손이라 패널 레벨 스크롤은 여전히 0, offender
-목록엔 잡히지만 false positive)·임포트 표(`#propImportTable` 내부
-`<div style="overflow-x:auto">`, scrollWidth 686 vs 326로 내부
-스크롤 정상 유지)·수집함 임포트 표(`sc-import-tbl`)·마크다운
-코드블록(`.sc-md-content pre`, `white-space:pre`라 overflow-wrap
-자체가 개입 안 함, scrollWidth 593 vs 344 유지) 전부 실측 확인.
-데스크톱(1440px) 12개 지점 전부 회귀 0.
-
-- **B-166/B-167/B-168 완료·push 완료**(`d67eb3e`/`1d8c68a`/`131dbbf`).
-- **사용자 확인 요청**(Safari 실기기, 390px 근처):
-  ① 위치 미승인 상태에서 거리순 칩을 탭하면 권한 프롬프트가 뜨는지·
-  승인 후 거리순+km 표시가 되는지.
-  ② 즐겨찾기 별을 카드·단지상세 양쪽에서 눌러보고 터치가 편해졌는지.
-  ③ 평소 좌우로 밀리던 화면(대시보드·수집함 등)이 이제 정상인지.
-- **B-164/165잔여**(직전 세션분, 아직 미확인): 매물 메모 행간 정상
-  여부·별점 탭 감각. 이번 3항목과 함께 한 번에 확인해도 됨.
-- **B-163 관찰 계속**: 핀치줌 팬 의심(재현 조건 미확정), 이번 지시서
-  범위 밖.
