@@ -274,8 +274,11 @@ function _refreshModalInert(){
   });
 }
 /* 현재 상호작용 가능해야 할 컨테이너(로그인 오버레이 > 모달 스택 최상단) —
-   auth.js가 로그인 오버레이 분기를 추가해 확장 */
+   B-182②: 로그인 오버레이가 보이는 동안엔 그게 최우선(모달은 로그인 뒤에만
+   열릴 수 있어 동시에 문제되지 않음, auth.js의 _syncLoginOverlayA11y와 짝) */
 function _activeTrapContainer(){
+  const loginOverlay=document.getElementById('loginOverlay');
+  if(loginOverlay&&!loginOverlay.classList.contains('hidden')) return loginOverlay;
   const top=_modalOpenStack[_modalOpenStack.length-1];
   return top?document.getElementById(top.id):null;
 }

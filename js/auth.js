@@ -29,8 +29,26 @@ function authHeaders(extra){
   const t=getToken(); if(t) h['Authorization']='Bearer '+t;
   return h;
 }
+/* B-182②: 로그인 오버레이 — 모달과 동일한 이유(UX-02, 배경 앱 tabbable
+   요소가 그대로 남아있음)로 보이는 동안 .wrap을 inert. utils.js의
+   _activeTrapContainer가 이 오버레이도 확인하도록 확장해 Tab 트랩도
+   공유(모달과 같은 이중 방어 — inert 지원 브라우저는 중복 방어,
+   미지원은 이게 유일한 방어선) */
+function _syncLoginOverlayA11y(){
+  const overlay=document.getElementById('loginOverlay');
+  const wrap=document.querySelector('.wrap');
+  if(!overlay||!wrap)return;
+  if(overlay.classList.contains('hidden')){
+    wrap.removeAttribute('inert');
+  }else{
+    wrap.setAttribute('inert','');
+    const input=document.getElementById('loginInput');
+    if(input&&!overlay.contains(document.activeElement)) input.focus();
+  }
+}
 function unlockApp(isGuest){
   document.getElementById('loginOverlay').classList.add('hidden');
+  _syncLoginOverlayA11y();
   if(isGuest){
     isGuestMode=true;
     document.body.classList.add('guest');
@@ -42,6 +60,7 @@ function unlockApp(isGuest){
 function forceLogin(){
   clearToken();
   document.getElementById('loginOverlay').classList.remove('hidden');
+  _syncLoginOverlayA11y();
 }
 async function tryLogin(){
   const btn=document.getElementById('loginBtn');
@@ -73,7 +92,7 @@ async function tryLogin(){
   if(token){
     try{
       const r=await fetch('/api/state',{headers:{'Authorization':'Bearer '+token}});
-      if(r.ok){ document.getElementById('loginOverlay').classList.add('hidden'); return; }
+      if(r.ok){ document.getElementById('loginOverlay').classList.add('hidden'); _syncLoginOverlayA11y(); return; }
     }catch(e){}
     clearToken();
   }
@@ -82,6 +101,7 @@ async function tryLogin(){
     if(e.key==='Enter') tryLogin();
   });
   document.getElementById('loginGuest').onclick=()=>unlockApp(true);
+  _syncLoginOverlayA11y();
 })();
 document.getElementById('goHome').onclick=()=>switchPanel('dash');
 document.getElementById('logoutBtn').onclick=()=>{
