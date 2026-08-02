@@ -6605,3 +6605,9 @@ B-43 매물 스냅샷→B-42 가격 타임라인) 전 3건 완주. 다음은 사
 ## 2026-08-02 — B-188: 수집함 링크 og:image 자동 썸네일 (커밋 2개)
 
 `api/preview.js` 신설(SSRF 가드: IP 리터럴·localhost/.local/.internal 거부, redirect 매 hop 재검증, 스트리밍 상한 512KB/5MB) + `scraps-form.js` 배선(추가 시 og:image 백그라운드 조회→`compressImage()`→`imgs[0]`+`img` 미러, 저장 논블로킹, 인스타/페북 스킵, 전 실패 무음) — 네이버 블로그·뉴스는 정상 동작, 유튜브는 og:image가 512KB 상한 밖(문서 691KB 지점)이라 안전장치 완화 없이는 구조적으로 불가(`20e0457`/`7a9adbd`).
+
+---
+
+## 2026-08-02 — B-189: 유튜브 썸네일 직행 + 레이스 가드 (커밋 1개)
+
+B-188 후속 — `scraps-form.js`만: 유튜브는 og:image 파싱 없이 비디오 ID(watch·youtu.be·shorts·embed 4형태)로 `i.ytimg.com/vi/{id}/maxresdefault.jpg` 직행(hqdefault 1회 폴백, `api/preview.js` 무접촉·512KB 상한 완화 없음) + `compressImage` 콜백에 도착 시점 `imgs` 재확인 1줄 추가(사용자가 그 사이 직접 첨부한 이미지 덮어쓰기 방지 레이스 가드)(`7e7cf12`).
