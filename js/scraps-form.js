@@ -401,12 +401,37 @@ function scApplyPreviewThumb(scrapId,blob){
     save();renderScraps();
   });
 }
+/* B-191: 단축어로 담은 항목은 메모가 없으면 제목이 hostname뿐이라 노션
+   링크가 전부 "notion.site"로 보인다 — 페이지 제목으로 백필하되 지금
+   제목이 여전히 자동 폴백일 때만 교체한다. 도착까지 왕복이 걸리므로
+   그 사이 사용자가 수정 모달에서 제목을 고쳤으면 그 값이 우선(B-189
+   레이스 가드와 같은 "도착 시점 재확인" 원칙) */
+function scIsAutoFallbackTitle(title,url){
+  const t=(title||'').trim();
+  if(!t||t==='새 링크'||t===url) return true;
+  try{
+    const h=new URL(url).hostname;
+    return t===h||t===h.replace(/^www\./,'');
+  }catch(e){}
+  return false;
+}
+function scApplyPreviewTitle(scrapId,url,rawTitle){
+  const s=state.scraps.find(x=>x.id===scrapId);
+  if(!s) return;
+  if(!scIsAutoFallbackTitle(s.title,url)) return;
+  const t=String(rawTitle).replace(/\s+/g,' ').trim().slice(0,80);
+  if(!t) return;
+  s.title=t;
+  save();renderScraps();
+}
 async function scFetchPreviewThumb(scrapId,url){
   try{
     const metaRes=await fetch('/api/preview?mode=meta&url='+encodeURIComponent(url),{headers:authHeaders()});
     if(!metaRes.ok) return;
     const meta=await metaRes.json();
-    if(!meta||!meta.image) return;
+    if(!meta) return;
+    if(meta.title) scApplyPreviewTitle(scrapId,url,meta.title);
+    if(!meta.image) return;
     const imgRes=await fetch('/api/preview?mode=image&src='+encodeURIComponent(meta.image),{headers:authHeaders()});
     if(!imgRes.ok) return;
     scApplyPreviewThumb(scrapId,await imgRes.blob());
@@ -572,7 +597,12 @@ async function pullInbox(){
       return;
     }
     stateConfirmed=true;
-    if(additions.length) renderScraps();
+    if(additions.length){
+      renderScraps();
+      /* B-191: 인박스 경로도 썸네일·제목 배선 — B-188은 추가폼만 커버했다.
+         저장 확정 뒤에 돌려 롤백된 항목엔 붙지 않게 함(백그라운드, 무음) */
+      additions.forEach(scrap=>scMaybeFetchPreviewThumb(scrap));
+    }
 
     const ackRes=await fetch('/api/ingest',{
       method:'DELETE',
