@@ -389,6 +389,7 @@ function scExtractFirstUrl(text){
    여기로 모아 가드를 한 곳에만 둠 */
 function scApplyPreviewThumb(scrapId,blob){
   compressImage(blob,dataUrl=>{
+    if(!dataUrl) return; // B-193R: 압축 실패는 무음(썸네일 없음이 곧 폴백)
     const s=state.scraps.find(x=>x.id===scrapId); // 도착 전 삭제됐으면 스킵
     if(!s) return;
     if(s.imgs&&s.imgs.length) return; // 도착 전 사용자가 직접 첨부했으면 유실 방지

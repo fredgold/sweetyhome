@@ -31,17 +31,29 @@ function won(w){ // w in 원 → 억/만 표시
   return neg+w.toLocaleString();
 }
 function comma(n){return Math.round(n||0).toLocaleString();}
+/* B-193R: 성공·실패와 무관하게 콜백이 반드시 정확히 한 번 불린다(실패는
+   cb(null)). 예전엔 onerror가 아예 없어 디코드 실패 파일(손상·미지원
+   형식)이 영영 무음이었고, 호출부가 진행 건수를 세기 시작하면 그 카운터가
+   줄지 않아 저장이 영구히 막힌다. 0×0 디코드도 실패로 본다 —
+   toDataURL이 "data:,"라는 그럴듯하지만 깨진 값을 돌려주기 때문 */
 function compressImage(file,cb){
+  let settled=false;
+  const done=v=>{ if(settled) return; settled=true; cb(v); };
   const reader=new FileReader();
+  reader.onerror=()=>done(null);
   reader.onload=ev=>{
     const img=new Image();
+    img.onerror=()=>done(null);
     img.onload=()=>{
       const MAX=600,w=img.width,h=img.height;
-      const scale=Math.min(1,MAX/Math.max(w,h));
-      const cv=document.createElement('canvas');
-      cv.width=Math.round(w*scale); cv.height=Math.round(h*scale);
-      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      cb(cv.toDataURL('image/jpeg',0.65));
+      if(!w||!h){ done(null); return; }
+      try{
+        const scale=Math.min(1,MAX/Math.max(w,h));
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(w*scale); cv.height=Math.round(h*scale);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        done(cv.toDataURL('image/jpeg',0.65));
+      }catch(e){ done(null); }
     };
     img.src=ev.target.result;
   };

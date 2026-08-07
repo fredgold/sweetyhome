@@ -792,6 +792,7 @@ document.getElementById('f_memoPreviewToggle').onclick=function(){
 document.getElementById('f_img').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
   compressImage(f,dataUrl=>{
+    if(!dataUrl){ document.getElementById('f_imgLabel').innerHTML=ic('camera')+' 사진을 읽지 못했어요'; return; } // B-193R
     propImgData=dataUrl;
     const prev=document.getElementById('f_imgPreview');
     prev.src=dataUrl; prev.style.display='';
