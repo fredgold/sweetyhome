@@ -1056,6 +1056,12 @@
   .sc-card-meta{display:flex;flex-wrap:wrap;gap:var(--gap-sm);margin-bottom:5px;}
   .sc-meta-chip{display:inline-flex;align-items:center;gap:var(--gap-xs);max-width:220px;color:var(--ink);}
   .sc-meta-chip-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  /* B-190: 카드에서 바로 여는 링크 칩 */
+  .sc-link-chip{display:inline-flex;align-items:center;gap:var(--gap-xs);max-width:100%;min-width:0;font-size:var(--fs-micro);font-weight:700;background:var(--hairline-soft);color:var(--ink-soft);border-radius:var(--radius-sm);padding:4px 8px;text-decoration:none;}
+  .sc-link-chip .ic{width:13px;height:13px;flex:none;}
+  .sc-link-chip>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .sc-card-links{display:flex;margin-bottom:5px;min-width:0;}
+  .sc-gallery-links{display:flex;margin-top:8px;min-width:0;}
   .sc-card-tags{display:flex;gap:var(--gap-sm);flex-wrap:wrap;margin:5px 0;}
   .sc-card-tag{font-size:var(--fs-tiny);font-weight:700;background:var(--line9-wash);color:var(--line9-deep);border-radius:var(--radius-sm);padding:2px 7px;}
   .sc-card-raw{font-size:var(--fs-micro);color:var(--ink-soft);margin-top:8px;border-top:1px dashed var(--hairline);padding-top:8px;max-height:80px;overflow:hidden;cursor:pointer;line-height:1.65;position:relative;}

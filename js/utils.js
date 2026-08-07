@@ -186,6 +186,18 @@ function ceLine(el,prefix){
   ceRender(el); ceSetOffset(el,ls+newLine.length);
 }
 // ── 마크다운 렌더 ──
+/* B-190: 렌더된 본문 안의 링크는 항상 새 탭 — 같은 창에서 이동하면
+   SPA 상태(작성 중 입력·뷰 모드)가 통째로 날아간다(모바일 PWA에선 복귀
+   경로도 없음). rel은 opener 탈취 방지. DOMPurify 소비처가 renderMd
+   하나뿐이라 전역 훅으로 한 번만 등록 */
+if(window.DOMPurify&&DOMPurify.addHook){
+  DOMPurify.addHook('afterSanitizeAttributes',node=>{
+    if(node.tagName==='A'&&node.hasAttribute('href')){
+      node.setAttribute('target','_blank');
+      node.setAttribute('rel','noopener noreferrer');
+    }
+  });
+}
 function renderMd(text){
   if(!text) return '';
   try{

@@ -38,6 +38,30 @@ function scToggleSelect(id){
   if(scSelectedIds.has(id)) scSelectedIds.delete(id); else scSelectedIds.add(id);
   renderScraps();
 }
+/* B-190: 단축어로 담긴 항목은 raw가 "메모\n\nURL" 형태라 링크를 열려면
+   텍스트를 복사해야 했다 — 카드에서 바로 열 수 있게 호스트명 칩을 단다.
+   scExtractFirstUrl(scraps-form.js)이 http/https만 통과시키므로
+   javascript: 스킴은 칩으로 살아남지 못한다 */
+function scLinkChipHTML(raw){
+  const url=scExtractFirstUrl(raw||'');
+  if(!url) return '';
+  let label=url;
+  try{ label=new URL(url).hostname.replace(/^www\./,''); }catch(e){}
+  return `<a class="sc-link-chip" data-sclink="1" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}">${ic('link')}<span>${esc(label)}</span></a>`;
+}
+/* 링크 칩 탭이 카드 본문 클릭(편집 모달·라이트박스)으로 번지지 않게 —
+   B-123 data-sclight와 같은 분리 패턴 */
+function scBindLinkChips(el){
+  el.querySelectorAll('[data-sclink]').forEach(a=>{
+    a.onclick=e=>e.stopPropagation();
+    a.onkeydown=e=>{ if(e.key==='Enter'||e.key===' ') e.stopPropagation(); };
+  });
+}
+/* 원문 안 링크 탭은 새 탭 열기로만 — 더보기/접기 토글로 오인되지 않게 */
+function scRawToggle(e,el){
+  if(e.target.closest('a')) return;
+  el.classList.toggle('expand');
+}
 function renderScraps(){
   document.querySelectorAll('[data-ftype]').forEach(c=>c.classList.toggle('on',c.dataset.ftype===scFilterType));
   document.querySelectorAll('[data-fstatus]').forEach(c=>c.classList.toggle('on',c.dataset.fstatus===scFilterStatus));
@@ -85,6 +109,7 @@ function renderScraps(){
       if(metaParts.length<2&&dateStr) metaParts.push({icon:'calendar',text:dateStr});
       const title=s.title||'(제목 없음)';
       const imgs=s.imgs||[];
+      const linkChip=scLinkChipHTML(s.raw);
       /* B-123①: 사진 있는 카드는 이미지가 주인공 — 클릭 영역을 카드
          본문(편집)과 분리해 별도 라이트박스로 열리게 한다 */
       return `<div class="sc-gallery-card" data-scid="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(title)} 편집">
@@ -100,6 +125,7 @@ function renderScraps(){
           </div>
           <div class="sc-gallery-title">${esc(title)}</div>
           ${metaParts.length?`<div class="sc-gallery-details">${metaParts.map(m=>`<span class="sc-gallery-detail" title="${esc(m.text)}">${ic(m.icon,'ic-muted')}<span>${esc(m.text)}</span></span>`).join('')}</div>`:''}
+          ${linkChip?`<div class="sc-gallery-links">${linkChip}</div>`:''}
         </div>
       </div>`;
     }).join('')+'</div>';
@@ -121,6 +147,7 @@ function renderScraps(){
         scOpenLightbox(w.dataset.sclight);
       };
     });
+    scBindLinkChips(el);
     return;
   }
   el.innerHTML='<div class="sc-list">'+list.map(s=>{
@@ -142,6 +169,7 @@ function renderScraps(){
     const rawText=s.raw||'';
     const dateStr=s.createdAt?new Date(s.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'';
     const rawMode=scRawViewIds.has(s.id);
+    const linkChip=scLinkChipHTML(rawText);
     return `<div class="sc-card" data-scid="${esc(s.id)}">
       ${scSelectCheckHTML(s.id)}
       <div class="sc-card-head">
@@ -151,13 +179,14 @@ function renderScraps(){
         ${dateStr?`<span style="font-size:10px;color:var(--ink-faint);margin-left:auto;flex-shrink:0;">${dateStr}</span>`:''}
       </div>
       ${metaParts.length?`<div class="sc-card-meta">${metaParts.map(m=>`<span class="chip sc-meta-chip" title="${esc(m.text)}">${ic(m.icon,'ic-muted')}<span class="sc-meta-chip-text">${esc(m.text)}</span></span>`).join('')}</div>`:''}
+      ${linkChip?`<div class="sc-card-links">${linkChip}</div>`:''}
       ${(s.tags||[]).length?`<div class="sc-card-tags">${s.tags.map(t=>`<span class="sc-card-tag">${esc(t)}</span>`).join('')}</div>`:''}
       ${s.fit?`<span class="sc-fit-badge ${fitCls}">${fitLbl}</span>`:''}
       ${(s.imgs||[]).length?`<img src="${esc(s.imgs[0])}" class="sc-card-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진">`:''}
       ${rawText?`<div style="display:flex;justify-content:flex-end;margin-top:8px;">
         <button type="button" class="sc-preview-toggle" data-scraw="${esc(s.id)}">${rawMode?ic('eye')+' 서식 보기':ic('edit')+' 원문 보기'}</button>
       </div>
-      <div class="sc-card-raw sc-md-content" onclick="this.classList.toggle('expand')">${rawMode?`<pre style="white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;">${esc(rawText)}</pre>`:renderMd(rawText)}</div>`:''}
+      <div class="sc-card-raw sc-md-content" onclick="scRawToggle(event,this)">${rawMode?`<pre style="white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;">${esc(rawText)}</pre>`:renderMd(rawText)}</div>`:''}
       <div class="sc-card-actions">
         <select class="sc-status-sel" data-scst="${esc(s.id)}">
           ${Object.entries(SC_STATUS).map(([v,l])=>`<option value="${v}"${s.status===v?' selected':''}>${l}</option>`).join('')}
@@ -182,6 +211,7 @@ function renderScraps(){
     if(scRawViewIds.has(id)) scRawViewIds.delete(id); else scRawViewIds.add(id);
     renderScraps();
   });
+  scBindLinkChips(el);
 }
 
 /* B-174: 다중선택 진입 ①명시적 "선택" 버튼 */
