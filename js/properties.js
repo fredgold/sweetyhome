@@ -85,6 +85,7 @@ function bindMarkerHover(marker,cx,rep){
 /* 필터로 보이는 단지 id 집합이 실제로 바뀐 경우에만 fitBounds — 상세 열기/닫기·마커 재선택처럼
    집합은 그대로인 리렌더에서는 지도가 튀지 않도록 (연타해도 멀미 안 나게, animate:false) */
 let lastVisibleMapKey='',lastMarkerRenderKey='';
+let _cxSelectedMarkerId=null; // B-194R: 마지막으로 마커에 반영한 선택 id (아래 reselectCxMarker 참조)
 function refreshOverview(items){
   if(!overview) return;
   closeCxHoverTip();
@@ -101,7 +102,7 @@ function refreshOverview(items){
   /* 네이버 지도 SDK가 오래 산 마커의 setMap(null) 내부에서 널 참조로 죽는 경우가
      실측됨(SDK 내부 상태 문제로 추정, 우리 코드 밖) — 마커 하나 정리 실패가 전체
      리프레시를 막지 않도록 개별 try/catch */
-  ovMarkers.forEach(m=>{ try{ m.setMap(null); }catch(e){} }); ovMarkers=[];
+  ovMarkers.forEach(m=>{ try{ m.setMap(null); }catch(e){} }); ovMarkers=[]; _cxSelectedMarkerId=null;
   const pts=[];
   withCoords.forEach(cx=>{
     try{
@@ -127,7 +128,15 @@ function refreshOverview(items){
 }
 const DESKTOP_MQ=window.matchMedia('(min-width:900px)');
 /* 상세 열기 → 지도: 마커 재생성 없이 아이콘만 바꿔치기(제거·재추가 없음 → fitBounds 재발동 안 함) */
+/* B-194R: 선택이 그대로면 다시 그리지 않는다. 모바일 핀 탭은 카드 스트립을
+   smooth scroll시키고, 그 scroll 리스너가 매 프레임 이 함수를 부른다 —
+   같은 단지인데도 전 마커 아이콘을 통째로 갈아끼워 iPhone에서 깜빡였다
+   (실측: 핀 클릭 1회당 setIcon 3마커×33회=99회). 아이콘 내용은 cx 데이터에
+   의존하므로 마커를 다시 만드는 지점과 dimRouteStatusMarkers처럼 이 함수를
+   거치지 않고 아이콘을 다시 그리는 지점에서 메모를 무효화한다 */
 function reselectCxMarker(id){
+  if(id===_cxSelectedMarkerId) return;
+  _cxSelectedMarkerId=id;
   ovMarkers.forEach(m=>{
     try{
       const cx=state.complexes.find(x=>x.id===m._cxid); if(!cx) return;
@@ -233,6 +242,7 @@ function dimRouteStatusMarkers(on){
     const selected=cxDetailId===m._cxid;
     m.setIcon({content:cxMarkerHtml(cx,rep,selected,dim),anchor:new naver.maps.Point(0,0)});
   });
+  _cxSelectedMarkerId=null; // B-194R: 이 경로가 아이콘을 다시 그렸으니 메모는 못 믿는다
 }
 function drawRoute(){
   clearRouteLayer();
@@ -2020,19 +2030,31 @@ function cxStripCenterId(){
   });
   return best?best.dataset.cxid:null;
 }
+/* B-194R: 핀 탭이 일으키는 프로그램 스크롤은 목표 카드까지 가는 동안
+   중간 카드들을 지나간다 — 그때마다 선택을 바꾸면 탭한 단지가 아닌 곳으로
+   강조가 튀었다 돌아온다(마커 재조립도 그만큼 반복). 목표에 도착할 때까지
+   중간 전환을 무시하고, 사용자가 스트립을 직접 만지면 즉시 해제해
+   수동 스와이프 연동은 종전 그대로 둔다 */
+let _cxScrollTargetId=null;
 function focusCxCard(id){
   const strip=document.getElementById('complexSection');
   const card=strip&&strip.querySelector('.card[data-cxid="'+id+'"]');
   if(!card){ openComplexDetail(id); return; }
+  _cxScrollTargetId=id;
   strip.scrollTo({left:Math.max(0,card.offsetLeft-(strip.clientWidth-card.offsetWidth)/2),behavior:'smooth'});
   highlightCxCard(id); reselectCxMarker(id);
 }
 let _cxStripRaf=null;
+document.getElementById('complexSection').addEventListener('touchstart',()=>{ _cxScrollTargetId=null; },{passive:true});
 document.getElementById('complexSection').addEventListener('scroll',()=>{
   if(DESKTOP_MQ.matches||_cxStripRaf)return;
   _cxStripRaf=requestAnimationFrame(()=>{
     _cxStripRaf=null;
     const id=cxStripCenterId(); if(!id)return;
+    if(_cxScrollTargetId){
+      if(id!==_cxScrollTargetId) return;
+      _cxScrollTargetId=null;
+    }
     highlightCxCard(id); reselectCxMarker(id);
   });
 });
