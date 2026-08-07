@@ -185,6 +185,22 @@ function ceLine(el,prefix){
   el.dataset.raw=raw.slice(0,ls)+newLine+(le===-1?'':raw.slice(le));
   ceRender(el); ceSetOffset(el,ls+newLine.length);
 }
+/* B-192: 폴백 에디터의 Enter 목록 이어쓰기. 기존 구현은 접두를 그대로
+   복제해 번호가 늘 "1."에 멈추고, 빈 항목에서 Enter를 눌러도 목록을
+   빠져나오지 못했다(실기기 재현: 고아 "1." 줄). sc_text·sem_text 두
+   폴백 핸들러가 같은 코드를 복붙하고 있어 한 곳으로 합친다 */
+function ceListEnter(raw,s){
+  const ls=raw.lastIndexOf('\n',s-1)+1;
+  const le=raw.indexOf('\n',s);
+  const curLine=raw.slice(ls,s);
+  const m=curLine.match(/^([-*+]|(\d+)\.)\s/);
+  const restOfLine=raw.slice(s,le===-1?undefined:le);
+  if(m&&curLine.length===m[0].length&&!restOfLine){
+    return {raw:raw.slice(0,ls)+raw.slice(s),caret:ls}; // 빈 목록 항목 → 접두 제거(목록 탈출)
+  }
+  const pfx=m?(m[2]!==undefined?(Number(m[2])+1)+'. ':m[0]):'';
+  return {raw:raw.slice(0,s)+'\n'+pfx+raw.slice(s),caret:s+1+pfx.length};
+}
 // ── 마크다운 렌더 ──
 /* B-190: 렌더된 본문 안의 링크는 항상 새 탭 — 같은 창에서 이동하면
    SPA 상태(작성 중 입력·뷰 모드)가 통째로 날아간다(모바일 PWA에선 복귀
@@ -442,18 +458,33 @@ function calcHouseholdGrade(n,grades){
    반환 — 호출부(각 initXxxEditor)가 이를 보고 "기존 입력 UI 폴백"으로
    전환한다. 실패 자체는 캐시하지 않음(다음 lazy-load 시점에 재시도 여지) */
 let _tiptapModsPromise=null;
+/* B-192: 재시도는 반드시 URL을 바꿔야 한다 — 브라우저 모듈맵은 실패한
+   specifier의 실패까지 캐시해서, 같은 URL을 다시 import()하면 네트워크
+   요청 없이 즉시 같은 에러가 돌아온다(실측 확인). 쿼리 한 개만 붙이면
+   모듈맵 키가 달라져 진짜 재요청이 나간다(esm.sh는 미지 쿼리를 무시).
+   단 전이 의존(수십 개)의 URL까지는 못 바꾸므로 최상위 5개가 실패한
+   경우에만 복구된다 — 부분 방어이고, 실패하면 종전대로 폴백 */
+function _importTiptapMods(bust){
+  const q=bust?'?shretry=1':'';
+  return Promise.all([
+    import('https://esm.sh/@tiptap/core@2.27.2'+q),
+    import('https://esm.sh/@tiptap/starter-kit@2.27.2'+q),
+    import('https://esm.sh/tiptap-markdown@0.8.10'+q),
+    import('https://esm.sh/@tiptap/suggestion@2.27.2'+q),
+    import('https://esm.sh/@tiptap/extension-placeholder@2.27.2'+q),
+  ]).then(([core,starterKit,markdown,suggestion,placeholder])=>({
+    core,starterKit:starterKit.default,Markdown:markdown.Markdown,Suggestion:suggestion.Suggestion,
+    Placeholder:placeholder.Placeholder,
+  }));
+}
 async function loadTiptapMods(){
   if(!_tiptapModsPromise){
-    _tiptapModsPromise=Promise.all([
-      import('https://esm.sh/@tiptap/core@2.27.2'),
-      import('https://esm.sh/@tiptap/starter-kit@2.27.2'),
-      import('https://esm.sh/tiptap-markdown@0.8.10'),
-      import('https://esm.sh/@tiptap/suggestion@2.27.2'),
-      import('https://esm.sh/@tiptap/extension-placeholder@2.27.2'),
-    ]).then(([core,starterKit,markdown,suggestion,placeholder])=>({
-      core,starterKit:starterKit.default,Markdown:markdown.Markdown,Suggestion:suggestion.Suggestion,
-      Placeholder:placeholder.Placeholder,
-    })).catch(e=>{ _tiptapModsPromise=null; throw e; });
+    /* 모듈 5개를 한꺼번에 받으므로 하나만 실패해도 전체가 무너진다 —
+       모바일 네트워크 순단 한 번으로 그 세션 내내 폴백에 갇히던 것을
+       막기 위해 1회 재시도(호출부는 여전히 실패 시 폴백) */
+    _tiptapModsPromise=_importTiptapMods(false)
+      .catch(()=>new Promise(r=>setTimeout(r,500)).then(()=>_importTiptapMods(true)))
+      .catch(e=>{ _tiptapModsPromise=null; throw e; });
   }
   return _tiptapModsPromise;
 }

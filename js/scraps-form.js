@@ -115,16 +115,12 @@ function attachScTextFallbackListeners(){
     if(mod&&e.key==='b'){e.preventDefault();ceWrap(el,'**','**');return;}
     if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
     if(e.key==='Enter'&&!scSlashActive){
+      if(e.isComposing) return; // 한글 조합 중 Enter는 조합 확정용 — 여기서 줄을 만들면 마커가 깨진다
       e.preventDefault();
       ceFlushDebounced(el);
-      const s=ceGetOffset(el); const raw=el.dataset.raw||'';
-      const ls=raw.lastIndexOf('\n',s-1)+1;
-      const curLine=raw.slice(ls,s);
-      const m=curLine.match(/^([-*+]|\d+\.)\s/);
-      const pfx=m?m[0]:'';
-      const newRaw=raw.slice(0,s)+'\n'+pfx+raw.slice(s);
-      el.dataset.raw=newRaw;
-      ceRender(el); ceSetOffset(el,s+1+pfx.length);
+      const r=ceListEnter(el.dataset.raw||'',ceGetOffset(el));
+      el.dataset.raw=r.raw;
+      ceRender(el); ceSetOffset(el,r.caret);
     }
   });
   scTextEl.addEventListener('blur',()=>{
@@ -771,14 +767,12 @@ function attachSemTextFallbackListeners(){
     if(mod&&e.key==='b'){e.preventDefault();ceWrap(el,'**','**');return;}
     if(mod&&e.key==='i'){e.preventDefault();ceWrap(el,'*','*');return;}
     if(e.key==='Enter'){
+      if(e.isComposing) return; // 한글 조합 중 Enter는 조합 확정용 — 여기서 줄을 만들면 마커가 깨진다
       e.preventDefault();
       ceFlushDebounced(el);
-      const s=ceGetOffset(el); const raw=el.dataset.raw||'';
-      const ls=raw.lastIndexOf('\n',s-1)+1;
-      const m=raw.slice(ls,s).match(/^([-*+]|\d+\.)\s/);
-      const pfx=m?m[0]:'';
-      const newRaw=raw.slice(0,s)+'\n'+pfx+raw.slice(s);
-      el.dataset.raw=newRaw; ceRender(el); ceSetOffset(el,s+1+pfx.length);
+      const r=ceListEnter(el.dataset.raw||'',ceGetOffset(el));
+      el.dataset.raw=r.raw;
+      ceRender(el); ceSetOffset(el,r.caret);
     }
   });
 }

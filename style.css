@@ -1151,7 +1151,10 @@
     content:attr(data-placeholder);color:var(--ink-faint);font-size:var(--fs-label);
     white-space:pre-wrap;pointer-events:none;float:left;height:0;
   }
-  .sc-md-editor .mk{font-size:var(--fs-tiny);color:var(--ink-faint);font-weight:normal;font-style:normal;font-family:monospace;letter-spacing:0;}
+  /* B-192: white-space:pre 없으면 "1. " 마커의 끝 공백이 innerText에서
+     사라져("1.") 다음 입력이 목록으로 안 잡힌다 — 폴백 에디터는 매
+     키 입력마다 innerText로 raw를 되읽으므로 치명적 */
+  .sc-md-editor .mk{font-size:var(--fs-tiny);color:var(--ink-faint);font-weight:normal;font-style:normal;font-family:monospace;letter-spacing:0;white-space:pre;}
   .sc-md-editor .md-h1{font-size:var(--fs-title);font-weight:800;} .sc-md-editor .md-h2{font-size:var(--fs-body-lg);font-weight:800;} .sc-md-editor .md-h3{font-size:var(--fs-body);font-weight:700;}
   .sc-md-editor .md-li{padding-left:10px;} .sc-md-editor .md-ol{padding-left:10px;}
   .sc-md-editor .md-bq{border-left:3px solid var(--money);padding-left:8px;color:var(--ink-soft);font-style:italic;}
