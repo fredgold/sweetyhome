@@ -6611,3 +6611,21 @@ B-43 매물 스냅샷→B-42 가격 타임라인) 전 3건 완주. 다음은 사
 ## 2026-08-02 — B-189: 유튜브 썸네일 직행 + 레이스 가드 (커밋 1개)
 
 B-188 후속 — `scraps-form.js`만: 유튜브는 og:image 파싱 없이 비디오 ID(watch·youtu.be·shorts·embed 4형태)로 `i.ytimg.com/vi/{id}/maxresdefault.jpg` 직행(hqdefault 1회 폴백, `api/preview.js` 무접촉·512KB 상한 완화 없음) + `compressImage` 콜백에 도착 시점 `imgs` 재확인 1줄 추가(사용자가 그 사이 직접 첨부한 이미지 덮어쓰기 방지 레이스 가드)(`7e7cf12`).
+
+---
+
+## 2026-08-07 — B-190: 수집함 카드 링크 칩 + 렌더 링크 새 탭 (커밋 1개)
+
+리스트·갤러리 카드에 첫 URL의 hostname 칩(`scExtractFirstUrl` 재사용, http/https만 통과)을 달아 탭 한 번으로 열리게 하고, `stopPropagation`으로 편집 모달·라이트박스와 분리. `renderMd` DOMPurify에 `afterSanitizeAttributes` 훅을 걸어 모든 `<a>`에 `target=_blank rel="noopener noreferrer"` 강제(SPA 상태 유실 방지), `.sc-card-raw` 더보기 토글은 `e.target.closest('a')`면 통과. `javascript:` 스킴은 칩·`<a>` 양쪽 모두 잔존 0 실측(`d10cd5d`).
+
+---
+
+## 2026-08-07 — B-191: 링크 제목 자동 + 인박스 썸네일 배선 (커밋 2개)
+
+`api/preview.js` mode=meta 응답에 `title` 추가(og:title→twitter:title→`<title>`, 공백 정규화 후 200자 절단, SSRF 가드·상한 무접촉) + `scraps-form.js`에서 ①`pullInbox` 저장 확정 후 `scMaybeFetchPreviewThumb` 호출(B-188이 추가폼만 커버하던 누락 배선) ②도착 시점에 현재 제목이 여전히 자동 폴백(hostname·URL·'새 링크')일 때만 제목 교체(사용자가 그 사이 고쳤으면 유지, B-189 레이스 가드 패턴). 인스타는 호출 0회·hostname 폴백 유지(크롤링 차단 기결정)(`396bcf8`/`480c9b6`).
+
+---
+
+## 2026-08-07 — B-192: 폴백 에디터 번호 목록 깨짐 (커밋 1개)
+
+원인 2겹 실증: ①폴백 Enter 이어쓰기가 접두를 그대로 복제해 번호가 늘 "1."에 멈추고 빈 항목에서 목록 탈출도 없었음 ②`.mk` 마커의 끝 공백이 `innerText` 되읽기에서 사라져("1. "→"1.") 다음 줄이 목록으로 안 잡힘 — 한글 IME 조합 중 Enter에서 특히 빨리 깨짐. `ceListEnter()`로 두 폴백 핸들러(sc_text·sem_text) 로직 통합(번호 +1, 빈 항목 Enter=접두 제거) + `.sc-md-editor .mk{white-space:pre}` + Enter 핸들러 `e.isComposing` 가드. 근본 원인인 CDN 로드 실패에는 `loadTiptapMods` 1회 재시도 추가(모듈맵이 실패까지 캐시하므로 재시도 URL에 쿼리 1개를 붙여야 실제 재요청이 나감을 실측 확인 — 최상위 5개 실패만 복구, 전이 의존까지 끊긴 순단은 종전대로 폴백)(`7bc2fe7`).
