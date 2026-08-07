@@ -1,4 +1,135 @@
-# HANDOFF — B-189 유튜브 썸네일 직행 + 레이스 가드 완료 (2026-08-02)
+# HANDOFF — B-190~B-194 실사용 피드백 5건 (2026-08-07)
+
+> **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
+> 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
+
+## 최신 작업: 링크 탭해 열기·링크 제목 자동·에디터 목록 깨짐(4커밋) + 진단 2건(커밋 없음)
+
+```
+d10cd5d feat: 수집함 카드 링크 칩 + 렌더 링크 새 탭 (B-190)
+396bcf8 feat: /api/preview mode=meta에 페이지 제목 추가 (B-191 ①)
+480c9b6 feat: 인박스 항목 썸네일 배선 + 링크 제목 자동 백필 (B-191 ②)
+7bc2fe7 fix: 폴백 에디터 번호 목록 이어쓰기·마커 공백 유실 + Tiptap 로드 1회 재시도 (B-192)
+593ff46 docs: HISTORY 갱신
+```
+
+커맨드센터 지시서(`dispatch-2026-08-07-B190-B194.md`), 손 A 단독 순차.
+착수·커밋 전 `git status` 클린 확인(추적 파일 미커밋 변경 0).
+
+**B-190**(`js/scraps-render.js`+`js/utils.js`+`style.css`): 리스트·갤러리
+카드에 hostname 링크 칩(`scExtractFirstUrl` 재사용 — http/https만
+통과하므로 `javascript:`는 칩이 안 생김), 실제 `<a target=_blank>`로
+렌더해 네이티브 새 탭(지시서의 `window.open`보다 모바일 Safari에서
+확실). `stopPropagation`으로 편집 모달·라이트박스와 분리. renderMd의
+DOMPurify에 `afterSanitizeAttributes` 훅 1개 — 모든 `<a>`에
+`target=_blank rel="noopener noreferrer"`. `.sc-card-raw` 토글은
+`e.target.closest('a')`면 통과(`scRawToggle`).
+**검증**(Playwright): 칩 탭→새 탭·모달 0 / 본문 탭→모달 열림(대조) /
+raw 링크 탭→새 탭·expand 토글 0, 일반 클릭→토글 정상(대조) / URL 없는
+카드 칩 0 / `javascript:` anchor 잔존 0(DOMPurify가 href 자체 제거) /
+선택 모드에선 칩 탭이 네비게이션 없이 선택 토글. 콘솔 에러 0.
+
+**B-191 ①**(`api/preview.js`): mode=meta에 `title` 추가(og:title→
+twitter:title→`<title>`, 공백 정규화+200자). SSRF 가드·상한·rate limit
+무접촉. 실측 7케이스 + 실네트워크 3사이트(example.com·네이버 블로그·
+notion.so 전부 제목 정상) + SSRF 5종 400 회귀 확인.
+**B-191 ②**(`js/scraps-form.js`): `pullInbox` 저장 확정 후
+`scMaybeFetchPreviewThumb` 호출(B-188이 추가폼만 커버하던 누락) +
+`scApplyPreviewTitle`이 도착 시점에 제목이 여전히 자동 폴백일 때만 교체.
+**검증**: 메모 없는 노션 담기→제목 자동 교체 / 메모 있는 담기→제목
+무변경+썸네일은 생성 / 인스타→preview 호출 0회·hostname 유지 /
+`<title>`에 태그·스크립트→텍스트로만 반영(innerHTML 경로 없음) /
+지연 응답 중 사용자가 제목 수정→덮어쓰지 않음 / 추가폼 경로 회귀 0.
+
+**B-192**(`js/utils.js`+`js/scraps-form.js`+`style.css`): 가설(모바일
+Tiptap 로드 실패→폴백)은 **채택**, 다만 폴백 경로 자체에 결함 2겹이
+있어 둘 다 수정.
+- 실증: esm.sh 차단 상태에서 `1. a`+Enter→`1. `(번호 고정), 이어 타이핑
+  →`1.여전히 깨짐`(공백 유실로 목록 아닌 일반 문단) — 사용자 스크린샷과
+  동일 형태 재현. Tiptap 정상 경로는 `2. ` 자동 증가로 무결.
+- 원인 ②: `.mk` 마커의 끝 공백이 블록 끝이라 `innerText`에서 사라짐
+  (`"2. "`→`"2."`) — 폴백은 매 입력마다 innerText로 raw를 되읽으므로
+  마커가 파괴됨. 한글 IME `compositionend`에서 특히 빨리 깨짐(재현).
+- 수정: `ceListEnter()`(utils.js)로 sc_text·sem_text 중복 로직 통합 —
+  `\d+.`은 번호+1, 빈 목록 항목 Enter는 접두 제거(목록 탈출).
+  `.sc-md-editor .mk{white-space:pre}`. Enter 핸들러에 `e.isComposing`
+  가드. `loadTiptapMods` 1회 재시도.
+- **재시도 주의**: 브라우저 모듈맵은 실패한 specifier의 실패까지
+  캐시해 같은 URL 재import는 네트워크 요청 없이 즉시 실패한다(실측).
+  그래서 재시도는 `?shretry=1`을 붙여 키를 바꾼다 — **최상위 5개
+  모듈이 실패한 경우만 복구되고, 전이 의존(요청 ~132개)까지 끊긴
+  네트워크 순단은 여전히 폴백**(실측 확인, 부분 방어임을 명시).
+  완전 해결하려면 esm.sh `?bundle` 전환이 필요하나 로드 경로가
+  크게 바뀌어 이번 스코프 밖.
+**검증**: 폴백 강제에서 `1. a`→`2. `→`3. `→빈 항목 Enter 탈출→일반
+문단, 불릿(`- x`)도 동일, IME 조합 중 Enter로 마커 파괴 0,
+Tiptap 정상 경로 `1. a\n2. b\n\n평문` 회귀 0, sem_text(수정 모달)
+폴백도 동일 동작, CDN 1회 실패→재시도로 Tiptap 복구(폴백 안내 없음).
+
+## 진단만 하고 커밋하지 않은 2건 (지시서 규칙: 가설과 다르면 수정 전 보고)
+
+**B-193 이미지 첨부 후 카드 썸네일 깨짐 — 원인 특정 완료(구조적, 발급 대기)**
+- **주원인: 압축 완료 전 저장 = 레이스**. `compressImage`는 비동기인데
+  저장 핸들러는 `scrapImgsData`를 동기로 읽는다. 압축 전에 저장하면
+  `imgs:[]`로 저장되고 → 그 직후 `scMaybeFetchPreviewThumb`가 "이미지
+  없음"으로 보고 **링크 og:image를 카드 썸네일로 넣는다**. 실측으로
+  확정: 사용자 사진(4032×3024 초록)을 첨부하고 즉시 저장하면 카드
+  이미지가 320×320 파랑(og:image) — 픽셀값 `[0,0,254]`로 증명.
+- **부수 결함**: 저장 후 `scClearForm()`이 `scrapImgsData=[]`로
+  갈아끼우므로, 뒤늦게 끝난 압축 콜백이 **비워진 배열에 push** →
+  다음 추가폼을 열면 이전 사진이 이미 첨부돼 있다(실측: 폼 재오픈 시
+  썸네일 1장 잔존). 수정 모달(`semImgsData`)도 같은 구조.
+- **부수 결함 2**: `compressImage`에 `reader.onerror`·`img.onerror`가
+  없어 디코드 실패 파일(손상 HEIC 등)은 **콜백이 영영 발화하지 않고**
+  사용자에게 아무 안내도 없다(실측: CALLBACK_NEVER_FIRED). 이 경우도
+  저장 시 imgs 비어 → og:image가 대신 들어간다.
+- CSS(`.sc-gallery-img` 4:5 cover·`.sc-card-img`)는 무혐의 — 정상
+  흐름(압축 후 저장)에선 600×450 JPEG가 그대로 렌더됨(실측).
+- **제안 수정**(구조적이라 미착수): 진행 중 압축 건수를 세는 카운터를
+  두고 ①저장 시 남아 있으면 "사진 처리 중" 안내 후 중단(또는 완료
+  대기) ②압축 콜백이 자기 폼 세션의 배열에만 push하도록 캡처
+  ③`compressImage`에 onerror 경로+토스트. 추가폼·수정모달·붙여넣기
+  3경로 공통이라 지시서 발급 후 진행 권장.
+
+**B-194 지도 핀 클릭 깜빡임 — B-169 가설(refresh 연쇄) 기각, 진범 특정**
+- 계측(B-169 스파이 재사용, iPhone 13 에뮬, 단지 3개):
+  **핀 클릭 1회당 `overview.refresh` 0회** → refresh 연쇄 가설 **기각**.
+  대신 `reselectCxMarker` **33회**, 마커 `setIcon` **99회**(=3마커×33),
+  `highlightCxCard` 33회, 스트립 scroll 이벤트 32회.
+- 원인: 모바일 핀 클릭 → `focusCxCard()`의
+  `strip.scrollTo({behavior:'smooth'})` → 스무스 스크롤이 ~0.5초 동안
+  scroll 이벤트를 32회 발생 → 그 리스너(properties.js:2029)가 매
+  프레임 `reselectCxMarker(id)`를 부르고, 이 함수는 **중심 단지가
+  그대로여도 모든 마커의 아이콘 HTML을 통째로 갈아끼운다**. 즉
+  마커 3개가 33번 재조립되는 것이 깜빡임. 단지 수에 비례해 악화.
+- 데스크톱은 핀 클릭이 모달(openComplexDetail)이라 setIcon 3회·
+  reselect 1회로 정상 — 사용자 증상이 iPhone 한정인 것과 일치.
+- **제안 수정**(1줄급, 승인 시 즉시 가능): `reselectCxMarker`에
+  마지막 선택 id 메모를 두고 같은 id면 즉시 return + 마커를 새로
+  만드는 지점(properties.js:104 `ovMarkers=[]`)에서 메모 무효화.
+  예상 수치: 핀 클릭 1회당 setIcon 99→3, reselect 33→1.
+- 계측 한계: 로컬(127.0.0.1)은 네이버 지도 도메인 인증 401이라
+  SDK 내부가 죽어 실제 재페인트는 위임하지 않고 **호출 횟수만**
+  계측했다. 육안 확인은 사용자 iPhone 실기기 몫.
+
+## 잔여·확인 필요
+- **사용자 실기기 확인 필요**:
+  1. **B-192**: 추가폼 원문 입력칸 아래에 "편집기를 불러오지 못해 기본
+     입력창으로 표시돼요." 문구가 **보였는지**(이게 보였다면 CDN 로드
+     실패가 확정, 안 보였다면 다른 경로라 재진단 필요) + 이번 배포 후
+     `1. `+Enter가 `2. `로 늘어나는지.
+  2. **B-190**: 담긴 카드의 링크 칩 탭 → 새 탭으로 열리는지(사파리
+     팝업 차단에 안 걸리는지).
+  3. **B-191**: 메모 없이 노션 링크를 담았을 때 제목이 페이지 제목으로
+     바뀌는지(인스타는 여전히 `www.instagram.com` — 크롤링 차단 기결정).
+- **B-193·B-194는 지시서 발급 대기**(위 진단 참조).
+- **B-163 관찰 계속**: 핀치줌 팬 의심(재현 조건 미확정).
+- 기존 Safari 관찰 목록(audit sticky/`:has()` 2건 + B-182 시나리오 5건)
+  변동 없음.
+
+---
+
+# 이전 핸드오프 — B-189 유튜브 썸네일 직행 + 레이스 가드 완료 (2026-08-02)
 
 > **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
 > 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
@@ -141,114 +272,6 @@ Playwright로 클라 로직 라우트 목업):
 - **사용자 실기기 확인 불필요**(og:image 없이 순수 API+백그라운드
   fetch라 iOS 관련 특이사항 없음). Safari 관찰 목록은 기존 그대로
   (audit sticky/`:has()` 2건 + B-182 시나리오 5건).
-- **B-164~171잔여**(이전 세션들, 아직 미확인): 매물 메모 행간·별점/
-  즐겨찾기 별 탭 감각. 대부분은 후속 세션에서 이미 처리됨(B-166~174).
-- **B-163 관찰 계속**: 핀치줌 팬 의심(재현 조건 미확정), 이번
-  지시서 범위 밖.
-
----
-
-# 이전 핸드오프 — B-182 모달 포커스 격리·키보드 접근 완료 (2026-08-02)
-
-> **로테이션 규칙**(B-120, 2026-07-19): 최신 3개만 유지, 새 엔트리
-> 추가 시 초과분 절삭 — 과거는 git 이력·HISTORY.md 참조.
-
-## 최신 작업: 모달 inert/포커스trap 중앙화 + 로그인오버레이 + 포인터전용 컨트롤 키보드화(3커밋)
-
-```
-42efb49 feat: 모달 포커스 격리·키보드 접근 — openModal/closeModal 중앙화 (B-182 ①)
-81a08a5 feat: 로그인 오버레이 포커스 격리 (B-182 ②)
-bb54b2f feat: 포인터 전용 컨트롤 키보드화 — 게스트·필터칩·매물행 (B-182 ③)
-```
-
-커맨드센터 승인(기존 계획·승인 조건 그대로: ①openModal/closeModal
-중앙화+inert+trap ②로그인 overlay ③UX-03 포인터전용 컨트롤, 3분할
-커밋)으로 착수. 근거는 `audit-2026-08-01.md` UX-02/UX-03. 손 A 단독,
-①→②→③ 순서. 착수/커밋 전후 `git status`로 손 B(B-160) 미확정 변경
-확인 — 전 구간 클린.
-
-**①**(`js/utils.js`): `openModal`/`closeModal` 두 곳에 중앙화 —
-B-176에서 이미 모든 닫기 경로(X·backdrop·ESC)가 `closeModal()` 하나로
-통일돼 있어 9개 모달 개별 수정 없이 자연히 다 커버됨.
-- `_modalOpenStack`으로 겹쳐 열리는 경우 최상단만 상호작용 가능하게,
-  나머지(배경 앱 콘텐츠 + 그 아래 모달)는 `inert`.
-- 트리거는 호출부 수정 없이 열릴 때 시점 `document.activeElement`를
-  자동 캡처(거의 항상 클릭한 버튼 자신) — 닫히면 그 트리거로 포커스
-  복귀.
-- 열릴 때 모달 내부 첫 focusable로 초기 포커스 이동(`requestAnimationFrame`,
-  없으면 모달 자체에 `tabindex=-1` 부여 후 포커스).
-- `inert` 미지원 브라우저 폴백: keydown Tab 트랩을 **항상** 병행 등록
-  (지원 브라우저에선 배경이 애초에 focusable 후보에서 빠져 사실상
-  중복 방어, 미지원 브라우저에선 이게 유일한 방어선 — 조건분기 없이
-  둘 다 항상 실행되는 구조라 "폴백 단독 작동"이 설계상 보장됨).
-
-**②**(`js/auth.js`+`js/utils.js`): 로그인 overlay도 같은 이유(UX-02)로
-보이는 동안 `.wrap` 전체를 inert. `_syncLoginOverlayA11y()`를
-`unlockApp`/`forceLogin`/IIFE 유효토큰 분기 3곳에 연결 — 오버레이가
-보이면 `.wrap` inert+`#loginInput` 자동포커스, 숨겨지면 해제. `①`의
-`_activeTrapContainer()`를 로그인 오버레이도 확인하도록 확장해 Tab
-트랩 공유(로그인 중엔 모달이 열릴 수 없어 우선순위 충돌 없음).
-
-**③**(`index.html`+`js/properties.js`+`style.css`): UX-03 포인터 전용
-컨트롤 3종.
-- 로그인 게스트: `<div>`→`<button type="button">`(전역 button 리셋이
-  이미 있어 시각 변화 없이 네이티브 Enter/Space 확보).
-- `.sc-filter-chip`(수집함 2곳+단지 필터 5곳+지역/노선 동적 렌더,
-  총 41개 정적+2개 동적 템플릿): `role="button" tabindex="0"` 추가 +
-  기존 click 위임은 그대로 두고 공용 keydown 리스너 1개로 Enter/Space
-  →`click()` 전환(델리게이션 중복 없음). `:focus-visible` 링 추가
-  (`.c-top` 전례).
-- `.cx-listing-row`(매물 행): 수정모드가 아닐 때만 조건부
-  `role="button" tabindex="0"`(기존 클릭 핸들러의 편집모드 제외
-  가드와 동일 조건). 같은 위임 컨테이너에 keydown 추가 — 자식
-  버튼/입력은 네이티브 키 처리가 있어 `e.target===row`일 때만 반응.
-
-**검증**(Playwright 1440×900):
-- 모달 9개 중 8개 실측(exportModal-X, importModal-backdrop,
-  scEditModal-ESC, scLightboxModal-X, assetAiModal-X, profileModal-ESC,
-  propImportModal-X, complexDetailModal-backdrop — 3경로 전부 대표
-  포함) 전부: 열 때 모달 자신은 inert 없음+배경(`#appTopbar`) inert
-  있음+스택에 자기 id만, 닫을 때 모달 닫힘+배경 inert 해제+스택
-  비워짐 확인. scImportModal은 별도 실측은 안 했으나 동일
-  openModal/closeModal 경로라 코드상 동일 동작(9번째, 스팟체크
-  생략).
-- **inert 미지원 폴백 단독 작동**: `Element.prototype.setAttribute`를
-  몽키패치해 `inert` 설정을 완전히 무력화(실제 미지원 브라우저 시뮬레이션)
-  → 모달·배경 둘 다 `inert` 속성이 실제로 안 붙은 상태에서도 Tab
-  30회 반복이 모달 안에 계속 갇힘, Shift+Tab이 첫 요소에서 마지막으로
-  정상 순환 — keydown 트랩만으로 완전히 동작함을 확인.
-  (참고: `importModal`처럼 첫 focusable이 textarea인 모달은 자동
-  포커스가 그 안으로 들어가 B-127의 기존 "1차 ESC는 blur만, 2차부터
-  닫힘"(작성 중 텍스트 유실 방지) 보호가 적용됨 — 이전엔 트리거
-  버튼에 포커스가 남아 단일 ESC로 닫혔던 것과 다른 동작이지만, 마우스로
-  직접 클릭했던 사용자는 원래도 겪던 동작이라 일관성 개선이지 새 버그
-  아님.)
-- 필터칩 Enter/Space 활성화(정적+동적 렌더 둘 다), 매물행 Enter로
-  상세패널 오픈·수정모드에선 role/tabindex 자체가 없음, 게스트 버튼
-  Enter로 잠금해제, 로그인 최초 로드 시 `.wrap` inert+입력창 자동포커스
-  +Tab이 오버레이 밖으로 안 나감. 마우스 클릭 경로(필터칩·매물행·
-  프로필저장 등) 전부 무회귀.
-
-- **B-182 ①②③ 완료·push 완료**(`42efb49`/`81a08a5`/`bb54b2f`).
-- **사용자 Safari 실기기 확인 필요**(inert·포커스·VoiceOver는
-  Chromium으로 authentic하게 검증 불가한 영역):
-  1. **VoiceOver + 프로필 모달**: `#profileBtn`으로 열기 → VoiceOver
-     스와이프로 배경(상단 탭바·헤더 버튼들)이 여전히 읽히는지 vs
-     건너뛰는지(`inert`가 스크린리더에도 실제 적용되는지). X 버튼으로
-     닫기 → 포커스가 "프로필" 버튼으로 돌아왔다는 음성 안내가 나오는지.
-  2. **가져오기 모달(`importModal`)**: `#importBtn`으로 열기 → 텍스트
-     영역에 자동 포커스되면서 iOS 자동 확대/스크롤이 튀는지, 튄다면
-     모달 오픈 애니메이션과 겹쳐 어색해 보이는지.
-  3. **프로필 모달**: 동일하게 이름 입력칸(`#pf_names`) 자동포커스로
-     확대/스크롤 튐 여부.
-  4. **로그인 화면 게스트 버튼**: `<div>`→`<button>` 전환 후 이전과
-     동일한 밑줄 텍스트 링크로 보이는지(버튼 기본 테두리/배경 등이
-     새치 않는지).
-  5. **매물 탭 → 단지 상세 → 매물 행**: 블루투스 키보드 연결 시(또는
-     VoiceOver 스와이프) 행에 포커스 이동 → Enter(또는 더블탭)로 상세
-     패널이 열리는지.
-  - 기존 audit 플래그 2건(sticky/`:has()`)은 이번 배치와 무관하게
-    그대로 유효.
 - **B-164~171잔여**(이전 세션들, 아직 미확인): 매물 메모 행간·별점/
   즐겨찾기 별 탭 감각. 대부분은 후속 세션에서 이미 처리됨(B-166~174).
 - **B-163 관찰 계속**: 핀치줌 팬 의심(재현 조건 미확정), 이번
