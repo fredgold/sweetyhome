@@ -21,6 +21,50 @@ function scRenderImgThumbs(containerId,arr){
 function scUpdateImgUploadLabel(labelId,arr,emptyText){
   document.getElementById(labelId).innerHTML=ic('camera')+(arr.length?` 사진 ${arr.length}장`:' '+emptyText);
 }
+/* B-193R: 압축은 비동기라 결함이 둘 있었다 — (a)완료 전에 저장하면 imgs가
+   빈 채로 저장돼 링크 og:image가 카드 썸네일을 점령했고 (b)폼이 초기화된
+   뒤 도착한 콜백이 새로 할당된 배열에 push돼 다음 폼에 이전 사진이 남았다.
+   진행 건수(pending)와 세대 번호(gen)를 폼별로 들고 다녀 둘 다 막는다:
+   저장은 pending이 0이 될 때까지 기다렸다 자동으로 이어지고, 세대가 바뀐
+   뒤 도착한 콜백은 폐기된다. compressImage가 실패해도 콜백을 반드시
+   부르므로(B-193R ①) pending은 항상 0으로 되돌아온다 */
+const SC_IMG_JOBS={sc:{pending:0,gen:0,waiter:null},sem:{pending:0,gen:0,waiter:null}};
+function scImgJobsReset(key){
+  const job=SC_IMG_JOBS[key];
+  job.gen++;
+  if(job.waiter){ job.waiter.cancel(); job.waiter=null; }
+}
+function scImgEnqueue(key,file,onDone){
+  const job=SC_IMG_JOBS[key];
+  const gen=job.gen;
+  job.pending++;
+  compressImage(file,dataUrl=>{
+    job.pending--;
+    if(gen===job.gen) onDone(dataUrl);
+    if(!job.pending&&job.waiter){ const w=job.waiter; job.waiter=null; w.run(); }
+  });
+}
+function scAttachImageFiles(key,files,arr,max,containerId,labelId,emptyText,errEl){
+  const room=max-arr.length;
+  if(errEl) errEl.textContent=files.length>room?`사진은 최대 ${max}장까지 첨부할 수 있어요.`:'';
+  files.slice(0,room).forEach(f=>scImgEnqueue(key,f,dataUrl=>{
+    if(!dataUrl){ if(errEl) errEl.textContent='사진을 읽지 못했어요(지원하지 않는 형식일 수 있어요).'; return; }
+    arr.push(dataUrl);
+    scRenderImgThumbs(containerId,arr);
+    scUpdateImgUploadLabel(labelId,arr,emptyText);
+  }));
+}
+/* 대기 중에도 무엇을 기다리는지 버튼에 그대로 드러낸다(접기 아님) —
+   재클릭은 무시해 이중 저장을 막고, 폼이 닫히면 대기 자체를 취소한다 */
+function scRunAfterImgs(key,btnId,label,fn){
+  const job=SC_IMG_JOBS[key];
+  if(!job.pending){ fn(); return; }
+  if(job.waiter) return;
+  const btn=document.getElementById(btnId);
+  btn.disabled=true; btn.textContent='사진 처리 중…';
+  const restore=()=>{ btn.disabled=false; btn.textContent=label; };
+  job.waiter={run:()=>{ restore(); fn(); },cancel:restore};
+}
 /* B-123②: 클립보드 텍스트를 폴백(비Tiptap) contenteditable 커서 위치에
    삽입 — sc_text/sem_text의 기존 paste 핸들러가 공유하던 로직을 추출,
    이미지+텍스트 혼합 붙여넣기 처리에서도 재사용한다 */
@@ -39,19 +83,11 @@ function scInsertFallbackText(el,text){
    .ProseMirror의 자체 붙여넣기 핸들러보다 먼저 개입할 수 있다. 이미지가
    없는 순수 텍스트 붙여넣기는 손대지 않고 그대로 통과시켜(return) 기존
    경로(Tiptap 기본 처리 또는 폴백 paste 핸들러) 무변화 */
-function scHandleEditorPaste(e,arr,max,containerId,labelId,emptyText,errEl,editor,fallbackEl){
+function scHandleEditorPaste(e,key,arr,max,containerId,labelId,emptyText,errEl,editor,fallbackEl){
   const files=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith('image/'));
   if(!files.length) return;
   e.preventDefault(); e.stopPropagation();
-  const room=max-arr.length;
-  if(errEl) errEl.textContent=files.length>room?`사진은 최대 ${max}장까지 첨부할 수 있어요.`:'';
-  files.slice(0,room).forEach(f=>{
-    compressImage(f,dataUrl=>{
-      arr.push(dataUrl);
-      scRenderImgThumbs(containerId,arr);
-      scUpdateImgUploadLabel(labelId,arr,emptyText);
-    });
-  });
+  scAttachImageFiles(key,files,arr,max,containerId,labelId,emptyText,errEl);
   const text=(e.clipboardData||window.clipboardData).getData('text/plain');
   if(!text) return;
   if(editor) editor.chain().focus().insertContent(text).run();
@@ -320,22 +356,14 @@ document.getElementById('sc_text').addEventListener('focus',()=>{
 
 document.getElementById('sc_file').onchange=e=>{
   const files=[...e.target.files]; if(!files.length)return;
-  const room=SC_MAX_IMGS-scrapImgsData.length;
-  const err=document.getElementById('sc_formErr');
-  if(files.length>room) err.textContent=`사진은 최대 ${SC_MAX_IMGS}장까지 첨부할 수 있어요.`;
-  files.slice(0,room).forEach(f=>{
-    compressImage(f,dataUrl=>{
-      scrapImgsData.push(dataUrl);
-      scRenderImgThumbs('sc_preview',scrapImgsData);
-      scUpdateImgUploadLabel('sc_uploadLabel',scrapImgsData,'스크린샷 첨부');
-    });
-  });
+  scAttachImageFiles('sc',files,scrapImgsData,SC_MAX_IMGS,'sc_preview','sc_uploadLabel','스크린샷 첨부',
+    document.getElementById('sc_formErr'));
   e.target.value='';
 };
 /* B-123②: 캡처 단계라 Tiptap 마운트 여부와 무관하게 항상 먼저 개입 —
    이미지가 없으면 스스로 return해 기존 텍스트 붙여넣기 경로를 그대로 둔다 */
 document.getElementById('sc_text').addEventListener('paste',e=>{
-  scHandleEditorPaste(e,scrapImgsData,SC_MAX_IMGS,'sc_preview','sc_uploadLabel','스크린샷 첨부',
+  scHandleEditorPaste(e,'sc',scrapImgsData,SC_MAX_IMGS,'sc_preview','sc_uploadLabel','스크린샷 첨부',
     document.getElementById('sc_formErr'),scTiptapEditor,document.getElementById('sc_text'));
 },true);
 document.getElementById('sc_preview').addEventListener('click',e=>{
@@ -486,7 +514,8 @@ function scMaybeFetchPreviewThumb(scrap){
   }
   scFetchPreviewThumb(scrap.id,url);
 }
-document.getElementById('sc_saveBtn').onclick=()=>{
+document.getElementById('sc_saveBtn').onclick=()=>scRunAfterImgs('sc','sc_saveBtn','저장',scPerformSave);
+function scPerformSave(){
   const title=document.getElementById('sc_title').value.trim();
   const type=document.querySelector('.sc-type-chip.on')?.dataset.type||'subscription';
   const scEl=document.getElementById('sc_text');
@@ -526,7 +555,7 @@ document.getElementById('sc_saveBtn').onclick=()=>{
   }
   scCloseForm();save();renderScraps();
   toast(isEdit?'저장했어요':'추가했어요');
-};
+}
 
 function inboxScrapId(inboxId){
   return 'sc_inbox_'+inboxId;
@@ -627,7 +656,7 @@ function scClearForm(){
     document.getElementById('sc_mdToolbar').style.display='';
   }
   scCloseSlash();
-  scrapImgsData=[]; scEditId=null;
+  scrapImgsData=[]; scEditId=null; scImgJobsReset('sc');
   document.getElementById('sc_formTitle').textContent='＋ 추가';
   document.getElementById('sc_cancelBtn').style.display='none';
   document.querySelectorAll('.sc-type-chip').forEach((c,i)=>c.classList.toggle('on',i===0));
@@ -693,7 +722,7 @@ function openScEdit(id){
   const sn=document.getElementById('savedNote');
   if(sn){sn.textContent='저장 버튼으로 반영됩니다';sn.style.color='var(--ink-soft)';sn.classList.remove('is-err');}
   // 이미지 초기화
-  semImgsData=(Array.isArray(s.imgs)&&s.imgs.length)?s.imgs.slice():(s.img?[s.img]:[]);
+  semImgsData=(Array.isArray(s.imgs)&&s.imgs.length)?s.imgs.slice():(s.img?[s.img]:[]); scImgJobsReset('sem');
   scRenderImgThumbs('sem_imgs',semImgsData);
   scUpdateImgUploadLabel('sem_imgLabel',semImgsData,'사진 추가');
   document.getElementById('sem_img').value='';
@@ -832,16 +861,8 @@ document.getElementById('sem_mdToolbar').onclick=e=>{
 };
 document.getElementById('sem_img').onchange=e=>{
   const files=[...e.target.files]; if(!files.length)return;
-  const room=SC_MAX_IMGS-semImgsData.length;
-  const err=document.getElementById('sem_err');
-  if(files.length>room) err.textContent=`사진은 최대 ${SC_MAX_IMGS}장까지 첨부할 수 있어요.`;
-  files.slice(0,room).forEach(f=>{
-    compressImage(f,dataUrl=>{
-      semImgsData.push(dataUrl);
-      scRenderImgThumbs('sem_imgs',semImgsData);
-      scUpdateImgUploadLabel('sem_imgLabel',semImgsData,'사진 추가');
-    });
-  });
+  scAttachImageFiles('sem',files,semImgsData,SC_MAX_IMGS,'sem_imgs','sem_imgLabel','사진 추가',
+    document.getElementById('sem_err'));
   e.target.value='';
 };
 document.getElementById('sem_imgs').addEventListener('click',e=>{
@@ -853,7 +874,7 @@ document.getElementById('sem_imgs').addEventListener('click',e=>{
 /* B-123②: sc_text와 동일 패턴 — 캡처 단계에서 이미지만 가로채 첨부로,
    텍스트는 있으면 에디터에 그대로 삽입 */
 document.getElementById('sem_text').addEventListener('paste',e=>{
-  scHandleEditorPaste(e,semImgsData,SC_MAX_IMGS,'sem_imgs','sem_imgLabel','사진 추가',
+  scHandleEditorPaste(e,'sem',semImgsData,SC_MAX_IMGS,'sem_imgs','sem_imgLabel','사진 추가',
     document.getElementById('sem_err'),semTiptapEditor,document.getElementById('sem_text'));
 },true);
 function semResetSavedNote(){
@@ -862,7 +883,7 @@ function semResetSavedNote(){
 }
 document.getElementById('scEditModal').addEventListener('click',e=>{if(e.target===document.getElementById('scEditModal'))semResetSavedNote();});
 document.getElementById('sem_cancel').onclick=()=>{
-  semImgsData=[];
+  semImgsData=[]; scImgJobsReset('sem');
   semResetSavedNote();
   closeModal('scEditModal');
 };
@@ -873,10 +894,11 @@ document.getElementById('sem_delete').onclick=()=>{
   if(!scModalEditId)return;
   if(!confirm('이 항목을 삭제할까요?'))return;
   state.scraps=state.scraps.filter(x=>x.id!==scModalEditId);
-  semImgsData=[];
+  semImgsData=[]; scImgJobsReset('sem');
   save();renderScraps();closeModal('scEditModal');
 };
-document.getElementById('sem_save').onclick=()=>{
+document.getElementById('sem_save').onclick=()=>scRunAfterImgs('sem','sem_save','저장',semPerformSave);
+function semPerformSave(){
   const s=state.scraps.find(x=>x.id===scModalEditId);
   if(!s){closeModal('scEditModal');return;}
   let raw;
@@ -901,10 +923,10 @@ document.getElementById('sem_save').onclick=()=>{
     img:semImgsData[0]||'',
     imgs:semImgsData.slice(),
   });
-  semImgsData=[];
+  semImgsData=[]; scImgJobsReset('sem');
   save();renderScraps();closeModal('scEditModal');
   toast('저장했어요');
-};
+}
 
 async function checkFit(id){
   const s=state.scraps.find(x=>x.id===id); if(!s)return;
