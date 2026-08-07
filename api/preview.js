@@ -84,6 +84,21 @@ function extractMetaContent(html, name) {
 function extractOgImage(html) {
   return extractMetaContent(html, 'og:image') || extractMetaContent(html, 'twitter:image');
 }
+/* B-191: 단축어로 담으면 메모가 없을 때 제목이 hostname뿐이라 노션 링크가
+   전부 "notion.site"로 보인다 — 페이지 제목을 함께 돌려줘 클라가 자동
+   폴백 제목만 교체하게 한다. 엔티티 디코드는 하지 않음(클라가 텍스트로만
+   소비하므로 &amp; 정도가 그대로 보이는 게 최악) */
+function extractTitle(html) {
+  const meta = extractMetaContent(html, 'og:title') || extractMetaContent(html, 'twitter:title');
+  if (meta) return meta;
+  const m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return m && m[1] ? m[1] : null;
+}
+function cleanTitle(raw) {
+  if (!raw) return null;
+  const t = raw.replace(/\s+/g, ' ').trim();
+  return t ? t.slice(0, 200) : null;
+}
 
 export default async function handler(req, res) {
   if (cors(req, res)) return;
@@ -104,14 +119,15 @@ export default async function handler(req, res) {
     const upstream = await fetchWithGuard(allowed);
 
     if (mode === 'meta') {
-      if (!upstream.ok) { res.status(200).json({ image: null }); return; }
+      if (!upstream.ok) { res.status(200).json({ image: null, title: null }); return; }
       const { buf } = await readBodyCapped(upstream, MAX_META_BYTES);
-      const image = extractOgImage(buf.toString('utf8'));
+      const html = buf.toString('utf8');
+      const image = extractOgImage(html);
       let absolute = null;
       if (image) {
         try { absolute = new URL(image, upstream.url || allowed.href).href; } catch (e) { absolute = null; }
       }
-      res.status(200).json({ image: absolute });
+      res.status(200).json({ image: absolute, title: cleanTitle(extractTitle(html)) });
       return;
     }
 
@@ -124,7 +140,7 @@ export default async function handler(req, res) {
     res.status(200).send(buf);
   } catch (e) {
     if (e instanceof BlockedUrlError) { res.status(400).json({ error: '허용되지 않는 주소입니다.' }); return; }
-    if (mode === 'meta') { res.status(200).json({ image: null }); return; }
+    if (mode === 'meta') { res.status(200).json({ image: null, title: null }); return; }
     res.status(400).json({ error: '가져오지 못했습니다.' });
   }
 }
