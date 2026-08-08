@@ -9,6 +9,7 @@ function renderAll(){
   renderScraps();
   renderRegNews();
   if(activePanel==='props'){ initOverview(); }
+  applyInitialPanel();
 }
 
 /* B-24: 새로고침 후 보던 화면 유지. nav.js(switchPanel 정의)는 Codex 충돌 우려로
@@ -24,23 +25,33 @@ function saveViewState(){
     }));
   }catch(e){}
 }
-function restoreLastView(){
+/* B-197: 세션 복원이 없을 때(=앱을 새로 연 첫 화면) 모바일만 매물 탭 직행.
+   데스크톱은 대시보드 그대로. renderAll() 끝에서 한 번만 부르는 이유 — 미로그인
+   401 경로는 load()가 renderAll() 전에 빠져나가 state가 null이고, 그 상태로
+   매물 탭을 열면 refreshOverview()가 state.complexes를 읽다 깨진다. 로그인 후
+   재호출 시에도 이 시점이라야 첫 화면이 제대로 매물로 잡힌다. */
+let initialPanelApplied=false;
+function applyInitialPanel(){
+  if(initialPanelApplied) return;
+  initialPanelApplied=true;
+  let restored=false;
   try{
     const raw=sessionStorage.getItem(SH_VIEW_KEY);
-    if(!raw) return;
-    const v=JSON.parse(raw);
-    const panels=['dash','assets','props','actions','scraps'];
-    if(v.panel&&panels.includes(v.panel)&&typeof switchPanel==='function') switchPanel(v.panel);
-    if(v.panel==='props'&&(v.propViewMode==='map'||v.propViewMode==='list')&&typeof applyPropViewMode==='function'){
-      propViewMode=v.propViewMode; applyPropViewMode();
+    if(raw){
+      const v=JSON.parse(raw);
+      const panels=['dash','assets','props','actions','scraps'];
+      if(v.panel&&panels.includes(v.panel)&&typeof switchPanel==='function'){ switchPanel(v.panel); restored=true; }
+      if(v.panel==='props'&&(v.propViewMode==='map'||v.propViewMode==='list')&&typeof applyPropViewMode==='function'){
+        propViewMode=v.propViewMode; applyPropViewMode();
+      }
     }
   }catch(e){}
+  if(!restored&&MOBILE_APP_MQ.matches&&typeof switchPanel==='function') switchPanel('props');
 }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveViewState(); });
 window.addEventListener('pagehide',saveViewState);
 
 load().then(async()=>{
-  restoreLastView();
   await pullInbox();
 });
 
