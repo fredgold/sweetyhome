@@ -355,6 +355,9 @@ function openModal(id,trigger){
 function closeModal(id){
   const el=document.getElementById(id);
   if(!el)return;
+  /* B-198: 닫힌 모달에 인스타 iframe이 남으면 계속 로드·재생된다. 닫기 경로가
+     버튼 4곳·ESC로 흩어져 있어 여기 한 곳에서 정리(typeof 가드 = 로드 순서 무관) */
+  if(typeof scClearIgEmbedsIn==='function') scClearIgEmbedsIn(el);
   el.classList.remove('open');
   unlockBodyScroll();
   const idx=_modalOpenStack.findIndex(s=>s.id===id);

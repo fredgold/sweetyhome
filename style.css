@@ -1261,6 +1261,13 @@
   .og-card{display:flex;gap:var(--gap-mlg);background:#FAFAF8;border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;margin-top:8px;}
   .og-card img{width:80px;height:80px;object-fit:cover;border-radius:var(--radius-sm);flex-shrink:0;}
   .og-card .og-loading{font-size:var(--fs-tiny);color:var(--ink-faint);font-weight:600;}
+  /* B-198: 인스타 임베드. 높이는 postMessage 값으로 JS가 지정하고, 여기선
+     폭·테두리만 — 상한 초과분은 .ig-embed-more(펼치기)로 노출 */
+  .ig-embed-slot{margin-top:8px;}
+  .ig-embed{border:1px solid var(--hairline);border-radius:var(--radius-md);overflow:hidden;background:var(--surface);}
+  .ig-embed-frame{display:block;width:100%;border:0;}
+  .ig-embed-more{display:block;width:100%;border:0;border-top:1px solid var(--hairline);background:#FAFAF8;color:var(--ink-soft);font-size:var(--fs-tiny);font-weight:700;padding:8px;cursor:pointer;}
+  .ig-embed-more:hover{background:var(--line9-wash);}
 
 
   .chatwrap{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:62vh;}

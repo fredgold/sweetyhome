@@ -118,11 +118,7 @@ function attachScTextFallbackListeners(){
     el.classList.toggle('is-empty',!raw.trim());
     if(e.isComposing)return;
     ceRenderDebounced(el);
-    const ogPrev=document.getElementById('sc_ogPreview');
-    if(/instagram\.com\/(p|reel)\//.test(raw)){
-      ogPrev.style.display='block';
-      ogPrev.innerHTML='<div class="og-card"><span class="og-loading">'+ic('tip')+' 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
-    } else { ogPrev.style.display='none'; }
+    scSyncIgEmbed(document.getElementById('sc_ogPreview'),raw);
     scDetectSlash(el,'sc_slashMenu');
   });
   scTextEl.addEventListener('compositionstart',e=>{
@@ -210,12 +206,7 @@ async function initScTextEditor(){
         extensions:[mods.starterKit,mods.Markdown,slashExt,listFixExt,placeholderExt],
         content:'',
         onUpdate:({editor})=>{
-          const raw=editor.storage.markdown.getMarkdown();
-          const ogPrev=document.getElementById('sc_ogPreview');
-          if(/instagram\.com\/(p|reel)\//.test(raw)){
-            ogPrev.style.display='block';
-            ogPrev.innerHTML='<div class="og-card"><span class="og-loading">'+ic('tip')+' 인스타 링크만으로는 내용을 가져올 수 없어요.<br>→ 게시물의 <b>캡션을 복사</b>해서 아래 함께 붙여넣거나 <b>스크린샷</b>을 올려주세요.</span></div>';
-          } else { ogPrev.style.display='none'; }
+          scSyncIgEmbed(document.getElementById('sc_ogPreview'),editor.storage.markdown.getMarkdown());
         },
       });
       /* B-109②: index.html의 sc_text는 is-empty 클래스를 기본으로 갖고
@@ -410,6 +401,101 @@ function scExtractFirstUrl(text){
   }
   return null;
 }
+/* ── B-198: 인스타 인앱 임베드 ──
+   서버 크롤링은 여전히 차단(⛔ 기결정)이라 scPreviewSkipDomain은 그대로 두고,
+   인스타가 공식 제공하는 임베드 엔드포인트를 클라이언트 iframe으로 직접 띄운다
+   (B-196 스파이크 실측: 로그인 없이 사진·릴스·캡션 전문 렌더).
+   숏코드만 뽑아 고정 템플릿으로 재조립 — 사용자 입력 문자열을 URL에 그대로
+   넣지 않는다. `/reels/`·`/{username}/p/` 형태는 뒤에 /embed/를 붙여도 프레임이
+   안 뜨는 것이 실측돼 정규화가 필수. `/embed/`는 캡션이 빠지므로 captioned 고정 */
+const SC_IG_EMBED_MAX_H=600;
+function scIgShortcode(text){
+  const m=(text||'').match(/instagram\.com\/(?:[A-Za-z0-9_.]+\/)?(?:p|reels?|tv)\/([A-Za-z0-9_-]+)/i);
+  return m?m[1]:null;
+}
+function scIgEmbedUrl(code){
+  return 'https://www.instagram.com/p/'+encodeURIComponent(code)+'/embed/captioned/';
+}
+function scClearIgEmbed(container){
+  if(!container)return;
+  container.dataset.igCode='';
+  container.innerHTML='';
+  container.style.display='none';
+}
+function scClearIgEmbedsIn(root){
+  if(!root||!root.querySelectorAll)return;
+  root.querySelectorAll('.ig-embed-slot').forEach(scClearIgEmbed);
+}
+function scApplyIgHeight(frame,h){
+  const wrap=frame.closest('.ig-embed');
+  if(!wrap)return;
+  frame.dataset.fullH=String(h);
+  const more=wrap.querySelector('.ig-embed-more');
+  const expanded=wrap.dataset.expanded==='1';
+  frame.style.height=(expanded?h:Math.min(h,SC_IG_EMBED_MAX_H))+'px';
+  if(more){
+    more.style.display=h>SC_IG_EMBED_MAX_H?'':'none';
+    more.textContent=expanded?'접기':'펼치기';
+  }
+}
+/* 같은 숏코드면 다시 그리지 않는다 — 추가폼은 타이핑마다 이 경로를 타므로
+   재생성하면 매 글자마다 iframe이 새로 로드된다 */
+function scRenderIgEmbed(container,code){
+  if(!container)return;
+  if(!code){ scClearIgEmbed(container); return; }
+  if(container.dataset.igCode===code)return;
+  container.dataset.igCode=code;
+  container.innerHTML='';
+  container.style.display='block';
+  const wrap=document.createElement('div');
+  wrap.className='ig-embed';
+  const frame=document.createElement('iframe');
+  frame.className='ig-embed-frame';
+  frame.src=scIgEmbedUrl(code);
+  frame.loading='lazy';
+  frame.title='인스타그램 게시물 미리보기';
+  /* 실측 판단: allow-scripts만 주면 프레임 origin이 "null"이 돼 아래 MEASURE
+     origin 검증이 막히고 높이 자동조절이 죽는다. same-origin을 함께 주면
+     프레임은 자기 origin(instagram.com)을 유지할 뿐 우리 문서엔 접근 못 한다
+     (교차 출처라 sandbox 자가 해제 우려도 해당 없음). 이 조합이면 기본 차단이
+     그대로 남는 항목 — 상위 프레임 이동(앱을 다른 데로 끌고 가기)·폼 제출·
+     다운로드·모달. popups는 "인스타에서 보기" 링크를 살리기 위해 허용 */
+  frame.setAttribute('sandbox','allow-scripts allow-same-origin allow-popups');
+  frame.setAttribute('scrolling','no');
+  frame.style.height=SC_IG_EMBED_MAX_H+'px';
+  const more=document.createElement('button');
+  more.type='button';
+  more.className='ig-embed-more';
+  more.textContent='펼치기';
+  more.style.display='none';
+  more.onclick=()=>{
+    const expanded=wrap.dataset.expanded==='1';
+    wrap.dataset.expanded=expanded?'0':'1';
+    scApplyIgHeight(frame,Number(frame.dataset.fullH)||SC_IG_EMBED_MAX_H);
+  };
+  wrap.appendChild(frame);
+  wrap.appendChild(more);
+  container.appendChild(wrap);
+}
+function scSyncIgEmbed(container,raw){
+  scRenderIgEmbed(container,scIgShortcode(raw));
+}
+/* 높이는 인스타가 postMessage로 알려준다(MEASURE) — 공식 embed.js를 로드하지
+   않고 이 신호만 받아 쓰므로 외부 스크립트 추가 0. origin 문자열 완전 일치 +
+   보낸 창이 우리가 만든 iframe인지 대조까지 해야 아무 사이트나 높이를
+   조작하는 걸 막을 수 있다 */
+window.addEventListener('message',e=>{
+  if(e.origin!=='https://www.instagram.com')return;
+  let data=e.data;
+  if(typeof data==='string'){ try{ data=JSON.parse(data); }catch(err){ return; } }
+  if(!data||data.type!=='MEASURE'||!data.details)return;
+  const h=Number(data.details.height);
+  if(!isFinite(h)||h<=0)return;
+  for(const f of document.querySelectorAll('iframe.ig-embed-frame')){
+    if(f.contentWindow===e.source){ scApplyIgHeight(f,h); return; }
+  }
+});
+
 /* B-189: 도착 시점에 스크랩·이미지 상태를 다시 확인 — compressImage는
    비동기라 그 사이 사용자가 수정 모달에서 직접 이미지를 첨부했을 수
    있음(레이스). "사용자 첨부 우선" 원칙을 도착 시점에도 재적용해
@@ -648,7 +734,7 @@ function scClearForm(){
   document.getElementById('sc_preview').innerHTML='';
   document.getElementById('sc_uploadLabel').innerHTML=ic('camera')+' 스크린샷 첨부';
   document.getElementById('sc_file').value='';
-  document.getElementById('sc_ogPreview').style.display='none';
+  scClearIgEmbed(document.getElementById('sc_ogPreview'));
   if(scTiptapEditor){ scTiptapEditor.commands.setContent(''); }
   else {
     const scEl=document.getElementById('sc_text');
@@ -726,6 +812,7 @@ function openScEdit(id){
   scRenderImgThumbs('sem_imgs',semImgsData);
   scUpdateImgUploadLabel('sem_imgLabel',semImgsData,'사진 추가');
   document.getElementById('sem_img').value='';
+  scSyncIgEmbed(document.getElementById('sem_igEmbed'),s.raw||'');
   openModal('scEditModal');
 }
 
