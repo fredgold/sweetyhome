@@ -6653,3 +6653,15 @@ B-188 후속 — `scraps-form.js`만: 유튜브는 og:image 파싱 없이 비디
 ## 2026-08-08 — B-197: 모바일 첫 화면 매물 탭 직행 (커밋 1개)
 
 R-10 결정 반영 — 모바일(`MOBILE_APP_MQ`, ≤899.98px)에서 앱을 새로 열면 대시보드 대신 매물 탭(지도)으로 진입, 데스크톱은 대시보드 그대로. B-24 세션 복원(`sh_lastView`)이 있으면 그쪽이 우선이라 "보던 화면 유지"는 종전대로고, B-149 뷰 모드(`sh_propViewMode`) 복원도 매물 탭 안에서 그대로 작동. 착수 중 발견한 함정 — 기존 `restoreLastView()`는 boot 체인에서 무조건 실행되는데 **미로그인 401 경로는 `load()`가 `renderAll()` 전에 빠져나가 `state`가 null**이라, 그 상태로 매물 탭을 열면 `refreshOverview()`가 `state.complexes`를 읽다 깨진다. 그래서 `applyInitialPanel()`을 `renderAll()` 끝에서 1회만 실행하도록 옮김(state 보장 + 로그인/게스트 진입 후에도 첫 화면이 매물로 잡힘). 검증: 모바일 콜드 로드 매물 탭+지도 실크기 390×541, 데스크톱 dash 무변경, 새로고침 4회 동일, 401 콜드 로드 크래시 0(dash 유지), 게스트 모바일 props·데스크톱 dash, 경계 899/900px 정확(`e56c854`).
+
+---
+
+## 2026-08-08 — B-195: index.html charset (커밋 1개)
+
+`<html lang="ko">` 바로 뒤에 `<meta charset="utf-8">` 1줄(바이트 오프셋 33 — 브라우저가 인코딩을 확정하는 1024바이트 한도 안, 첫 비ASCII 바이트보다 앞). 손 B(B-187 검증)·손 A(B-197 검증) 연속 2회 실증된 건으로, charset 헤더가 없는 정적 서버로 열면 JS 안의 한글이 깨져 `SyntaxError`로 앱이 아예 뜨지 않았다. Vercel 배포는 헤더가 있어 실사용 무증상이었으나 로컬 검증 하네스가 반복 오염됐다(`8d0d10f`).
+
+---
+
+## 2026-08-08 — B-198: 수집함 인스타 인앱 임베드 (커밋 1개)
+
+B-196 스파이크 "가능" 판정의 정식 구현. `scIgShortcode()`가 raw에서 숏코드만 뽑아(`[A-Za-z0-9_-]`로 엄격 제한) `https://www.instagram.com/p/{code}/embed/captioned/`를 **고정 템플릿으로 재조립** — 사용자 입력 문자열을 URL에 그대로 넣지 않는다. 5형태(`/p/`·`/reel/`·`/reels/`·`/{user}/p/`·쿼리 붙은 것) 전부 정규화 통과, `/tv/`도 커버, 코드 없는 프로필 URL·비인스타는 `null`. 추가폼은 기존 "내용을 가져올 수 없어요" 안내 분기 2곳(폴백 input·Tiptap onUpdate)을 `scSyncIgEmbed` 한 줄로 대체해 감지·제거가 양방향으로 동작하고, 같은 숏코드면 재생성하지 않아 타이핑 중 iframe이 매 글자 재로드되지 않는다. 수정 모달엔 `sem_igEmbed` 컨테이너를 신설(`openScEdit`에서 렌더) — 담긴 카드를 열어 내용을 확인하는 이 경로가 노션 이중 기록 대체의 본체. 높이는 인스타가 보내는 `postMessage MEASURE`를 받아 맞추되(공식 embed.js 미로드 = 외부 스크립트 추가 0) **origin 완전 일치 + 발신 창이 우리 iframe인지 `contentWindow` 대조**를 둘 다 통과할 때만 반영하고, 값도 유한 양수로 검사한다. 600px 상한 초과분은 명시적 "펼치기" 버튼(커맨드센터 판정: 콘텐츠 축약은 접기 지양 예외). **sandbox는 실측 후 채택** — `allow-scripts`만 주면 프레임 origin이 `"null"`이 돼 위 origin 검증이 막히고 높이 자동조절이 죽는 것을 확인, `allow-scripts allow-same-origin allow-popups` 조합이면 렌더·캡션·높이 전부 정상이면서 상위 프레임 이동·폼 제출·다운로드는 기본 차단으로 남는다(교차 출처라 same-origin이 우리 문서 접근을 열어주지 않음). 닫힌 모달에 iframe이 남아 계속 로드되는 것을 막기 위해 `closeModal`에 typeof 가드 정리 훅 1줄 — 닫기 경로가 버튼 4곳·ESC로 흩어져 있어 한 곳에 모았다. state 스키마·`api/preview.js` 무접촉, 임베드는 저장하지 않는 렌더 시점 파생물(`af233ef`).
