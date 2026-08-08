@@ -6641,3 +6641,15 @@ B-188 후속 — `scraps-form.js`만: 유튜브는 og:image 파싱 없이 비디
 ## 2026-08-07 — B-194R: 지도 핀 클릭 깜빡임 (커밋 1개)
 
 `reselectCxMarker`에 마지막 선택 id 메모를 둬 같은 선택이면 즉시 return(무효화 2곳: 마커 재생성 `ovMarkers=[]` 지점·`dimRouteStatusMarkers`) + 핀 탭이 일으키는 프로그램 스크롤이 목표 카드에 닿을 때까지 중간 카드로의 선택 전환을 무시하는 가드(`_cxScrollTargetId`, 스트립 `touchstart`에서 해제해 수동 스와이프 연동은 종전 그대로). 계측: 핀 클릭 1회당 마커 `setIcon` **99회→3회**(reselect 33→1 실행), 데스크톱 경로·리스트 전환 무변경(`b4e19a2`).
+
+---
+
+## 2026-08-08 — B-196 스파이크: 인스타 인앱 임베드 (커밋 0)
+
+**판정 = 가능.** `instagram.com/p/{code}/embed/captioned/`를 클라이언트 iframe으로 직접 그리면 **로그인 없이 사진·릴스 영상·캡션 전문이 렌더**된다(서버 무경유라 크롤링 차단과 무관 → 노션 이중 기록 제거 가능). 함정: `curl` 기본 요청엔 `x-frame-options: DENY`가 찍히지만 응답에 `vary: Sec-Fetch-Site, Sec-Fetch-Mode`가 있어, 실제 iframe 형태(`Sec-Fetch-Dest: iframe`)로 요청하면 **XFO가 사라진다** — 헤더만 보고 불가로 오판하기 쉬움. 게시물 5개×변형 2개×프로필 2개 실측: 로그인 벽 0·429 0, 반복 10회 200/10, 쿠키 0 콜드 컨텍스트도 정상. `/embed/`는 캡션이 빠지므로 **`/embed/captioned/` 필수**(806자 vs 165자). 부수 발견: 인스타가 `postMessage`로 `MEASURE{height}`를 보내와 **외부 `embed.js` 없이** 높이 자동조절 가능. URL 정규화 필수 — `/reels/`·`/{username}/p/` 형태는 프레임이 안 뜨고, 숏코드만 뽑아 `/p/{code}/`로 재조립하면 5형태 전부 통과(릴스 숏코드도 `/p/`로 정상). 붙일 자리는 이미 인스타를 감지해 "내용을 가져올 수 없어요" 안내를 띄우는 `scraps-form.js:122`·`:215`의 `#sc_ogPreview` 분기. 리포트 `spike-2026-08-08-B196.md`, 증거 `_spike-B196/`. 미검증 = iOS Safari 실기기·비공개 게시물 대조(대체로 존재하지 않는 숏코드 대조군은 안전 degrade 확인).
+
+---
+
+## 2026-08-08 — B-197: 모바일 첫 화면 매물 탭 직행 (커밋 1개)
+
+R-10 결정 반영 — 모바일(`MOBILE_APP_MQ`, ≤899.98px)에서 앱을 새로 열면 대시보드 대신 매물 탭(지도)으로 진입, 데스크톱은 대시보드 그대로. B-24 세션 복원(`sh_lastView`)이 있으면 그쪽이 우선이라 "보던 화면 유지"는 종전대로고, B-149 뷰 모드(`sh_propViewMode`) 복원도 매물 탭 안에서 그대로 작동. 착수 중 발견한 함정 — 기존 `restoreLastView()`는 boot 체인에서 무조건 실행되는데 **미로그인 401 경로는 `load()`가 `renderAll()` 전에 빠져나가 `state`가 null**이라, 그 상태로 매물 탭을 열면 `refreshOverview()`가 `state.complexes`를 읽다 깨진다. 그래서 `applyInitialPanel()`을 `renderAll()` 끝에서 1회만 실행하도록 옮김(state 보장 + 로그인/게스트 진입 후에도 첫 화면이 매물로 잡힘). 검증: 모바일 콜드 로드 매물 탭+지도 실크기 390×541, 데스크톱 dash 무변경, 새로고침 4회 동일, 401 콜드 로드 크래시 0(dash 유지), 게스트 모바일 props·데스크톱 dash, 경계 899/900px 정확(`e56c854`).
