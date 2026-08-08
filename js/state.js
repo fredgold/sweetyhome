@@ -87,7 +87,11 @@
  *                     imgs (base64[], 최대 SC_MAX_IMGS장 — B-67 신규,
  *                       렌더는 이 필드 기준 · 첫 장이 대표), location, price,
  *                     area, schedule, condition, source, status (SC_STATUS key),
- *                     tags:[], fit, parsed}]
+ *                     tags:[], fit, parsed,
+ *                     inboxId (B-158 단축어 인박스에서 담긴 항목만 — 서버가 준
+ *                       인박스 항목 id. pullInbox의 중복 방지 키이므로 로드
+ *                       왕복에서 유실되면 같은 항목이 다시 들어올 수 있다.
+ *                       직접 담은 스크랩엔 없음)}]
  *
  * state.actions   : [{id, text, priority, done, category, assignee, due}]
  *                    category: ''|'매물준비'|'계약', assignee: ''|OWNERS 값(하드코딩
@@ -354,6 +358,17 @@ function guardArr(val,fallback,label){
   if(val!=null) console.warn(`applyGuards: ${label}이(가) 배열이 아니라 기본값으로 대체됨(타입: ${typeof val})`);
   return fallback;
 }
+/* B-185: 배열은 맞는데 그 안에 null·문자열 같은 항목이 섞인 오염 백업은
+   guardArr를 통과한 뒤 이어지는 map에서 속성 접근만으로 TypeError가 나고,
+   applyGuards 전체가 멈춰 화면이 빈 채로 선다(guardArr와 같은 단일 실패점).
+   고쳐 쓰지 않고 폐기 — 정상 항목은 그대로 보존한다 */
+function guardItems(arr,label){
+  return arr.filter(it=>{
+    if(it&&typeof it==='object'&&!Array.isArray(it)) return true;
+    console.warn(`applyGuards: ${label}의 항목 하나가 객체가 아니라 폐기됨(타입: ${it===null?'null':typeof it})`);
+    return false;
+  });
+}
 /* ---- load with migration ---- */
 function applyGuards(raw){
   state=Object.assign(structuredClone(DEFAULT), raw||{});
@@ -375,6 +390,7 @@ function applyGuards(raw){
       .forEach(([nm,key,ty,lq])=>{ const v=(+old[key]||0)*10000; if(v>0) mig.push({id:'as'+Math.random().toString(36).slice(2,8),owner:'규범',name:nm,amount:v,type:ty,liquidity:lq,mobilizable:v,memo:''}); });
     state.assets.items=mig;
   }
+  state.assets.items=guardItems(state.assets.items,'assets.items');
   if(state.assets.reserve==null) state.assets.reserve=1000;
   state.settings=Object.assign(structuredClone(DEFAULT.settings), state.settings||{});
   const ownersRaw=Array.isArray(state.settings.owners)?state.settings.owners:[];
@@ -394,11 +410,12 @@ function applyGuards(raw){
      없거나 1개뿐이거나 name/dest 일부만 있어도 나머지는 기본값으로 채움) */
   const commutersRaw=Array.isArray(state.settings.commuters)?state.settings.commuters:[];
   state.settings.commuters=DEFAULT.settings.commuters.map((def,i)=>({...def, ...(commutersRaw[i]||{})}));
-  state.chatHistory=state.chatHistory||[];
-  state.actions=guardArr(state.actions,structuredClone(DEFAULT.actions),'actions');
-  /* B-30: assignee(담당)·due(마감) 필드 누락 보정, 기본 '' — 기존 액션
-     무손실(미지정/마감없음으로 자연 해석됨) */
-  state.actions=state.actions.map(a=>({category:'',assignee:'',due:'',...a}));
+  state.chatHistory=guardArr(state.chatHistory,[],'chatHistory');
+  state.actions=guardItems(guardArr(state.actions,structuredClone(DEFAULT.actions),'actions'),'actions');
+  /* B-185: prep/steps는 아래 이관 블록이 .forEach로 먼저 읽으므로 가드가
+     그보다 앞서야 한다 — 오염된 truthy 비배열이면 거기서 먼저 깨진다 */
+  state.prep=guardItems(guardArr(state.prep,structuredClone(DEFAULT.prep),'prep'),'prep');
+  state.steps=guardItems(guardArr(state.steps,structuredClone(DEFAULT.steps),'steps'),'steps');
   if(!state._prepMigrated){
     const ids=new Set(state.actions.map(a=>a.id));
     /* B-86: priority가 숫자가 아닌 항목이 하나라도 섞이면 Math.max가 NaN을
@@ -410,12 +427,19 @@ function applyGuards(raw){
     (state.steps||[]).forEach(t=>{if(!ids.has(t.id))state.actions.push({id:t.id,text:t.tx+(t.sub?` (${t.sub})`:''),priority:++p,done:t.done||false,category:'계약'});});
     state._prepMigrated=true;
   }
+  /* B-30: assignee(담당)·due(마감) 필드 누락 보정, 기본 '' — 기존 액션
+     무손실(미지정/마감없음으로 자연 해석됨).
+     B-185: 이 보정이 위 이관 블록보다 앞에 있었어서, 이관으로 새로 밀어넣은
+     액션만 assignee·due 없이 저장됐다가 "다음 로드"에서야 채워졌다 — 같은
+     state를 두 번 통과시키면 결과가 달라지는 상태(왕복 diff 0 위반). 이관
+     이후로 옮겨 한 번의 통과로 수렴시킨다 */
+  state.actions=state.actions.map(a=>({category:'',assignee:'',due:'',...a}));
   /* B-05: 레거시 properties 배열 완전 삭제. 옛 백업·미동기 클라이언트가 여전히
      보낼 수 있는 필드라 매 로드마다 제거(가드가 아니라 폐기) — 다음 save()에서
      Redis에도 반영된다 */
   delete state.properties;
-  state.regNews=state.regNews||[];
-  state.savedRoutes=state.savedRoutes||[];
+  state.regNews=guardArr(state.regNews,[],'regNews');
+  state.savedRoutes=guardArr(state.savedRoutes,[],'savedRoutes');
   /* B-28: parking(단지)·managementFeeState(매물) 필드 누락 보정 — 기존 데이터
      무손실. managementFeeState는 없으면 기존 managementFee 입력값으로 상태를
      역산 승격(값이 있었으면 'known', 없었으면 'unknown').
@@ -424,7 +448,7 @@ function applyGuards(raw){
      B-39: favorite 필드 누락 보정, 기본 false
      B-61: commutes(2인 소요시간·환승·기준지 스냅샷)·commuteMemo 필드 누락
      보정 — commutes는 항목별 병합이라 구 데이터 무손실(safety와 동일 패턴) */
-  state.complexes=guardArr(state.complexes,[],'complexes').map(cx=>{
+  state.complexes=guardItems(guardArr(state.complexes,[],'complexes'),'complexes').map(cx=>{
     const commutesRaw=Array.isArray(cx.commutes)?cx.commutes:[];
     const commutes=[0,1].map(i=>({minutes:null,transfers:null,destSnapshot:'', ...(commutesRaw[i]||{})}));
     /* B-41: fieldNote 항목별 병합 — safety(listings[])와 동일 패턴. 일부 항목만
@@ -460,7 +484,7 @@ function applyGuards(raw){
   });
   /* B-27-lite: safety 필드 누락 보정 — 항목별로 병합해 일부만 저장된 기존
      데이터도 나머지 항목이 defaultSafetyItem()으로 채워지게 함(무손실) */
-  state.listings=guardArr(state.listings,[],'listings').map(l=>{
+  state.listings=guardItems(guardArr(state.listings,[],'listings'),'listings').map(l=>{
     const safety=defaultListingSafety();
     SAFETY_ITEMS.forEach(({key})=>{
       /* B-86: l.safety[key]가 객체가 아니면(문자열·배열·숫자 등으로 오염) 그대로
@@ -483,7 +507,7 @@ function applyGuards(raw){
       history,
     };
   });
-  state.scraps=guardArr(state.scraps,[],'scraps').map(s=>{
+  state.scraps=guardItems(guardArr(state.scraps,[],'scraps'),'scraps').map(s=>{
     const p=s.parsed||{};
     return {
       id: s.id||'sc'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
@@ -506,10 +530,14 @@ function applyGuards(raw){
          그대로 사용 */
       imgs: Array.isArray(s.imgs)?s.imgs:(s.img?[s.img]:[]),
       parsed: s.parsed||null,
+      /* B-185: 이 가드가 객체를 통째로 새로 만들기 때문에, 여기 없는 필드는
+         로드할 때마다 조용히 사라진다. inboxId(B-158 단축어 인박스)가 그랬다 —
+         유실되면 pullInbox의 중복 방지(existingIds)가 id prefix 폴백에만
+         의존하게 돼, 그 폴백까지 어긋나는 순간 같은 항목이 다시 들어온다.
+         문자열일 때만 보존하고 없으면 undefined(JSON에서 자연 제외) */
+      inboxId: typeof s.inboxId==='string'?s.inboxId:undefined,
     };
   });
-  state.prep=state.prep||structuredClone(DEFAULT.prep);
-  state.steps=state.steps||structuredClone(DEFAULT.steps);
 }
 async function load(){
   if(isGuestMode){
