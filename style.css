@@ -1498,6 +1498,20 @@
     #panel-scraps .sc-list{max-width:1180px;}
   }
 
+  /* B-199: 읽기 모달 — 긴 GPT 리서치를 그대로 읽는 화면이라 본문에 높이
+     제한을 두지 않고 모달(.mbody) 스크롤에 맡긴다 */
+  .modal .sc-read-box{max-width:820px;}
+  .sc-read-badges{display:flex;gap:var(--gap-sm);flex-wrap:wrap;}
+  .sc-read-badges:not(:empty){margin-bottom:var(--gap-md);}
+  .sc-read-meta{display:flex;gap:var(--gap-sm);flex-wrap:wrap;}
+  .sc-read-meta:not(:empty){margin-bottom:var(--gap-md);}
+  .sc-read-imgs{display:flex;gap:var(--gap-sm);flex-wrap:wrap;}
+  .sc-read-imgs:not(:empty){margin-bottom:var(--gap-md);}
+  .sc-read-img{width:104px;height:104px;object-fit:cover;border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--hairline);}
+  .sc-read-body{font-size:var(--fs-label);line-height:1.65;}
+  .sc-read-body .is-empty{color:var(--ink-faint);}
+  .modal .sc-read-box .mfoot{gap:var(--gap-sm);flex-wrap:wrap;}
+
   /* B-123①: 갤러리 카드 이미지 클릭 라이트박스 — 기존 .modal 패턴 재사용,
      사진이 주인공이라 본문만 어둡게 깔아 대비 확보 */
   /* B-183: `.modal .box{max-width:520px}`와 같은 형태의 선택자여야 이긴다 —

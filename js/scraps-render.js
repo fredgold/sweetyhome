@@ -111,8 +111,8 @@ function renderScraps(){
       const imgs=s.imgs||[];
       const linkChip=scLinkChipHTML(s.raw);
       /* B-123①: 사진 있는 카드는 이미지가 주인공 — 클릭 영역을 카드
-         본문(편집)과 분리해 별도 라이트박스로 열리게 한다 */
-      return `<div class="sc-gallery-card" data-scid="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(title)} 편집">
+         본문(B-199 읽기)과 분리해 별도 라이트박스로 열리게 한다 */
+      return `<div class="sc-gallery-card" data-scid="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(title)} 읽기">
         ${scSelectCheckHTML(s.id)}
         ${imgs.length?`<div class="sc-gallery-imgwrap" data-sclight="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(title)} 사진 크게 보기">
           <img src="${esc(imgs[0])}" class="sc-gallery-img" loading="lazy" alt="${esc(title)} 사진">
@@ -130,15 +130,15 @@ function renderScraps(){
       </div>`;
     }).join('')+'</div>';
     el.querySelectorAll('.sc-gallery-card').forEach(c=>{
-      c.onclick=()=>openScEdit(c.dataset.scid);
+      c.onclick=()=>openScRead(c.dataset.scid);
       c.onkeydown=e=>{
         if(e.key!=='Enter'&&e.key!==' ') return;
         e.preventDefault();
-        openScEdit(c.dataset.scid);
+        openScRead(c.dataset.scid);
       };
     });
     /* B-123①: 이미지 클릭 = 라이트박스, stopPropagation으로 카드 본문
-       클릭(편집 모달 오픈)과 버블링 분리 */
+       클릭(B-199 읽기 모달 오픈)과 버블링 분리 */
     el.querySelectorAll('[data-sclight]').forEach(w=>{
       w.onclick=e=>{ e.stopPropagation(); scOpenLightbox(w.dataset.sclight); };
       w.onkeydown=e=>{
@@ -200,6 +200,16 @@ function renderScraps(){
   el.querySelectorAll('.sc-status-sel').forEach(sel=>sel.onchange=()=>{
     const s=state.scraps.find(x=>x.id===sel.dataset.scst);
     if(s){s.status=sel.value;save();renderScraps();}
+  });
+  /* B-199: 리스트 카드 본문 클릭 = 읽기(지금까지 무동작이라 갤러리와 비대칭이었던
+     영역). 카드 안에는 이미 자기 동작을 가진 것들이 섞여 있으므로 그것들에서
+     시작된 클릭은 통과시킨다 — 상태 select·버튼들·링크 칩·원문 토글 영역.
+     선택 모드는 캡처 단계에서 이미 가로채므로 여기까지 오지 않는다 */
+  el.querySelectorAll('.sc-card').forEach(c=>{
+    c.onclick=e=>{
+      if(e.target.closest('.sc-card-actions,.sc-card-raw,.sc-preview-toggle,.sc-select-check,a,button,select,input,textarea')) return;
+      openScRead(c.dataset.scid);
+    };
   });
   el.querySelectorAll('[data-sc-edit]').forEach(b=>b.onclick=()=>openScEdit(b.dataset.scEdit));
   el.querySelectorAll('[data-sc-del]').forEach(b=>b.onclick=()=>{
@@ -326,6 +336,69 @@ function scRenderLightbox(){
   document.getElementById('scLightboxPrev').style.display=multi?'':'none';
   document.getElementById('scLightboxNext').style.display=multi?'':'none';
 }
+/* ── B-199 읽기 모달 ──
+   카드 클릭이 곧장 편집기를 열던 걸 "읽기"로 바꾼다 — GPT 리서치처럼 긴 글은
+   편집기 안에서 읽어야 해서 마찰이 컸다. 수정은 명시 버튼으로만(접기 지양
+   정책과 무관 — 기능을 숨기는 게 아니라 진입을 분리하는 것).
+   저장하는 건 없다. 전부 state에서 매번 파생 렌더 */
+let scReadId=null;
+function scReadRenderStatusBadge(s){
+  const knownStatus=Object.prototype.hasOwnProperty.call(SC_STATUS,s.status);
+  const knownType=Object.prototype.hasOwnProperty.call(SC_TYPE,s.type);
+  document.getElementById('scReadBadges').innerHTML=
+    `<span class="sc-badge type-${knownType?esc(s.type):'note'}">${esc(knownType?SC_TYPE[s.type]:(s.type||'메모'))}</span>`+
+    `<span class="sc-badge st-${knownStatus?esc(s.status):'new'}">${esc(knownStatus?SC_STATUS[s.status]:(s.status||'신규'))}</span>`;
+}
+function openScRead(id){
+  const s=state.scraps.find(x=>x.id===id); if(!s)return;
+  scReadId=id;
+  document.getElementById('scReadTitle').textContent=s.title||'(제목 없음)';
+  scReadRenderStatusBadge(s);
+  const isPropLess=SC_PROPLESS.has(s.type);
+  const metaParts=[
+    s.location&&{icon:'pin',text:s.location},
+    !isPropLess&&s.price&&{icon:'price',text:s.price},
+    !isPropLess&&s.area&&{icon:'area',text:s.area},
+    !isPropLess&&s.schedule&&{icon:'calendar',text:s.schedule},
+    s.source&&{icon:'link',text:s.source},
+  ].filter(Boolean);
+  document.getElementById('scReadMeta').innerHTML=metaParts.length
+    ? metaParts.map(m=>`<span class="chip sc-meta-chip" title="${esc(m.text)}">${ic(m.icon,'ic-muted')}<span class="sc-meta-chip-text">${esc(m.text)}</span></span>`).join('')
+    : '';
+  const imgs=s.imgs||[];
+  const imgsEl=document.getElementById('scReadImgs');
+  imgsEl.innerHTML=imgs.map((src,i)=>`<img src="${esc(src)}" class="sc-read-img" loading="lazy" alt="${esc(s.title||'스크랩')} 사진 ${i+1}" role="button" tabindex="0">`).join('');
+  imgsEl.querySelectorAll('.sc-read-img').forEach(im=>{
+    im.onclick=()=>scOpenLightbox(scReadId);
+    im.onkeydown=e=>{ if(e.key!=='Enter'&&e.key!==' ')return; e.preventDefault(); scOpenLightbox(scReadId); };
+  });
+  /* B-198 임베드를 그대로 재사용 — 읽기 모달이 인스타 소비의 주 지점이 된다.
+     닫을 때 iframe 정리는 closeModal의 공용 훅이 이미 처리 */
+  scSyncIgEmbed(document.getElementById('scReadIgEmbed'),s.raw||'');
+  document.getElementById('scReadBody').innerHTML=s.raw?renderMd(s.raw):'<span class="is-empty">내용 없음</span>';
+  const sel=document.getElementById('scRead_status');
+  sel.innerHTML=Object.entries(SC_STATUS).map(([v,l])=>`<option value="${v}"${s.status===v?' selected':''}>${esc(l)}</option>`).join('');
+  document.getElementById('scReadModal').querySelector('.mbody').scrollTop=0;
+  openModal('scReadModal');
+}
+/* 핸들러는 모듈 로드 시 한 번만 — openScRead에서 매번 붙이면 렌더마다 누적 */
+document.getElementById('scRead_close').onclick=()=>closeModal('scReadModal');
+document.getElementById('scRead_edit').onclick=()=>{
+  const id=scReadId;
+  closeModal('scReadModal');
+  if(id) openScEdit(id);
+};
+document.getElementById('scRead_delete').onclick=()=>{
+  if(!confirm('이 항목을 삭제할까요?'))return;
+  state.scraps=state.scraps.filter(x=>x.id!==scReadId);
+  save(); renderScraps(); closeModal('scReadModal');
+};
+document.getElementById('scRead_status').onchange=e=>{
+  const s=state.scraps.find(x=>x.id===scReadId); if(!s)return;
+  s.status=e.target.value;
+  save(); renderScraps();
+  scReadRenderStatusBadge(s);
+};
 function scOpenLightbox(id){
   scLightboxId=id; scLightboxIdx=0;
   scRenderLightbox();

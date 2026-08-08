@@ -720,6 +720,26 @@
     </div>
   </div>
 
+  <!-- 스크랩 읽기 모달 (B-199) — 카드 클릭 = 읽기, 수정은 명시 버튼 -->
+  <div class="modal" id="scReadModal">
+    <div class="box sc-read-box">
+      <div class="mhead"><h3 id="scReadTitle">읽기</h3></div>
+      <div class="mbody">
+        <div class="sc-read-badges" id="scReadBadges"></div>
+        <div class="sc-read-meta" id="scReadMeta"></div>
+        <div class="sc-read-imgs" id="scReadImgs"></div>
+        <div id="scReadIgEmbed" class="ig-embed-slot" style="display:none;"></div>
+        <div class="sc-md-content sc-read-body" id="scReadBody"></div>
+      </div>
+      <div class="mfoot">
+        <button class="btn-ghost" id="scRead_delete" style="color:var(--s-drop);margin-right:auto;">삭제</button>
+        <select id="scRead_status" class="sc-status-sel"></select>
+        <button class="btn-ghost" id="scRead_close">닫기</button>
+        <button class="btn-save" id="scRead_edit">수정</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 스크랩 갤러리 라이트박스 (B-123①) -->
   <div class="modal" id="scLightboxModal">
     <div class="box sc-lightbox-box">
