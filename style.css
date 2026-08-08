@@ -854,6 +854,15 @@
   .step[data-done="1"] .stx{color:var(--ink-faint);}
   .step .stx small{display:block;font-weight:500;color:var(--ink-faint);}
   .saved{font-size:var(--fs-tiny);color:var(--ink-faint);text-align:center;margin-top:18px;font-weight:600;}
+  /* B-172: 헤더 동기화 칩(setSyncState)과 정보 중복+패널 밑에 붕 뜬 띠로
+     보여 모바일만 숨김. 단, 클라우드·로컬 모두 로드 실패(state.js load())
+     같은 드문 치명적 안내는 칩에 없는 유일한 문구라 .is-err일 때만 노출.
+     B-184: 이 분기가 760px이라 761~899.98px에서는 하단 앱바(899.98 기준)와
+     저장 띠가 동시에 떴다 — 앱 표준 경계로 통일(B-148 전례). */
+  @media (max-width:899.98px){
+    .saved{display:none;}
+    .saved.is-err{display:block;}
+  }
 
 
   /* ===== 동기화 상태 칩 ===== */
@@ -1370,11 +1379,6 @@
     .btn-save{font-size:var(--fs-micro);padding:7px 13px;}
     .btn-ghost{font-size:var(--fs-micro);}
     .privacy{font-size:var(--fs-tiny);padding:8px 10px;}
-    /* B-172: 헤더 동기화 칩(setSyncState)과 정보 중복+패널 밑에 붕 뜬 띠로
-       보여 모바일만 숨김. 단, 클라우드·로컬 모두 로드 실패(state.js load())
-       같은 드문 치명적 안내는 칩에 없는 유일한 문구라 .is-err일 때만 노출 */
-    .saved{font-size:var(--fs-tiny);display:none;}
-    .saved.is-err{display:block;}
     .sync-chip{font-size:var(--fs-tiny);padding:4px 8px;}
     .sync-panel{min-width:180px;}
     .ph-actions{display:flex;gap:var(--gap-sm);flex-wrap:wrap;}
