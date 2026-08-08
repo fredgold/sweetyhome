@@ -1496,7 +1496,9 @@
 
   /* B-123①: 갤러리 카드 이미지 클릭 라이트박스 — 기존 .modal 패턴 재사용,
      사진이 주인공이라 본문만 어둡게 깔아 대비 확보 */
-  .sc-lightbox-box{max-width:720px;}
+  /* B-183: `.modal .box{max-width:520px}`와 같은 형태의 선택자여야 이긴다 —
+     클래스 하나짜리로는 특이도에 밀려 720px가 무시됐다(!important 대신 정렬) */
+  .modal .sc-lightbox-box{max-width:720px;}
   .sc-lightbox-body{display:flex;align-items:center;justify-content:center;gap:var(--gap-mlg);background:#161816;min-height:280px;}
   .sc-lightbox-img{max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--radius-sm);}
   .sc-lightbox-nav{flex:none;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:var(--fs-head);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;}
