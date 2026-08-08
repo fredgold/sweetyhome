@@ -364,6 +364,20 @@ document.getElementById('sc_preview').addEventListener('click',e=>{
   scUpdateImgUploadLabel('sc_uploadLabel',scrapImgsData,'스크린샷 첨부');
 });
 
+/* B-200: 마지막으로 저장한 유형을 다음 추가폼의 기본값으로. 순수 UI 상태라
+   state 스키마 밖 localStorage에 둔다(sh_propViewMode 전례). 값이 오염되거나
+   SC_TYPE에서 사라진 키면 기존 기본값으로 폴백 */
+const SH_SC_LAST_TYPE_KEY='sh_scLastType';
+function scLastType(){
+  try{
+    const v=localStorage.getItem(SH_SC_LAST_TYPE_KEY);
+    if(v&&Object.prototype.hasOwnProperty.call(SC_TYPE,v)) return v;
+  }catch(e){}
+  return 'subscription';
+}
+function scRememberLastType(type){
+  try{ if(Object.prototype.hasOwnProperty.call(SC_TYPE,type)) localStorage.setItem(SH_SC_LAST_TYPE_KEY,type); }catch(e){}
+}
 document.getElementById('sc_typeChips').onclick=e=>{
   const chip=e.target.closest('.sc-type-chip'); if(!chip)return;
   document.querySelectorAll('.sc-type-chip').forEach(c=>c.classList.remove('on'));
@@ -604,6 +618,7 @@ document.getElementById('sc_saveBtn').onclick=()=>scRunAfterImgs('sc','sc_saveBt
 function scPerformSave(){
   const title=document.getElementById('sc_title').value.trim();
   const type=document.querySelector('.sc-type-chip.on')?.dataset.type||'subscription';
+  scRememberLastType(type);
   const scEl=document.getElementById('sc_text');
   let raw;
   if(scTiptapEditor){ raw=scTiptapEditor.storage.markdown.getMarkdown().trim(); }
@@ -745,11 +760,18 @@ function scClearForm(){
   scrapImgsData=[]; scEditId=null; scImgJobsReset('sc');
   document.getElementById('sc_formTitle').textContent='＋ 추가';
   document.getElementById('sc_cancelBtn').style.display='none';
-  document.querySelectorAll('.sc-type-chip').forEach((c,i)=>c.classList.toggle('on',i===0));
-  scUpdatePropFields('subscription');
+  scApplyDefaultType();
 }
 
-function scOpenForm(){ document.getElementById('sc_form').classList.add('open'); document.getElementById('sc_addToggle').textContent='▲ 접기'; document.getElementById('sc_form').scrollIntoView({behavior:'smooth',block:'nearest'}); initScTextEditor(); }
+/* 기본 유형 적용은 폼을 여는 시점에도 필요하다 — 새로고침 직후 첫 오픈은
+   scClearForm을 거치지 않아 index.html의 첫 칩(청약공고)이 그대로 남는다 */
+function scApplyDefaultType(){
+  if(scEditId) return;
+  const t=scLastType();
+  document.querySelectorAll('#sc_typeChips .sc-type-chip').forEach(c=>c.classList.toggle('on',c.dataset.type===t));
+  scUpdatePropFields(t);
+}
+function scOpenForm(){ scApplyDefaultType(); document.getElementById('sc_form').classList.add('open'); document.getElementById('sc_addToggle').textContent='▲ 접기'; document.getElementById('sc_form').scrollIntoView({behavior:'smooth',block:'nearest'}); initScTextEditor(); }
 function scCloseForm(){ scClearForm(); document.getElementById('sc_form').classList.remove('open'); document.getElementById('sc_addToggle').textContent='＋ 추가'; }
 document.getElementById('sc_addToggle').onclick=()=>{ const isOpen=document.getElementById('sc_form').classList.contains('open'); isOpen?scCloseForm():scOpenForm(); };
 document.getElementById('sc_formClose').onclick=scCloseForm;
